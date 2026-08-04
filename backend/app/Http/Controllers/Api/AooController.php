@@ -289,6 +289,36 @@ class AooController extends Controller
             return $this->downloadFicheSuiviPdf($aoo);
         }
 
+        if ($documentType === 'decision-lancement') {
+            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.aoo.decision_lancement', ['aoo' => $aoo]);
+            return $pdf->download('Decision_Lancement_AOO_' . str_replace('/', '_', $aoo->num_aoo) . '.pdf');
+        }
+
+        if ($documentType === 'avis-aoo') {
+            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.aoo.avis_aoo', ['aoo' => $aoo]);
+            return $pdf->download('Avis_AOO_' . str_replace('/', '_', $aoo->num_aoo) . '.pdf');
+        }
+
+        if ($documentType === 'convocation-membres') {
+            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.aoo.convocation_membres', ['aoo' => $aoo]);
+            return $pdf->download('Convocation_Membres_AOO_' . str_replace('/', '_', $aoo->num_aoo) . '.pdf');
+        }
+
+        if ($documentType === 'pv-ouverture') {
+            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.aoo.pv_ouverture', ['aoo' => $aoo->load('concurrents.fournisseur')]);
+            return $pdf->download('PV_Ouverture_Plis_' . str_replace('/', '_', $aoo->num_aoo) . '.pdf');
+        }
+
+        if ($documentType === 'rapport-analyse') {
+            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.aoo.rapport_analyse', ['aoo' => $aoo]);
+            return $pdf->download('Rapport_Analyse_Offres_' . str_replace('/', '_', $aoo->num_aoo) . '.pdf');
+        }
+
+        if ($documentType === 'decision-attribution') {
+            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.aoo.decision_attribution', ['aoo' => $aoo]);
+            return $pdf->download('Decision_Attribution_' . str_replace('/', '_', $aoo->num_aoo) . '.pdf');
+        }
+
         return response()->json([
             'message' => "Generation du PDF pour '{$documentType}' du dossier {$aoo->num_aoo} (En construction)",
             'url' => null,

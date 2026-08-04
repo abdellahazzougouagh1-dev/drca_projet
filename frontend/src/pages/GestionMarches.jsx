@@ -578,6 +578,15 @@ const GestionMarches = () => {
         montant: formData.montant === '' ? null : Number(formData.montant),
         date_signature: formData.date_signature || null,
         date_approbation: formData.date_approbation || null,
+        date_notification_marche: formData.date_notification_marche || null,
+        os_numero: formData.os_numero || null,
+        os_date_signature: formData.os_date_signature || null,
+        os_date_effet: formData.os_date_effet || null,
+        num_decision: formData.num_decision || null,
+        date_decision: formData.date_decision || null,
+        date_reunion_commission: formData.date_reunion_commission || null,
+        heure_reunion_commission: formData.heure_reunion_commission || null,
+        lieu_reunion_commission: formData.lieu_reunion_commission || null,
         statut: formData.statut || 'en_creation',
         agent_suivi: formData.agent_suivi || null,
         date_reception_finale: formData.date_reception_finale || null,
@@ -667,7 +676,46 @@ const GestionMarches = () => {
         setErrorMessage(errorMessage);
       }
     } else {
-      window.open(`http://127.0.0.1:8000/api/marches/${id}/documents/${documentType}`, '_blank');
+      try {
+        const response = await api.get(`/marches/${id}/documents/${documentType}`, {
+          responseType: 'blob',
+          headers: {
+            Accept: 'application/pdf',
+          },
+          validateStatus: () => true,
+        });
+
+        // Vérifier le status HTTP
+        if (response.status !== 200) {
+          // Essayer de parser le message d'erreur JSON
+          try {
+            const text = await response.data.text();
+            const errorData = JSON.parse(text);
+            throw new Error(errorData.message || errorData.error || 'Erreur lors du téléchargement');
+          } catch (e) {
+            throw new Error(`Erreur HTTP ${response.status}: ${response.statusText}`);
+          }
+        }
+
+        // Vérifier que c'est un PDF valide
+        const contentType = response.headers['content-type'] || '';
+        if (!contentType.includes('application/pdf')) {
+          throw new Error('La réponse n\'est pas un PDF valide');
+        }
+
+        const blob = new Blob([response.data], { type: 'application/pdf' });
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `${documentType}_${formData.num_marche}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      } catch (error) {
+        console.error('Erreur téléchargement document marché:', error);
+        setErrorMessage(`Impossible de télécharger le document: ${error.message}`);
+      }
     }
   };
 

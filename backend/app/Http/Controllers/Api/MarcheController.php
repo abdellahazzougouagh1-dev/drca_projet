@@ -188,6 +188,7 @@ class MarcheController extends Controller
             'pv-reception-provisoire',
             'pv-reception-definitive',
             'attestation-bonne-execution',
+            'decision-nomination',
         ];
 
         if (!in_array($documentType, $validDocuments, true)) {
@@ -212,10 +213,7 @@ class MarcheController extends Controller
             return $this->downloadBordereauPrixPdf($marche);
         }
 
-        return response()->json([
-            'message' => "Generation du PDF pour '{$documentType}' du marche {$marche->num_marche} (En construction)",
-            'url' => null,
-        ], 200);
+        return $this->downloadStandardDocumentPdf($marche, $documentType);
     }
 
     public function exportPdf($id)
@@ -412,6 +410,8 @@ class MarcheController extends Controller
 
         $fileName = 'OS_Commencement_' . str_replace(['/', '\\'], '_', $marche->num_marche) . '.pdf';
 
+        $this->storeGeneratedPdf($marche, 'os-commencement', $pdf->output());
+
         return $pdf->download($fileName);
     }
 
@@ -471,6 +471,51 @@ class MarcheController extends Controller
 
         $fileName = 'Decision_Nomination_' . str_replace(['/', '\\'], '_', $marche->num_marche) . '.pdf';
 
+        $this->storeGeneratedPdf($marche, 'decision-nomination', $pdf->output());
+
         return $pdf->download($fileName);
+    }
+
+    private function downloadStandardDocumentPdf(Marche $marche, string $documentType): \Symfony\Component\HttpFoundation\Response
+    {
+        $labels = [
+            'designation-agent-suivi' => "Désignation de l'agent chargé du suivi",
+            'os-arret' => "Ordre de service d'arrêt",
+            'os-reprise' => 'Ordre de service de reprise',
+            'pv-reception-provisoire' => 'Procès-verbal de réception provisoire',
+            'pv-reception-definitive' => 'Procès-verbal de réception définitive',
+            'attestation-bonne-execution' => "Attestation de bonne exécution",
+            'decision-nomination' => 'Décision de nomination',
+        ];
+
+        if ($documentType === 'designation-agent-suivi' && empty($marche->agent_suivi)) {
+            return response()->json(['error' => "Le nom de l'agent chargé du suivi est requis"], 422);
+        }
+        if (in_array($documentType, ['pv-reception-definitive', 'attestation-bonne-execution'], true)
+            && empty($marche->date_reception_finale)) {
+            return response()->json(['error' => 'La date de réception finale est requise'], 422);
+        }
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.marche.document_standard', [
+            'marche' => $marche,
+            'title' => $labels[$documentType],
+            'documentType' => $documentType,
+        ])->setPaper('a4', 'portrait');
+        $content = $pdf->output();
+        $this->storeGeneratedPdf($marche, $documentType, $content);
+
+        return response($content, 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'attachment; filename="' . $documentType . '_' . str_replace(['/', '\\'], '_', $marche->num_marche) . '.pdf"',
+        ]);
+    }
+
+    private function storeGeneratedPdf(Marche $marche, string $documentType, string $content): void
+    {
+        $directory = storage_path('app/documents/marches/' . $marche->id);
+        if (!is_dir($directory)) {
+            mkdir($directory, 0755, true);
+        }
+        file_put_contents($directory . '/' . $documentType . '.pdf', $content);
     }
 }

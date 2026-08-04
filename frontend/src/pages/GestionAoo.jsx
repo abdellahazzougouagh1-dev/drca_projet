@@ -216,6 +216,11 @@ const GestionAoo = () => {
     return [];
   };
 
+  const isRealLotId = (lotId) => {
+    // Les IDs réels en base de données ne commencent pas par "detail_"
+    return lotId && !String(lotId).startsWith('detail_');
+  };
+
   const isMultiLots = () => {
     const nbLots = parseInt(formData.nombre_lots, 10) || 1;
     return nbLots > 1 || getAnalyseLots().length > 1;
@@ -905,14 +910,100 @@ const GestionAoo = () => {
     saveAnalyseMultiLots(decisions);
   };
 
-  const downloadDocument = (documentType) => {
+  const downloadDocument = async (documentType) => {
     if (!id || id === 'nouveau') return;
-    window.open(`http://127.0.0.1:8000/api/aoos/${id}/documents/${documentType}`, '_blank');
+
+    try {
+      const response = await api.get(`/aoos/${id}/documents/${documentType}`, {
+        responseType: 'blob',
+        headers: {
+          Accept: 'application/pdf',
+        },
+        validateStatus: () => true,
+      });
+
+      // Vérifier le status HTTP
+      if (response.status !== 200) {
+        // Essayer de parser le message d'erreur JSON
+        try {
+          const text = await response.data.text();
+          const errorData = JSON.parse(text);
+          throw new Error(errorData.message || errorData.error || 'Erreur lors du téléchargement');
+        } catch (e) {
+          throw new Error(`Erreur HTTP ${response.status}: ${response.statusText}`);
+        }
+      }
+
+      // Vérifier que c'est un PDF valide
+      const contentType = response.headers['content-type'] || '';
+      if (!contentType.includes('application/pdf')) {
+        throw new Error('La réponse n\'est pas un PDF valide');
+      }
+
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${documentType}_${id}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Erreur téléchargement document AOO:', error);
+      alert(`Impossible de télécharger le document: ${error.message}`);
+    }
   };
 
-  const downloadLettreNotification = (fournisseurId, lotId) => {
+  const downloadLettreNotification = async (fournisseurId, lotId) => {
     if (!id || id === 'nouveau' || !fournisseurId || !lotId) return;
-    window.open(`http://127.0.0.1:8000/api/aoos/${id}/lettres-notification/${fournisseurId}/${lotId}`, '_blank');
+    
+    // Vérifier que c'est un ID réel (pas un ID temporaire)
+    if (!isRealLotId(lotId)) {
+      alert('Ce lot n\'a pas encore été sauvegardé en base de données. Veuillez d\'abord enregistrer l\'AOO.');
+      return;
+    }
+
+    try {
+      const response = await api.get(`/aoos/${id}/lettres-notification/${fournisseurId}/${lotId}`, {
+        responseType: 'blob',
+        headers: {
+          Accept: 'application/pdf',
+        },
+        validateStatus: () => true,
+      });
+
+      // Vérifier le status HTTP
+      if (response.status !== 200) {
+        // Essayer de parser le message d'erreur JSON
+        try {
+          const text = await response.data.text();
+          const errorData = JSON.parse(text);
+          throw new Error(errorData.message || errorData.error || 'Erreur lors du téléchargement');
+        } catch (e) {
+          throw new Error(`Erreur HTTP ${response.status}: ${response.statusText}`);
+        }
+      }
+
+      // Vérifier que c'est un PDF valide
+      const contentType = response.headers['content-type'] || '';
+      if (!contentType.includes('application/pdf')) {
+        throw new Error('La réponse n\'est pas un PDF valide');
+      }
+
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `lettre_notification_${id}_${fournisseurId}_${lotId}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Erreur téléchargement lettre notification:', error);
+      alert(`Impossible de télécharger la lettre de notification: ${error.message}`);
+    }
   };
 
   const getMarcheNouveauUrl = (lotId = null) => {
@@ -1538,7 +1629,7 @@ const GestionAoo = () => {
                               <textarea value={c.motif_ecartement || ''} onChange={(e) => handleConcurrentChange(findConcurrentIndex(c), 'motif_ecartement', e.target.value)} rows={3} className="w-full px-4 py-3 rounded-xl border border-red-200 focus:border-red-500 outline-none bg-red-50 resize-none text-sm"></textarea>
                             </div>
                           )}
-                          {(c.statut_analyse === 'retenu' || c.statut_analyse === 'ecarte') && getAnalyseLots()[0]?.id && (
+                          {(c.statut_analyse === 'retenu' || c.statut_analyse === 'ecarte') && getAnalyseLots()[0]?.id && isRealLotId(getAnalyseLots()[0].id) && (
                             <div className="flex items-end">
                               <button
                                 type="button"
@@ -1587,7 +1678,7 @@ const GestionAoo = () => {
                                           <input type="text" value={dec.motif_ecartement || ''} onChange={(e) => handleLotDecisionChange(fournisseurId, lot.id, 'motif_ecartement', e.target.value)} className="w-full px-3 py-2 border border-red-200 rounded-lg text-sm bg-red-50 outline-none" />
                                         </div>
                                       )}
-                                      {(dec.statut === 'Retenu' || dec.statut === 'Ecarte') && (
+                                      {(dec.statut === 'Retenu' || dec.statut === 'Ecarte') && isRealLotId(lot.id) && (
                                         <div className="md:col-span-3 pl-0 md:pl-7">
                                           <button
                                             type="button"

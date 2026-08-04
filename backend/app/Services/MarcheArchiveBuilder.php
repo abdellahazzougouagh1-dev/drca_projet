@@ -53,6 +53,11 @@ class MarcheArchiveBuilder
             'Décision Nomination' => 'decision-nomination',
         ];
 
+        $documents['OS Commencement'] = 'os-commencement';
+        $documents['Désignation Agent Suivi'] = 'designation-agent-suivi';
+        $documents['OS Arrêt'] = 'os-arret';
+        $documents['OS Reprise'] = 'os-reprise';
+
         // Try to add each document type
         foreach ($documents as $docLabel => $docType) {
             $documentPath = self::resolveDocumentPath($marche, $docType);
@@ -131,7 +136,7 @@ class MarcheArchiveBuilder
         $summary .= "Titulaire: " . $marche->titulaire . "\n";
         $summary .= "Montant Marche: " . number_format($marche->montant, 2, ',', ' ') . " MAD\n";
         $summary .= "AOO Parent: " . $marche->aoo?->num_aoo . "\n";
-        $summary .= "Lot: " . $marche->lot?->num_lot . "\n\n";
+        $summary .= "Lot: " . ($marche->getRelation('lot')?->num_lot ?? $marche->getAttribute('lot') ?? 'N/A') . "\n\n";
 
         $summary .= "DÉTAIL BORDEREAU DES PRIX:\n";
         $summary .= str_repeat("-", 60) . "\n";
@@ -178,7 +183,7 @@ class MarcheArchiveBuilder
         $metadata .= "Titulaire: " . $marche->titulaire . "\n";
         $metadata .= "Montant: " . number_format($marche->montant, 2, ',', ' ') . " MAD\n";
         $metadata .= "AOO Parent: " . $marche->aoo?->num_aoo . "\n";
-        $metadata .= "Lot: " . $marche->lot?->num_lot . "\n";
+        $metadata .= "Lot: " . ($marche->getRelation('lot')?->num_lot ?? $marche->getAttribute('lot') ?? 'N/A') . "\n";
         $metadata .= "Date de Création: " . now()->format('d/m/Y H:i:s') . "\n";
         $metadata .= "Statut: " . $marche->statut . "\n";
         $metadata .= "Date de Signature: " . ($marche->date_signature ? $marche->date_signature->format('d/m/Y') : 'N/A') . "\n";
