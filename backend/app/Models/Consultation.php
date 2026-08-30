@@ -30,6 +30,9 @@ class Consultation extends Model
         'president_commission',
         'membres_commission',
         'observations_commission',
+        'objet_consultation_ar',
+        'lieu_reunion_ar',
+        'cautionnement_provisoire',
     ];
 
     protected $casts = [
@@ -83,8 +86,18 @@ class Consultation extends Model
         return $this->hasMany(Reception::class);
     }
 
+    public function receptionCommission(): HasOne
+    {
+        return $this->hasOne(CommissionReception::class);
+    }
+
     public function liquidation()
     {
         return $this->hasOne(LiquidationFinanciere::class);
+    }
+
+    public function notificationLigne()
+    {
+        return $this->belongsTo(NotificationLigne::class);
     }
 }

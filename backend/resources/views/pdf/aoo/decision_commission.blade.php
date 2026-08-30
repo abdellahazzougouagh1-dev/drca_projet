@@ -27,7 +27,7 @@
             font-size: 12px;
         }
         .header-inst img {
-            height: 50px;
+            height: 80px;
             width: auto;
         }
 
@@ -126,7 +126,7 @@
                 Appel d'Offres Ouvert National Sur Offres De Prix Numéro : &nbsp;&nbsp;&nbsp;&nbsp; {{ $aoo->num_aoo }}
             </td>
             <td style="width: 20%;" class="text-center">
-                Date : {{ isset($aoo->date_lettre) ? \Carbon\Carbon::parse($aoo->date_lettre)->format('d/m/Y') : '' }}
+                Date : {{ isset($aoo->date_decision_nomination) ? \Carbon\Carbon::parse($aoo->date_decision_nomination)->format('d/m/Y') : '' }}
             </td>
         </tr>
     </table>
@@ -172,7 +172,7 @@
                         <td class="text-center">{{ $index + 1 }}</td>
                         <td class="bold">{{ $membre['nom_prenom'] ?? '' }}</td>
                         <td>{{ $membre['fonction'] ?? '' }}</td>
-                        <td class="text-center">{{ $membre['qualite'] ?? '' }}</td>
+                        <td class="text-center">{{ (isset($membre['qualite']) && $membre['qualite']) ? $membre['qualite'] : ($membre['role'] ?? '') }}</td>
                     </tr>
                 @endforeach
             @else

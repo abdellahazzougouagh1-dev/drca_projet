@@ -16,6 +16,7 @@ class LotItem extends Model
         'quantite',
         'prix_unitaire_ht',
         'montant_ht',
+        'tva_taux',
     ];
 
     protected $casts = [
@@ -23,6 +24,7 @@ class LotItem extends Model
         'quantite' => 'decimal:2',
         'prix_unitaire_ht' => 'decimal:2',
         'montant_ht' => 'decimal:2',
+        'tva_taux' => 'decimal:2',
     ];
 
     public function lot(): BelongsTo

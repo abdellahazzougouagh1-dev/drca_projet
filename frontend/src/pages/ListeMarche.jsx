@@ -68,14 +68,20 @@ const ListeMarche = () => {
   };
 
   const getStatusBadgeColor = (status) => {
-    const colors = {
-      'en_creation': 'bg-blue-100 text-blue-800',
-      'en_approbation': 'bg-purple-100 text-purple-800',
-      'en_execution': 'bg-yellow-100 text-yellow-800',
-      'en_reception': 'bg-orange-100 text-orange-800',
-      'clot': 'bg-green-100 text-green-800',
-    };
-    return colors[status] || 'bg-gray-100 text-gray-800';
+    if (!status) return 'bg-slate-100 text-slate-800 border border-slate-200';
+    const s = String(status).toLowerCase();
+    
+    if (s.includes('validee') || s.includes('clot')) {
+      return 'bg-emerald-100 text-emerald-800 border border-emerald-200';
+    }
+    if (s.includes('cours') || s.includes('creation') || s.includes('approbation')) {
+      return 'bg-amber-100 text-amber-800 border border-amber-200';
+    }
+    if (s.includes('attribue') || s.includes('execution') || s.includes('reception')) {
+      return 'bg-blue-100 text-blue-800 border border-blue-200';
+    }
+    
+    return 'bg-slate-100 text-slate-800 border border-slate-200';
   };
 
   const formatDate = (date) => {
@@ -88,7 +94,7 @@ const ListeMarche = () => {
     return new Intl.NumberFormat('fr-FR', {
       style: 'currency',
       currency: 'MAD',
-    }).format(amount);
+    }).format(amount).replace('MAD', 'dh');
   };
 
   return (
@@ -96,6 +102,15 @@ const ListeMarche = () => {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
+          <Link to="/dashboard" className="flex items-center gap-4 mb-6">
+            <div className="grid h-14 w-14 place-items-center rounded-full border-2 border-blue-600 font-serif text-xl font-bold text-blue-600 text-center leading-tight">
+              <span>DR<br/><span className="text-[10px]">RSK</span></span>
+            </div>
+            <div>
+              <p className="font-serif text-2xl font-bold tracking-wide text-slate-800">DRCA - RSK</p>
+              <p className="mt-1 text-sm tracking-wider text-slate-500">MARCHÉS PUBLICS</p>
+            </div>
+          </Link>
           <h1 className="text-4xl font-extrabold text-slate-800 mb-2">Marchés</h1>
           <p className="text-slate-600">Gestion et suivi des marchés publics</p>
         </div>
@@ -122,12 +137,12 @@ const ListeMarche = () => {
               placeholder="Rechercher par N° marché, titulaire, objet..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-100 bg-white"
+              className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 bg-white"
             />
           </div>
           <button
             onClick={() => navigate('/marches/nouveau')}
-            className="px-6 py-3 bg-purple-600 text-white font-bold rounded-xl hover:bg-purple-700 flex items-center gap-2 transition-all shadow-md"
+            className="px-6 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 flex items-center gap-2 transition-all shadow-md"
           >
             <Plus size={20} />
             Nouveau Marché
@@ -137,7 +152,7 @@ const ListeMarche = () => {
         {/* Loading State */}
         {loading && (
           <div className="flex justify-center items-center h-64">
-            <Loader2 size={24} className="animate-spin text-purple-600" />
+            <Loader2 size={24} className="animate-spin text-blue-600" />
           </div>
         )}
 
@@ -147,7 +162,7 @@ const ListeMarche = () => {
             {filteredMarches.length > 0 ? (
               <div className="overflow-x-auto">
                 <table className="w-full">
-                  <thead className="bg-gradient-to-r from-purple-50 to-slate-100 border-b border-slate-200">
+                  <thead className="bg-gradient-to-r from-blue-50 to-slate-100 border-b border-slate-200">
                     <tr>
                       <th className="px-6 py-4 text-left text-sm font-bold text-slate-700">N° Marché</th>
                       <th className="px-6 py-4 text-left text-sm font-bold text-slate-700">Titulaire</th>
@@ -162,7 +177,7 @@ const ListeMarche = () => {
                     {filteredMarches.map((marche, idx) => (
                       <tr key={marche.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-slate-50 hover:bg-slate-100'}>
                         <td className="px-6 py-4">
-                          <span className="font-bold text-purple-600">{marche.num_marche}</span>
+                          <span className="font-bold text-blue-600">{marche.num_marche}</span>
                         </td>
                         <td className="px-6 py-4">
                           <div className="text-sm font-medium text-slate-800">{marche.titulaire}</div>
@@ -177,7 +192,7 @@ const ListeMarche = () => {
                           </div>
                         </td>
                         <td className="px-6 py-4">
-                          <span className={`px-3 py-1 rounded-full text-xs font-bold ${getStatusBadgeColor(marche.statut)}`}>
+                          <span className={`px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap inline-block ${getStatusBadgeColor(marche.statut)}`}>
                             {marche.statut?.replace(/_/g, ' ').toUpperCase()}
                           </span>
                         </td>
@@ -188,7 +203,7 @@ const ListeMarche = () => {
                           <div className="flex gap-2 justify-center">
                             <button
                               onClick={() => navigate(`/marches/${marche.id}`)}
-                              className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-all"
+                              className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
                               title="Voir"
                             >
                               <Eye size={18} />

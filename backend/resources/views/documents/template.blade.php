@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <title>{{ $docTitle }}</title>
     <style>
-        body { font-family: 'Helvetica', 'Arial', sans-serif; font-size: 14px; color: #333; line-height: 1.5; margin: 30px; }
+        body { font-family: 'Times New Roman', Times, serif; font-size: 12px; color: #333; line-height: 1.5; margin: 30px; }
         .header-table {
             margin-bottom: 5px;
             width: 100%;
@@ -15,15 +15,15 @@
         }
         .header-center {
             text-align: center;
-            font-size: 14px;
+            font-size: 12px;
             font-weight: bold;
         }
         .blue-line {
             border-bottom: 2px solid #000080;
             margin-bottom: 20px;
         }
-        .doc-title { font-size: 22px; font-weight: bold; text-align: center; margin: 30px 0; text-transform: uppercase; color: #222; border: 1px solid #ccc; padding: 15px; background: #f9f9f9;}
-        .section-title { font-size: 16px; font-weight: bold; border-bottom: 1px solid #ddd; padding-bottom: 5px; margin-top: 30px; margin-bottom: 15px; color: #0056b3; }
+        .doc-title { font-size: 14px; font-weight: bold; text-align: center; margin: 30px 0; text-transform: uppercase; color: #222; border: 1px solid #ccc; padding: 15px; background: #f9f9f9;}
+        .section-title { font-size: 12px; font-weight: bold; border-bottom: 1px solid #ddd; padding-bottom: 5px; margin-top: 30px; margin-bottom: 15px; color: #0056b3; }
         .data-table { w-full: 100%; width: 100%; border-collapse: collapse; margin-bottom: 20px; }
         .data-table th, .data-table td { padding: 10px; border: 1px solid #eee; text-align: left; }
         .data-table th { background-color: #f5f7fa; width: 35%; font-weight: bold; color: #444; }
@@ -59,11 +59,11 @@
         </tr>
         <tr>
             <th>Objet</th>
-            <td>{{ $consultation->objet }}</td>
+            <td>{{ $consultation->objet_consultation }}</td>
         </tr>
         <tr>
             <th>Type</th>
-            <td>{{ $consultation->type_consultation }}</td>
+            <td>{{ $consultation->categorie }} - {{ $consultation->type_prestation }} ({{ $consultation->mode_engagement }})</td>
         </tr>
         <tr>
             <th>Date Création</th>
@@ -75,11 +75,17 @@
     <table class="data-table">
         <tr>
             <th>Ligne Budgétaire</th>
-            <td>{{ $consultation->budget->rubrique }} (Exercice {{ $consultation->budget->annee }})</td>
+            <td>
+                ART {{ $consultation->budget->art ?? '' }} /
+                PAR {{ $consultation->budget->par ?? '' }} /
+                LIG {{ $consultation->budget->lig ?? '' }}
+                - Code {{ $consultation->budget->code_imputation ?? '' }}
+                (Exercice {{ $consultation->budget->exercice_budgetaire ?? '' }})
+            </td>
         </tr>
         <tr>
             <th>Montant Estimatif</th>
-            <td>{{ number_format($consultation->montant_estimatif, 2, ',', ' ') }} MAD</td>
+            <td>{{ number_format($consultation->budget->montant_ttc ?? 0, 2, ',', ' ') }} MAD TTC</td>
         </tr>
         @if($consultation->engagement)
         <tr>
@@ -92,6 +98,28 @@
         </tr>
         @endif
     </table>
+
+    @if($consultation->prestations && count($consultation->prestations) > 0)
+        <div class="section-title">Prestations</div>
+        <table class="data-table">
+            <tr>
+                <th>DÃ©signation</th>
+                <th>UnitÃ©</th>
+                <th>QuantitÃ©</th>
+                <th>Prix unitaire HT</th>
+                <th>Montant TTC</th>
+            </tr>
+            @foreach($consultation->prestations as $prestation)
+                <tr>
+                    <td>{{ $prestation->designation }}</td>
+                    <td>{{ $prestation->unite }}</td>
+                    <td>{{ $prestation->quantite }}</td>
+                    <td>{{ number_format($prestation->prix_unitaire_ht, 2, ',', ' ') }}</td>
+                    <td>{{ number_format($prestation->montant_ttc, 2, ',', ' ') }}</td>
+                </tr>
+            @endforeach
+        </table>
+    @endif
 
     @if($type === 'pv_reception' && $consultation->receptions && count($consultation->receptions) > 0)
         <div class="section-title">Réceptions</div>

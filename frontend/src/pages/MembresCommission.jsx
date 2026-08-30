@@ -156,11 +156,11 @@ const MembresCommission = () => {
               </Link>
             </li>
             <li>
-              <Link to="/marches/nouveau" className={`flex items-center space-x-3 px-6 py-4 text-slate-100 font-medium transition-all duration-200 rounded-xl mx-2 my-1 ${
-                location.pathname === '/marches/nouveau' ? 'bg-blue-900/80 text-white border-l-4 border-cyan-400 font-bold' : 'hover:bg-blue-800/50'
+              <Link to="/engagements" className={`flex items-center space-x-3 px-6 py-4 text-slate-100 font-medium transition-all duration-200 rounded-xl mx-2 my-1 ${
+                location.pathname.startsWith('/engagements') ? 'bg-blue-900/80 text-white border-l-4 border-cyan-400 font-bold' : 'hover:bg-blue-800/50'
               }`}>
                 <Briefcase size={18} />
-                <span>Marchés</span>
+                <span>Engagements</span>
               </Link>
             </li>
           </ul>

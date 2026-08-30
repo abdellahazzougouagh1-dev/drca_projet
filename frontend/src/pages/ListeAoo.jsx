@@ -68,14 +68,20 @@ const ListeAoo = () => {
   };
 
   const getStatusBadgeColor = (status) => {
-    const colors = {
-      'en_preparation': 'bg-blue-100 text-blue-800',
-      'en_commission': 'bg-purple-100 text-purple-800',
-      'en_analyse': 'bg-yellow-100 text-yellow-800',
-      'en_attribution': 'bg-orange-100 text-orange-800',
-      'clot': 'bg-green-100 text-green-800',
-    };
-    return colors[status] || 'bg-gray-100 text-gray-800';
+    if (!status) return 'bg-slate-100 text-slate-800 border border-slate-200';
+    const s = String(status).toLowerCase();
+    
+    if (s.includes('validee') || s.includes('clot')) {
+      return 'bg-emerald-100 text-emerald-800 border border-emerald-200';
+    }
+    if (s.includes('cours') || s.includes('creation') || s.includes('approbation')) {
+      return 'bg-amber-100 text-amber-800 border border-amber-200';
+    }
+    if (s.includes('attribue') || s.includes('execution') || s.includes('reception')) {
+      return 'bg-blue-100 text-blue-800 border border-blue-200';
+    }
+    
+    return 'bg-slate-100 text-slate-800 border border-slate-200';
   };
 
   const formatDate = (date) => {
@@ -88,7 +94,7 @@ const ListeAoo = () => {
     return new Intl.NumberFormat('fr-FR', {
       style: 'currency',
       currency: 'MAD',
-    }).format(amount);
+    }).format(amount).replace('MAD', 'dh');
   };
 
   return (
@@ -174,7 +180,7 @@ const ListeAoo = () => {
                           </div>
                         </td>
                         <td className="px-6 py-4">
-                          <span className={`px-3 py-1 rounded-full text-xs font-bold ${getStatusBadgeColor(aoo.statut)}`}>
+                          <span className={`px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap inline-block ${getStatusBadgeColor(aoo.statut)}`}>
                             {aoo.statut?.replace(/_/g, ' ').toUpperCase()}
                           </span>
                         </td>

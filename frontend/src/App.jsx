@@ -1,4 +1,3 @@
-import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Dashboard from './pages/Dashboard';
 import NouvelleConsultation from './pages/NouvelleConsultation';
@@ -9,11 +8,21 @@ import GestionAoo from './pages/GestionAoo';
 import GestionMarches from './pages/GestionMarches';
 import ListeAoo from './pages/ListeAoo';
 import ListeMarche from './pages/ListeMarche';
+import ListeEngagements from './pages/ListeEngagements';
+import TraitementEngagement from './pages/TraitementEngagement';
 import MembresCommission from './pages/MembresCommission';
+import GestionBonDeCommande from './pages/GestionBonDeCommande';
+import BonCommandePlateforme from './pages/BonCommandePlateforme';
+import GestionConvention from './pages/GestionConvention';
+import ListeLiquidations from './pages/ListeLiquidations';
+import DossierLiquidation from './pages/DossierLiquidation';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import ProtectedRoute from './components/ProtectedRoute';
-
+import DossierCloture from './pages/DossierCloture';
+import ListeNotifications from './pages/ListeNotifications';
+import NouvelleNotification from './pages/NouvelleNotification';
+import DetailsNotification from './pages/DetailsNotification';
 function App() {
   const isAuthenticated = !!localStorage.getItem('token');
 
@@ -28,6 +37,30 @@ function App() {
           element={
             <ProtectedRoute>
               <Dashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/notifications"
+          element={
+            <ProtectedRoute>
+              <ListeNotifications />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/notifications/nouvelle"
+          element={
+            <ProtectedRoute>
+              <NouvelleNotification />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/notifications/:id"
+          element={
+            <ProtectedRoute>
+              <DetailsNotification />
             </ProtectedRoute>
           }
         />
@@ -88,6 +121,30 @@ function App() {
           }
         />
         <Route
+          path="/bons-commande"
+          element={
+            <ProtectedRoute>
+              <BonCommandePlateforme />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/bons-de-commande"
+          element={
+            <ProtectedRoute>
+              <BonCommandePlateforme />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/conventions"
+          element={
+            <ProtectedRoute>
+              <GestionConvention />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/marches"
           element={
             <ProtectedRoute>
@@ -96,10 +153,58 @@ function App() {
           }
         />
         <Route
+          path="/engagements"
+          element={
+            <ProtectedRoute>
+              <ListeEngagements />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/engagements/nouveau"
+          element={
+            <ProtectedRoute>
+              <TraitementEngagement />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/engagements/:id"
+          element={
+            <ProtectedRoute>
+              <TraitementEngagement />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/liquidations"
+          element={
+            <ProtectedRoute>
+              <ListeLiquidations />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/liquidations/marches/:id"
+          element={
+            <ProtectedRoute>
+              <DossierLiquidation />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/marches/:id"
           element={
             <ProtectedRoute>
               <GestionMarches />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/marches/:id/cloture"
+          element={
+            <ProtectedRoute>
+              <DossierCloture />
             </ProtectedRoute>
           }
         />

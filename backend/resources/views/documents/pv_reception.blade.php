@@ -2,250 +2,227 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Procès Verbal de Réception Définitive</title>
+    <title>{{ $docTitle }}</title>
     <style>
-        @page { size: A4; margin: 15mm 10mm; }
-        body { font-family: Arial, sans-serif; font-size: 13px; color: #000; line-height: 1.3; margin: 0; padding: 0; }
-        table { width: 100%; border-collapse: collapse; }
-        .header-table {
-            margin-bottom: 5px;
-            width: 100%;
-            border-collapse: collapse;
+        @page { margin: 115px 40px 70px 40px; }
+        body {
+            font-family: 'Times New Roman', Times, serif;
+            font-size: 12.5px;
+            color: #000;
+            line-height: 1.45;
+            margin: 0;
         }
-        .header-table td {
+        table { width: 100%; border-collapse: collapse; }
+        td, th { vertical-align: middle; }
+        .page { position: relative; }
+        .center { text-align: center; }
+        .right { text-align: right; }
+        .bold { font-weight: bold; }
+        .underline { text-decoration: underline; }
+        .box td, .box th {
+            border: 1px solid #000;
+            padding: 7px 8px;
             vertical-align: middle;
         }
-        .header-center {
-            text-align: center;
-            font-size: 14px;
+        .box th {
+            background: #f4f4f4;
             font-weight: bold;
         }
-        .blue-line {
-            border-bottom: 2px solid #000080;
-            margin-bottom: 20px;
-        }
-        
-        .title-box { border: 2px solid #000; text-align: center; font-weight: bold; font-size: 16px; padding: 5px; width: 80%; margin: 20px auto; }
-        
-        .intro-table { width: 100%; margin-bottom: 10px; border-collapse: collapse; }
-        .intro-table td { padding: 3px; vertical-align: bottom; }
-        
-        .grid-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
-        .grid-table th, .grid-table td { border: 1px solid #000; padding: 6px; text-align: center; }
-        .grid-table th { background-color: #d9e1f2; font-weight: normal; } /* Bleu clair type Excel */
-        
-        .section-text { margin: 10px 0; text-align: left; }
-        .center-bold { text-align: center; font-weight: bold; margin: 10px 0; }
-        
-        .bc-info-table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
-        .bc-info-table td { padding: 5px; }
-        
-        .paragraph { text-align: justify; margin: 15px 0; line-height: 1.5; }
-        
-        .signature-table { width: 100%; border-collapse: collapse; margin-top: 20px; page-break-inside: avoid; }
-        .signature-table th, .signature-table td { border: 1px solid #000; text-align: center; padding: 5px; }
-        .signature-table th { background-color: #d9e1f2; font-weight: normal; }
-        .signature-table .empty-space { height: 100px; }
-        
-        .underline { text-decoration: underline; font-weight: bold; }
+        .tight td, .tight th { padding: 6px 8px; }
+        .signature { margin-top: 18px; page-break-inside: avoid; }
+        .signature th { border: 1px solid #000; background: #f4f4f4; padding: 7px; }
+        .signature td { border: 1px solid #000; text-align: center; }
     </style>
 </head>
 <body>
+    @include('documents.partials.bc_header')
+    @include('documents.partials.bc_footer')
+<div class="page">
 
-@php
-    // Identification du fournisseur gagnant
-    $fournisseur = null;
-    if(isset($consultation->engagement) && $consultation->engagement->fournisseur) {
-        $fournisseur = $consultation->engagement->fournisseur;
-    } elseif(isset($consultation->offres)) {
-        $gagnant = $consultation->offres->where('retenu', true)->first();
-        if($gagnant) $fournisseur = $gagnant->fournisseur;
-    }
-    
-    // Fallback visuel
-    if(!$fournisseur) {
-        $fournisseur = (object)[
-            'raison_sociale' => '........................................',
-            'adresse' => '......................................................',
-            'ville' => '........................'
-        ];
-    }
-    
-    // N° BC et Date BC
-    $numeroBC = str_replace('Consultation', 'BC', $consultation->numero_consultation);
-    if(strpos($numeroBC, 'BC') === false) {
-        $numeroBC = 'BC ' . $numeroBC;
-    }
-    $dateBC = isset($consultation->engagement->date_engagement) 
-        ? \Carbon\Carbon::parse($consultation->engagement->date_engagement)->format('d/m/Y') 
-        : \Carbon\Carbon::parse(now())->format('d/m/Y');
-        
-    // Dates de réunion (par défaut aujourd'hui)
-    $dateReunion = \Carbon\Carbon::parse(now())->format('d/m/Y');
-    $heureReunion = '10:00';
-    $heureFin = '10:45';
-    
-    // Numéro de décision
-    $numDecision = '30/DR/' . date('Y');
-@endphp
-
-    <table class="header-table">
-        <tr>
-            <td style="width: 25%;">
-                <img src="data:image/png;base64,{{ base64_encode(file_get_contents(public_path('images/logo-onca.png'))) }}" alt="Logo ONCA" style="height: 70px; width: auto;">
-            </td>
-            <td class="header-center" style="width: 50%;">
-                Direction Régionale du Conseil Agricole Rabat-Salé-Kénitra
-            </td>
-            <td style="width: 25%; text-align: right;">
-                <img src="data:image/png;base64,{{ base64_encode(file_get_contents(public_path('images/sceau-maroc.png'))) }}" alt="Sceau Maroc" style="height: 70px; width: auto;">
-            </td>
-        </tr>
-    </table>
-    <div class="blue-line"></div>
-
-    <div class="title-box">
-        PROCES VERBAL DE LA RECEPTION DEFINITIVE
+    <div style="border: 2px solid #000; text-align: center; font-weight: bold; padding: 8px; margin: 15px auto 18px; width: 75%;">
+        <div style="font-size: 14px; text-transform: uppercase; margin-bottom: 4px;">PROCÈS-VERBAL DE LA RÉCEPTION {{ mb_strtoupper($doc['type_reception'] ?? 'DÉFINITIVE', 'UTF-8') }}</div>
+        @if(strtolower($doc['type_reception'] ?? '') === 'partielle' && (!empty($doc['periode_du']) || !empty($doc['periode_au'])))
+            <div style="font-size: 12px; margin-top: 4px;">
+                Période : du <span style="font-weight: bold;">{{ $doc['periode_du'] ?? '.....' }}</span> au <span style="font-weight: bold;">{{ $doc['periode_au'] ?? '.....' }}</span>
+            </div>
+        @else
+            <div style="font-size: 12px;">Bon de Commande N° : {{ $doc['numero_bc'] }}</div>
+        @endif
     </div>
 
-    <table class="intro-table">
-        <tr>
-            <td style="text-align: right; width: 15%;">En date du</td>
-            <td style="font-weight: bold; width: 15%; text-align: center;">{{ $dateReunion }}</td>
-            <td style="text-align: center; width: 5%;">à</td>
-            <td style="font-weight: bold; width: 10%; text-align: center;">{{ $heureReunion }}</td>
-            <td style="width: 55%;">la commission de reception instituée par la décision Numéro:</td>
-        </tr>
-    </table>
-    <table class="intro-table">
-        <tr>
-            <td style="font-weight: bold; width: 25%; text-align: center;">{{ $numDecision }}</td>
-            <td style="text-align: center; width: 15%;">en date du</td>
-            <td style="font-weight: bold; width: 15%; text-align: center;">{{ $dateReunion }}</td>
-            <td style="width: 45%;">Pour la réception des prestations objet du bon de commande N°:</td>
-        </tr>
-    </table>
-    <table class="intro-table">
-        <tr>
-            <td style="font-weight: bold; width: 30%; text-align: center;">{{ $numeroBC }}</td>
-            <td style="width: 70%;">qui est composée de:</td>
-        </tr>
-    </table>
+    <p style="text-align: justify; margin-bottom: 12px; line-height: 1.4;">
+        En date du <span class="bold">{{ $doc['date_reunion'] }}</span> à <span class="bold">{{ $doc['heure_reunion'] }}</span>, la commission de réception instituée par la décision Numéro : <span class="bold">{{ $doc['numero_decision'] }}</span> en date du <span class="bold">{{ $doc['date_decision'] }}</span> pour la réception des prestations objet du bon de commande N° : <span class="bold">{{ $doc['numero_bc'] }}</span> est composée de :
+    </p>
 
-    <table class="grid-table">
+    <table class="box tight" style="margin-bottom: 12px;">
         <thead>
             <tr>
-                <th style="width: 30%;">Nom et Prenom</th>
-                <th style="width: 50%;">Fonction</th>
+                <th style="width: 35%;">Nom et Prénom</th>
+                <th style="width: 45%;">Fonction</th>
                 <th style="width: 20%;">Qualité</th>
             </tr>
         </thead>
         <tbody>
-            <tr>
-                <td style="text-align: left;">TAOUIL HASNAA</td>
-                <td style="text-align: left;">Administrateur de 1er grade/SAF</td>
-                <td>Présidente</td>
-            </tr>
-            <tr>
-                <td style="text-align: left;">Karkass ahmed</td>
-                <td style="text-align: left;">Technicien de 2ème grade/RESPONSABLE INVENTAIRE</td>
-                <td>Membre</td>
-            </tr>
-            <tr>
-                <td style="text-align: left;">OULD ABBOU Ibtissam</td>
-                <td style="text-align: left;">Technicienne de 2ème grade/SAF</td>
-                <td>Membre</td>
-            </tr>
+            @foreach($doc['commission'] as $membre)
+                <tr>
+                    <td>{{ data_get($membre, 'nom') }}</td>
+                    <td>{{ data_get($membre, 'fonction') }}</td>
+                    <td class="center">{{ data_get($membre, 'qualite') }}</td>
+                </tr>
+            @endforeach
         </tbody>
     </table>
 
-    <div class="section-text">
-        S'est réunie au Siège de la DRCA-RSK en vue de procéder à la réception des prestations relatives au :
-    </div>
-    <div class="center-bold">
-        {{ $consultation->objet_consultation }}
-    </div>
+    <p style="margin-bottom: 6px;">S’est réunie au siège de la DRCA-RSK en vue de procéder à la réception des prestations relatives au :</p>
 
-    <table class="bc-info-table">
+    <p class="bold center" style="margin-bottom: 12px; font-size: 12px;">
+        {{ $doc['objet'] }}
+    </p>
+
+    <table style="width: 100%; margin-bottom: 10px;">
         <tr>
-            <td style="width: 25%;">Bon de Commande N°:</td>
-            <td style="font-weight: bold; text-align: center; width: 50%;">{{ $numeroBC }}</td>
-            <td style="font-weight: bold; text-align: right; width: 25%;">{{ $dateBC }}</td>
+            <td style="width: 22%;">Bon de Commande N° :</td>
+            <td style="width: 38%; font-weight: bold;">{{ $doc['numero_bc'] }}</td>
+            <td style="width: 22%;">établi(e) en date du</td>
+            <td style="width: 18%; font-weight: bold;">{{ $doc['date_document'] }}</td>
         </tr>
     </table>
 
-    <div class="section-text">
-        Executées par l'attributaire:
-    </div>
+    <p style="margin-bottom: 6px;">Exécutées par l'attributaire :</p>
 
-    <table class="grid-table">
+    <table class="box tight" style="margin-bottom: 14px;">
         <thead>
             <tr>
-                <th style="width: 30%;">La société</th>
-                <th style="width: 50%;">Adresse</th>
+                <th style="width: 35%;">La société</th>
+                <th style="width: 45%;">Adresse</th>
                 <th style="width: 20%;">Ville</th>
             </tr>
         </thead>
         <tbody>
             <tr>
-                <td>{{ $fournisseur->raison_sociale }}</td>
-                <td>{{ $fournisseur->adresse }}</td>
-                <td>{{ $fournisseur->ville ?? '................' }}</td>
+                <td class="center bold">{{ $doc['societe'] }}</td>
+                <td class="center">{{ $doc['adresse_societe'] }}</td>
+                <td class="center">{{ $doc['ville_societe'] }}</td>
             </tr>
         </tbody>
     </table>
 
-    <div class="paragraph">
-        A l'ouverture de la séance, la présidente rappelle aux membres de la commission l'objet de la réunion et fait une lecture du contenu du Bon de Commande sus-cité, notamment les désignations précisant les prestations demandées. Ensuite, le président demande aux membres de la commission de formuler leurs observations sur la conformité et la qualité des prestations livrées.
-    </div>
+    <p style="text-align: justify; margin-bottom: 10px; line-height: 1.4;">
+        À l’ouverture de la séance, la présidente rappelle aux membres de la commission l’objet de la réunion et fait une lecture du contenu du Bon de Commande susmentionné, notamment les désignations précisant les prestations demandées. Ensuite, la présidente demande aux membres de la commission de formuler leurs observations sur la conformité et la qualité des prestations livrées.
+    </p>
 
-    <table style="width: 100%; border-collapse: collapse; margin-bottom: 5px;">
-        <tr>
-            <td style="border: 1px solid #000; border-right: none; padding: 5px;">La commission atteste que les prestations objet du bon de commande N°:</td>
-            <td style="border: 1px solid #000; border-left: none; border-right: none; font-weight: bold; text-align: center; padding: 5px;">{{ $numeroBC }}</td>
-            <td style="border: 1px solid #000; border-left: none; padding: 5px;">sont conformes</td>
-        </tr>
-        <tr>
-            <td colspan="3" style="border: 1px solid #000; border-top: none; padding: 5px;">aux dispositions prévues et certifie qu'elles sont définitivement réceptionnées</td>
-        </tr>
-    </table>
-    
-    <table style="width: 100%; border-collapse: collapse; margin-bottom: 15px;">
-        <tr>
-            <td style="border: 1px solid #000; border-right: none; padding: 5px; width: 35%;">La séance est levée le même jour</td>
-            <td style="border: 1px solid #000; border-left: none; padding: 5px; width: 65%;">à &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{{ $heureFin }}</td>
-        </tr>
-    </table>
+    <p style="text-align: justify; margin-bottom: 12px; line-height: 1.4;">
+        La commission atteste que les prestations objet du bon de commande N° : <span class="bold">{{ $doc['numero_bc'] }}</span> sont conformes aux dispositions prévues et certifie qu’elles sont {{ (isset($doc['type_reception']) && strtolower($doc['type_reception']) === 'partielle') ? 'partiellement' : 'définitivement' }} réceptionnées.
+    </p>
 
-    <div style="text-align: right; font-weight: bold; margin-bottom: 20px;">
-        Fait à Kénitra le: {{ $dateReunion }}
-    </div>
-
-    <div style="text-align: center; font-weight: bold; text-decoration: underline; margin-bottom: 10px;">
-        Les membres de la commission : Signataires
-    </div>
-
-    <table class="signature-table">
+    @if(strtolower($doc['type_reception'] ?? '') === 'partielle')
+    <p class="bold" style="margin-bottom: 6px;">Comme suivant :</p>
+    <table class="box tight" style="margin-bottom: 14px;">
         <thead>
             <tr>
-                <th style="width: 33.33%;">Présidente</th>
-                <th style="width: 33.33%;">Membre 1</th>
-                <th style="width: 33.33%;">Membre 2</th>
+                <th style="width: 22%;">N° de prix</th>
+                <th style="width: 46%;">Désignation des prestations</th>
+                <th style="width: 18%;">Unité de compte</th>
+                <th style="width: 14%;">Quantité</th>
             </tr>
+        </thead>
+        <tbody>
+            @if(!empty($doc['prestations_receptionnees']) && is_array($doc['prestations_receptionnees']))
+                @foreach($doc['prestations_receptionnees'] as $item)
+                    @if(data_get($item, 'receptionne', true))
+                        <tr>
+                            <td class="center">{{ data_get($item, 'numero_prix', $loop->iteration) }}</td>
+                            <td>{{ data_get($item, 'designation') }}</td>
+                            <td class="center">{{ data_get($item, 'unite', data_get($item, 'unite_mesure', 'Unité')) }}</td>
+                            <td class="center">{{ data_get($item, 'quantite_receptionnee', data_get($item, 'quantite', 1)) }}</td>
+                        </tr>
+                    @endif
+                @endforeach
+            @else
+                @foreach($doc['articles'] as $article)
+                    <tr>
+                        <td class="center">{{ data_get($article, 'numero_prix', $loop->iteration) }}</td>
+                        <td>{{ data_get($article, 'designation') }}</td>
+                        <td class="center">{{ data_get($article, 'unite', 'Unité') }}</td>
+                        <td class="center">{{ data_get($article, 'quantite', 1) }}</td>
+                    </tr>
+                @endforeach
+            @endif
+        </tbody>
+    </table>
+    @endif
+
+    <table style="width: 100%; margin-bottom: 14px;">
+        <tr>
+            <td style="width: 55%;">La séance est levée le même jour à <span class="bold">{{ $doc['heure_fin'] }}</span></td>
+            <td style="width: 45%; text-align: right;">Fait à Kénitra, le : <span class="bold">{{ $doc['date_document'] }}</span></td>
+        </tr>
+    </table>
+
+    <div class="center bold underline" style="margin-bottom: 8px;">Les membres de la commission : Signataires</div>
+
+    @php
+        $rawMembers = data_get($doc, 'commission', []);
+        if (!is_array($rawMembers) || empty($rawMembers)) {
+            $rawMembers = data_get($doc, 'membres_commission', []);
+        }
+
+        $president = null;
+        $others = [];
+        if (is_array($rawMembers)) {
+            foreach ($rawMembers as $m) {
+                $q = strtolower(data_get($m, 'qualite', ''));
+                if (!$president && (str_contains($q, 'président') || str_contains($q, 'president'))) {
+                    $president = $m;
+                } else {
+                    $others[] = $m;
+                }
+            }
+        }
+
+        if ($president) {
+            $commissionMembers = array_merge([$president], $others);
+        } else {
+            $commissionMembers = is_array($rawMembers) && !empty($rawMembers) ? array_values($rawMembers) : [];
+        }
+
+        $memberCount = count($commissionMembers);
+        $colWidth = floor(100 / max(1, $memberCount));
+    @endphp
+
+    <table class="signature" style="width: 100%;">
+        <thead>
             <tr>
-                <td style="background-color: #d9e1f2;">TAOUIL HASNAA</td>
-                <td style="background-color: #d9e1f2;">Karkass ahmed</td>
-                <td style="background-color: #d9e1f2;">OULD ABBOU Ibtissam</td>
+                @foreach($commissionMembers as $index => $m)
+                    @php
+                        $qualite = data_get($m, 'qualite', '');
+                        if ($index === 0) {
+                            $headerTitle = !empty($qualite) ? $qualite : 'Présidente';
+                        } else {
+                            $headerTitle = 'Membre ' . $index;
+                        }
+                    @endphp
+                    <th style="width: {{ $colWidth }}%;">
+                        {{ $headerTitle }}
+                    </th>
+                @endforeach
             </tr>
         </thead>
         <tbody>
             <tr>
-                <td class="empty-space"></td>
-                <td class="empty-space"></td>
-                <td class="empty-space"></td>
+                @foreach($commissionMembers as $m)
+                    <td class="center bold" style="padding: 5px; background: #fff;">
+                        {{ data_get($m, 'nom', data_get($m, 'nom_prenom', '')) }}
+                    </td>
+                @endforeach
+            </tr>
+            <tr>
+                @foreach($commissionMembers as $m)
+                    <td style="height: 75px;"></td>
+                @endforeach
             </tr>
         </tbody>
     </table>
-
+</div>
 </body>
 </html>

@@ -33,11 +33,7 @@ class ConsultationController extends Controller
             'statut_dossier' => 'required|string|max:255',
             'fournisseur_id' => 'nullable|exists:fournisseurs,id',
             // Infos Budgétaires
-            'art' => 'required|string|max:255',
-            'par' => 'required|string|max:255',
-            'lig' => 'required|string|max:255',
-            'code_imputation' => 'required|string|max:255',
-            'exercice_budgetaire' => 'required|integer',
+            'notification_ligne_id' => 'required|exists:notification_lignes,id',
             'montant_estimatif_ht' => 'required|numeric|min:0',
             'tva' => 'required|numeric|min:0',
         ]);
@@ -64,16 +60,20 @@ class ConsultationController extends Controller
                     'delai_execution' => $validated['delai_execution'],
                     'statut_dossier' => $validated['statut_dossier'],
                     'fournisseur_id' => $validated['fournisseur_id'] ?? null,
+                    'notification_ligne_id' => $validated['notification_ligne_id'],
                 ]);
+
+                // Récupération de la ligne budgétaire pour auto-remplir le budget (rétrocompatibilité)
+                $ligne = \App\Models\NotificationLigne::with('notification')->find($validated['notification_ligne_id']);
 
                 // Création du Budget associé
                 $budget = Budget::create([
                     'consultation_id' => $consultation->id,
-                    'art' => $validated['art'],
-                    'par' => $validated['par'],
-                    'lig' => $validated['lig'],
-                    'code_imputation' => $validated['code_imputation'],
-                    'exercice_budgetaire' => $validated['exercice_budgetaire'],
+                    'art' => $ligne->article,
+                    'par' => $ligne->paragraphe,
+                    'lig' => $ligne->ligne_budgetaire,
+                    'code_imputation' => "{$ligne->article}/{$ligne->paragraphe}/{$ligne->ligne_budgetaire}",
+                    'exercice_budgetaire' => $ligne->notification->exercice,
                     'montant_estimatif_ht' => $validated['montant_estimatif_ht'],
                     'tva' => $validated['tva'],
                     // montant_ttc est calculé automatiquement dans le modèle Budget
@@ -91,6 +91,25 @@ class ConsultationController extends Controller
     public function show(Consultation $consultation)
     {
         return response()->json($consultation->load(['fournisseur', 'budget', 'prestations', 'engagement', 'offres']));
+    }
+
+    public function update(Request $request, Consultation $consultation)
+    {
+        $validated = $request->validate([
+            'objet_consultation' => 'sometimes|required|string|max:255',
+            'objet_consultation_ar' => 'nullable|string|max:255',
+            'mode_engagement' => 'sometimes|required|in:BC,Convention',
+            'date_consultation' => 'sometimes|required|date',
+            'lieu_consultation' => 'nullable|string|max:255',
+            'lieu_reunion_ar' => 'nullable|string|max:255',
+            'cautionnement_provisoire' => 'nullable|numeric|min:0',
+            'budget_previsionnel' => 'nullable|numeric|min:0',
+            'notes_programmation' => 'nullable|string',
+        ]);
+
+        $consultation->update($validated);
+        
+        return response()->json($consultation);
     }
 
     public function syncPrestations(Request $request, Consultation $consultation)

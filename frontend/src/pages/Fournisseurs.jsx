@@ -28,7 +28,9 @@ const Fournisseurs = () => {
     adresse: '', ville: '', telephone: '', email: '',
     representant: '', domaine_activite: '',
     qualite_representant: '', cnss: '', banque: '',
-    agence_bancaire: '', rib: '', titulaire_compte: ''
+    agence_bancaire: '', rib: '', titulaire_compte: '',
+    forme_juridique: '', capital_social: '', ville_rc: '',
+    fax: '', domicile_elu: '', pays: 'Maroc', taxe_professionnelle: ''
   };
   const [formData, setFormData] = useState(initialFormState);
 
@@ -78,6 +80,13 @@ const Fournisseurs = () => {
         agence_bancaire: fournisseur.agence_bancaire || '',
         rib: fournisseur.rib || '',
         titulaire_compte: fournisseur.titulaire_compte || '',
+        forme_juridique: fournisseur.forme_juridique || '',
+        capital_social: fournisseur.capital_social || '',
+        ville_rc: fournisseur.ville_rc || '',
+        fax: fournisseur.fax || '',
+        domicile_elu: fournisseur.domicile_elu || '',
+        pays: fournisseur.pays || 'Maroc',
+        taxe_professionnelle: fournisseur.taxe_professionnelle || '',
       });
     } else {
       setEditingId(null);
@@ -215,11 +224,11 @@ const Fournisseurs = () => {
               </Link>
             </li>
             <li>
-              <Link to="/marches/nouveau" className={`flex items-center space-x-3 px-6 py-4 text-slate-100 font-medium transition-all duration-200 rounded-xl mx-2 my-1 ${
-                location.pathname === '/marches/nouveau' ? 'bg-blue-900/80 text-white border-l-4 border-cyan-400 font-bold' : 'hover:bg-blue-800/50'
+              <Link to="/engagements" className={`flex items-center space-x-3 px-6 py-4 text-slate-100 font-medium transition-all duration-200 rounded-xl mx-2 my-1 ${
+                location.pathname.startsWith('/engagements') ? 'bg-blue-900/80 text-white border-l-4 border-cyan-400 font-bold' : 'hover:bg-blue-800/50'
               }`}>
                 <Briefcase size={18} />
-                <span>Marchés</span>
+                <span>Engagements</span>
               </Link>
             </li>
           </ul>
@@ -397,6 +406,16 @@ const Fournisseurs = () => {
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                           <div>
+                            <label className="block text-sm font-semibold text-slate-700 mb-1">Forme Juridique</label>
+                            <input type="text" name="forme_juridique" value={formData.forme_juridique} onChange={handleChange} className="w-full px-4 py-2.5 rounded-lg bg-slate-50 border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none text-slate-900" placeholder="Ex: SARL" />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-semibold text-slate-700 mb-1">Capital Social</label>
+                            <input type="text" name="capital_social" value={formData.capital_social} onChange={handleChange} className="w-full px-4 py-2.5 rounded-lg bg-slate-50 border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none text-slate-900" placeholder="Ex: 100 000 dh" />
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
                             <label className="block text-sm font-semibold text-slate-700 mb-1">ICE</label>
                             <input type="text" name="ice" value={formData.ice} onChange={handleChange} className="w-full px-4 py-2.5 rounded-lg bg-slate-50 border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none text-slate-900 font-mono" />
                           </div>
@@ -407,8 +426,18 @@ const Fournisseurs = () => {
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                           <div>
-                            <label className="block text-sm font-semibold text-slate-700 mb-1">Registre Commerce</label>
+                            <label className="block text-sm font-semibold text-slate-700 mb-1">Registre Commerce (RC)</label>
                             <input type="text" name="rc" value={formData.rc} onChange={handleChange} className="w-full px-4 py-2.5 rounded-lg bg-slate-50 border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none text-slate-900 font-mono" />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-semibold text-slate-700 mb-1">Ville du RC</label>
+                            <input type="text" name="ville_rc" value={formData.ville_rc} onChange={handleChange} className="w-full px-4 py-2.5 rounded-lg bg-slate-50 border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none text-slate-900" />
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-semibold text-slate-700 mb-1">Taxe Professionnelle</label>
+                            <input type="text" name="taxe_professionnelle" value={formData.taxe_professionnelle} onChange={handleChange} className="w-full px-4 py-2.5 rounded-lg bg-slate-50 border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none text-slate-900 font-mono" />
                           </div>
                           <div>
                             <label className="block text-sm font-semibold text-slate-700 mb-1">Patente</label>
@@ -441,13 +470,25 @@ const Fournisseurs = () => {
                             <label className="block text-sm font-semibold text-slate-700 mb-1">Adresse <span className="text-red-500">*</span></label>
                             <input required type="text" name="adresse" value={formData.adresse} onChange={handleChange} className="w-full px-4 py-2.5 rounded-lg bg-slate-50 border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none text-slate-900" />
                           </div>
+                          <div className="col-span-2">
+                            <label className="block text-sm font-semibold text-slate-700 mb-1">Domicile élu</label>
+                            <input type="text" name="domicile_elu" value={formData.domicile_elu} onChange={handleChange} className="w-full px-4 py-2.5 rounded-lg bg-slate-50 border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none text-slate-900" placeholder="Adresse complète de domiciliation" />
+                          </div>
                           <div>
                             <label className="block text-sm font-semibold text-slate-700 mb-1">Ville <span className="text-red-500">*</span></label>
                             <input required type="text" name="ville" value={formData.ville} onChange={handleChange} className="w-full px-4 py-2.5 rounded-lg bg-slate-50 border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none text-slate-900" />
                           </div>
                           <div>
+                            <label className="block text-sm font-semibold text-slate-700 mb-1">Pays</label>
+                            <input type="text" name="pays" value={formData.pays} onChange={handleChange} className="w-full px-4 py-2.5 rounded-lg bg-slate-50 border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none text-slate-900" />
+                          </div>
+                          <div>
                             <label className="block text-sm font-semibold text-slate-700 mb-1">Téléphone</label>
                             <input type="tel" name="telephone" value={formData.telephone} onChange={handleChange} className="w-full px-4 py-2.5 rounded-lg bg-slate-50 border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none text-slate-900 font-mono" />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-semibold text-slate-700 mb-1">Fax</label>
+                            <input type="tel" name="fax" value={formData.fax} onChange={handleChange} className="w-full px-4 py-2.5 rounded-lg bg-slate-50 border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none text-slate-900 font-mono" />
                           </div>
                         </div>
                         <div>
@@ -531,6 +572,14 @@ const Fournisseurs = () => {
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="bg-slate-50 p-4 rounded-lg">
+                        <p className="text-xs font-semibold text-slate-600 uppercase tracking-wide">Forme Juridique</p>
+                        <p className="text-lg font-mono font-bold text-slate-900 mt-1">{selectedFournisseur.forme_juridique || '—'}</p>
+                      </div>
+                      <div className="bg-slate-50 p-4 rounded-lg">
+                        <p className="text-xs font-semibold text-slate-600 uppercase tracking-wide">Capital Social</p>
+                        <p className="text-lg font-mono font-bold text-slate-900 mt-1">{selectedFournisseur.capital_social || '—'}</p>
+                      </div>
+                      <div className="bg-slate-50 p-4 rounded-lg">
                         <p className="text-xs font-semibold text-slate-600 uppercase tracking-wide">ICE</p>
                         <p className="text-lg font-mono font-bold text-slate-900 mt-1">{selectedFournisseur.ice}</p>
                       </div>
@@ -540,11 +589,15 @@ const Fournisseurs = () => {
                       </div>
                       <div className="bg-slate-50 p-4 rounded-lg">
                         <p className="text-xs font-semibold text-slate-600 uppercase tracking-wide">Registre de Commerce</p>
-                        <p className="text-lg font-mono font-bold text-slate-900 mt-1">{selectedFournisseur.rc || '—'}</p>
+                        <p className="text-lg font-mono font-bold text-slate-900 mt-1">
+                          {selectedFournisseur.rc || '—'} {selectedFournisseur.ville_rc ? `(${selectedFournisseur.ville_rc})` : ''}
+                        </p>
                       </div>
                       <div className="bg-slate-50 p-4 rounded-lg">
-                        <p className="text-xs font-semibold text-slate-600 uppercase tracking-wide">Patente</p>
-                        <p className="text-lg font-mono font-bold text-slate-900 mt-1">{selectedFournisseur.patente || '—'}</p>
+                        <p className="text-xs font-semibold text-slate-600 uppercase tracking-wide">Taxe Professionnelle / Patente</p>
+                        <p className="text-lg font-mono font-bold text-slate-900 mt-1">
+                          {selectedFournisseur.taxe_professionnelle || selectedFournisseur.patente || '—'}
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -560,18 +613,29 @@ const Fournisseurs = () => {
                         <p className="text-xs font-semibold text-slate-600 uppercase tracking-wide">Adresse Complète</p>
                         <p className="text-slate-900 mt-2">{selectedFournisseur.adresse}</p>
                       </div>
+                      {selectedFournisseur.domicile_elu && (
+                        <div className="bg-slate-50 p-4 rounded-lg">
+                          <p className="text-xs font-semibold text-slate-600 uppercase tracking-wide">Domicile élu</p>
+                          <p className="text-slate-900 mt-2">{selectedFournisseur.domicile_elu}</p>
+                        </div>
+                      )}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="bg-slate-50 p-4 rounded-lg">
                           <p className="text-xs font-semibold text-slate-600 uppercase tracking-wide flex items-center gap-2">
-                            <MapPin size={14} /> Ville
+                            <MapPin size={14} /> Ville / Pays
                           </p>
-                          <p className="text-slate-900 font-semibold mt-2">{selectedFournisseur.ville}</p>
+                          <p className="text-slate-900 font-semibold mt-2">
+                            {selectedFournisseur.ville} {selectedFournisseur.pays ? `- ${selectedFournisseur.pays}` : ''}
+                          </p>
                         </div>
                         <div className="bg-slate-50 p-4 rounded-lg">
                           <p className="text-xs font-semibold text-slate-600 uppercase tracking-wide flex items-center gap-2">
-                            <Phone size={14} /> Téléphone
+                            <Phone size={14} /> Téléphone / Fax
                           </p>
-                          <p className="text-slate-900 font-mono font-bold mt-2">{selectedFournisseur.telephone}</p>
+                          <p className="text-slate-900 font-mono font-bold mt-2">
+                            {selectedFournisseur.telephone}
+                            {selectedFournisseur.fax ? <span className="block text-xs mt-1">Fax: {selectedFournisseur.fax}</span> : null}
+                          </p>
                         </div>
                       </div>
                       <div className="bg-slate-50 p-4 rounded-lg">
@@ -632,12 +696,12 @@ const Fournisseurs = () => {
                   {/* Informations Sociales */}
                   <div>
                     <h3 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
-                      <Users size={20} className="text-purple-600" />
+                      <Users size={20} className="text-blue-600" />
                       Informations Sociales
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
-                        <p className="text-xs font-semibold text-purple-700 uppercase tracking-wide">N° CNSS</p>
+                      <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                        <p className="text-xs font-semibold text-blue-700 uppercase tracking-wide">N° CNSS</p>
                         <p className="text-slate-900 font-mono font-bold mt-2">{selectedFournisseur.cnss || '—'}</p>
                       </div>
                     </div>

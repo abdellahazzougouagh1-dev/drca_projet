@@ -1,13 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import api from '../api/axios';
 import { Save, ArrowLeft, CheckCircle2, AlertCircle, FileText, Calculator } from 'lucide-react';
 
 const NouvelleConsultation = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const initialLigneId = location.state?.ligneBudgetaireId || '';
+  
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
+
+  const [typeDossier, setTypeDossier] = useState('BC');
 
   // Form State
   const [formData, setFormData] = useState({
@@ -24,16 +29,41 @@ const NouvelleConsultation = () => {
     statut_dossier: 'Programmation',
     
     // Infos Budgétaires
-    art: '',
-    par: '',
-    lig: '',
-    code_imputation: '',
-    exercice_budgetaire: new Date().getFullYear(),
+    notification_ligne_id: initialLigneId,
     montant_estimatif_ht: 0,
     tva: 20,
   });
 
   const [montantTTC, setMontantTTC] = useState(0);
+  const [lignesBudgetaires, setLignesBudgetaires] = useState([]);
+  const [selectedLigne, setSelectedLigne] = useState(null);
+
+  useEffect(() => {
+    const fetchLignes = async () => {
+      try {
+        const response = await api.get('/notification-lignes');
+        setLignesBudgetaires(response.data);
+        if (initialLigneId) {
+          const ligne = response.data.find(l => l.id.toString() === initialLigneId.toString());
+          if (ligne) setSelectedLigne(ligne);
+        }
+      } catch (err) {
+        console.error('Erreur chargement lignes budgétaires:', err);
+      }
+    };
+    fetchLignes();
+  }, [initialLigneId]);
+
+  const handleLigneChange = (e) => {
+    const id = e.target.value;
+    setFormData(prev => ({ ...prev, notification_ligne_id: id }));
+    if (id) {
+      const ligne = lignesBudgetaires.find(l => l.id.toString() === id);
+      setSelectedLigne(ligne);
+    } else {
+      setSelectedLigne(null);
+    }
+  };
 
   // Auto-calcul TTC
   useEffect(() => {
@@ -51,8 +81,28 @@ const NouvelleConsultation = () => {
     }));
   };
 
+  const handleTypeDossierChange = (type) => {
+    setTypeDossier(type);
+    if (type === 'BC') {
+      navigate('/bons-commande');
+      return;
+    }
+    if (type === 'Convention') {
+      setFormData(prev => ({ ...prev, mode_engagement: type }));
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (typeDossier === 'BC') {
+      navigate('/bons-commande');
+      return;
+    }
+    if (typeDossier === 'AOO') {
+      navigate('/aoos/nouveau');
+      return;
+    }
+
     setLoading(true);
     setError(null);
     setSuccess(false);
@@ -80,17 +130,17 @@ const NouvelleConsultation = () => {
           <div>
             <div className="flex items-center gap-3 mb-2">
               <button 
-                onClick={() => navigate('/dashboard')}
+                onClick={() => navigate('/consultations')}
                 className="p-2 hover:bg-gray-200 dark:hover:bg-gray-800 rounded-full transition-colors text-gray-500"
               >
                 <ArrowLeft size={20} />
               </button>
               <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">
-                Nouvelle Consultation
+                Nouveau Dossier
               </h1>
             </div>
             <p className="text-gray-500 dark:text-gray-400 ml-11">
-              Créer un nouveau dossier de consultation et allouer son budget.
+              Créer un nouveau dossier (Appel d'Offres, Bon de Commande, Convention).
             </p>
           </div>
         </header>
@@ -98,27 +148,57 @@ const NouvelleConsultation = () => {
         {error && (
           <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl flex items-center gap-3 text-red-600 dark:text-red-400">
             <AlertCircle size={20} />
-            <p className="font-medium">{error}</p>
+            <p className="font-semibold">{error}</p>
           </div>
         )}
 
         {success && (
           <div className="mb-6 p-4 bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 rounded-xl flex items-center gap-3 text-emerald-600 dark:text-emerald-400">
             <CheckCircle2 size={20} />
-            <p className="font-medium">Consultation créée avec succès ! Redirection en cours...</p>
+            <p className="font-semibold">Consultation créée avec succès ! Redirection en cours...</p>
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-8">
-          
-          {/* BLOC 1 : Informations Générales */}
+          {/* SÉLECTEUR DE TYPE */}
           <section className="bg-white dark:bg-gray-800 p-8 rounded-3xl shadow-lg border border-gray-100 dark:border-gray-700">
             <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-100 dark:border-gray-700">
               <div className="p-2 bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 rounded-lg">
                 <FileText size={20} />
               </div>
-              <h2 className="text-xl font-bold text-gray-800 dark:text-white">Informations Générales</h2>
+              <h2 className="text-xl font-bold text-gray-800 dark:text-white">Type de Dossier</h2>
             </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {['AOO', 'BC', 'Convention'].map(type => (
+                <div 
+                  key={type}
+                  onClick={() => handleTypeDossierChange(type)}
+                  className={`p-4 rounded-xl border-2 cursor-pointer transition-all flex flex-col items-center justify-center text-center gap-2 ${typeDossier === type ? 'border-primary bg-primary/5 text-primary' : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'}`}
+                >
+                  <span className="font-bold">{type === 'AOO' ? "Appel d'Offres" : type === 'BC' ? 'Bon de Commande' : 'Convention'}</span>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {typeDossier === 'AOO' ? (
+            <section className="bg-white dark:bg-gray-800 p-8 rounded-3xl shadow-lg border border-primary/20 flex flex-col items-center justify-center text-center py-16">
+              <FileText size={48} className="text-primary mb-4" />
+              <h2 className="text-2xl font-bold text-slate-800 mb-2">Création d'un Appel d'Offres</h2>
+              <p className="text-slate-500 mb-8 max-w-md">
+                Les Appels d'Offres disposent d'un module avancé (Préparation, Commission, Attribution). Cliquez sur le bouton ci-dessous pour y accéder.
+              </p>
+            </section>
+          ) : (
+            <>
+              {/* BLOC 1 : Informations Générales */}
+              <section className="bg-white dark:bg-gray-800 p-8 rounded-3xl shadow-lg border border-gray-100 dark:border-gray-700">
+                <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-100 dark:border-gray-700">
+                  <div className="p-2 bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 rounded-lg">
+                    <FileText size={20} />
+                  </div>
+                  <h2 className="text-xl font-bold text-gray-800 dark:text-white">Informations Générales</h2>
+                </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
@@ -182,33 +262,40 @@ const NouvelleConsultation = () => {
               <h2 className="text-xl font-bold text-gray-800 dark:text-white">Informations Budgétaires</h2>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Article (ART)</label>
-                <input required type="text" name="art" value={formData.art} onChange={handleChange} placeholder="Ex: 10" className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all dark:text-white" />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Paragraphe (PAR)</label>
-                <input required type="text" name="par" value={formData.par} onChange={handleChange} placeholder="Ex: 20" className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all dark:text-white" />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Ligne (LIG)</label>
-                <input required type="text" name="lig" value={formData.lig} onChange={handleChange} placeholder="Ex: 30" className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all dark:text-white" />
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Code d'imputation</label>
-                <input required type="text" name="code_imputation" value={formData.code_imputation} onChange={handleChange} placeholder="Ex: 102030" className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all dark:text-white" />
-              </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="md:col-span-2">
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Exercice budgétaire</label>
-                <input required type="number" name="exercice_budgetaire" value={formData.exercice_budgetaire} onChange={handleChange} className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all dark:text-white" />
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Imputation budgétaire (Notification)</label>
+                <select name="notification_ligne_id" value={formData.notification_ligne_id} onChange={handleLigneChange} className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all dark:text-white">
+                  <option value="">-- Sélectionner une ligne budgétaire --</option>
+                  {lignesBudgetaires.map(ligne => (
+                    <option key={ligne.id} value={ligne.id}>
+                      {ligne.notification?.numero} - {ligne.article}/{ligne.paragraphe}/{ligne.ligne_budgetaire} - {ligne.libelle}
+                    </option>
+                  ))}
+                </select>
               </div>
 
-              <div className="bg-gray-50 dark:bg-gray-900/50 p-6 rounded-2xl col-span-1 md:col-span-3 mt-4 border border-gray-100 dark:border-gray-700">
+              {selectedLigne && (
+                <div className="md:col-span-2 bg-blue-50 border border-blue-100 rounded-xl p-5 grid grid-cols-1 md:grid-cols-3 gap-4 mb-2">
+                  <div>
+                    <span className="block text-xs font-bold text-blue-500 uppercase tracking-wide">Crédit Total</span>
+                    <span className="text-lg font-bold text-blue-900">{new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'MAD' }).format(selectedLigne.total_credits).replace('MAD', 'dh')}</span>
+                  </div>
+                  <div>
+                    <span className="block text-xs font-bold text-emerald-500 uppercase tracking-wide">Crédit Engagé</span>
+                    <span className="text-lg font-bold text-emerald-900">{new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'MAD' }).format(selectedLigne.credits_engages).replace('MAD', 'dh')}</span>
+                  </div>
+                  <div>
+                    <span className="block text-xs font-bold text-indigo-500 uppercase tracking-wide">Crédit Disponible</span>
+                    <span className="text-lg font-bold text-indigo-900">{new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'MAD' }).format(selectedLigne.credits_disponibles).replace('MAD', 'dh')}</span>
+                  </div>
+                </div>
+              )}
+
+              <div className="bg-gray-50 dark:bg-gray-900/50 p-6 rounded-2xl col-span-1 md:col-span-2 mt-4 border border-gray-100 dark:border-gray-700">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Montant HT (MAD)</label>
+                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Montant HT (dh)</label>
                     <input required type="number" step="0.01" min="0" name="montant_estimatif_ht" value={formData.montant_estimatif_ht} onChange={handleChange} className="w-full px-4 py-3 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all text-lg font-mono dark:text-white" />
                   </div>
                   <div>
@@ -224,14 +311,16 @@ const NouvelleConsultation = () => {
                   <div className="flex flex-col justify-end">
                     <label className="block text-sm font-bold text-primary mb-2">Montant TTC Calculé</label>
                     <div className="w-full px-4 py-3 rounded-xl bg-primary/10 border border-primary/20 text-primary text-xl font-bold font-mono flex items-center justify-between">
-                      <span>{new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(montantTTC)}</span>
-                      <span className="text-sm">MAD</span>
+                      <span>{new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(montantTTC).replace('MAD', 'dh')}</span>
+                      <span className="text-sm">dh</span>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
-          </section>
+              </div>
+            </section>
+            </>
+          )}
 
           <div className="flex justify-end pt-4">
             <button
@@ -242,12 +331,12 @@ const NouvelleConsultation = () => {
               {loading ? (
                 <>
                   <Loader2 size={24} className="animate-spin" />
-                  Création en cours...
+                  {typeDossier === 'AOO' ? 'Redirection...' : 'Création en cours...'}
                 </>
               ) : (
                 <>
                   <Save size={24} />
-                  Enregistrer la consultation
+                  {typeDossier === 'AOO' ? 'Continuer vers le module AOO' : 'Enregistrer le dossier'}
                 </>
               )}
             </button>

@@ -299,7 +299,7 @@ const GestionMarchesAoo = () => {
           {/* TAB 3 : RECEPTION */}
           <div className={activeTab === 'reception' ? 'block animate-fade-in' : 'hidden'}>
             <div className="mb-8 border-b border-slate-100 pb-4 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center text-purple-600"><Users size={20} /></div>
+              <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600"><Users size={20} /></div>
               <div>
                 <h2 className="text-xl font-extrabold text-slate-800">Commission de Réception</h2>
                 <p className="text-slate-500 text-sm mt-1">Saisie des membres et de la date de réception.</p>
@@ -309,11 +309,11 @@ const GestionMarchesAoo = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl">
               <div>
                 <label className="block text-sm font-bold text-slate-700 mb-2">Date de Réception</label>
-                <input type="date" name="date_reception" value={formData.date_reception} onChange={handleChange} className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 outline-none transition-all bg-slate-50 focus:bg-white" />
+                <input type="date" name="date_reception" value={formData.date_reception} onChange={handleChange} className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all bg-slate-50 focus:bg-white" />
               </div>
               <div>
                 <label className="block text-sm font-bold text-slate-700 mb-2">Membre de Réception (Principal)</label>
-                <input type="text" name="membre_reception_1" value={formData.membre_reception_1} onChange={handleChange} placeholder="Nom et qualité" className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 outline-none transition-all bg-slate-50 focus:bg-white" />
+                <input type="text" name="membre_reception_1" value={formData.membre_reception_1} onChange={handleChange} placeholder="Nom et qualité" className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all bg-slate-50 focus:bg-white" />
               </div>
             </div>
           </div>

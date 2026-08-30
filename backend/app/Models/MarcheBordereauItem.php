@@ -11,6 +11,7 @@ class MarcheBordereauItem extends Model
         'marche_id',
         'lot_item_id',
         'prix_unitaire_attributaire',
+        'taux_tva',
         'montant_ht',
     ];
 

@@ -1,0 +1,883 @@
+﻿diff --git a/frontend/src/pages/GestionMarches.jsx b/frontend/src/pages/GestionMarches.jsx
+index 294c3f9..f4adee6 100644
+--- a/frontend/src/pages/GestionMarches.jsx
++++ b/frontend/src/pages/GestionMarches.jsx
+@@ -1,192 +1,15 @@
+-import React, { useState, useEffect, useCallback } from 'react';
++import { useState, useEffect, useCallback } from 'react';
+ import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+ import api from '../api/axios';
+-import { Save, CheckCircle, AlertCircle, Loader2, ArrowLeft, ArrowRight, Download, Briefcase, FileSignature, CheckSquare, Package } from 'lucide-react';
++import { Save, CheckCircle, AlertCircle, Loader2, ArrowLeft, ArrowRight, Download, Briefcase, FileSignature, Package, HandCoins, ReceiptText, Banknote, Edit3, Eye, FileText } from 'lucide-react';
++import { EngagementFormModal } from '../components/EngagementFormModal';
++import { EngagementPreviewModal } from '../components/EngagementPreviewModal';
+ 
+ const toText = (value, fallback = '') => {
+   if (value === null || value === undefined || value === '') return fallback;
+   if (typeof value === 'string' || typeof value === 'number') return String(value);
+   if (typeof value === 'object' && value.num_lot) return String(value.num_lot);
+   return fallback;
+-};
+-
+-const buildDefaultNumMarche = (numAoo, lotLabel) => {
+-  const lot = toText(lotLabel, 'LOT');
+-  if (!numAoo) return '';
+-  return `M-${String(numAoo).replace(/\//g, '-')}-${lot}`;
+-};
+-
+-const getLotDropdownLabel = (lot, parentAooObjet) => {
+-  const objetLot = (lot?.objet_lot ?? '').trim();
+-  const objetParent = (parentAooObjet ?? '').trim();
+-  const displayObjet = (!objetLot || objetLot === 'Sans objet')
+-    ? (objetParent || 'Sans objet')
+-    : objetLot;
+-  return `${lot.num_lot} — ${displayObjet}`;
+-};
+-
+-const resolveFournisseurQualite = (aoo, titulaire, fournisseurId) => {
+-  if (!aoo) return '';
+-
+-  const normalize = (value) => String(value || '').trim().toLowerCase();
+-  const targetName = normalize(titulaire);
+-  const targetId = fournisseurId ? String(fournisseurId).trim() : '';
+-
+-  const allFournisseurs = [];
+-  (aoo.lots || []).forEach(lot => {
+-    if (lot.attributaire) allFournisseurs.push(lot.attributaire);
+-    (lot.decisions || []).forEach(decision => {
+-      if (decision.fournisseur) allFournisseurs.push(decision.fournisseur);
+-    });
+-  });
+-  (aoo.concurrents || []).forEach(concurrent => {
+-    if (concurrent.fournisseur) allFournisseurs.push(concurrent.fournisseur);
+-  });
+-
+-  const match = allFournisseurs.find(fournisseur => {
+-    if (!fournisseur) return false;
+-    const idMatches = targetId && String(fournisseur.id) === targetId;
+-    const nameMatches = targetName && normalize(fournisseur.raison_sociale) === targetName;
+-    return idMatches || nameMatches;
+-  });
+-
+-  if (!match) return '';
+-  return toText(match.qualite_representant, toText(match.fonction_responsable, ''));
+-};
+-
+-const resolveExercice = (aoo, numMarche = '') => {
+-  const src = numMarche || aoo?.num_aoo || '';
+-  const match = String(src).match(/\/(\d{4})\//);
+-  if (match) return match[1];
+-  if (aoo?.date_ouverture) return String(new Date(aoo.date_ouverture).getFullYear());
+-  return String(new Date().getFullYear());
+-};
+-
+-const parseNum = (value) => {
+-  const n = parseFloat(value);
+-  return Number.isFinite(n) ? n : 0;
+-};
+-
+-const formatMoney = (value) => parseNum(value).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+-
+-const TVA_RATE = 1.20;
+-const round2 = (value) => Math.round(parseNum(value) * 100) / 100;
+-
+-const htFromTtc = (ttc) => round2(parseNum(ttc) / TVA_RATE);
+-const ttcFromHt = (ht) => round2(parseNum(ht) * TVA_RATE);
+-
+-const buildBordereauFromLot = (lot, savedItems = []) => {
+-  const articles = Array.isArray(lot?.items) ? lot.items : [];
+-  return articles.map((item, index) => {
+-    const saved = savedItems.find(s => String(s.lot_item_id) === String(item.id));
+-    const puHt = saved?.prix_unitaire_attributaire;
+-    const prixTtc = puHt !== '' && puHt !== null && puHt !== undefined
+-      ? ttcFromHt(puHt)
+-      : '';
+-
+-    return {
+-      lot_item_id: item.id,
+-      numero: item.numero ?? index + 1,
+-      designation: item.designation || '',
+-      unite: item.unite || '',
+-      quantite: item.quantite ?? '',
+-      prix_unitaire_ttc: prixTtc,
+-    };
+-  });
+-};
+-
+-const computeBordereauLine = (item) => {
+-  const quantite = parseNum(item.quantite);
+-  const puTtc = parseNum(item.prix_unitaire_ttc);
+-  const puHt = htFromTtc(puTtc);
+-  const montantHt = round2(quantite * puHt);
+-  const montantTtc = round2(quantite * puTtc);
+-
+-  return { puHt, montantHt, montantTtc };
+-};
+-
+-const computeBordereauTotals = (items) => {
+-  const totalTtc = round2(items.reduce((sum, item) => sum + computeBordereauLine(item).montantTtc, 0));
+-  const totalHt = round2(totalTtc / TVA_RATE);
+-  const tva = round2(totalTtc - totalHt);
+-
+-  return { totalHt, tva, totalTtc };
+-};
+-
+-const GestionMarches = () => {
+-  const { id } = useParams();
+-  const navigate = useNavigate();
+-  const [searchParams] = useSearchParams();
+-  const [activeTab, setActiveTab] = useState('creation');
+-
+-  const wizardStepOrder = ['creation', 'approbation', 'execution', 'reception'];
+-  const wizardNextLabels = {
+-    creation: 'Approbation',
+-    approbation: 'Exécution & Suivi',
+-    execution: 'Réception & Clôture',
+-  };
+-
+-  const getNextStep = (current) => {
+-    const currentIndex = wizardStepOrder.indexOf(current);
+-    return currentIndex >= 0 && currentIndex < wizardStepOrder.length - 1
+-      ? wizardStepOrder[currentIndex + 1]
+-      : null;
+-  };
+-
+-  const nextStep = getNextStep(activeTab);
+-
+-  const handleNextStep = () => {
+-    const next = getNextStep(activeTab);
+-    if (next) {
+-      setActiveTab(next);
+-      window.scrollTo({ top: 0, behavior: 'smooth' });
+-    }
+-  };
+-
+-  const [loading, setLoading] = useState(false);
+-  const [prefilling, setPrefilling] = useState(false);
+-  const [saving, setSaving] = useState(false);
+-  const [successMessage, setSuccessMessage] = useState('');
+-  const [errorMessage, setErrorMessage] = useState('');
+-
+-  const [aoosList, setAoosList] = useState([]);
+-  const [selectedAoo, setSelectedAoo] = useState(null);
+-
+-  const [formData, setFormData] = useState({
+-    aoo_id: '',
+-    lot_id: '',
+-    fournisseur_id: '',
+-    num_marche: '',
+-    lot: '',
+-    titulaire: '',
+-    objet_marche: '',
+-    qualite_gerant: '',
+-    exercice: String(new Date().getFullYear()),
+-    type_budget: 'Investissement',
+-    code_budget: '',
+-    intitule_budget: '',
+-    montant: '',
+-    date_signature: '',
+-    date_approbation: '',
+-    date_notification_marche: '',
+-    os_numero: '',
+-    os_date_signature: '',
+-    os_date_effet: '',
+-    num_decision: '',
+-    date_decision: '',
+-    date_reunion_commission: '',
+-    heure_reunion_commission: '',
+-    lieu_reunion_commission: 'au siège de la DRCA-RSK',
+-    statut: 'en_creation',
+-    agent_suivi: '',
+-    date_reception_finale: '',
+-    commission_reception: []
+-  });
+-
+-  const [nouveauMembre, setNouveauMembre] = useState('');
+-  const [bordereauItems, setBordereauItems] = useState([]);
+-  const [commissionMembres, setCommissionMembres] = useState([]);
+-  const [selectedCommissionMembres, setSelectedCommissionMembres] = useState([]);
+ 
+   const syncBordereauForLot = useCallback((lot, savedItems = []) => {
+     setBordereauItems(buildBordereauFromLot(lot, savedItems));
+@@ -358,8 +181,9 @@ const GestionMarches = () => {
+     fetchCommissionMembres();
+     if (id && id !== 'nouveau') {
+       fetchMarche();
++      loadWorkflowState();
+     }
+-  }, [id]);
++  }, [id, loadWorkflowState]);
+ 
+   useEffect(() => {
+     if (id !== 'nouveau') return;
+@@ -734,8 +558,8 @@ const GestionMarches = () => {
+     );
+   }
+ 
+-  const tabClass = (tabName) => `whitespace-nowrap px-6 py-3 rounded-xl font-bold text-sm transition-all flex items-center gap-2 ${activeTab === tabName ? 'bg-blue-600 text-white shadow-md' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`;
+-  const inputClass = 'w-full px-4 py-3 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all';
++  const tabClass = (tabName) => `whitespace-nowrap px-6 py-3 rounded-xl font-bold text-sm transition-all flex items-center gap-2 ${activeTab === tabName ? 'bg-[#1e3a8a] text-white shadow-md' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`;
++  const inputClass = 'w-full px-4 py-3 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white outline-none focus:border-[#1e3a8a] focus:ring-2 focus:ring-[#1e3a8a]/10 transition-all';
+ 
+   const renderActionBanner = (buttonText, documents) => (
+     <div className="mt-8 p-5 bg-slate-50 border border-slate-200 rounded-2xl flex flex-col xl:flex-row items-center justify-between gap-6 shadow-sm">
+@@ -770,8 +594,8 @@ const GestionMarches = () => {
+   );
+ 
+   return (
+-    <div className="min-h-screen bg-slate-50/50 pb-24">
+-      <header className="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
++    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(14,165,233,0.10),_transparent_30%),linear-gradient(135deg,_#f8fafc_0%,_#eef6ff_100%)] pb-24">
++      <header className="bg-white/95 border-b border-slate-200 sticky top-0 z-30 shadow-sm backdrop-blur">
+         <div className="w-full px-4 sm:px-6 lg:px-8">
+           <div className="py-4 flex items-center justify-between">
+             <div className="flex items-center gap-4">
+@@ -780,10 +604,10 @@ const GestionMarches = () => {
+               </button>
+               <div>
+                 <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-3">
+-                  <Briefcase className="text-blue-600" />
++                  <Briefcase className="text-[#1e3a8a]" />
+                   {id && id !== 'nouveau' ? `Marché : ${formData.num_marche || 'En cours'}` : 'Nouveau Marché'}
+                 </h1>
+-                <p className="text-slate-500 text-sm mt-1">Gestion du cycle de vie du Marché (Module 2)</p>
++                <p className="text-slate-500 text-sm mt-1">Workflow institutionnel du cycle d’un marché public marocain</p>
+               </div>
+             </div>
+ 
+@@ -801,19 +625,34 @@ const GestionMarches = () => {
+             </div>
+           </div>
+ 
+-          {/* TABS NAVIGATION */}
+-          <div className="grid grid-cols-1 sm:grid-cols-4 gap-8 pb-4">
+-            <button onClick={() => setActiveTab('creation')} className={`min-w-0 flex-1 px-6 py-5 rounded-2xl font-bold text-base transition-all flex items-center justify-center gap-3 ${activeTab === 'creation' ? 'bg-blue-600 text-white shadow-lg' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}>
+-              <FileSignature size={22} /> 1. Création Marché
++          <div className="mb-4 rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
++            <div className="flex items-center justify-between mb-3">
++              <div>
++                <p className="text-sm font-semibold text-slate-600">Avancement du marché</p>
++                <p className="text-xl font-bold text-slate-800">{workflow.progress_percent}%</p>
++              </div>
++              <div className="text-right">
++                <p className="text-sm text-slate-500">Phase active</p>
++                <p className="text-sm font-semibold text-[#1e3a8a]">{wizardLabels[workflow.current_phase] || 'Consultation'}</p>
++              </div>
++            </div>
++            <div className="h-2 rounded-full bg-slate-200 overflow-hidden">
++              <div className="h-full rounded-full bg-gradient-to-r from-[#1e3a8a] via-[#0ea5e9] to-[#34d399] transition-all" style={{ width: `${workflow.progress_percent}%` }} />
++            </div>
++          </div>
++
++          <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 pb-4">
++            <button onClick={() => setActiveTab('consultation')} className={tabClass('consultation')}>
++              <FileSignature size={18} /> 1. Consultation
+             </button>
+-            <button onClick={() => setActiveTab('approbation')} className={`min-w-0 flex-1 px-6 py-5 rounded-2xl font-bold text-base transition-all flex items-center justify-center gap-3 ${activeTab === 'approbation' ? 'bg-blue-600 text-white shadow-lg' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}>
+-              <CheckSquare size={22} /> 2. Approbation
++            <button onClick={() => setActiveTab('engagement')} className={tabClass('engagement')}>
++              <HandCoins size={18} /> 2. Engagement
+             </button>
+-            <button onClick={() => setActiveTab('execution')} className={`min-w-0 flex-1 px-6 py-5 rounded-2xl font-bold text-base transition-all flex items-center justify-center gap-3 ${activeTab === 'execution' ? 'bg-blue-600 text-white shadow-lg' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}>
+-              <Briefcase size={22} /> 3. Exécution & Suivi
++            <button onClick={() => setActiveTab('liquidation')} className={tabClass('liquidation')}>
++              <ReceiptText size={18} /> 3. Liquidation
+             </button>
+-            <button onClick={() => setActiveTab('reception')} className={`min-w-0 flex-1 px-6 py-5 rounded-2xl font-bold text-base transition-all flex items-center justify-center gap-3 ${activeTab === 'reception' ? 'bg-blue-600 text-white shadow-lg' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}>
+-              <CheckCircle size={22} /> 4. Réception & Clôture
++            <button onClick={() => setActiveTab('ordonnancement')} className={tabClass('ordonnancement')}>
++              <Banknote size={18} /> 4. Ordonnancement
+             </button>
+           </div>
+         </div>
+@@ -822,10 +661,9 @@ const GestionMarches = () => {
+       <main className="w-full px-4 sm:px-6 lg:px-8 mt-16">
+         <form onSubmit={handleSubmit} className="bg-white rounded-3xl p-10 shadow-sm border border-slate-200">
+ 
+-          {/* TAB 1 : CREATION MARCHE */}
+-          <div className={activeTab === 'creation' ? 'block animate-fade-in' : 'hidden'}>
++          <div className={activeTab === 'consultation' ? 'block animate-fade-in' : 'hidden'}>
+             <div className="mb-8 border-b border-slate-100 pb-4">
+-              <h2 className="text-xl font-extrabold text-slate-800">Liaison et Informations du Marché</h2>
++              <h2 className="text-xl font-extrabold text-slate-800">Préparation et consultation</h2>
+             </div>
+ 
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
+@@ -1051,63 +889,370 @@ const GestionMarches = () => {
+               { key: 'premiere-derniere-page', label: 'Générer 1er & Dernier Page' },
+               { key: 'bordereau-prix', label: 'Imprimer Bordereau des Prix (Brdr C.E)' },
+             ])}
+-            {nextStep && (
+-              <div className="mt-8 flex justify-end">
+-                <button
+-                  type="button"
+-                  onClick={handleNextStep}
+-                  className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-2xl shadow-xl hover:bg-blue-700 transition-all"
+-                >
+-                  <span>Suivant : {wizardNextLabels[activeTab]}</span>
++            <div className="mt-8 flex flex-wrap justify-between gap-3">
++              <button type="button" onClick={() => markPhase('consultation', true)} className="inline-flex items-center gap-2 px-6 py-3 bg-emerald-600 text-white rounded-2xl shadow hover:bg-emerald-700 transition-all">
++                <CheckCircle size={18} /> Valider la phase Consultation
++              </button>
++              {nextStep && (
++                <button type="button" onClick={handleNextStep} className="inline-flex items-center gap-2 px-6 py-3 bg-[#1e3a8a] text-white rounded-2xl shadow-xl hover:bg-[#16316f] transition-all">
++                  <span>Suivant : {wizardLabels[nextStep]}</span>
+                   <ArrowRight size={18} />
+                 </button>
+-              </div>
+-            )}
++              )}
++            </div>
+           </div>
+ 
+-          {/* TAB 2 : APPROBATION */}
+-          <div className={activeTab === 'approbation' ? 'block animate-fade-in' : 'hidden'}>
+-            <div className="mb-8 border-b border-slate-100 pb-4">
+-              <h2 className="text-xl font-extrabold text-slate-800">Approbation du Marché</h2>
+-              <p className="text-sm text-slate-500 mt-2">
+-                Génération automatique à partir des données enregistrées en Phase 1 et de l'AOO parent. Aucune saisie requise.
+-              </p>
++          <div className={activeTab === 'engagement' ? 'block animate-fade-in' : 'hidden'}>
++            <div className="mb-8 border-b border-slate-100 pb-4 flex flex-wrap items-center justify-between gap-4">
++              <div>
++                <h2 className="text-xl font-extrabold text-slate-800 flex items-center gap-2">
++                  <FileSignature className="text-blue-600" size={24} />
++                  Phase 2 : Engagement & Notification du Marché
++                </h2>
++                <p className="text-sm text-slate-500 mt-1">
++                  Gestion et génération automatique des 4 documents contractuels de l'engagement (chaînés depuis la Consultation & l'Attribution).
++                </p>
++              </div>
++
++              <div className="flex items-center gap-2 bg-blue-50 border border-blue-200 px-4 py-2 rounded-2xl text-xs font-bold text-blue-900 shadow-sm">
++                <Package size={16} />
++                <span>Titulaire : <strong>{formData.titulaire || 'En attente d\'attribution'}</strong></span>
++                <span className="mx-1">•</span>
++                <span>TTC : <strong>{formatMoney(formData.montant)} MAD</strong></span>
++              </div>
+             </div>
+ 
+-            <div className="p-6 bg-slate-50 border border-slate-200 rounded-2xl flex flex-wrap items-center justify-center gap-4 shadow-sm">
+-              {id && id !== 'nouveau' ? (
+-                <button
+-                  type="button"
+-                  onClick={() => downloadDocument('rapport-presentation-marche')}
+-                  className="px-6 py-3 text-sm font-bold text-emerald-700 bg-white border border-emerald-200 shadow-sm rounded-xl hover:bg-emerald-50 hover:border-emerald-300 transition-all flex items-center gap-2"
+-                >
+-                  <Download size={18} className="text-emerald-500" />
+-                  Imprimer Rapport de Présentation (Rap.Present)
+-                </button>
+-              ) : (
+-                <div className="flex items-center gap-2 text-amber-600 bg-amber-50 px-4 py-3 rounded-xl border border-amber-200 text-sm font-medium">
+-                  <AlertCircle size={16} /> Enregistrez d'abord le marché en Phase 1 pour générer le document
++            {/* GRID DES 4 CARTES OFFICIELLES DE L'ENGAGEMENT */}
++            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
++              
++              {/* CARTE 1 : ACTE D'ENGAGEMENT */}
++              <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-4">
++                <div>
++                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
++                    <div className="flex items-center gap-2.5">
++                      <div className="p-2.5 bg-blue-50 text-blue-600 rounded-xl">
++                        <FileText size={20} />
++                      </div>
++                      <div>
++                        <h3 className="font-extrabold text-slate-900 text-base">Acte d'Engagement</h3>
++                        <p className="text-[11px] text-slate-500 font-mono">Pièce N° 2 Officielle</p>
++                      </div>
++                    </div>
++                    <span className="px-3 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full font-extrabold text-[11px]">
++                      Généré
++                    </span>
++                  </div>
++
++                  <div className="mt-4 space-y-2 text-xs">
++                    <div className="flex justify-between py-1 border-b border-slate-50">
++                      <span className="text-slate-500 font-medium">N° AOO / Consultation :</span>
++                      <span className="font-bold text-slate-800 font-mono">{parentAoo?.num_aoo || '06/2026/DRCA-RSK'}</span>
++                    </div>
++                    <div className="flex justify-between py-1 border-b border-slate-50">
++                      <span className="text-slate-500 font-medium">Titulaire engagé :</span>
++                      <span className="font-bold text-slate-900">{formData.titulaire || '—'}</span>
++                    </div>
++                    <div className="flex justify-between py-1 border-b border-slate-50">
++                      <span className="text-slate-500 font-medium">Montant Total TTC :</span>
++                      <span className="font-extrabold text-blue-900 font-mono">{formatMoney(formData.montant)} MAD</span>
++                    </div>
++                  </div>
+                 </div>
+-              )}
++
++                <div className="pt-2 flex flex-wrap gap-1.5">
++                  <button
++                    type="button"
++                    onClick={() => setActiveFormModalDoc('acte-engagement')}
++                    className="py-2 px-2.5 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-[11px] rounded-xl border border-blue-200 transition-all flex items-center gap-1"
++                  >
++                    <Edit3 size={13} /> Formulaire
++                  </button>
++                  <button
++                    type="button"
++                    onClick={() => setActivePreviewModalDoc('acte-engagement')}
++                    className="py-2 px-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-[11px] rounded-xl transition-all flex items-center gap-1"
++                  >
++                    <Eye size={13} /> Prévisualiser
++                  </button>
++                  <button
++                    type="button"
++                    onClick={() => downloadDocument('acte-engagement')}
++                    className="flex-1 py-2 px-3 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-sm transition-all flex items-center justify-center gap-1"
++                  >
++                    <Download size={13} /> Générer PDF
++                  </button>
++                </div>
++              </div>
++
++              {/* CARTE 2 : MARCHÉ DÉFINITIF */}
++              <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-4">
++                <div>
++                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
++                    <div className="flex items-center gap-2.5">
++                      <div className="p-2.5 bg-indigo-50 text-indigo-600 rounded-xl">
++                        <Briefcase size={20} />
++                      </div>
++                      <div>
++                        <h3 className="font-extrabold text-slate-900 text-base">Marché & CPS</h3>
++                        <p className="text-[11px] text-slate-500 font-mono">Marché Définitif Rédigé</p>
++                      </div>
++                    </div>
++                    <span className="px-3 py-1 bg-blue-50 text-blue-700 border border-blue-200 rounded-full font-extrabold text-[11px]">
++                      {formData.num_marche ? 'Validé' : 'En préparation'}
++                    </span>
++                  </div>
++
++                  <div className="mt-4 space-y-2 text-xs">
++                    <div className="flex justify-between py-1 border-b border-slate-50">
++                      <span className="text-slate-500 font-medium">N° Marché Officiel :</span>
++                      <span className="font-bold text-indigo-900 font-mono">{formData.num_marche || 'Non attribué'}</span>
++                    </div>
++                    <div className="flex justify-between py-1 border-b border-slate-50">
++                      <span className="text-slate-500 font-medium">Référence CPS :</span>
++                      <span className="font-bold text-slate-800 font-mono">CPS-{parentAoo?.num_aoo || '06/2026'}</span>
++                    </div>
++                    <div className="flex justify-between py-1 border-b border-slate-50">
++                      <span className="text-slate-500 font-medium">Délai d'exécution :</span>
++                      <span className="font-bold text-slate-900">{parentAoo?.delai_execution || 12} Mois</span>
++                    </div>
++                  </div>
++                </div>
++
++                <div className="pt-2 flex flex-wrap gap-1.5">
++                  <button
++                    type="button"
++                    onClick={() => setActiveFormModalDoc('marche-definitif')}
++                    className="py-2 px-2.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-[11px] rounded-xl border border-indigo-200 transition-all flex items-center gap-1"
++                  >
++                    <Edit3 size={13} /> Formulaire
++                  </button>
++                  <button
++                    type="button"
++                    onClick={() => setActivePreviewModalDoc('marche-definitif')}
++                    className="py-2 px-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-[11px] rounded-xl transition-all flex items-center gap-1"
++                  >
++                    <Eye size={13} /> Prévisualiser
++                  </button>
++                  <button
++                    type="button"
++                    onClick={() => downloadDocument('marche-definitif')}
++                    className="flex-1 py-2 px-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-sm transition-all flex items-center justify-center gap-1"
++                  >
++                    <Download size={13} /> Générer PDF
++                  </button>
++                </div>
++              </div>
++
++              {/* CARTE 3 : APPROBATION DU MARCHÉ */}
++              <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-4">
++                <div>
++                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
++                    <div className="flex items-center gap-2.5">
++                      <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-xl">
++                        <CheckCircle size={20} />
++                      </div>
++                      <div>
++                        <h3 className="font-extrabold text-slate-900 text-base">Approbation du Marché</h3>
++                        <p className="text-[11px] text-slate-500 font-mono">Notification & Caution 3%</p>
++                      </div>
++                    </div>
++                    <span className="px-3 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full font-extrabold text-[11px]">
++                      {formData.date_approbation ? 'Approuvé' : 'Brouillon'}
++                    </span>
++                  </div>
++
++                  <div className="mt-4 space-y-2 text-xs">
++                    <div className="flex justify-between py-1 border-b border-slate-50">
++                      <span className="text-slate-500 font-medium">N° Décision :</span>
++                      <span className="font-bold text-slate-800 font-mono">{formData.num_decision || '01/2026/M06'}</span>
++                    </div>
++                    <div className="flex justify-between py-1 border-b border-slate-50">
++                      <span className="text-slate-500 font-medium">Date d'approbation :</span>
++                      <span className="font-bold text-slate-900">{formData.date_approbation || new Date().toLocaleDateString('fr-FR')}</span>
++                    </div>
++                    <div className="flex justify-between py-1 border-b border-slate-50">
++                      <span className="text-slate-500 font-medium">Caution Définitive (3%) :</span>
++                      <span className="font-extrabold text-emerald-800 font-mono">{formatMoney(parseFloat(formData.montant || 0) * 0.03)} MAD</span>
++                    </div>
++                  </div>
++                </div>
++
++                <div className="pt-2 flex flex-wrap gap-1.5">
++                  <button
++                    type="button"
++                    onClick={() => setActiveFormModalDoc('decision-approbation')}
++                    className="py-2 px-2.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold text-[11px] rounded-xl border border-emerald-200 transition-all flex items-center gap-1"
++                  >
++                    <Edit3 size={13} /> Formulaire
++                  </button>
++                  <button
++                    type="button"
++                    onClick={() => setActivePreviewModalDoc('decision-approbation')}
++                    className="py-2 px-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-[11px] rounded-xl transition-all flex items-center gap-1"
++                  >
++                    <Eye size={13} /> Prévisualiser
++                  </button>
++                  <button
++                    type="button"
++                    onClick={() => downloadDocument('decision-approbation')}
++                    className="flex-1 py-2 px-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-sm transition-all flex items-center justify-center gap-1"
++                  >
++                    <Download size={13} /> Générer PDF
++                  </button>
++                </div>
++              </div>
++
++              {/* CARTE 4 : ORDRE DE SERVICE DE COMMENCEMENT */}
++              <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-4">
++                <div>
++                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
++                    <div className="flex items-center gap-2.5">
++                      <div className="p-2.5 bg-amber-50 text-amber-600 rounded-xl">
++                        <ReceiptText size={20} />
++                      </div>
++                      <div>
++                        <h3 className="font-extrabold text-slate-900 text-base">OS de Commencement</h3>
++                        <p className="text-[11px] text-slate-500 font-mono">Démarrage des prestations</p>
++                      </div>
++                    </div>
++                    <span className="px-3 py-1 bg-amber-50 text-amber-700 border border-amber-200 rounded-full font-extrabold text-[11px]">
++                      {formData.os_numero ? 'Notifié' : 'En attente'}
++                    </span>
++                  </div>
++
++                  <div className="mt-4 space-y-2 text-xs">
++                    <div className="flex justify-between py-1 border-b border-slate-50">
++                      <span className="text-slate-500 font-medium">N° OS :</span>
++                      <span className="font-bold text-amber-900 font-mono">{formData.os_numero || '03/2026/M10'}</span>
++                    </div>
++                    <div className="flex justify-between py-1 border-b border-slate-50">
++                      <span className="text-slate-500 font-medium">Date d'Effet :</span>
++                      <span className="font-bold text-slate-900">{formData.os_date_effet || new Date().toLocaleDateString('fr-FR')}</span>
++                    </div>
++                    <div className="flex justify-between py-1 border-b border-slate-50">
++                      <span className="text-slate-500 font-medium">Accusé de réception :</span>
++                      <span className="font-bold text-slate-800">{formData.titulaire || '—'}</span>
++                    </div>
++                  </div>
++                </div>
++                <div className="pt-2 flex flex-wrap gap-1.5">
++                  <button
++                    type="button"
++                    onClick={() => setActiveFormModalDoc('os-commencement')}
++                    className="py-2 px-2.5 bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold text-[11px] rounded-xl border border-amber-200 transition-all flex items-center gap-1"
++                  >
++                    <Edit3 size={13} /> Formulaire
++                  </button>
++                  <button
++                    type="button"
++                    onClick={() => setActivePreviewModalDoc('os-commencement')}
++                    className="py-2 px-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-[11px] rounded-xl transition-all flex items-center gap-1"
++                  >
++                    <Eye size={13} /> Prévisualiser
++                  </button>
++                  <button
++                    type="button"
++                    onClick={() => downloadDocument('os-commencement')}
++                    className="flex-1 py-2 px-3 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs rounded-xl shadow-sm transition-all flex items-center justify-center gap-1"
++                  >
++                    <Download size={13} /> Générer PDF
++                  </button>
++                </div>
++              </div>
++
+             </div>
+-            {nextStep && (
+-              <div className="mt-8 flex justify-end">
+-                <button
+-                  type="button"
+-                  onClick={handleNextStep}
+-                  className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-2xl shadow-xl hover:bg-blue-700 transition-all"
+-                >
+-                  <span>Suivant : {wizardNextLabels[activeTab]}</span>
++
++            {/* FORMULAIRE DE SAISIE & EDITION RAPIDE DE L'ENGAGEMENT */}
++            <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm mb-8 space-y-4">
++              <h3 className="text-base font-extrabold text-slate-800 border-b border-slate-100 pb-3 flex items-center gap-2">
++                <FileSignature size={18} className="text-blue-600" />
++                Mise à jour des paramètres d'engagement du marché
++              </h3>
++
++              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
++                <div>
++                  <label className="block font-bold text-slate-700 mb-1">N° Décision Approbation</label>
++                  <input
++                    type="text"
++                    name="num_decision"
++                    value={formData.num_decision || ''}
++                    onChange={handleChange}
++                    placeholder="Ex: 01/2026/M06"
++                    className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white font-mono text-xs outline-none focus:border-blue-600"
++                  />
++                </div>
++                <div>
++                  <label className="block font-bold text-slate-700 mb-1">Date Approbation</label>
++                  <input
++                    type="date"
++                    name="date_approbation"
++                    value={formData.date_approbation || ''}
++                    onChange={handleChange}
++                    className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white text-xs outline-none focus:border-blue-600"
++                  />
++                </div>
++                <div>
++                  <label className="block font-bold text-slate-700 mb-1">N° OS Commencement</label>
++                  <input
++                    type="text"
++                    name="os_numero"
++                    value={formData.os_numero || ''}
++                    onChange={handleChange}
++                    placeholder="Ex: 03/2026/M10"
++                    className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white font-mono text-xs outline-none focus:border-blue-600"
++                  />
++                </div>
++                <div>
++                  <label className="block font-bold text-slate-700 mb-1">Date d'effet OS</label>
++                  <input
++                    type="date"
++                    name="os_date_effet"
++                    value={formData.os_date_effet || ''}
++                    onChange={handleChange}
++                    className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white text-xs outline-none focus:border-blue-600"
++                  />
++                </div>
++                <div>
++                  <label className="block font-bold text-slate-700 mb-1">Agent chargé du suivi</label>
++                  <input
++                    type="text"
++                    name="agent_suivi"
++                    value={formData.agent_suivi || ''}
++                    onChange={handleChange}
++                    placeholder="Nom du responsable ONCA..."
++                    className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white text-xs outline-none focus:border-blue-600"
++                  />
++                </div>
++                <div>
++                  <label className="block font-bold text-slate-700 mb-1">Exercice budgétaire</label>
++                  <input
++                    type="text"
++                    name="exercice"
++                    value={formData.exercice || ''}
++                    onChange={handleChange}
++                    placeholder="2026"
++                    className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white text-xs outline-none focus:border-blue-600"
++                  />
++                </div>
++              </div>
++            </div>
++
++            <div className="mt-8 flex flex-wrap justify-between gap-3">
++              <button type="button" onClick={() => markPhase('engagement', true)} className="inline-flex items-center gap-2 px-6 py-3 bg-emerald-600 text-white font-bold rounded-2xl shadow hover:bg-emerald-700 transition-all">
++                <CheckCircle size={18} /> Valider la phase Engagement
++              </button>
++              {nextStep && (
++                <button type="button" onClick={handleNextStep} className="inline-flex items-center gap-2 px-6 py-3 bg-[#1e3a8a] text-white font-bold rounded-2xl shadow-xl hover:bg-[#16316f] transition-all">
++                  <span>Suivant : {wizardLabels[nextStep]}</span>
+                   <ArrowRight size={18} />
+                 </button>
+-              </div>
+-            )}
++              )}
++            </div>
+           </div>
+ 
+-          {/* TAB 3 : EXECUTION & SUIVI */}
+-          <div className={activeTab === 'execution' ? 'block animate-fade-in' : 'hidden'}>
++          <div className={activeTab === 'liquidation' ? 'block animate-fade-in' : 'hidden'}>
+             <div className="mb-8 border-b border-slate-100 pb-4">
+-              <h2 className="text-xl font-extrabold text-slate-800">Exécution et Suivi</h2>
++              <h2 className="text-xl font-extrabold text-slate-800">Liquidation et exécution</h2>
+             </div>
+ 
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mb-8">
+@@ -1140,53 +1285,51 @@ const GestionMarches = () => {
+               { key: 'os-arret', label: 'OS Arrêt' },
+               { key: 'os-reprise', label: 'OS Reprise' }
+             ])}
+-            {nextStep && (
+-              <div className="mt-8 flex justify-end">
+-                <button
+-                  type="button"
+-                  onClick={handleNextStep}
+-                  className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-2xl shadow-xl hover:bg-blue-700 transition-all"
+-                >
+-                  <span>Suivant : {wizardNextLabels[activeTab]}</span>
++            <div className="mt-8 flex flex-wrap justify-between gap-3">
++              <button type="button" onClick={() => markPhase('liquidation', true)} className="inline-flex items-center gap-2 px-6 py-3 bg-emerald-600 text-white rounded-2xl shadow hover:bg-emerald-700 transition-all">
++                <CheckCircle size={18} /> Valider la phase Liquidation
++              </button>
++              {nextStep && (
++                <button type="button" onClick={handleNextStep} className="inline-flex items-center gap-2 px-6 py-3 bg-[#1e3a8a] text-white rounded-2xl shadow-xl hover:bg-[#16316f] transition-all">
++                  <span>Suivant : {wizardLabels[nextStep]}</span>
+                   <ArrowRight size={18} />
+                 </button>
+-              </div>
+-            )}
++              )}
++            </div>
+           </div>
+ 
+-          {/* TAB 4 : RECEPTION & CLOTURE */}
+-          <div className={activeTab === 'reception' ? 'block animate-fade-in' : 'hidden'}>
++          <div className={activeTab === 'ordonnancement' ? 'block animate-fade-in' : 'hidden'}>
+             <div className="mb-8 border-b border-slate-100 pb-4">
+-              <h2 className="text-xl font-extrabold text-slate-800">Réception et Clôture</h2>
++              <h2 className="text-xl font-extrabold text-slate-800">Ordonnancement et paiement final</h2>
+             </div>
+ 
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mb-8">
+               <div>
+                 <label className="block text-sm font-bold text-slate-700 mb-2">Numéro de la décision</label>
+-                <input type="text" name="num_decision" value={formData.num_decision} onChange={handleChange} placeholder="Ex: 38/DR/2025" className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-purple-500 outline-none bg-slate-50 focus:bg-white" />
++                <input type="text" name="num_decision" value={formData.num_decision} onChange={handleChange} placeholder="Ex: 38/DR/2025" className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-blue-500 outline-none bg-slate-50 focus:bg-white" />
+               </div>
+               <div>
+                 <label className="block text-sm font-bold text-slate-700 mb-2">Date de la décision</label>
+-                <input type="date" name="date_decision" value={formData.date_decision} onChange={handleChange} className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-purple-500 outline-none bg-slate-50 focus:bg-white" />
++                <input type="date" name="date_decision" value={formData.date_decision} onChange={handleChange} className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-blue-500 outline-none bg-slate-50 focus:bg-white" />
+               </div>
+               <div>
+                 <label className="block text-sm font-bold text-slate-700 mb-2">Date de réunion de la commission</label>
+-                <input type="date" name="date_reunion_commission" value={formData.date_reunion_commission} onChange={handleChange} className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-purple-500 outline-none bg-slate-50 focus:bg-white" />
++                <input type="date" name="date_reunion_commission" value={formData.date_reunion_commission} onChange={handleChange} className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-blue-500 outline-none bg-slate-50 focus:bg-white" />
+               </div>
+               <div>
+                 <label className="block text-sm font-bold text-slate-700 mb-2">Heure de réunion</label>
+-                <input type="time" name="heure_reunion_commission" value={formData.heure_reunion_commission} onChange={handleChange} className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-purple-500 outline-none bg-slate-50 focus:bg-white" />
++                <input type="time" name="heure_reunion_commission" value={formData.heure_reunion_commission} onChange={handleChange} className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-blue-500 outline-none bg-slate-50 focus:bg-white" />
+               </div>
+               <div className="md:col-span-2">
+                 <label className="block text-sm font-bold text-slate-700 mb-2">Lieu de réunion</label>
+-                <input type="text" name="lieu_reunion_commission" value={formData.lieu_reunion_commission} onChange={handleChange} placeholder="Ex: au siège de la DRCA-RSK" className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-purple-500 outline-none bg-slate-50 focus:bg-white" />
++                <input type="text" name="lieu_reunion_commission" value={formData.lieu_reunion_commission} onChange={handleChange} placeholder="Ex: au siège de la DRCA-RSK" className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-blue-500 outline-none bg-slate-50 focus:bg-white" />
+               </div>
+             </div>
+ 
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mb-8">
+               <div>
+                 <label className="block text-sm font-bold text-slate-700 mb-2">Date de réception finale</label>
+-                <input type="date" name="date_reception_finale" value={formData.date_reception_finale} onChange={handleChange} className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-purple-500 outline-none bg-slate-50 focus:bg-white" />
++                <input type="date" name="date_reception_finale" value={formData.date_reception_finale} onChange={handleChange} className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-blue-500 outline-none bg-slate-50 focus:bg-white" />
+               </div>
+ 
+               <div className="md:col-span-2">
+@@ -1204,7 +1347,7 @@ const GestionMarches = () => {
+                             setSelectedCommissionMembres(selectedCommissionMembres.filter(id => id !== membre.id));
+                           }
+                         }}
+-                        className="mr-3 w-4 h-4 text-purple-600"
++                        className="mr-3 w-4 h-4 text-blue-600"
+                       />
+                       <div>
+                         <div className="text-sm font-medium text-slate-700">{membre.nom_prenom}</div>
+@@ -1214,7 +1357,7 @@ const GestionMarches = () => {
+                   ))}
+                 </div>
+                 {selectedCommissionMembres.length > 0 && (
+-                  <div className="text-sm text-purple-700 font-medium">
++                  <div className="text-sm text-blue-700 font-medium">
+                     {selectedCommissionMembres.length} membre(s) sélectionné(s)
+                   </div>
+                 )}
+@@ -1227,6 +1370,11 @@ const GestionMarches = () => {
+               { key: 'pv-reception-definitive', label: 'PV Réception définitive' },
+               { key: 'attestation-bonne-execution', label: 'Attestation bonne exécution' }
+             ])}
++            <div className="mt-8 flex flex-wrap justify-between gap-3">
++              <button type="button" onClick={() => markPhase('ordonnancement', true)} className="inline-flex items-center gap-2 px-6 py-3 bg-emerald-600 text-white rounded-2xl shadow hover:bg-emerald-700 transition-all">
++                <CheckCircle size={18} /> Valider la phase Ordonnancement
++              </button>
++            </div>
+ 
+             {/* Export Archive Button */}
+             <div className="mt-8 relative group">
+@@ -1234,7 +1382,7 @@ const GestionMarches = () => {
+                 type="button"
+                 onClick={downloadArchive}
+                 disabled={id === 'nouveau'}
+-                className="w-full px-6 py-4 bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold rounded-xl shadow-lg hover:shadow-xl hover:from-purple-700 hover:to-indigo-700 transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
++                className="w-full px-6 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold rounded-xl shadow-lg hover:shadow-xl hover:from-blue-700 hover:to-indigo-700 transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
+               >
+                 <Package size={20} />
+                 <span>Exporter les documents disponibles (.zip)</span>
+@@ -1247,6 +1395,52 @@ const GestionMarches = () => {
+             </div>
+           </div>
+         </form>
++
++        {/* Engagement Form Modal */}
++        <EngagementFormModal
++          isOpen={!!activeFormModalDoc}
++          onClose={() => setActiveFormModalDoc(null)}
++          docType={activeFormModalDoc}
++          docTitle={
++            activeFormModalDoc === 'acte-engagement' ? 'Acte d\'Engagement' :
++            activeFormModalDoc === 'marche-definitif' ? 'Marché Définitif & CPS' :
++            activeFormModalDoc === 'decision-approbation' ? 'Approbation du Marché' :
++            activeFormModalDoc === 'os-commencement' ? 'Ordre de Service de Commencement' : ''
++          }
++          initialData={formData}
++          onSave={(updated) => {
++            setFormData((prev) => ({ ...prev, ...updated }));
++            saveMarche();
++            setActiveFormModalDoc(null);
++          }}
++          onPreview={(type, updated) => {
++            setFormData((prev) => ({ ...prev, ...updated }));
++            saveMarche();
++            setActiveFormModalDoc(null);
++            setActivePreviewModalDoc(type);
++          }}
++        />
++
++        {/* Engagement Preview Modal */}
++        <EngagementPreviewModal
++          isOpen={!!activePreviewModalDoc}
++          onClose={() => setActivePreviewModalDoc(null)}
++          docType={activePreviewModalDoc}
++          docTitle={
++            activePreviewModalDoc === 'acte-engagement' ? 'Acte d\'Engagement' :
++            activePreviewModalDoc === 'marche-definitif' ? 'Marché Définitif & CPS' :
++            activePreviewModalDoc === 'decision-approbation' ? 'Approbation du Marché' :
++            activePreviewModalDoc === 'os-commencement' ? 'Ordre de Service de Commencement' : ''
++          }
++          formData={formData}
++          onEdit={(type) => {
++            setActivePreviewModalDoc(null);
++            setActiveFormModalDoc(type);
++          }}
++          onDownload={(type) => {
++            downloadDocument(type);
++          }}
++        />
+       </main>
+     </div>
+   );

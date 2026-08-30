@@ -27,6 +27,16 @@ class OuverturePlisConcurrent extends Model
         'gerant_nom',
         'statut_analyse',
         'motif_ecartement',
+        'admin_conforme',
+        'admin_motif_rejet',
+        'admin_observations',
+        'tech_conforme',
+        'tech_note',
+        'tech_observations',
+        'montant_ht',
+        'tva',
+        'montant_ttc',
+        'classement',
     ];
 
     protected $casts = [
@@ -36,6 +46,13 @@ class OuverturePlisConcurrent extends Model
         'cps' => 'boolean',
         'm_hum' => 'boolean',
         'montant_engagement' => 'decimal:2',
+        'admin_conforme' => 'boolean',
+        'tech_conforme' => 'boolean',
+        'tech_note' => 'decimal:2',
+        'montant_ht' => 'decimal:2',
+        'tva' => 'decimal:2',
+        'montant_ttc' => 'decimal:2',
+        'classement' => 'integer',
     ];
 
     public function aoo(): BelongsTo

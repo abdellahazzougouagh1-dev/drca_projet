@@ -11,6 +11,7 @@ use App\Models\MarcheBordereauItem;
 use App\Services\MarcheDocumentBuilder;
 use App\Services\RapportPresentationBuilder;
 use App\Services\MarcheArchiveBuilder;
+use App\Services\MarcheWorkflowService;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException; 
 
@@ -36,6 +37,13 @@ class MarcheController extends Controller
             'os_numero' => $request->input('os_numero') ?: null,
             'os_date_signature' => $request->input('os_date_signature') ?: null,
             'os_date_effet' => $request->input('os_date_effet') ?: null,
+            'os_arret_numero' => $request->input('os_arret_numero') ?: null,
+            'os_arret_date_signature' => $request->input('os_arret_date_signature') ?: null,
+            'os_arret_date_effet' => $request->input('os_arret_date_effet') ?: null,
+            'os_arret_motif' => $request->input('os_arret_motif') ?: null,
+            'os_reprise_numero' => $request->input('os_reprise_numero') ?: null,
+            'os_reprise_date_signature' => $request->input('os_reprise_date_signature') ?: null,
+            'os_reprise_date_effet' => $request->input('os_reprise_date_effet') ?: null,
             'date_reception_finale' => $request->input('date_reception_finale') ?: null,
             'objet_marche' => $request->input('objet_marche') ?: null,
             'qualite_gerant' => $request->input('qualite_gerant') ?: null,
@@ -49,10 +57,20 @@ class MarcheController extends Controller
                 : $request->input('lot'),
         ]);
 
+        if ($request->filled('aoo_id')) {
+            $aoo = \App\Models\Aoo::find($request->input('aoo_id'));
+            if ($aoo && $aoo->notification_ligne_id) {
+                $request->merge([
+                    'notification_ligne_id' => $aoo->notification_ligne_id
+                ]);
+            }
+        }
+
         $data = $request->validate([
             'id' => 'nullable|exists:marches,id',
             'num_marche' => 'required|string|max:255|unique:marches,num_marche,' . $request->input('id'),
             'aoo_id' => 'required|exists:aoos,id',
+            'notification_ligne_id' => 'nullable|exists:notification_lignes,id',
             'lot_id' => 'nullable|exists:lots,id',
             'fournisseur_id' => 'nullable|exists:fournisseurs,id',
             'lot' => 'nullable|string|max:255',
@@ -70,6 +88,13 @@ class MarcheController extends Controller
             'os_numero' => 'nullable|string|max:255',
             'os_date_signature' => 'nullable|date',
             'os_date_effet' => 'nullable|date',
+            'os_arret_numero' => 'nullable|string|max:255',
+            'os_arret_date_signature' => 'nullable|date',
+            'os_arret_date_effet' => 'nullable|date',
+            'os_arret_motif' => 'nullable|string|max:255',
+            'os_reprise_numero' => 'nullable|string|max:255',
+            'os_reprise_date_signature' => 'nullable|date',
+            'os_reprise_date_effet' => 'nullable|date',
             'num_decision' => 'nullable|string|max:255',
             'date_decision' => 'nullable|date',
             'date_reunion_commission' => 'nullable|date',
@@ -81,22 +106,16 @@ class MarcheController extends Controller
             'commission_reception' => 'nullable|array',
             'bordereau_items' => 'nullable|array',
             'bordereau_items.*.lot_item_id' => 'required_with:bordereau_items|exists:lot_items,id',
-            'bordereau_items.*.prix_unitaire_ttc' => 'required_with:bordereau_items|numeric|min:0',
+            'bordereau_items.*.prix_unitaire_ht' => 'required_with:bordereau_items|numeric|min:0',
+            'delai_execution' => 'nullable|numeric|min:0',
+            'taux_tva' => 'nullable|numeric|min:0',
+            'date_debut_prevue' => 'nullable|date',
+            'date_fin_prevue' => 'nullable|date',
+            'observations' => 'nullable|string',
+            'fournisseur_data' => 'nullable|array',
         ]);
 
         $bordereauItems = $request->input('bordereau_items', []);
-        if (!empty($data['lot_id'])) {
-            $lotItemsCount = LotItem::where('lot_id', $data['lot_id'])->count();
-            if ($lotItemsCount > 0) {
-                if (empty($bordereauItems)) {
-                    throw ValidationException::withMessages([
-                        'bordereau_items' => ['Veuillez saisir les prix unitaires du bordereau pour chaque article du lot.'],
-                    ]);
-                }
-
-                $this->validateBordereauTotals($bordereauItems, (float) $data['montant'], (int) $data['lot_id']);
-            }
-        }
 
         if (!empty($data['fournisseur_id']) && empty($data['titulaire'])) {
             $data['titulaire'] = Fournisseur::find($data['fournisseur_id'])?->raison_sociale;
@@ -140,6 +159,27 @@ class MarcheController extends Controller
             $marche = Marche::create($data);
         }
 
+        if ($marche->fournisseur_id && $request->filled('fournisseur_data')) {
+            $fournisseur = Fournisseur::find($marche->fournisseur_id);
+            if ($fournisseur) {
+                $fData = $request->input('fournisseur_data');
+                $allowed = [
+                    'raison_sociale', 'ice', 'if', 'rc', 'forme_juridique', 'capital',
+                    'patente', 'cnss', 'adresse', 'ville', 'telephone', 'fax',
+                    'email', 'representant', 'banque', 'agence_bancaire', 'rib'
+                ];
+                $updateData = [];
+                foreach ($allowed as $fKey) {
+                    if (array_key_exists($fKey, $fData)) {
+                        $updateData[$fKey] = $fData[$fKey];
+                    }
+                }
+                if (!empty($updateData)) {
+                    $fournisseur->update($updateData);
+                }
+            }
+        }
+
         if (!empty($data['lot_id']) && !empty($bordereauItems)) {
             $this->syncBordereauItems($marche, $bordereauItems, (int) $data['lot_id']);
         }
@@ -152,10 +192,12 @@ class MarcheController extends Controller
 
     public function show($id)
     {
-        return response()->json(
-            Marche::with(['aoo.lots.items', 'lot.items', 'fournisseur', 'bordereauItems.lotItem'])
-                ->findOrFail($id)
-        );
+        $marche = Marche::with(['aoo.lots.items', 'lot.items', 'fournisseur', 'bordereauItems.lotItem'])
+            ->findOrFail($id);
+
+        return response()->json(array_merge($marche->toArray(), [
+            'workflow' => $marche->workflow,
+        ]));
     }
 
     public function update(Request $request, $id)
@@ -168,6 +210,64 @@ class MarcheController extends Controller
     {
         Marche::findOrFail($id)->delete();
         return response()->json(['message' => 'Marche supprime'], 200);
+    }
+
+    public function workflowState($id)
+    {
+        $marche = Marche::findOrFail($id);
+
+        return response()->json([
+            'data' => [
+                'id' => $marche->id,
+                'statut' => $marche->statut,
+                'workflow' => $marche->workflow,
+            ],
+        ]);
+    }
+
+    public function transitionPhase(Request $request, $id)
+    {
+        $marche = Marche::findOrFail($id);
+        $phase = $request->input('phase');
+        $validated = (bool) $request->input('validated', false);
+
+        $allowedPhases = ['consultation', 'engagement', 'liquidation', 'ordonnancement'];
+        if (!in_array($phase, $allowedPhases, true)) {
+            return response()->json(['error' => 'Phase non valide'], 422);
+        }
+
+        $marche->statut = MarcheWorkflowService::resolveStatus($phase, $validated);
+        $marche->save();
+
+        return response()->json([
+            'message' => 'Phase mise à jour',
+            'data' => [
+                'statut' => $marche->statut,
+                'workflow' => $marche->workflow,
+            ],
+        ]);
+    }
+
+    public function uploadCps(Request $request, $id)
+    {
+        $request->validate([
+            'fichier_cps' => 'required|file|mimes:docx,doc,pdf|max:10240',
+        ]);
+
+        $marche = Marche::findOrFail($id);
+        
+        $file = $request->file('fichier_cps');
+        $filename = 'cps_' . $marche->id . '_' . time() . '.' . $file->getClientOriginalExtension();
+        
+        $path = $file->storeAs('documents/marches/' . $marche->id . '/cps', $filename);
+        
+        $marche->chemin_cps = $path;
+        $marche->save();
+
+        return response()->json([
+            'message' => 'Fichier CPS importé avec succès',
+            'path' => $path
+        ]);
     }
 
     public function downloadDocument($id, $documentType)
@@ -211,6 +311,10 @@ class MarcheController extends Controller
 
         if ($documentType === 'bordereau-prix') {
             return $this->downloadBordereauPrixPdf($marche);
+        }
+
+        if ($documentType === 'contrat-marche') {
+            return $this->downloadContratMarchePdf($marche);
         }
 
         return $this->downloadStandardDocumentPdf($marche, $documentType);
@@ -281,7 +385,7 @@ class MarcheController extends Controller
 
     private function downloadBordereauPrixPdf(Marche $marche): \Symfony\Component\HttpFoundation\Response
     {
-        $marche->loadMissing(['bordereauItems.lotItem', 'aoo', 'fournisseur']);
+        $marche->loadMissing(['bordereauItems.lotItem', 'aoo', 'fournisseur', 'lot']);
 
         if ($marche->bordereauItems->isEmpty()) {
             abort(422, 'Aucun bordereau des prix enregistré pour ce marché.');
@@ -294,6 +398,17 @@ class MarcheController extends Controller
         ])->setPaper('a4', 'portrait');
 
         return $pdf->download('Bordereau_Prix_Marche_' . str_replace('/', '_', $marche->num_marche) . '.pdf');
+    }
+
+    private function downloadContratMarchePdf(Marche $marche): \Symfony\Component\HttpFoundation\Response
+    {
+        $marche->loadMissing(['bordereauItems.lotItem', 'aoo', 'fournisseur', 'lot']);
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.marche.contrat_marche', [
+            'marche' => $marche,
+        ])->setPaper('a4', 'portrait');
+
+        return $pdf->download('Marche_Final_' . str_replace('/', '_', $marche->num_marche) . '.pdf');
     }
 
     private function validateBordereauTotals(array $bordereauItems, float $montantAttribution, int $lotId): void
@@ -316,7 +431,12 @@ class MarcheController extends Controller
                 ]);
             }
 
-            $totalTtc += round((float) $lotItem->quantite * (float) $item['prix_unitaire_ttc'], 2);
+            $puHt = (float) ($item['prix_unitaire_ht'] ?? 0);
+            $tauxTva = (float) ($item['taux_tva'] ?? 20);
+            $montantHt = round((float) $lotItem->quantite * $puHt, 2);
+            $montantTtc = round($montantHt * (1 + $tauxTva / 100), 2);
+            
+            $totalTtc += $montantTtc;
         }
 
         $totalTtc = round($totalTtc, 2);
@@ -340,8 +460,8 @@ class MarcheController extends Controller
                 continue;
             }
 
-            $puTtc = (float) $itemData['prix_unitaire_ttc'];
-            $puHt = round($puTtc / 1.20, 2);
+            $puHt = (float) ($itemData['prix_unitaire_ht'] ?? 0);
+            $tauxTva = (float) ($itemData['taux_tva'] ?? 20);
             $montantHt = round((float) $lotItem->quantite * $puHt, 2);
 
             $row = MarcheBordereauItem::updateOrCreate(
@@ -351,6 +471,7 @@ class MarcheController extends Controller
                 ],
                 [
                     'prix_unitaire_attributaire' => $puHt,
+                    'taux_tva' => $tauxTva,
                     'montant_ht' => $montantHt,
                 ]
             );

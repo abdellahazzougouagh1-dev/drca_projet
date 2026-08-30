@@ -1,13 +1,16 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import api from '../api/axios';
-import { Save, CheckCircle, AlertCircle, Loader2, ArrowLeft, ArrowRight, Download, Briefcase, FileSignature, CheckSquare, Package } from 'lucide-react';
+import { Save, CheckCircle, AlertCircle, Loader2, ArrowLeft, ArrowRight, Download, Briefcase, FileSignature, Package, HandCoins, ReceiptText, Banknote, Edit3, Eye, FileText } from 'lucide-react';
+import { EngagementFormModal } from '../components/EngagementFormModal';
+import { EngagementPreviewModal } from '../components/EngagementPreviewModal';
 
 const toText = (value, fallback = '') => {
   if (value === null || value === undefined || value === '') return fallback;
   if (typeof value === 'string' || typeof value === 'number') return String(value);
   if (typeof value === 'object' && value.num_lot) return String(value.num_lot);
   return fallback;
+
 };
 
 const buildDefaultNumMarche = (numAoo, lotLabel) => {
@@ -69,19 +72,17 @@ const parseNum = (value) => {
 
 const formatMoney = (value) => parseNum(value).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-const TVA_RATE = 1.20;
 const round2 = (value) => Math.round(parseNum(value) * 100) / 100;
-
-const htFromTtc = (ttc) => round2(parseNum(ttc) / TVA_RATE);
-const ttcFromHt = (ht) => round2(parseNum(ht) * TVA_RATE);
 
 const buildBordereauFromLot = (lot, savedItems = []) => {
   const articles = Array.isArray(lot?.items) ? lot.items : [];
   return articles.map((item, index) => {
     const saved = savedItems.find(s => String(s.lot_item_id) === String(item.id));
     const puHt = saved?.prix_unitaire_attributaire;
+    const itemTva = parseFloat(saved?.taux_tva ?? item.taux_tva ?? 20);
+
     const prixTtc = puHt !== '' && puHt !== null && puHt !== undefined
-      ? ttcFromHt(puHt)
+      ? round2(parseNum(puHt) * (1 + itemTva / 100))
       : '';
 
     return {
@@ -91,6 +92,7 @@ const buildBordereauFromLot = (lot, savedItems = []) => {
       unite: item.unite || '',
       quantite: item.quantite ?? '',
       prix_unitaire_ttc: prixTtc,
+      taux_tva: itemTva,
     };
   });
 };
@@ -98,7 +100,9 @@ const buildBordereauFromLot = (lot, savedItems = []) => {
 const computeBordereauLine = (item) => {
   const quantite = parseNum(item.quantite);
   const puTtc = parseNum(item.prix_unitaire_ttc);
-  const puHt = htFromTtc(puTtc);
+  const tauxTva = parseNum(item.taux_tva) || 20;
+
+  const puHt = round2(puTtc / (1 + tauxTva / 100));
   const montantHt = round2(quantite * puHt);
   const montantTtc = round2(quantite * puTtc);
 
@@ -106,24 +110,41 @@ const computeBordereauLine = (item) => {
 };
 
 const computeBordereauTotals = (items) => {
-  const totalTtc = round2(items.reduce((sum, item) => sum + computeBordereauLine(item).montantTtc, 0));
-  const totalHt = round2(totalTtc / TVA_RATE);
-  const tva = round2(totalTtc - totalHt);
+  let totalHt = 0;
+  let totalTtc = 0;
 
-  return { totalHt, tva, totalTtc };
+  items.forEach(item => {
+    const line = computeBordereauLine(item);
+    totalHt += line.montantHt;
+    totalTtc += line.montantTtc;
+  });
+
+  return {
+    totalHt: round2(totalHt),
+    tva: round2(totalTtc - totalHt),
+    totalTtc: round2(totalTtc)
+  };
 };
 
 const GestionMarches = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const [activeTab, setActiveTab] = useState('creation');
+  const [activeTab, setActiveTab] = useState('consultation');
 
-  const wizardStepOrder = ['creation', 'approbation', 'execution', 'reception'];
+  const wizardStepOrder = ['consultation', 'engagement', 'liquidation', 'ordonnancement', 'cloture'];
+  const wizardLabels = {
+    consultation: 'Consultation',
+    engagement: 'Engagement',
+    liquidation: 'Liquidation',
+    ordonnancement: 'Ordonnancement',
+    cloture: 'Clôture'
+  };
   const wizardNextLabels = {
-    creation: 'Approbation',
-    approbation: 'Exécution & Suivi',
-    execution: 'Réception & Clôture',
+    consultation: 'Engagement',
+    engagement: 'Liquidation',
+    liquidation: 'Ordonnancement',
+    ordonnancement: 'Clôture'
   };
 
   const getNextStep = (current) => {
@@ -148,6 +169,7 @@ const GestionMarches = () => {
   const [saving, setSaving] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
+  const [downloadingBordereau, setDownloadingBordereau] = useState(false);
 
   const [aoosList, setAoosList] = useState([]);
   const [selectedAoo, setSelectedAoo] = useState(null);
@@ -166,6 +188,8 @@ const GestionMarches = () => {
     code_budget: '',
     intitule_budget: '',
     montant: '',
+    taux_tva: '20',
+    delai_execution: '',
     date_signature: '',
     date_approbation: '',
     date_notification_marche: '',
@@ -180,13 +204,37 @@ const GestionMarches = () => {
     statut: 'en_creation',
     agent_suivi: '',
     date_reception_finale: '',
-    commission_reception: []
+    commission_reception: [],
+    fournisseur_data: null
   });
 
   const [nouveauMembre, setNouveauMembre] = useState('');
   const [bordereauItems, setBordereauItems] = useState([]);
   const [commissionMembres, setCommissionMembres] = useState([]);
   const [selectedCommissionMembres, setSelectedCommissionMembres] = useState([]);
+
+  const [activeFormModalDoc, setActiveFormModalDoc] = useState(null);
+  const [activePreviewModalDoc, setActivePreviewModalDoc] = useState(null);
+
+  const [workflow, setWorkflow] = useState({ progress_percent: 0, current_phase: 'consultation' });
+
+  const loadWorkflowState = useCallback(async () => {
+    if (!id || id === 'nouveau') return;
+    try {
+      const response = await api.get(`/marches/${id}/workflow`);
+      if (response.data && response.data.data && response.data.data.workflow) {
+        setWorkflow(response.data.data.workflow);
+      }
+    } catch (err) {
+      console.error("Erreur chargement workflow", err);
+    }
+  }, [id]);
+
+  useEffect(() => {
+    if (workflow?.current_phase && wizardStepOrder.includes(workflow.current_phase)) {
+      setActiveTab(workflow.current_phase);
+    }
+  }, [workflow?.current_phase]);
 
   const syncBordereauForLot = useCallback((lot, savedItems = []) => {
     setBordereauItems(buildBordereauFromLot(lot, savedItems));
@@ -230,49 +278,78 @@ const GestionMarches = () => {
     }
   };
 
+  const handleDownloadBordereau = async () => {
+    if (!id || id === 'nouveau') return;
+    try {
+      setDownloadingBordereau(true);
+      setErrorMessage('');
+      const response = await api.get(`/marches/${id}/generate/bordereau`, {
+        responseType: 'blob',
+      });
+      const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
+      const link = document.createElement('a');
+      link.href = url;
+      const safeNumMarche = String(formData.num_marche || id).replace(/\//g, '_');
+      link.setAttribute('download', `Bordereau_${safeNumMarche}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      setErrorMessage("Erreur lors de la génération du Bordereau.");
+    } finally {
+      setDownloadingBordereau(false);
+    }
+  };
+
   const resolveLotAttributaire = useCallback((aoo, targetLot) => {
     const marches = Array.isArray(aoo.marches) ? aoo.marches : [];
     const concurrents = Array.isArray(aoo.concurrents) ? aoo.concurrents : [];
 
     let titulaire = '';
-    let montant = '';
+    let montant = targetLot.montant_attribue_ttc !== null && targetLot.montant_attribue_ttc !== undefined ? targetLot.montant_attribue_ttc : '';
     let lotLabel = toText(targetLot.num_lot, `LOT ${targetLot.id}`);
     let lotId = String(targetLot.id);
     let fournisseurId = '';
     let qualiteGerant = '';
     let objetMarche = toText(targetLot.objet_lot, toText(aoo.objet, ''));
+    let delaiExecution = targetLot.delai_execution_jours || '';
 
     const existingMarche = marches.find(m => String(m.lot_id) === String(targetLot.id));
     if (existingMarche) {
       titulaire = existingMarche.titulaire || '';
-      montant = existingMarche.montant ?? '';
+      montant = existingMarche.montant ?? montant;
       lotLabel = toText(existingMarche.lot, lotLabel) || lotLabel;
       fournisseurId = existingMarche.fournisseur_id ? String(existingMarche.fournisseur_id) : '';
       objetMarche = existingMarche.objet_marche || objetMarche;
       qualiteGerant = existingMarche.qualite_gerant || '';
+      delaiExecution = existingMarche.delai_execution || delaiExecution;
     }
 
+    let fournisseurData = null;
     const attributaire = targetLot.attributaire;
     if (attributaire) {
       titulaire = titulaire || attributaire.raison_sociale || '';
       fournisseurId = fournisseurId || String(attributaire.id);
       qualiteGerant = qualiteGerant || toText(attributaire.qualite_representant, '') || 'Gérant';
+      fournisseurData = attributaire;
     }
 
     const attributaireId = targetLot.attributaire_fournisseur_id || fournisseurId;
     const retenueDecision = (targetLot.decisions || []).find(
-      d => d.statut === 'Retenu' && (!attributaireId || String(d.fournisseur_id) === String(attributaireId))
-    ) || (targetLot.decisions || []).find(d => d.statut === 'Retenu');
+      d => (d.statut === 'Retenu' || d.statut === 'adjudicataire') && (!attributaireId || String(d.fournisseur_id) === String(attributaireId))
+    ) || (targetLot.decisions || []).find(d => d.statut === 'Retenu' || d.statut === 'adjudicataire');
 
     if (retenueDecision) {
       montant = montant !== '' && montant !== null ? montant : (retenueDecision.montant_propose ?? '');
       fournisseurId = fournisseurId || String(retenueDecision.fournisseur_id);
       titulaire = titulaire || retenueDecision.fournisseur?.raison_sociale || '';
       qualiteGerant = qualiteGerant || toText(retenueDecision.fournisseur?.qualite_representant, '') || 'Gérant';
+      fournisseurData = retenueDecision.fournisseur || fournisseurData;
     }
 
     if ((!titulaire || montant === '') && (aoo.lots?.length || 0) <= 1) {
-      const retenu = concurrents.find(c => c.statut_analyse === 'retenu');
+      const retenu = concurrents.find(c => c.statut_analyse === 'retenu' || c.statut_analyse === 'retenu_provisoire');
       if (retenu) {
         titulaire = titulaire || retenu.fournisseur?.raison_sociale || retenu.nom_soumissionnaire || '';
         fournisseurId = fournisseurId || String(retenu.fournisseur_id || '');
@@ -280,12 +357,18 @@ const GestionMarches = () => {
         if (montant === '') {
           montant = retenu.montant_engagement ?? '';
         }
+        fournisseurData = retenu.fournisseur || fournisseurData;
       }
     }
 
     const fournisseurQualite = resolveFournisseurQualite(aoo, titulaire, fournisseurId);
     if (fournisseurQualite) {
       qualiteGerant = fournisseurQualite;
+    }
+
+    // Ensure we use the exact existing Marche's fournisseur data if it exists and is loaded
+    if (existingMarche && existingMarche.fournisseur) {
+      fournisseurData = existingMarche.fournisseur;
     }
 
     return {
@@ -296,6 +379,9 @@ const GestionMarches = () => {
       fournisseur_id: fournisseurId,
       qualite_gerant: qualiteGerant,
       objet_marche: objetMarche,
+      taux_tva: '20',
+      delai_execution: delaiExecution !== undefined ? String(delaiExecution) : '',
+      fournisseur_data: fournisseurData
     };
   }, []);
 
@@ -323,8 +409,11 @@ const GestionMarches = () => {
         lot: '',
         titulaire: '',
         montant: '',
+        taux_tva: '20',
+        delai_execution: '',
         qualite_gerant: '',
         objet_marche: '',
+        fournisseur_data: null,
       };
 
       if (targetLot) {
@@ -358,8 +447,9 @@ const GestionMarches = () => {
     fetchCommissionMembres();
     if (id && id !== 'nouveau') {
       fetchMarche();
+      loadWorkflowState();
     }
-  }, [id]);
+  }, [id, loadWorkflowState]);
 
   useEffect(() => {
     if (id !== 'nouveau') return;
@@ -378,6 +468,7 @@ const GestionMarches = () => {
         sanitizedData[key] = data[key] !== null ? data[key] : '';
       });
       sanitizedData.commission_reception = Array.isArray(sanitizedData.commission_reception) ? sanitizedData.commission_reception : [];
+      sanitizedData.fournisseur_data = data.fournisseur || null;
       setFormData(sanitizedData);
 
       if (data.aoo_id) {
@@ -408,9 +499,12 @@ const GestionMarches = () => {
       lot: '',
       titulaire: '',
       montant: '',
+      taux_tva: '20',
+      delai_execution: '',
       fournisseur_id: '',
       qualite_gerant: '',
       objet_marche: '',
+      fournisseur_data: null,
     }));
     setBordereauItems([]);
 
@@ -453,9 +547,12 @@ const GestionMarches = () => {
         lot: '',
         titulaire: '',
         montant: '',
+        taux_tva: '20',
+        delai_execution: '',
         fournisseur_id: '',
         qualite_gerant: '',
         objet_marche: '',
+        fournisseur_data: null,
       }));
       setBordereauItems([]);
       return;
@@ -474,9 +571,9 @@ const GestionMarches = () => {
     syncBordereauForLot(lot);
   };
 
-  const handleBordereauPriceChange = (index, value) => {
+  const handleBordereauItemChange = (index, field, value) => {
     setBordereauItems(prev => prev.map((item, i) => (
-      i === index ? { ...item, prix_unitaire_ttc: value } : item
+      i === index ? { ...item, [field]: value } : item
     )));
   };
 
@@ -549,7 +646,7 @@ const GestionMarches = () => {
       const { totalTtc } = computeBordereauTotals(bordereauItems);
       const montantAttribution = parseNum(formData.montant);
       if (Math.abs(totalTtc - montantAttribution) > 0.02) {
-        setErrorMessage(`Le Total TTC du bordereau (${formatMoney(totalTtc)} MAD) doit être égal au montant d'attribution (${formatMoney(montantAttribution)} MAD).`);
+        setErrorMessage(`Le Total TTC du bordereau (${formatMoney(totalTtc)} dh) doit être égal au montant d'attribution (${formatMoney(montantAttribution)} dh).`);
         setSaving(false);
         return;
       }
@@ -576,6 +673,8 @@ const GestionMarches = () => {
         code_budget: toText(formData.code_budget, '') || null,
         intitule_budget: toText(formData.intitule_budget, '') || null,
         montant: formData.montant === '' ? null : Number(formData.montant),
+        taux_tva: formData.taux_tva ? Number(formData.taux_tva) : 20,
+        delai_execution: formData.delai_execution ? Number(formData.delai_execution) : null,
         date_signature: formData.date_signature || null,
         date_approbation: formData.date_approbation || null,
         date_notification_marche: formData.date_notification_marche || null,
@@ -592,10 +691,14 @@ const GestionMarches = () => {
         date_reception_finale: formData.date_reception_finale || null,
         commission_reception: Array.isArray(formData.commission_reception) ? formData.commission_reception : [],
         bordereau_items: bordereauItems.length > 0
-          ? bordereauItems.map(item => ({
+          ? bordereauItems.map(item => {
+            const { puHt } = computeBordereauLine(item);
+            return {
               lot_item_id: item.lot_item_id,
-              prix_unitaire_ttc: parseNum(item.prix_unitaire_ttc),
-            }))
+              prix_unitaire_ht: puHt,
+              taux_tva: parseNum(item.taux_tva) || 20,
+            };
+          })
           : [],
       };
 
@@ -627,28 +730,44 @@ const GestionMarches = () => {
   const downloadDocument = async (documentType) => {
     if (!id || id === 'nouveau') return;
 
-    if (documentType === 'os-commencement') {
+    if (documentType === 'acte-engagement' || documentType === 'decision-approbation' || documentType === 'os-commencement') {
       try {
-        const payload = {
-          os_numero: formData.os_numero,
-          os_date_signature: formData.os_date_signature,
-          os_date_effet: formData.os_date_effet,
-          date_notification_marche: formData.date_notification_marche,
-        };
-        const response = await api.post(`/marches/${id}/generer-os`, payload, {
+        let endpoint = '';
+        let filename = '';
+        if (documentType === 'acte-engagement') {
+          endpoint = `/marches/${id}/generate/acte`;
+          filename = `Acte_Engagement_${formData.num_marche}.pdf`;
+        } else if (documentType === 'decision-approbation') {
+          endpoint = `/marches/${id}/generate/notification`;
+          filename = `Notification_Approbation_${formData.num_marche}.pdf`;
+        } else if (documentType === 'os-commencement') {
+          endpoint = `/marches/${id}/generate/os`;
+          filename = `OS_Commencement_${formData.num_marche}.pdf`;
+        }
+
+        const response = await api.get(endpoint, {
           responseType: 'blob',
         });
         const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
         const link = document.createElement('a');
         link.href = url;
-        link.setAttribute('download', `OS_Commencement_${formData.num_marche}.pdf`);
+        link.setAttribute('download', filename);
         document.body.appendChild(link);
         link.click();
         link.remove();
         window.URL.revokeObjectURL(url);
       } catch (err) {
-        const errorMessage = err.response?.data?.error || 'Erreur lors de la génération de l\'OS de Commencement. Vérifiez que tous les champs requis sont remplis.';
-        setErrorMessage(errorMessage);
+        let msg = 'Erreur lors de la génération du document. Vérifiez que tous les champs requis sont remplis et sauvegardés.';
+        if (err.response && err.response.data && err.response.data.message) {
+          msg = err.response.data.message;
+        } else if (err.response && err.response.data instanceof Blob) {
+          const text = await err.response.data.text();
+          try {
+            const json = JSON.parse(text);
+            if (json.message) msg = json.message;
+          } catch (e) { }
+        }
+        setErrorMessage(msg);
       }
     } else if (documentType === 'decision-nomination') {
       try {
@@ -734,8 +853,38 @@ const GestionMarches = () => {
     );
   }
 
-  const tabClass = (tabName) => `whitespace-nowrap px-6 py-3 rounded-xl font-bold text-sm transition-all flex items-center gap-2 ${activeTab === tabName ? 'bg-blue-600 text-white shadow-md' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`;
-  const inputClass = 'w-full px-4 py-3 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all';
+  const tabClass = (tabName) => `whitespace-nowrap px-6 py-3 rounded-xl font-bold text-sm transition-all flex items-center gap-2 ${activeTab === tabName ? 'bg-[#1e3a8a] text-white shadow-md' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`;
+  const inputClass = 'w-full px-4 py-3 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white outline-none focus:border-[#1e3a8a] focus:ring-2 focus:ring-[#1e3a8a]/10 transition-all';
+
+  const parentAoo = selectedAoo;
+
+  const markPhase = async (phaseName, validee) => {
+    try {
+      setSaving(true);
+      const action = validee ? 'valider' : 'cours';
+      await api.post(`/marches/${id}/phases/${phaseName}/${action}`);
+      await fetchMarche();
+      await loadWorkflowState();
+      setSuccessMessage(`Phase ${phaseName} ${validee ? 'validée' : 'mise à jour'} avec succès.`);
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (err) {
+      setErrorMessage(err.response?.data?.message || `Erreur lors de la mise à jour de la phase ${phaseName}.`);
+      console.error(err);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const saveMarche = async (updatedData = null) => {
+    try {
+      const payload = updatedData || formData;
+      await api.put(`/marches/${id}`, payload);
+      setSuccessMessage('Marché mis à jour avec succès');
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   const renderActionBanner = (buttonText, documents) => (
     <div className="mt-8 p-5 bg-slate-50 border border-slate-200 rounded-2xl flex flex-col xl:flex-row items-center justify-between gap-6 shadow-sm">
@@ -770,8 +919,8 @@ const GestionMarches = () => {
   );
 
   return (
-    <div className="min-h-screen bg-slate-50/50 pb-24">
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(14,165,233,0.10),_transparent_30%),linear-gradient(135deg,_#f8fafc_0%,_#eef6ff_100%)] pb-24">
+      <header className="bg-white/95 border-b border-slate-200 sticky top-0 z-30 shadow-sm backdrop-blur">
         <div className="w-full px-4 sm:px-6 lg:px-8">
           <div className="py-4 flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -780,14 +929,25 @@ const GestionMarches = () => {
               </button>
               <div>
                 <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-3">
-                  <Briefcase className="text-blue-600" />
+                  <Briefcase className="text-[#1e3a8a]" />
                   {id && id !== 'nouveau' ? `Marché : ${formData.num_marche || 'En cours'}` : 'Nouveau Marché'}
                 </h1>
-                <p className="text-slate-500 text-sm mt-1">Gestion du cycle de vie du Marché (Module 2)</p>
+                <p className="text-slate-500 text-sm mt-1">Workflow institutionnel du cycle d’un marché public marocain</p>
               </div>
             </div>
 
             <div className="flex items-center gap-3">
+              {id && id !== 'nouveau' && (
+                <button
+                  type="button"
+                  onClick={handleDownloadBordereau}
+                  disabled={downloadingBordereau}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-xl font-bold text-sm hover:bg-blue-700 flex items-center gap-2 shadow-md transition-all disabled:opacity-70 disabled:cursor-not-allowed"
+                >
+                  {downloadingBordereau ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
+                  {downloadingBordereau ? 'Génération...' : 'Générer Bordereau PDF'}
+                </button>
+              )}
               {successMessage && (
                 <div className="px-4 py-2 bg-emerald-50 text-emerald-600 rounded-xl font-bold text-sm flex items-center gap-2 border border-emerald-100 animate-fade-in-down">
                   <CheckCircle size={18} /> {successMessage}
@@ -801,19 +961,34 @@ const GestionMarches = () => {
             </div>
           </div>
 
-          {/* TABS NAVIGATION */}
-          <div className="grid grid-cols-1 sm:grid-cols-4 gap-8 pb-4">
-            <button onClick={() => setActiveTab('creation')} className={`min-w-0 flex-1 px-6 py-5 rounded-2xl font-bold text-base transition-all flex items-center justify-center gap-3 ${activeTab === 'creation' ? 'bg-blue-600 text-white shadow-lg' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}>
-              <FileSignature size={22} /> 1. Création Marché
+          <div className="mb-4 rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <p className="text-sm font-semibold text-slate-600">Avancement du marché</p>
+                <p className="text-xl font-bold text-slate-800">{workflow.progress_percent}%</p>
+              </div>
+              <div className="text-right">
+                <p className="text-sm text-slate-500">Phase active</p>
+                <p className="text-sm font-semibold text-[#1e3a8a]">{wizardLabels[workflow.current_phase] || 'Consultation'}</p>
+              </div>
+            </div>
+            <div className="h-2 rounded-full bg-slate-200 overflow-hidden">
+              <div className="h-full rounded-full bg-gradient-to-r from-[#1e3a8a] via-[#0ea5e9] to-[#34d399] transition-all" style={{ width: `${workflow.progress_percent}%` }} />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 pb-4">
+            <button onClick={() => setActiveTab('consultation')} className={tabClass('consultation')}>
+              <FileSignature size={18} /> 1. Consultation
             </button>
-            <button onClick={() => setActiveTab('approbation')} className={`min-w-0 flex-1 px-6 py-5 rounded-2xl font-bold text-base transition-all flex items-center justify-center gap-3 ${activeTab === 'approbation' ? 'bg-blue-600 text-white shadow-lg' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}>
-              <CheckSquare size={22} /> 2. Approbation
+            <button onClick={() => setActiveTab('engagement')} className={tabClass('engagement')}>
+              <HandCoins size={18} /> 2. Engagement
             </button>
-            <button onClick={() => setActiveTab('execution')} className={`min-w-0 flex-1 px-6 py-5 rounded-2xl font-bold text-base transition-all flex items-center justify-center gap-3 ${activeTab === 'execution' ? 'bg-blue-600 text-white shadow-lg' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}>
-              <Briefcase size={22} /> 3. Exécution & Suivi
+            <button onClick={() => setActiveTab('liquidation')} className={tabClass('liquidation')}>
+              <ReceiptText size={18} /> 3. Liquidation
             </button>
-            <button onClick={() => setActiveTab('reception')} className={`min-w-0 flex-1 px-6 py-5 rounded-2xl font-bold text-base transition-all flex items-center justify-center gap-3 ${activeTab === 'reception' ? 'bg-blue-600 text-white shadow-lg' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}>
-              <CheckCircle size={22} /> 4. Réception & Clôture
+            <button onClick={() => setActiveTab('ordonnancement')} className={tabClass('ordonnancement')}>
+              <Banknote size={18} /> 4. Ordonnancement
             </button>
           </div>
         </div>
@@ -822,10 +997,9 @@ const GestionMarches = () => {
       <main className="w-full px-4 sm:px-6 lg:px-8 mt-16">
         <form onSubmit={handleSubmit} className="bg-white rounded-3xl p-10 shadow-sm border border-slate-200">
 
-          {/* TAB 1 : CREATION MARCHE */}
-          <div className={activeTab === 'creation' ? 'block animate-fade-in' : 'hidden'}>
+          <div className={activeTab === 'consultation' ? 'block animate-fade-in' : 'hidden'}>
             <div className="mb-8 border-b border-slate-100 pb-4">
-              <h2 className="text-xl font-extrabold text-slate-800">Liaison et Informations du Marché</h2>
+              <h2 className="text-xl font-extrabold text-slate-800">Préparation et consultation</h2>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
@@ -945,11 +1119,49 @@ const GestionMarches = () => {
                 <label className="block text-sm font-bold text-slate-700 mb-2">Qualité du Gérant / Responsable</label>
                 <input type="text" name="qualite_gerant" value={formData.qualite_gerant} onChange={handleChange} readOnly placeholder="Rempli automatiquement depuis le fournisseur" className={`${inputClass} bg-slate-100 text-slate-700 cursor-not-allowed`} />
               </div>
+            </div>
+
+            {/* Titulaire Info Block */}
+            {formData.fournisseur_data && (
+              <div className="mt-6 mb-6 p-5 bg-indigo-50 border border-indigo-100 rounded-2xl">
+                <h4 className="text-sm font-bold text-indigo-800 mb-3 uppercase tracking-wider flex items-center gap-2">
+                  <Briefcase size={16} /> Informations Administratives & Bancaires du Titulaire
+                </h4>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                  <div>
+                    <span className="block text-indigo-400 text-xs font-semibold mb-1">ICE</span>
+                    <span className="font-bold text-indigo-950">{formData.fournisseur_data.ice || '-'}</span>
+                  </div>
+                  <div>
+                    <span className="block text-indigo-400 text-xs font-semibold mb-1">Registre de Commerce</span>
+                    <span className="font-bold text-indigo-950">{formData.fournisseur_data.rc || '-'} {formData.fournisseur_data.ville_rc ? `(${formData.fournisseur_data.ville_rc})` : ''}</span>
+                  </div>
+                  <div>
+                    <span className="block text-indigo-400 text-xs font-semibold mb-1">Identifiant Fiscal (IF)</span>
+                    <span className="font-bold text-indigo-950">{formData.fournisseur_data.if || formData.fournisseur_data.identifiant_fiscal || '-'}</span>
+                  </div>
+                  <div>
+                    <span className="block text-indigo-400 text-xs font-semibold mb-1">Banque</span>
+                    <span className="font-bold text-indigo-950">{formData.fournisseur_data.banque || '-'}</span>
+                  </div>
+                  <div className="col-span-2 md:col-span-4">
+                    <span className="block text-indigo-400 text-xs font-semibold mb-1">RIB (Relevé d'Identité Bancaire)</span>
+                    <span className="font-mono text-base tracking-widest font-bold text-indigo-950">{formData.fournisseur_data.rib || 'Non renseigné'}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
               <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">Montant du Marché (MAD) *</label>
+                <label className="block text-sm font-bold text-slate-700 mb-2">Montant du Marché (dh) *</label>
                 <input type="number" step="0.01" name="montant" value={formData.montant} onChange={handleChange} required readOnly className={`${inputClass} bg-slate-100 text-slate-700 cursor-not-allowed`} />
               </div>
 
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-2">Délai d'exécution (jours) *</label>
+                <input type="number" name="delai_execution" value={formData.delai_execution} onChange={handleChange} required className={inputClass} />
+              </div>
               <div>
                 <label className="block text-sm font-bold text-slate-700 mb-2">Date de signature</label>
                 <input type="date" name="date_signature" value={formData.date_signature} onChange={handleChange} className={inputClass} />
@@ -965,7 +1177,7 @@ const GestionMarches = () => {
                   </div>
                   {hasBordereauPrices && !bordereauMatch && formData.montant !== '' && (
                     <div className="px-4 py-2 bg-amber-50 text-amber-700 rounded-xl border border-amber-200 text-sm font-medium flex items-center gap-2">
-                      <AlertCircle size={16} /> Total TTC ({formatMoney(bordereauTotals.totalTtc)} MAD) ≠ montant d'attribution ({formatMoney(montantAttribution)} MAD)
+                      <AlertCircle size={16} /> Total TTC ({formatMoney(bordereauTotals.totalTtc)} dh) ≠ montant d'attribution ({formatMoney(montantAttribution)} dh)
                     </div>
                   )}
                   {hasBordereauPrices && bordereauMatch && (
@@ -984,6 +1196,7 @@ const GestionMarches = () => {
                         <th className="px-3 py-3 text-center font-bold">Unité</th>
                         <th className="px-3 py-3 text-right font-bold">Quantité</th>
                         <th className="px-3 py-3 text-right font-bold min-w-[170px]">Prix Unitaire TTC (Entreprise)</th>
+                        <th className="px-3 py-3 text-right font-bold w-24">Taux TVA (%)</th>
                         <th className="px-3 py-3 text-right font-bold">P.U HT (calculé)</th>
                         <th className="px-3 py-3 text-right font-bold">Montant HT</th>
                       </tr>
@@ -1003,9 +1216,20 @@ const GestionMarches = () => {
                                 min="0"
                                 step="0.01"
                                 value={item.prix_unitaire_ttc}
-                                onChange={(e) => handleBordereauPriceChange(index, e.target.value)}
+                                onChange={(e) => handleBordereauItemChange(index, 'prix_unitaire_ttc', e.target.value)}
                                 className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:border-blue-500 outline-none bg-white text-right font-mono"
                                 placeholder="0,00"
+                              />
+                            </td>
+                            <td className="px-3 py-2">
+                              <input
+                                type="number"
+                                min="0"
+                                max="100"
+                                step="0.1"
+                                value={item.taux_tva ?? 20}
+                                onChange={(e) => handleBordereauItemChange(index, 'taux_tva', e.target.value)}
+                                className="w-full px-2 py-2 rounded-lg border border-slate-200 focus:border-blue-500 outline-none bg-white text-center font-mono"
                               />
                             </td>
                             <td className="px-3 py-2 text-right font-mono text-slate-600">{formatMoney(line.puHt)}</td>
@@ -1016,22 +1240,22 @@ const GestionMarches = () => {
                     </tbody>
                     <tfoot className="bg-slate-50 border-t border-slate-200">
                       <tr>
-                        <td colSpan="5" className="px-3 py-3 text-right font-bold text-slate-700">Total HT</td>
-                        <td colSpan="2" className="px-3 py-3 text-right font-mono font-bold">{formatMoney(bordereauTotals.totalHt)} MAD</td>
+                        <td colSpan="6" className="px-3 py-3 text-right font-bold text-slate-700">Total HT</td>
+                        <td colSpan="2" className="px-3 py-3 text-right font-mono font-bold">{formatMoney(bordereauTotals.totalHt)} dh</td>
                       </tr>
                       <tr>
-                        <td colSpan="5" className="px-3 py-3 text-right font-bold text-slate-700">TVA (20%)</td>
-                        <td colSpan="2" className="px-3 py-3 text-right font-mono font-bold">{formatMoney(bordereauTotals.tva)} MAD</td>
+                        <td colSpan="6" className="px-3 py-3 text-right font-bold text-slate-700">TVA Totale</td>
+                        <td colSpan="2" className="px-3 py-3 text-right font-mono font-bold">{formatMoney(bordereauTotals.tva)} dh</td>
                       </tr>
                       <tr>
-                        <td colSpan="5" className="px-3 py-3 text-right font-bold text-slate-800">Total TTC</td>
+                        <td colSpan="6" className="px-3 py-3 text-right font-bold text-slate-800">Total TTC</td>
                         <td colSpan="2" className={`px-3 py-3 text-right font-mono font-extrabold ${bordereauMatch ? 'text-emerald-700' : 'text-red-600'}`}>
-                          {formatMoney(bordereauTotals.totalTtc)} MAD
+                          {formatMoney(bordereauTotals.totalTtc)} dh
                         </td>
                       </tr>
                       <tr>
                         <td colSpan="7" className="px-3 py-3 text-sm text-slate-500">
-                          Montant d'attribution du lot : <strong>{formatMoney(montantAttribution)} MAD TTC</strong>
+                          Montant d'attribution du lot : <strong>{formatMoney(montantAttribution)} dh TTC</strong>
                         </td>
                       </tr>
                     </tfoot>
@@ -1051,63 +1275,370 @@ const GestionMarches = () => {
               { key: 'premiere-derniere-page', label: 'Générer 1er & Dernier Page' },
               { key: 'bordereau-prix', label: 'Imprimer Bordereau des Prix (Brdr C.E)' },
             ])}
-            {nextStep && (
-              <div className="mt-8 flex justify-end">
-                <button
-                  type="button"
-                  onClick={handleNextStep}
-                  className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-2xl shadow-xl hover:bg-blue-700 transition-all"
-                >
-                  <span>Suivant : {wizardNextLabels[activeTab]}</span>
+            <div className="mt-8 flex flex-wrap justify-between gap-3">
+              <button type="button" onClick={() => markPhase('consultation', true)} className="inline-flex items-center gap-2 px-6 py-3 bg-emerald-600 text-white rounded-2xl shadow hover:bg-emerald-700 transition-all">
+                <CheckCircle size={18} /> Valider la phase Consultation
+              </button>
+              {nextStep && (
+                <button type="button" onClick={handleNextStep} className="inline-flex items-center gap-2 px-6 py-3 bg-[#1e3a8a] text-white rounded-2xl shadow-xl hover:bg-[#16316f] transition-all">
+                  <span>Suivant : {wizardLabels[nextStep]}</span>
                   <ArrowRight size={18} />
                 </button>
-              </div>
-            )}
-          </div>
-
-          {/* TAB 2 : APPROBATION */}
-          <div className={activeTab === 'approbation' ? 'block animate-fade-in' : 'hidden'}>
-            <div className="mb-8 border-b border-slate-100 pb-4">
-              <h2 className="text-xl font-extrabold text-slate-800">Approbation du Marché</h2>
-              <p className="text-sm text-slate-500 mt-2">
-                Génération automatique à partir des données enregistrées en Phase 1 et de l'AOO parent. Aucune saisie requise.
-              </p>
-            </div>
-
-            <div className="p-6 bg-slate-50 border border-slate-200 rounded-2xl flex flex-wrap items-center justify-center gap-4 shadow-sm">
-              {id && id !== 'nouveau' ? (
-                <button
-                  type="button"
-                  onClick={() => downloadDocument('rapport-presentation-marche')}
-                  className="px-6 py-3 text-sm font-bold text-emerald-700 bg-white border border-emerald-200 shadow-sm rounded-xl hover:bg-emerald-50 hover:border-emerald-300 transition-all flex items-center gap-2"
-                >
-                  <Download size={18} className="text-emerald-500" />
-                  Imprimer Rapport de Présentation (Rap.Present)
-                </button>
-              ) : (
-                <div className="flex items-center gap-2 text-amber-600 bg-amber-50 px-4 py-3 rounded-xl border border-amber-200 text-sm font-medium">
-                  <AlertCircle size={16} /> Enregistrez d'abord le marché en Phase 1 pour générer le document
-                </div>
               )}
             </div>
-            {nextStep && (
-              <div className="mt-8 flex justify-end">
-                <button
-                  type="button"
-                  onClick={handleNextStep}
-                  className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-2xl shadow-xl hover:bg-blue-700 transition-all"
-                >
-                  <span>Suivant : {wizardNextLabels[activeTab]}</span>
-                  <ArrowRight size={18} />
-                </button>
-              </div>
-            )}
           </div>
 
-          {/* TAB 3 : EXECUTION & SUIVI */}
-          <div className={activeTab === 'execution' ? 'block animate-fade-in' : 'hidden'}>
+          <div className={activeTab === 'engagement' ? 'block animate-fade-in' : 'hidden'}>
+            <div className="mb-8 border-b border-slate-100 pb-4 flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <h2 className="text-xl font-extrabold text-slate-800 flex items-center gap-2">
+                  <FileSignature className="text-blue-600" size={24} />
+                  Phase 2 : Engagement & Notification du Marché
+                </h2>
+                <p className="text-sm text-slate-500 mt-1">
+                  Gestion et génération automatique des 4 documents contractuels de l'engagement (chaînés depuis la Consultation & l'Attribution).
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2 bg-blue-50 border border-blue-200 px-4 py-2 rounded-2xl text-xs font-bold text-blue-900 shadow-sm">
+                <Package size={16} />
+                <span>Titulaire : <strong>{formData.titulaire || 'En attente d\'attribution'}</strong></span>
+                <span className="mx-1">•</span>
+                <span>TTC : <strong>{formatMoney(formData.montant)} dh</strong></span>
+              </div>
+            </div>
+
+            {/* GRID DES 4 CARTES OFFICIELLES DE L'ENGAGEMENT */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+
+              {/* CARTE 1 : ACTE D'ENGAGEMENT */}
+              <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-4">
+                <div>
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <div className="flex items-center gap-2.5">
+                      <div className="p-2.5 bg-blue-50 text-blue-600 rounded-xl">
+                        <FileText size={20} />
+                      </div>
+                      <div>
+                        <h3 className="font-extrabold text-slate-900 text-base">Acte d'Engagement</h3>
+                        <p className="text-[11px] text-slate-500 font-mono">Pièce N° 2 Officielle</p>
+                      </div>
+                    </div>
+                    <span className="px-3 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full font-extrabold text-[11px]">
+                      Généré
+                    </span>
+                  </div>
+
+                  <div className="mt-4 space-y-2 text-xs">
+                    <div className="flex justify-between py-1 border-b border-slate-50">
+                      <span className="text-slate-500 font-medium">N° AOO / Consultation :</span>
+                      <span className="font-bold text-slate-800 font-mono">{parentAoo?.num_aoo || '06/2026/DRCA-RSK'}</span>
+                    </div>
+                    <div className="flex justify-between py-1 border-b border-slate-50">
+                      <span className="text-slate-500 font-medium">Titulaire engagé :</span>
+                      <span className="font-bold text-slate-900">{formData.titulaire || '—'}</span>
+                    </div>
+                    <div className="flex justify-between py-1 border-b border-slate-50">
+                      <span className="text-slate-500 font-medium">Montant Total TTC :</span>
+                      <span className="font-extrabold text-blue-900 font-mono">{formatMoney(formData.montant)} dh</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-2 flex flex-wrap gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setActiveFormModalDoc('acte-engagement')}
+                    className="py-2 px-2.5 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-[11px] rounded-xl border border-blue-200 transition-all flex items-center gap-1"
+                  >
+                    <Edit3 size={13} /> Formulaire
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActivePreviewModalDoc('acte-engagement')}
+                    className="py-2 px-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-[11px] rounded-xl transition-all flex items-center gap-1"
+                  >
+                    <Eye size={13} /> Prévisualiser
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => downloadDocument('acte-engagement')}
+                    className="flex-1 py-2 px-3 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white font-extrabold text-xs rounded-xl shadow-md shadow-blue-500/30 hover:shadow-lg hover:shadow-blue-500/40 hover:-translate-y-0.5 transition-all duration-300 flex items-center justify-center gap-1.5 group"
+                  >
+                    <Download size={14} className="group-hover:animate-bounce" /> Télécharger
+                  </button>
+                </div>
+              </div>
+
+              {/* CARTE 2 : MARCHÉ DÉFINITIF */}
+              <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-4">
+                <div>
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <div className="flex items-center gap-2.5">
+                      <div className="p-2.5 bg-indigo-50 text-indigo-600 rounded-xl">
+                        <Briefcase size={20} />
+                      </div>
+                      <div>
+                        <h3 className="font-extrabold text-slate-900 text-base">Marché & CPS</h3>
+                        <p className="text-[11px] text-slate-500 font-mono">Marché Définitif Rédigé</p>
+                      </div>
+                    </div>
+                    <span className="px-3 py-1 bg-blue-50 text-blue-700 border border-blue-200 rounded-full font-extrabold text-[11px]">
+                      {formData.num_marche ? 'Validé' : 'En préparation'}
+                    </span>
+                  </div>
+
+                  <div className="mt-4 space-y-2 text-xs">
+                    <div className="flex justify-between py-1 border-b border-slate-50">
+                      <span className="text-slate-500 font-medium">N° Marché Officiel :</span>
+                      <span className="font-bold text-indigo-900 font-mono">{formData.num_marche || 'Non attribué'}</span>
+                    </div>
+                    <div className="flex justify-between py-1 border-b border-slate-50">
+                      <span className="text-slate-500 font-medium">Référence CPS :</span>
+                      <span className="font-bold text-slate-800 font-mono">CPS-{parentAoo?.num_aoo || '06/2026'}</span>
+                    </div>
+                    <div className="flex justify-between py-1 border-b border-slate-50">
+                      <span className="text-slate-500 font-medium">Délai d'exécution :</span>
+                      <span className="font-bold text-slate-900">{parentAoo?.delai_execution || 12} Mois</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-2 flex flex-wrap gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setActiveFormModalDoc('marche-definitif')}
+                    className="py-2 px-2.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-[11px] rounded-xl border border-indigo-200 transition-all flex items-center gap-1"
+                  >
+                    <Edit3 size={13} /> Formulaire
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActivePreviewModalDoc('marche-definitif')}
+                    className="py-2 px-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-[11px] rounded-xl transition-all flex items-center gap-1"
+                  >
+                    <Eye size={13} /> Prévisualiser
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => downloadDocument('marche-definitif')}
+                    className="flex-1 py-2 px-3 bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-700 hover:to-indigo-600 text-white font-extrabold text-xs rounded-xl shadow-md shadow-indigo-500/30 hover:shadow-lg hover:shadow-indigo-500/40 hover:-translate-y-0.5 transition-all duration-300 flex items-center justify-center gap-1.5 group"
+                  >
+                    <Download size={14} className="group-hover:animate-bounce" /> Télécharger
+                  </button>
+                </div>
+              </div>
+
+              {/* CARTE 3 : APPROBATION DU MARCHÉ */}
+              <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-4">
+                <div>
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <div className="flex items-center gap-2.5">
+                      <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-xl">
+                        <CheckCircle size={20} />
+                      </div>
+                      <div>
+                        <h3 className="font-extrabold text-slate-900 text-base">Approbation du Marché</h3>
+                        <p className="text-[11px] text-slate-500 font-mono">Notification & Caution 3%</p>
+                      </div>
+                    </div>
+                    <span className="px-3 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full font-extrabold text-[11px]">
+                      {formData.date_approbation ? 'Approuvé' : 'Brouillon'}
+                    </span>
+                  </div>
+
+                  <div className="mt-4 space-y-2 text-xs">
+                    <div className="flex justify-between py-1 border-b border-slate-50">
+                      <span className="text-slate-500 font-medium">N° Décision :</span>
+                      <span className="font-bold text-slate-800 font-mono">{formData.num_decision || '01/2026/M06'}</span>
+                    </div>
+                    <div className="flex justify-between py-1 border-b border-slate-50">
+                      <span className="text-slate-500 font-medium">Date d'approbation :</span>
+                      <span className="font-bold text-slate-900">{formData.date_approbation || new Date().toLocaleDateString('fr-FR')}</span>
+                    </div>
+                    <div className="flex justify-between py-1 border-b border-slate-50">
+                      <span className="text-slate-500 font-medium">Caution Définitive (3%) :</span>
+                      <span className="font-extrabold text-emerald-800 font-mono">{formatMoney(parseFloat(formData.montant || 0) * 0.03)} dh</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-2 flex flex-wrap gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setActiveFormModalDoc('decision-approbation')}
+                    className="py-2 px-2.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold text-[11px] rounded-xl border border-emerald-200 transition-all flex items-center gap-1"
+                  >
+                    <Edit3 size={13} /> Formulaire
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActivePreviewModalDoc('decision-approbation')}
+                    className="py-2 px-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-[11px] rounded-xl transition-all flex items-center gap-1"
+                  >
+                    <Eye size={13} /> Prévisualiser
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => downloadDocument('decision-approbation')}
+                    className="flex-1 py-2 px-3 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600 text-white font-extrabold text-xs rounded-xl shadow-md shadow-emerald-500/30 hover:shadow-lg hover:shadow-emerald-500/40 hover:-translate-y-0.5 transition-all duration-300 flex items-center justify-center gap-1.5 group"
+                  >
+                    <Download size={14} className="group-hover:animate-bounce" /> Télécharger
+                  </button>
+                </div>
+              </div>
+
+              {/* CARTE 4 : ORDRE DE SERVICE DE COMMENCEMENT */}
+              <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-4">
+                <div>
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <div className="flex items-center gap-2.5">
+                      <div className="p-2.5 bg-amber-50 text-amber-600 rounded-xl">
+                        <ReceiptText size={20} />
+                      </div>
+                      <div>
+                        <h3 className="font-extrabold text-slate-900 text-base">OS de Commencement</h3>
+                        <p className="text-[11px] text-slate-500 font-mono">Démarrage des prestations</p>
+                      </div>
+                    </div>
+                    <span className="px-3 py-1 bg-amber-50 text-amber-700 border border-amber-200 rounded-full font-extrabold text-[11px]">
+                      {formData.os_numero ? 'Notifié' : 'En attente'}
+                    </span>
+                  </div>
+
+                  <div className="mt-4 space-y-2 text-xs">
+                    <div className="flex justify-between py-1 border-b border-slate-50">
+                      <span className="text-slate-500 font-medium">N° OS :</span>
+                      <span className="font-bold text-amber-900 font-mono">{formData.os_numero || '03/2026/M10'}</span>
+                    </div>
+                    <div className="flex justify-between py-1 border-b border-slate-50">
+                      <span className="text-slate-500 font-medium">Date d'Effet :</span>
+                      <span className="font-bold text-slate-900">{formData.os_date_effet || new Date().toLocaleDateString('fr-FR')}</span>
+                    </div>
+                    <div className="flex justify-between py-1 border-b border-slate-50">
+                      <span className="text-slate-500 font-medium">Accusé de réception :</span>
+                      <span className="font-bold text-slate-800">{formData.titulaire || '—'}</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="pt-2 flex flex-wrap gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setActiveFormModalDoc('os-commencement')}
+                    className="py-2 px-2.5 bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold text-[11px] rounded-xl border border-amber-200 transition-all flex items-center gap-1"
+                  >
+                    <Edit3 size={13} /> Formulaire
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActivePreviewModalDoc('os-commencement')}
+                    className="py-2 px-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-[11px] rounded-xl transition-all flex items-center gap-1"
+                  >
+                    <Eye size={13} /> Prévisualiser
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => downloadDocument('os-commencement')}
+                    className="flex-1 py-2 px-3 bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-600 hover:to-amber-500 text-white font-extrabold text-xs rounded-xl shadow-md shadow-amber-500/30 hover:shadow-lg hover:shadow-amber-500/40 hover:-translate-y-0.5 transition-all duration-300 flex items-center justify-center gap-1.5 group"
+                  >
+                    <Download size={14} className="group-hover:animate-bounce" /> Télécharger
+                  </button>
+                </div>
+              </div>
+
+            </div>
+
+            {/* FORMULAIRE DE SAISIE & EDITION RAPIDE DE L'ENGAGEMENT */}
+            <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm mb-8 space-y-4">
+              <h3 className="text-base font-extrabold text-slate-800 border-b border-slate-100 pb-3 flex items-center gap-2">
+                <FileSignature size={18} className="text-blue-600" />
+                Mise à jour des paramètres d'engagement du marché
+              </h3>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">N° Décision Approbation</label>
+                  <input
+                    type="text"
+                    name="num_decision"
+                    value={formData.num_decision || ''}
+                    onChange={handleChange}
+                    placeholder="Ex: 01/2026/M06"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white font-mono text-xs outline-none focus:border-blue-600"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Date Approbation</label>
+                  <input
+                    type="date"
+                    name="date_approbation"
+                    value={formData.date_approbation || ''}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white text-xs outline-none focus:border-blue-600"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">N° OS Commencement</label>
+                  <input
+                    type="text"
+                    name="os_numero"
+                    value={formData.os_numero || ''}
+                    onChange={handleChange}
+                    placeholder="Ex: 03/2026/M10"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white font-mono text-xs outline-none focus:border-blue-600"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Date d'effet OS</label>
+                  <input
+                    type="date"
+                    name="os_date_effet"
+                    value={formData.os_date_effet || ''}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white text-xs outline-none focus:border-blue-600"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Agent chargé du suivi</label>
+                  <input
+                    type="text"
+                    name="agent_suivi"
+                    value={formData.agent_suivi || ''}
+                    onChange={handleChange}
+                    placeholder="Nom du responsable ONCA..."
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white text-xs outline-none focus:border-blue-600"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Exercice budgétaire</label>
+                  <input
+                    type="text"
+                    name="exercice"
+                    value={formData.exercice || ''}
+                    onChange={handleChange}
+                    placeholder="2026"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white text-xs outline-none focus:border-blue-600"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-8 flex flex-wrap justify-between gap-3">
+              <button type="button" onClick={() => markPhase('engagement', true)} className="inline-flex items-center gap-2 px-6 py-3 bg-emerald-600 text-white font-bold rounded-2xl shadow hover:bg-emerald-700 transition-all">
+                <CheckCircle size={18} /> Valider la phase Engagement
+              </button>
+              {nextStep && (
+                <button type="button" onClick={handleNextStep} className="inline-flex items-center gap-2 px-6 py-3 bg-[#1e3a8a] text-white font-bold rounded-2xl shadow-xl hover:bg-[#16316f] transition-all">
+                  <span>Suivant : {wizardLabels[nextStep]}</span>
+                  <ArrowRight size={18} />
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div className={activeTab === 'liquidation' ? 'block animate-fade-in' : 'hidden'}>
             <div className="mb-8 border-b border-slate-100 pb-4">
-              <h2 className="text-xl font-extrabold text-slate-800">Exécution et Suivi</h2>
+              <h2 className="text-xl font-extrabold text-slate-800">Liquidation et exécution</h2>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mb-8">
@@ -1140,71 +1671,70 @@ const GestionMarches = () => {
               { key: 'os-arret', label: 'OS Arrêt' },
               { key: 'os-reprise', label: 'OS Reprise' }
             ])}
-            {nextStep && (
-              <div className="mt-8 flex justify-end">
-                <button
-                  type="button"
-                  onClick={handleNextStep}
-                  className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-2xl shadow-xl hover:bg-blue-700 transition-all"
-                >
-                  <span>Suivant : {wizardNextLabels[activeTab]}</span>
+            <div className="mt-8 flex flex-wrap justify-between gap-3">
+              <button type="button" onClick={() => markPhase('liquidation', true)} className="inline-flex items-center gap-2 px-6 py-3 bg-emerald-600 text-white rounded-2xl shadow hover:bg-emerald-700 transition-all">
+                <CheckCircle size={18} /> Valider la phase Liquidation
+              </button>
+              {nextStep && (
+                <button type="button" onClick={handleNextStep} className="inline-flex items-center gap-2 px-6 py-3 bg-[#1e3a8a] text-white rounded-2xl shadow-xl hover:bg-[#16316f] transition-all">
+                  <span>Suivant : {wizardLabels[nextStep]}</span>
                   <ArrowRight size={18} />
                 </button>
-              </div>
-            )}
+              )}
+            </div>
           </div>
 
-          {/* TAB 4 : RECEPTION & CLOTURE */}
-          <div className={activeTab === 'reception' ? 'block animate-fade-in' : 'hidden'}>
+          <div className={activeTab === 'ordonnancement' ? 'block animate-fade-in' : 'hidden'}>
             <div className="mb-8 border-b border-slate-100 pb-4">
-              <h2 className="text-xl font-extrabold text-slate-800">Réception et Clôture</h2>
+              <h2 className="text-xl font-extrabold text-slate-800">Ordonnancement et paiement final</h2>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mb-8">
               <div>
                 <label className="block text-sm font-bold text-slate-700 mb-2">Numéro de la décision</label>
-                <input type="text" name="num_decision" value={formData.num_decision} onChange={handleChange} placeholder="Ex: 38/DR/2025" className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-purple-500 outline-none bg-slate-50 focus:bg-white" />
+                <input type="text" name="num_decision" value={formData.num_decision} onChange={handleChange} placeholder="Ex: 38/DR/2025" className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-blue-500 outline-none bg-slate-50 focus:bg-white" />
               </div>
               <div>
                 <label className="block text-sm font-bold text-slate-700 mb-2">Date de la décision</label>
-                <input type="date" name="date_decision" value={formData.date_decision} onChange={handleChange} className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-purple-500 outline-none bg-slate-50 focus:bg-white" />
+                <input type="date" name="date_decision" value={formData.date_decision} onChange={handleChange} className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-blue-500 outline-none bg-slate-50 focus:bg-white" />
               </div>
               <div>
                 <label className="block text-sm font-bold text-slate-700 mb-2">Date de réunion de la commission</label>
-                <input type="date" name="date_reunion_commission" value={formData.date_reunion_commission} onChange={handleChange} className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-purple-500 outline-none bg-slate-50 focus:bg-white" />
+                <input type="date" name="date_reunion_commission" value={formData.date_reunion_commission} onChange={handleChange} className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-blue-500 outline-none bg-slate-50 focus:bg-white" />
               </div>
               <div>
                 <label className="block text-sm font-bold text-slate-700 mb-2">Heure de réunion</label>
-                <input type="time" name="heure_reunion_commission" value={formData.heure_reunion_commission} onChange={handleChange} className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-purple-500 outline-none bg-slate-50 focus:bg-white" />
+                <input type="time" name="heure_reunion_commission" value={formData.heure_reunion_commission} onChange={handleChange} className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-blue-500 outline-none bg-slate-50 focus:bg-white" />
               </div>
               <div className="md:col-span-2">
                 <label className="block text-sm font-bold text-slate-700 mb-2">Lieu de réunion</label>
-                <input type="text" name="lieu_reunion_commission" value={formData.lieu_reunion_commission} onChange={handleChange} placeholder="Ex: au siège de la DRCA-RSK" className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-purple-500 outline-none bg-slate-50 focus:bg-white" />
+                <input type="text" name="lieu_reunion_commission" value={formData.lieu_reunion_commission} onChange={handleChange} placeholder="Ex: au siège de la DRCA-RSK" className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-blue-500 outline-none bg-slate-50 focus:bg-white" />
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mb-8">
               <div>
                 <label className="block text-sm font-bold text-slate-700 mb-2">Date de réception finale</label>
-                <input type="date" name="date_reception_finale" value={formData.date_reception_finale} onChange={handleChange} className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-purple-500 outline-none bg-slate-50 focus:bg-white" />
+                <input type="date" name="date_reception_finale" value={formData.date_reception_finale} onChange={handleChange} className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-blue-500 outline-none bg-slate-50 focus:bg-white" />
               </div>
 
               <div className="md:col-span-2">
                 <label className="block text-sm font-bold text-slate-700 mb-2">Membres de la commission de réception</label>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-4">
-                  {commissionMembres.map((membre) => (
+                  {(Array.isArray(commissionMembres) ? commissionMembres : []).map((membre) => (
                     <label key={membre.id} className="flex items-center p-3 bg-slate-50 rounded-lg border border-slate-200 cursor-pointer hover:bg-slate-100 transition-colors">
                       <input
                         type="checkbox"
-                        checked={selectedCommissionMembres.includes(membre.id)}
+                        checked={(Array.isArray(selectedCommissionMembres) ? selectedCommissionMembres : []).includes(membre.id)}
                         onChange={(e) => {
+                          const currentSelected = Array.isArray(selectedCommissionMembres) ? selectedCommissionMembres : [];
                           if (e.target.checked) {
-                            setSelectedCommissionMembres([...selectedCommissionMembres, membre.id]);
+                            setSelectedCommissionMembres([...currentSelected, membre.id]);
                           } else {
-                            setSelectedCommissionMembres(selectedCommissionMembres.filter(id => id !== membre.id));
+                            setSelectedCommissionMembres(currentSelected.filter(id => id !== membre.id));
                           }
                         }}
-                        className="mr-3 w-4 h-4 text-purple-600"
+                        className="mr-3 w-4 h-4 text-blue-600"
                       />
                       <div>
                         <div className="text-sm font-medium text-slate-700">{membre.nom_prenom}</div>
@@ -1214,19 +1744,83 @@ const GestionMarches = () => {
                   ))}
                 </div>
                 {selectedCommissionMembres.length > 0 && (
-                  <div className="text-sm text-purple-700 font-medium">
+                  <div className="text-sm text-blue-700 font-medium">
                     {selectedCommissionMembres.length} membre(s) sélectionné(s)
                   </div>
                 )}
               </div>
             </div>
 
-            {renderActionBanner("Enregistrer la Réception & Clôturer", [
-              { key: 'decision-nomination', label: 'Générer Décision Nomination' },
-              { key: 'pv-reception-provisoire', label: 'PV Réception provisoire' },
-              { key: 'pv-reception-definitive', label: 'PV Réception définitive' },
-              { key: 'attestation-bonne-execution', label: 'Attestation bonne exécution' }
-            ])}
+            <div className="bg-slate-900 text-white p-6 rounded-2xl shadow-lg border border-slate-800">
+              <div className="flex justify-between items-start mb-6 border-b border-slate-700 pb-4">
+                <h2 className="text-lg font-bold flex items-center gap-2">
+                  <FileText className="text-indigo-400" size={20} /> Documents d'Ordonnancement / Clôture
+                </h2>
+                {formData.fournisseur_data && (
+                  <div className="text-right bg-slate-800 p-3 rounded-xl border border-slate-700">
+                    <span className="block text-xs text-slate-400 mb-1 uppercase font-bold">Banque & RIB de {formData.titulaire}</span>
+                    <div className="flex flex-col">
+                      <span className="font-bold text-slate-200 text-sm">{formData.fournisseur_data.banque || 'Banque non renseignée'}</span>
+                      <span className="font-mono font-bold text-indigo-300 text-sm tracking-wider">{formData.fournisseur_data.rib || 'RIB non renseigné'}</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-3">
+                <button type="button" onClick={async () => {
+                  try {
+                    const res = await api.get(`/marches/${id}/cloture/documents/mainlevee`, { responseType: 'blob' });
+                    const mimeType = res.data.type || res.headers['content-type'] || '';
+                    const extension = mimeType.includes('pdf') ? 'pdf' : 'docx';
+                    const url = window.URL.createObjectURL(new Blob([res.data]));
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.setAttribute('download', `mainlevee_${formData.num_marche}.${extension}`);
+                    document.body.appendChild(link);
+                    link.click();
+                    link.remove();
+                  } catch (err) {
+                    alert('Erreur lors de la génération. Avez-vous enregistré les données de clôture ? (Avez-vous ajouté mainlevee.docx ?)');
+                  }
+                }} className="w-full py-3 px-4 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl text-sm font-bold flex items-center justify-between transition-colors">
+                  <span className="flex items-center gap-2"><FileDown size={18} className="text-emerald-400" /> Mainlevée</span>
+                  <span className="text-xs bg-slate-700 px-2 py-1 rounded text-slate-300">Générer</span>
+                </button>
+
+                <button type="button" onClick={async () => {
+                  try {
+                    const res = await api.get(`/marches/${id}/cloture/documents/certificat_reference`, { responseType: 'blob' });
+                    const mimeType = res.data.type || res.headers['content-type'] || '';
+                    const extension = mimeType.includes('pdf') ? 'pdf' : 'docx';
+                    const url = window.URL.createObjectURL(new Blob([res.data]));
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.setAttribute('download', `certificat_reference_${formData.num_marche}.${extension}`);
+                    document.body.appendChild(link);
+                    link.click();
+                    link.remove();
+                  } catch (err) {
+                    alert('Erreur lors de la génération. Avez-vous enregistré les données de clôture ? (Avez-vous ajouté certificat_reference.docx ?)');
+                  }
+                }} className="w-full py-3 px-4 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl text-sm font-bold flex items-center justify-between transition-colors">
+                  <span className="flex items-center gap-2"><FileDown size={18} className="text-amber-400" /> Certificat de Référence</span>
+                  <span className="text-xs bg-slate-700 px-2 py-1 rounded text-slate-300">Générer</span>
+                </button>
+              </div>
+            </div>
+            <div className="mt-8 flex flex-wrap justify-between gap-3">
+              <button type="button" onClick={() => markPhase('ordonnancement', true)} className="inline-flex items-center gap-2 px-6 py-3 bg-emerald-600 text-white rounded-2xl shadow hover:bg-emerald-700 transition-all">
+                <CheckCircle size={18} /> Valider la phase Ordonnancement
+              </button>
+
+              {id !== 'nouveau' && ['ordonnancement_validee', 'cloture_en_cours', 'cloture_validee'].includes(formData.statut) && (
+                <button type="button" onClick={() => navigate(`/marches/${id}/cloture`)} className="inline-flex items-center gap-2 px-6 py-3 bg-slate-900 text-white font-bold rounded-2xl shadow-xl hover:bg-slate-800 transition-all">
+                  <span>Phase Clôture & Documents finaux</span>
+                  <ArrowRight size={18} />
+                </button>
+              )}
+            </div>
 
             {/* Export Archive Button */}
             <div className="mt-8 relative group">
@@ -1234,7 +1828,7 @@ const GestionMarches = () => {
                 type="button"
                 onClick={downloadArchive}
                 disabled={id === 'nouveau'}
-                className="w-full px-6 py-4 bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold rounded-xl shadow-lg hover:shadow-xl hover:from-purple-700 hover:to-indigo-700 transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full px-6 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold rounded-xl shadow-lg hover:shadow-xl hover:from-blue-700 hover:to-indigo-700 transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Package size={20} />
                 <span>Exporter les documents disponibles (.zip)</span>
@@ -1247,6 +1841,52 @@ const GestionMarches = () => {
             </div>
           </div>
         </form>
+
+        {/* Engagement Form Modal */}
+        <EngagementFormModal
+          isOpen={!!activeFormModalDoc}
+          onClose={() => setActiveFormModalDoc(null)}
+          docType={activeFormModalDoc}
+          docTitle={
+            activeFormModalDoc === 'acte-engagement' ? 'Acte d\'Engagement' :
+              activeFormModalDoc === 'marche-definitif' ? 'Marché Définitif & CPS' :
+                activeFormModalDoc === 'decision-approbation' ? 'Approbation du Marché' :
+                  activeFormModalDoc === 'os-commencement' ? 'Ordre de Service de Commencement' : ''
+          }
+          initialData={formData}
+          onSave={(updated) => {
+            setFormData((prev) => ({ ...prev, ...updated }));
+            saveMarche();
+            setActiveFormModalDoc(null);
+          }}
+          onPreview={(type, updated) => {
+            setFormData((prev) => ({ ...prev, ...updated }));
+            saveMarche();
+            setActiveFormModalDoc(null);
+            setActivePreviewModalDoc(type);
+          }}
+        />
+
+        {/* Engagement Preview Modal */}
+        <EngagementPreviewModal
+          isOpen={!!activePreviewModalDoc}
+          onClose={() => setActivePreviewModalDoc(null)}
+          docType={activePreviewModalDoc}
+          docTitle={
+            activePreviewModalDoc === 'acte-engagement' ? 'Acte d\'Engagement' :
+              activePreviewModalDoc === 'marche-definitif' ? 'Marché Définitif & CPS' :
+                activePreviewModalDoc === 'decision-approbation' ? 'Approbation du Marché' :
+                  activePreviewModalDoc === 'os-commencement' ? 'Ordre de Service de Commencement' : ''
+          }
+          formData={formData}
+          onEdit={(type) => {
+            setActivePreviewModalDoc(null);
+            setActiveFormModalDoc(type);
+          }}
+          onDownload={(type) => {
+            downloadDocument(type);
+          }}
+        />
       </main>
     </div>
   );

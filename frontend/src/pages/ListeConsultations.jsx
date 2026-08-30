@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 import { ArrowLeft, Loader2, Plus, AlertCircle, Eye } from 'lucide-react';
@@ -10,26 +10,56 @@ const ListeConsultations = () => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const fetchConsultations = async () => {
+    const fetchAllDossiers = async () => {
       try {
         setLoading(true);
-        const res = await api.get('/consultations');
-        // Trier par ID décroissant pour avoir les plus récentes en premier
-        const sortedData = res.data.sort((a, b) => b.id - a.id);
-        setConsultations(sortedData);
+        const [consRes, aooRes] = await Promise.all([
+          api.get('/consultations'),
+          api.get('/aoos')
+        ]);
+
+        const formattedCons = consRes.data.map(c => ({
+          ...c,
+          global_id: `cons_${c.id}`,
+          global_type: c.mode_engagement || 'Convention',
+          global_numero: c.numero_consultation,
+          global_objet: c.objet_consultation,
+          global_budget: c.budget ? c.budget.montant_ttc : null,
+          global_statut: c.statut_dossier,
+          route: `/consultations/${c.id}`
+        }));
+
+        const formattedAoos = aooRes.data.map(a => ({
+          ...a,
+          global_id: `aoo_${a.id}`,
+          global_type: "Appel d'Offres",
+          global_numero: a.num_aoo,
+          global_objet: a.objet,
+          global_budget: a.budget,
+          global_statut: a.statut,
+          route: `/aoos/${a.id}`
+        }));
+
+        const merged = [...formattedCons, ...formattedAoos].sort((a, b) => {
+          const dateA = new Date(a.created_at || a.date_consultation || a.date_preparation || 0);
+          const dateB = new Date(b.created_at || b.date_consultation || b.date_preparation || 0);
+          return dateB - dateA;
+        });
+
+        setConsultations(merged);
         setLoading(false);
       } catch (err) {
         console.error(err);
-        setError('Impossible de charger la liste des consultations.');
+        setError('Impossible de charger la liste des dossiers.');
         setLoading(false);
       }
     };
 
-    fetchConsultations();
+    fetchAllDossiers();
   }, []);
 
   const formatCurrency = (value) => {
-    return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'MAD' }).format(value);
+    return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'MAD' }).format(value).replace('MAD', 'dh');
   };
 
   const getStatusBadge = (status) => {
@@ -113,7 +143,7 @@ const ListeConsultations = () => {
                   <th className="px-6 py-5 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Réf. Consultation</th>
                   <th className="px-6 py-5 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Année</th>
                   <th className="px-6 py-5 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Objet</th>
-                  <th className="px-6 py-5 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Mode</th>
+                  <th className="px-6 py-5 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Type / Mode</th>
                   <th className="px-6 py-5 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Budget TTC</th>
                   <th className="px-6 py-5 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Statut</th>
                   <th className="px-6 py-5 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider text-right">Actions</th>
@@ -123,39 +153,39 @@ const ListeConsultations = () => {
                 {consultations.length === 0 ? (
                   <tr>
                     <td colSpan="7" className="px-6 py-12 text-center text-slate-500 dark:text-slate-400">
-                      Aucune consultation trouvée.
+                      Aucun dossier trouvé.
                     </td>
                   </tr>
                 ) : (
                   consultations.map((consultation) => (
-                    <tr key={consultation.id} className="hover:bg-slate-50 dark:hover:bg-gray-700/30 transition-colors">
+                    <tr key={consultation.global_id} className="hover:bg-slate-50 dark:hover:bg-gray-700/30 transition-colors">
                       <td className="px-6 py-5 whitespace-nowrap">
                         <span className="font-mono font-semibold text-primary dark:text-blue-400">
-                          {consultation.numero_consultation}
+                          {consultation.global_numero || 'N/A'}
                         </span>
                       </td>
                       <td className="px-6 py-5 whitespace-nowrap text-sm font-medium text-slate-700 dark:text-slate-300">
-                        {consultation.annee}
+                        {consultation.annee || new Date(consultation.created_at || Date.now()).getFullYear()}
                       </td>
                       <td className="px-6 py-5">
-                        <p className="text-sm font-medium text-slate-900 dark:text-white line-clamp-2" title={consultation.objet_consultation}>
-                          {consultation.objet_consultation}
+                        <p className="text-sm font-medium text-slate-900 dark:text-white line-clamp-2" title={consultation.global_objet}>
+                          {consultation.global_objet || 'N/A'}
                         </p>
                       </td>
                       <td className="px-6 py-5 whitespace-nowrap">
                         <span className="text-sm font-medium text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-lg inline-block">
-                          {consultation.mode_engagement}
+                          {consultation.global_type}
                         </span>
                       </td>
                       <td className="px-6 py-5 whitespace-nowrap font-mono font-bold text-slate-900 dark:text-slate-100">
-                        {consultation.budget ? formatCurrency(consultation.budget.montant_ttc) : 'N/A'}
+                        {consultation.global_budget ? formatCurrency(consultation.global_budget) : 'N/A'}
                       </td>
                       <td className="px-6 py-5 whitespace-nowrap">
-                        {getStatusBadge(consultation.statut_dossier)}
+                        {getStatusBadge(consultation.global_statut)}
                       </td>
                       <td className="px-6 py-5 whitespace-nowrap text-right">
                         <Link 
-                          to={`/consultations/${consultation.id}`}
+                          to={consultation.route}
                           className="inline-flex items-center justify-center h-9 w-9 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50 transition-colors"
                           title="Voir détails"
                         >

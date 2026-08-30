@@ -10,44 +10,40 @@
             color: #000;
             margin: 0;
             padding: 0;
-            line-height: 1.5;
+            line-height: 1.4;
         }
 
         .page-wrapper {
-            margin: 15px;
-            padding: 15px;
-            border: 4px double #0000cc; /* Double bordure bleue comme sur la capture */
-            min-height: 950px;
+            margin: 10px;
+            padding: 10px;
         }
 
         /* --- En-tête (Logos et Titres) --- */
         .header-table {
             width: 100%;
-            margin-bottom: 20px;
-            border-bottom: 1px solid #000;
-            padding-bottom: 5px;
+            margin-bottom: 10px;
         }
         .header-table td {
             vertical-align: middle;
         }
         .header-title {
             text-align: center;
-            font-size: 14px;
-            font-weight: bold;
+            font-size: 15px;
         }
 
-        /* --- Titre Principal --- */
         .main-title-container {
             text-align: center;
-            margin: 20px 0;
+            margin: 5px 0 20px 0;
         }
         .main-title {
-            display: inline-block;
+            display: block;
             border: 2px solid #000;
-            padding: 8px 15px;
+            padding: 5px;
             font-size: 16px;
             font-weight: bold;
             text-transform: uppercase;
+            width: 80%;
+            margin: 0 auto;
         }
 
         /* --- Structure des Données --- */
@@ -61,7 +57,6 @@
             vertical-align: top;
         }
         .label {
-            font-weight: bold;
             text-decoration: underline;
         }
         
@@ -70,33 +65,33 @@
             text-decoration: underline;
             margin-top: 15px;
             margin-bottom: 5px;
+            font-size: 13px;
+        }
+        
+        .sub-title {
+            font-weight: bold;
+            text-decoration: underline;
+            margin-bottom: 5px;
+            font-size: 13px;
         }
 
         /* --- Tableaux des listes --- */
         .list-table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 5px;
+            margin-bottom: 5px;
         }
         .list-table td {
-            border: 1px solid #000;
+            border: 1.5px solid #000;
             padding: 4px 8px;
             width: 50%;
+            height: 25px;
+            vertical-align: middle;
         }
 
-        .finance-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 5px;
-        }
-        .finance-table td {
-            border: 1px solid #000;
-            padding: 4px 8px;
-        }
-        
         .signature {
             text-align: center;
-            margin-top: 40px;
+            margin-top: 30px;
             font-size: 14px;
         }
     </style>
@@ -107,15 +102,20 @@
         <div class="header-table">
             <table style="width: 100%;">
                 <tr>
-                    <td style="width: 30%; vertical-align: middle;">
-                        <img src="data:image/png;base64,{{ file_exists(public_path('images/logo-onca.png')) ? base64_encode(file_get_contents(public_path('images/logo-onca.png'))) : '' }}" height="55" style="display: block; margin-bottom: 5px;" alt="ONCA">
+                    <td style="width: 25%; vertical-align: bottom;">
+                        @if(file_exists(public_path('images/logo-onca.png')))
+                            <img src="{{ public_path('images/logo-onca.png') }}" height="85" style="display: block; margin-bottom: 5px;" alt="ONCA">
+                        @endif
                     </td>
-                    <td style="width: 40%; vertical-align: middle;" class="header-title">
-                        Direction Régionale du Conseil Agricole<br>
-                        Rabat-Salé-Kénitra
+                    <td style="width: 50%; vertical-align: bottom; padding-bottom: 15px;" class="header-title">
+                        <span style="font-family: 'Times New Roman', Times, serif; font-weight: normal; font-size: 16px;">
+                            Direction Régionale du Conseil Agricole Rabat-Salé-Kénitra
+                        </span>
                     </td>
-                    <td style="width: 30%; vertical-align: middle; text-align: right;">
-                        <img src="data:image/png;base64,{{ file_exists(public_path('images/sceau-maroc.png')) ? base64_encode(file_get_contents(public_path('images/sceau-maroc.png'))) : '' }}" height="50" style="display: block; margin-left: auto;" alt="Royaume du Maroc">
+                    <td style="width: 25%; vertical-align: bottom; text-align: right;">
+                        @if(file_exists(public_path('images/sceau-maroc.png')))
+                            <img src="{{ public_path('images/sceau-maroc.png') }}" height="85" style="display: block; margin-left: auto; margin-bottom: 5px;" alt="Royaume du Maroc">
+                        @endif
                     </td>
                 </tr>
             </table>
@@ -129,127 +129,142 @@
 
         <table class="data-table">
             <tr>
-                <td style="width: 30%;"><span class="label">1. Appel d'offres Numéro :</span></td>
-                <td style="width: 70%; font-weight: bold;">{{ $aoo->num_aoo }} du {{ $aoo->date_ouverture ? \Carbon\Carbon::parse($aoo->date_ouverture)->format('d/m/Y') : '-' }} &nbsp;&nbsp;&nbsp; lot unique</td>
+                <td style="width: 25%;"><span class="label">1.Appel d'offres Numéro</span></td>
+                <td style="width: 75%; font-weight: bold; padding-left: 10px;">{{ $aoo->num_aoo }} &nbsp;&nbsp;&nbsp;&nbsp; du {{ $aoo->date_ouverture ? \Carbon\Carbon::parse($aoo->date_ouverture)->format('d/m/Y') : '-' }} &nbsp;&nbsp;&nbsp;&nbsp; lot unique</td>
             </tr>
             <tr>
-                <td><span class="label">2. Objet de l'appel d'offres :</span></td>
-                <td style="text-transform: uppercase;">{{ $aoo->objet }}</td>
+                <td><span class="label">2.Objet de l'appel d'offres</span></td>
+                <td style="font-weight: bold; text-transform: uppercase; padding-left: 10px;">{{ $aoo->objet }}</td>
             </tr>
             <tr>
-                <td><span class="label">3. Maître d'ouvrage :</span></td>
-                <td>Directeur régional du conseil agricole Rabat-Salé-Kénitra</td>
+                <td><span class="label">3.Maitre d'ouvrage</span></td>
+                <td style="font-weight: bold; padding-left: 10px;">Directeur régional du conseil agricole Rabat-Salé-Kénitra</td>
             </tr>
             <tr>
-                <td><span class="label">4. Lieu d'ouverture des plis :</span></td>
-                <td>{{ $aoo->lieu_ouverture }}</td>
+                <td><span class="label">4.Lieu d'ouverture des plis:</span></td>
+                <td style="font-weight: bold; padding-left: 10px;">{{ $aoo->lieu_ouverture }}</td>
             </tr>
             <tr>
-                <td><span class="label">5. Journaux de publication :</span></td>
-                <td>
-                    Arabe : {{ $aoo->journal_ar ?? '-' }}<br>
-                    Français : {{ $aoo->journal_fr ?? '-' }}
+                <td><span class="label">5. journaux de publication</span></td>
+                <td style="font-weight: bold; padding-left: 10px;">
+                    Arabe &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;: &nbsp;&nbsp;{{ (!empty($aoo->journal_ar) && !preg_match('/^\?+$/', trim($aoo->journal_ar))) ? $aoo->journal_ar : 'الصحراء المغربية' }}<br>
+                    Français : &nbsp;&nbsp;{{ (!empty($aoo->journal_fr) && !preg_match('/^\?+$/', trim($aoo->journal_fr))) ? $aoo->journal_fr : 'Le Matin' }}
                 </td>
             </tr>
             <tr>
-                <td><span class="label">6. Site électronique :</span></td>
-                <td style="font-weight: bold; text-decoration: underline;">www.marchespublics.gov.ma</td>
+                <td><span class="label">6.Site électronique</span></td>
+                <td style="font-weight: bold; padding-left: 10px; text-decoration: underline;">www.marchespublics.gov.ma</td>
             </tr>
         </table>
 
         @php
-            $ecartes = $aoo->concurrents->where('statut_analyse', 'ecarte');
-            $retenus = $aoo->concurrents->where('statut_analyse', 'retenu');
-            $attributaire = $retenus->first();
+            // Rejetés
+            $ecartes = $aoo->concurrents->whereIn('statut_analyse', ['ecarte', 'rejete', 'rejete_admin', 'rejete_tech']);
+            
+            // Admissibles
+            $admissibles = $aoo->concurrents->whereIn('statut_analyse', ['admis', 'retenu', 'retenu_provisoire']);
+            
+            // Attributaire
+            $attributaire = $aoo->concurrents->whereIn('statut_analyse', ['retenu', 'retenu_provisoire'])->first();
+            if (!$attributaire) {
+                $attributaire = $aoo->concurrents->where('statut_analyse', 'admis')->where('classement', 1)->first();
+            }
         @endphp
 
-        <div class="section-title">7. Liste des concurrents ayant déposé les plis :</div>
-        <div style="font-weight: bold; margin-bottom: 5px;">Dépôt support papier</div>
+        <div class="section-title">7.Lise des concurrents ayant déposé les plis:</div>
+        <div class="sub-title">Dépôt support papier</div>
         <table class="list-table">
-            @foreach($aoo->concurrents->chunk(2) as $chunk)
+            @for ($i = 0; $i < 4; $i++)
                 <tr>
-                    @foreach($chunk as $concurrent)
-                        <td>* Société : {{ $concurrent->nom_soumissionnaire }}</td>
-                    @endforeach
-                    @if($chunk->count() == 1)
-                        <td></td>
-                    @endif
+                    <td>* Société : </td>
+                    <td>* Société : </td>
                 </tr>
-            @endforeach
+            @endfor
         </table>
 
-        <div class="section-title">8. Liste des concurrents évincés à l'issue de l'examen des dossiers administratifs et techniques :</div>
-        @if($ecartes->count() > 0)
-            <table class="list-table">
-                @foreach($ecartes->chunk(2) as $chunk)
-                    <tr>
-                        @foreach($chunk as $concurrent)
-                            <td>* Société : {{ $concurrent->nom_soumissionnaire }}</td>
-                        @endforeach
-                        @if($chunk->count() == 1)
-                            <td></td>
-                        @endif
-                    </tr>
-                @endforeach
-            </table>
-        @else
-            <div>* Néant</div>
-        @endif
-
-        <div class="section-title">9. Liste des concurrents admissibles sans réserves :</div>
-        @if($retenus->count() > 0)
-            <table class="list-table">
-                @foreach($retenus->chunk(2) as $chunk)
-                    <tr>
-                        @foreach($chunk as $concurrent)
-                            <td>* Société : {{ $concurrent->nom_soumissionnaire }}</td>
-                        @endforeach
-                        @if($chunk->count() == 1)
-                            <td></td>
-                        @endif
-                    </tr>
-                @endforeach
-            </table>
-        @else
-            <div>* Néant</div>
-        @endif
-
-        <div class="section-title">10. Liste des concurrents admissibles avec réserve :</div>
-        <div>* Néant</div>
-
-        <div class="section-title">11. Liste des concurrents évincés à l'issue de l'examen des dossiers additifs :</div>
-        <div>* Néant</div>
-
-        <div class="section-title">12. Offres financières : montants des actes d'engagements des soumissionnaires :</div>
-        <table class="finance-table">
-            @foreach($aoo->concurrents->chunk(2) as $chunk)
+        <div class="sub-title">Dépôt électronique</div>
+        <table class="list-table">
+            @php $concurrentsArray = $aoo->concurrents->values(); @endphp
+            @for ($i = 0; $i < max(6, ceil($concurrentsArray->count() / 2)); $i++)
                 <tr>
-                    @foreach($chunk as $concurrent)
-                        <td style="width: 35%;">* Société : {{ $concurrent->nom_soumissionnaire }}</td>
-                        <td style="width: 15%; text-align: right;">{{ $concurrent->montant_engagement ? number_format($concurrent->montant_engagement, 2, ',', ' ') . ' DH' : '-' }}</td>
-                    @endforeach
-                    @if($chunk->count() == 1)
-                        <td style="width: 35%;"></td><td style="width: 15%;"></td>
-                    @endif
+                    <td>* Société : {{ isset($concurrentsArray[$i*2]) ? $concurrentsArray[$i*2]->nom_soumissionnaire : '' }}</td>
+                    <td>* Société : {{ isset($concurrentsArray[$i*2+1]) ? $concurrentsArray[$i*2+1]->nom_soumissionnaire : '' }}</td>
                 </tr>
-            @endforeach
+            @endfor
         </table>
 
-        <table style="width: 100%; margin-top: 15px;">
+        <div class="section-title">8.Liste des concurrents évincés à l'issue de l'examen des dossiers administratifs et techniques:</div>
+        <table class="list-table">
+            @php $ecartesArray = $ecartes->values(); @endphp
+            @for ($i = 0; $i < max(2, ceil($ecartesArray->count() / 2)); $i++)
+                <tr>
+                    <td>* Société : {{ isset($ecartesArray[$i*2]) ? $ecartesArray[$i*2]->nom_soumissionnaire : '' }}</td>
+                    <td>* Société : {{ isset($ecartesArray[$i*2+1]) ? $ecartesArray[$i*2+1]->nom_soumissionnaire : '' }}</td>
+                </tr>
+            @endfor
+        </table>
+
+        <div class="section-title">9.Liste des concurrents admissibles sans reserves:</div>
+        <table class="list-table">
+            @php $admissiblesArray = $admissibles->values(); @endphp
+            @for ($i = 0; $i < max(3, ceil($admissiblesArray->count() / 2)); $i++)
+                <tr>
+                    <td>* Société : {{ isset($admissiblesArray[$i*2]) ? $admissiblesArray[$i*2]->nom_soumissionnaire : '' }}</td>
+                    <td>* Société : {{ isset($admissiblesArray[$i*2+1]) ? $admissiblesArray[$i*2+1]->nom_soumissionnaire : '' }}</td>
+                </tr>
+            @endfor
+        </table>
+
+        <div class="section-title">10.Liste des concurrents admissibles avec reserve:</div>
+        <table class="list-table">
+            @for ($i = 0; $i < 2; $i++)
+                <tr>
+                    <td>* </td>
+                    <td>* </td>
+                </tr>
+            @endfor
+        </table>
+
+        <div class="section-title">11.Liste des concurrents évincés à l'issue de l'examen des Dossier Additif:</div>
+        <table class="list-table">
             <tr>
-                <td style="width: 35%;"><span class="section-title">13. Soumissionnaire retenu :</span></td>
-                <td style="width: 65%;">Société : <span style="font-weight: bold;">{{ $attributaire ? $attributaire->nom_soumissionnaire : '__________________' }}</span></td>
-            </tr>
-            <tr>
-                <td colspan="2"><span class="section-title" style="display: block; margin-top: 10px;">14. Justification du choix de l'attributaire :</span></td>
-            </tr>
-            <tr>
-                <td colspan="2">Offre intéressante et satisfait les conditions techniques et administratives exigées par le règlement de l'appel d'offre</td>
-            </tr>
-            <tr>
-                <td colspan="2"><span class="section-title" style="display: inline-block; margin-top: 10px; margin-right: 10px;">15. Date d'achèvement des travaux de la commission :</span> <span style="background-color: #fce4e4; padding: 2px 10px; font-weight: bold;">{{ \Carbon\Carbon::parse($aoo->updated_at)->format('d/m/Y') }}</span></td>
+                <td>* Société : </td>
+                <td>* Société : </td>
             </tr>
         </table>
+
+        <div class="section-title">12.Offes Financières: montants des actes d'engagements des soumissionnaires:</div>
+        <table class="list-table">
+            @for ($i = 0; $i < max(4, ceil($admissiblesArray->count() / 2)); $i++)
+                <tr>
+                    <td>* Société : {{ isset($admissiblesArray[$i*2]) ? $admissiblesArray[$i*2]->nom_soumissionnaire . ' (' . number_format((float)($admissiblesArray[$i*2]->montant_engagement ?? 0), 2, ',', ' ') . ' DH)' : '' }}</td>
+                    <td>* Société : {{ isset($admissiblesArray[$i*2+1]) ? $admissiblesArray[$i*2+1]->nom_soumissionnaire . ' (' . number_format((float)($admissiblesArray[$i*2+1]->montant_engagement ?? 0), 2, ',', ' ') . ' DH)' : '' }}</td>
+                </tr>
+            @endfor
+            <tr>
+                <td>* 0</td>
+                <td>* </td>
+            </tr>
+            <tr>
+                <td>* Néant</td>
+                <td>* </td>
+            </tr>
+        </table>
+
+        <div class="section-title">13.Soumissionnaire retenu - Attrbutaire du Marché:</div>
+        <div style="margin-bottom: 10px;">
+            Société : &nbsp;&nbsp;&nbsp; <span style="font-weight: bold; border-bottom: 1px solid #000; padding: 0 20px;">{{ $attributaire ? $attributaire->nom_soumissionnaire : '-' }}</span>
+        </div>
+
+        <div class="section-title">14.Justification du choix de l'attrbutaire:</div>
+        <div style="margin-bottom: 15px;">
+            Offre interessante et satisfait les conditions techniques et administratives exigées par le réglemnt de l'appel d'offre
+        </div>
+
+        <div class="section-title" style="display: inline-block;">15. Date d'achévement des travaux de la commission :</div>
+        <div style="display: inline-block; background-color: #fce4e4; padding: 2px 15px; margin-left: 20px;">
+            {{ \Carbon\Carbon::parse($aoo->updated_at)->format('d/m/Y') }}
+        </div>
 
         <div class="signature">
             Signé : Le président de la commission

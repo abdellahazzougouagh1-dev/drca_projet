@@ -1,0 +1,69 @@
+--- storage\app\templates\resultats_ao.docx ---
+Para 6: Appel d'offres Numéro
+Para 7: 01/2024/DRCA-RSK
+Para 8: du 01/04/2024	lot unique
+Para 10: LA REALISATION DES PRESTATIONS DE PRISE EN CHARGE (RESTAURATION E T HEBERGEMENT) DES
+Para 11: Objet de l'appel d'offreAGRICULTEURS, DES AGRICULTRICES ET DES TECHNICIENS DE LA REGION DE CASA-SETTAT DANS LE CADRE DES VISITES ET VOYAGES D’ETUDES PROGRAMMES A L’OCCASION DE LA 16EME EDITION DU
+Para 12: Maitre d'ouvrage	 Directeur régional du conseil agricole Rabat-Salé-Kénitra
+Para 13: Lieu d'ouverture des  Salle de reunion de la direction regionale du conseil agricole Rabat-Salé-Kén itra Immeuble de la
+Para 14: plis:	chambre d'agriculture Bd Mohamed V ( à coté de Bank Al-Maghreb ) - Kénitr a
+Para 15: journaux de publicatioArabe  :	Le matin
+Para 16: الصحراء المغربية  : Français
+Para 17: Site électronique	www.marchespublics.gov.ma
+Para 18: Lise des concurrents ayant déposé les plis:
+Para 19: Dépôt support papier
+Para 26: Dépôt électronique
+Para 27: Liste des concurrents évincés à l'issue de l'examen des dossiers administratifs et techniques:
+Para 28: Liste des concurrents admissibles sans reserves:
+Para 30: Liste des concurrents admissibles avec reserve:
+Para 32: Liste des concurrents évincés à l'issue de l'examen des Dossier Additif:
+Para 33: Offes Financières: montants des actes d'engagements des soumissionnaires:
+Para 35: Soumissionnaire retenu - Attrbutaire du Marché:
+Para 36: Société	:		-
+Para 37: Justification du choix de l'attrbutaire:
+Para 38: Offre interessante et satisfait les conditions techniques et administratives exigées par le réglemn t de l'appel d'offre
+Para 39: Date d'achévement des travaux de la commission :		03/08/2023
+Para 40: Signé : Le président de la commission
+
+Tables:
+Table 0:
+* | Société Phyto Consulting à Inzegane | * | Sociète : TMIS à Casablanca
+* |  | * | 
+* |  | * | 
+* |  | * | 
+* |  | * | 
+* |  | * | 
+* |  | * | 
+* |  | * | 
+* |  | * | 
+* |  | * | 
+* |  | * | 
+Table 1:
+* |  | * | 
+* | Société: | * | Société
+* | Sociète : | * | 
+Table 2:
+* | Société | * | Société:
+* | Société | * | Société
+* | Société | * | 
+* |  | * | 
+* |  | * | 
+Table 3:
+* |  |  | * |  | 
+* |  |  | * |  | 
+* |  |  | * |  | 
+Table 4:
+* | Société : | * | Société
+Table 5:
+* | Société |  | * | Société | 
+* | Société |  | * |  | 
+* |  |  | * |  | 
+* |  |  | * |  | 
+* |  |  | * |  | 
+* |  |  | * |  | 
+* |  |  | * |  | 
+* |  |  | * |  | 
+* |  |  | * |  | 
+* | 0 |  | * |  | 
+Table 6:
+* | Néant | * | 

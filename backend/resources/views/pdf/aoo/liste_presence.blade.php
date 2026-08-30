@@ -87,9 +87,9 @@
             <tr>
                 <td class="font-bold">Journaux :</td>
                 <td>Français</td>
-                <td class="text-center">{{ $aoo->journal_fr }}</td>
+                <td class="text-center">{{ (!empty($aoo->journal_fr) && !preg_match('/^\?+$/', trim($aoo->journal_fr))) ? $aoo->journal_fr : 'Le Matin' }}</td>
                 <td class="font-bold text-center">Arabe</td>
-                <td class="text-center">{{ $aoo->journal_ar }}</td>
+                <td class="text-center">{{ (!empty($aoo->journal_ar) && !preg_match('/^\?+$/', trim($aoo->journal_ar))) ? $aoo->journal_ar : 'الصحراء المغربية' }}</td>
             </tr>
         </tbody>
     </table>

@@ -26,8 +26,12 @@ class CommissionMembreController extends Controller
     {
         $validated = $request->validate([
             'nom_prenom' => 'required|string|max:255',
-            'fonction' => 'required|string|max:255',
+            'fonction' => 'nullable|string|max:255',
         ]);
+
+        if (empty($validated['fonction'])) {
+            $validated['fonction'] = 'Membre de commission';
+        }
 
         $membre = CommissionMembre::create($validated);
 

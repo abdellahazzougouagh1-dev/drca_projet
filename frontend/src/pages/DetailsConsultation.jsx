@@ -142,11 +142,14 @@ const DetailsConsultation = () => {
   const [saveError, setSaveError] = useState(null);
   const [programmationForm, setProgrammationForm] = useState({
     objet_consultation: '',
+    objet_consultation_ar: '',
     mode_engagement: '',
     date_consultation: '',
     lieu_consultation: '',
     budget_previsionnel: '',
-    notes_programmation: ''
+    notes_programmation: '',
+    cautionnement_provisoire: '',
+    lieu_reunion_ar: ''
   });
   const [savingProgrammation, setSavingProgrammation] = useState(false);
   const [programmationSuccess, setProgrammationSuccess] = useState(false);
@@ -250,11 +253,7 @@ const DetailsConsultation = () => {
     { key: 'estimation', label: 'Estimation', icon: Calculator },
     { key: 'consultation', label: 'Fournisseurs', icon: Users },
     { key: 'commission', label: 'Commission', icon: Award },
-    { key: 'engagement', label: 'Engagement', icon: Briefcase },
-    { key: 'suivi', label: 'Suivi', icon: BarChart2 },
-    { key: 'reception', label: 'Réception', icon: PackageCheck },
-    { key: 'liquidation', label: 'Liquidation', icon: Banknote },
-    { key: 'archive', label: 'Archive', icon: Archive }
+    { key: 'engagement', label: 'Engagement', icon: Briefcase }
   ];
 
   const visibleSteps = stepDefinitions;
@@ -302,11 +301,14 @@ const DetailsConsultation = () => {
 
       setProgrammationForm({
         objet_consultation: consultData.objet_consultation || '',
+        objet_consultation_ar: consultData.objet_consultation_ar || '',
         mode_engagement: consultData.mode_engagement || '',
         date_consultation: consultData.date_consultation || '',
         lieu_consultation: consultData.lieu_consultation || consultData.lieu || '',
         budget_previsionnel: consultData.budget?.montant_ttc || '',
-        notes_programmation: consultData.notes_programmation || ''
+        notes_programmation: consultData.notes_programmation || '',
+        cautionnement_provisoire: consultData.cautionnement_provisoire || '',
+        lieu_reunion_ar: consultData.lieu_reunion_ar || ''
       });
 
       setOuverturePlisForm(resOffres.data.map(o => ({
@@ -457,12 +459,7 @@ const DetailsConsultation = () => {
     setSavingProgrammation(true); setProgrammationSuccess(false); setProgrammationError(null);
     try {
       const payload = {
-        objet_consultation: programmationForm.objet_consultation,
-        mode_engagement: programmationForm.mode_engagement,
-        date_consultation: programmationForm.date_consultation,
-        lieu_consultation: programmationForm.lieu_consultation,
-        budget_previsionnel: programmationForm.budget_previsionnel,
-        notes_programmation: programmationForm.notes_programmation,
+        ...programmationForm
       };
       await api.put(`/consultations/${id}`, payload);
       setProgrammationSuccess(true);
@@ -730,11 +727,28 @@ const DetailsConsultation = () => {
       const link = document.createElement('a');
       link.href = url;
       link.setAttribute('download', `${doc.id}_${consultation.numero_consultation}.pdf`);
+    } catch (err) {
+      alert("Erreur lors de la génération de l'archive ZIP.");
+    } finally {
+      setDownloadingZip(false);
+    }
+  };
+
+  const generateAndDownloadDocument = async (typeDocument) => {
+    try {
+      const genRes = await api.post(`/consultations/${id}/documents/${typeDocument}/generate`, {});
+      const generatedDocId = genRes.data.document.id;
+      
+      const dlRes = await api.get(`/consultations/documents/${generatedDocId}/download`, { responseType: 'blob' });
+      const url = window.URL.createObjectURL(new Blob([dlRes.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `${typeDocument}_${consultation?.numero_consultation}.docx`);
       document.body.appendChild(link);
       link.click();
       link.remove();
     } catch (err) {
-      alert("Erreur lors du téléchargement du document.");
+      alert("Erreur lors de la génération: " + (err.response?.data?.error || err.message));
     }
   };
 
@@ -756,7 +770,7 @@ const DetailsConsultation = () => {
     }
   };
 
-  const formatCurrency = (value) => new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value || 0);
+  const formatCurrency = (value) => new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value || 0).replace('MAD', 'dh');
 
   const offresRecues = offres.filter(o => o.statut_reponse === 'Reçu' && o.montant_propose > 0);
   const moinsDisant = offresRecues.length > 0 ? offresRecues.reduce((prev, curr) => (parseFloat(prev.montant_propose) < parseFloat(curr.montant_propose) ? prev : curr)) : null;
@@ -910,18 +924,34 @@ const DetailsConsultation = () => {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="mb-6">
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">Objet de la consultation (Arabe)</label>
+                  <input type="text" dir="rtl" value={programmationForm.objet_consultation_ar} onChange={e => setProgrammationForm({...programmationForm, objet_consultation_ar: e.target.value})} className="w-full p-3 border border-gray-200 rounded-xl font-arabic" placeholder="موضوع الاستشارة" />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-1">Date de consultation</label>
                     <input type="date" value={programmationForm.date_consultation} onChange={e => setProgrammationForm({...programmationForm, date_consultation: e.target.value})} className="w-full p-3 border border-gray-200 rounded-xl" />
                   </div>
                   <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1">Budget prévisionnel (TTC)</label>
+                    <input type="number" step="0.01" value={programmationForm.budget_previsionnel} onChange={e => setProgrammationForm({...programmationForm, budget_previsionnel: e.target.value})} className="w-full p-3 border border-gray-200 rounded-xl font-mono" placeholder="Montant prévisionnel" />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-1">Lieu</label>
                     <input type="text" value={programmationForm.lieu_consultation} onChange={e => setProgrammationForm({...programmationForm, lieu_consultation: e.target.value})} className="w-full p-3 border border-gray-200 rounded-xl" placeholder="Lieu de consultation" />
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-1">Budget prévisionnel (TTC)</label>
-                    <input type="number" step="0.01" value={programmationForm.budget_previsionnel} onChange={e => setProgrammationForm({...programmationForm, budget_previsionnel: e.target.value})} className="w-full p-3 border border-gray-200 rounded-xl font-mono" placeholder="Montant prévisionnel" />
+                    <label className="block text-sm font-semibold text-gray-700 mb-1">Lieu (Arabe)</label>
+                    <input type="text" dir="rtl" value={programmationForm.lieu_reunion_ar} onChange={e => setProgrammationForm({...programmationForm, lieu_reunion_ar: e.target.value})} className="w-full p-3 border border-gray-200 rounded-xl font-arabic" placeholder="مكان فتح الأظرفة" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1">Cautionnement Prov.</label>
+                    <input type="number" step="0.01" value={programmationForm.cautionnement_provisoire} onChange={e => setProgrammationForm({...programmationForm, cautionnement_provisoire: e.target.value})} className="w-full p-3 border border-gray-200 rounded-xl font-mono" placeholder="Ex: 5000.00" />
                   </div>
                 </div>
 
@@ -963,7 +993,7 @@ const DetailsConsultation = () => {
                   {consultation.budget ? (
                     <div className="space-y-3 text-sm">
                       <div className="flex justify-between"><span className="text-gray-500">Imputation</span><span className="font-medium font-mono">{consultation.budget.code_imputation}</span></div>
-                      <div className="flex justify-between"><span className="text-gray-500">Montant TTC</span><span className="font-bold text-primary">{formatCurrency(consultation.budget.montant_ttc)} MAD</span></div>
+                      <div className="flex justify-between"><span className="text-gray-500">Montant TTC</span><span className="font-bold text-primary">{formatCurrency(consultation.budget.montant_ttc)} dh</span></div>
                     </div>
                   ) : <p className="text-gray-500 italic">Aucun budget défini.</p>}
                 </section>
@@ -1002,13 +1032,39 @@ const DetailsConsultation = () => {
                     <div className="flex items-center gap-6 text-sm">
                       <div><span className="text-gray-500 mr-2">Total HT:</span><span className="font-mono">{formatCurrency(totalHT)}</span></div>
                       <div><span className="text-gray-500 mr-2">TVA:</span><span className="font-mono">{formatCurrency(totalTVA)}</span></div>
-                      <div className="text-lg font-bold"><span className="text-gray-800 mr-2">TTC:</span><span className="text-primary">{formatCurrency(totalTTC)} MAD</span></div>
+                      <div className="text-lg font-bold"><span className="text-gray-800 mr-2">TTC:</span><span className="text-primary">{formatCurrency(totalTTC)} dh</span></div>
                     </div>
                   </div>
                 </section>
               </div>
             </div>
-            <PhaseDocuments title="Programmation & Estimation" phaseCode="01" mode={consultation.mode_engagement} timeline={workflowTimeline} stepKeywords={['consultation', 'preparation', 'creation']} downloadDocument={downloadDocument} />
+            <div className="mt-8 p-6 bg-slate-50 border border-slate-200 rounded-2xl">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2 uppercase tracking-wider">
+                  <FileText size={16} className="text-blue-600"/> Génération des Documents Officiels
+                </h3>
+              </div>
+              <div className="flex flex-wrap gap-3">
+                <button onClick={() => generateAndDownloadDocument('estimation')} className="px-4 py-2.5 bg-white text-slate-700 text-sm font-semibold rounded-xl border border-slate-200 shadow-sm hover:bg-blue-50 hover:border-blue-200 hover:text-blue-700 transition-all flex items-center gap-2">
+                  <FileText size={16} className="text-blue-500"/> Estimation administrative
+                </button>
+                <button onClick={() => generateAndDownloadDocument('rc')} className="px-4 py-2.5 bg-white text-slate-700 text-sm font-semibold rounded-xl border border-slate-200 shadow-sm hover:bg-blue-50 hover:border-blue-200 hover:text-blue-700 transition-all flex items-center gap-2">
+                  <FileText size={16} className="text-blue-500"/> RC - Règlement de Consultation
+                </button>
+                <button onClick={() => generateAndDownloadDocument('bordereau')} className="px-4 py-2.5 bg-white text-slate-700 text-sm font-semibold rounded-xl border border-slate-200 shadow-sm hover:bg-blue-50 hover:border-blue-200 hover:text-blue-700 transition-all flex items-center gap-2">
+                  <FileText size={16} className="text-blue-500"/> Bordereau des prix
+                </button>
+                <button onClick={() => generateAndDownloadDocument('avis_fr')} className="px-4 py-2.5 bg-white text-slate-700 text-sm font-semibold rounded-xl border border-slate-200 shadow-sm hover:bg-blue-50 hover:border-blue-200 hover:text-blue-700 transition-all flex items-center gap-2">
+                  <FileText size={16} className="text-blue-500"/> Avis de publication (FR)
+                </button>
+                <button onClick={() => generateAndDownloadDocument('avis_ar')} className="px-4 py-2.5 bg-white text-slate-700 text-sm font-semibold rounded-xl border border-slate-200 shadow-sm hover:bg-blue-50 hover:border-blue-200 hover:text-blue-700 transition-all flex items-center gap-2">
+                  <FileText size={16} className="text-blue-500"/> Avis de publication (AR)
+                </button>
+                <button onClick={() => generateAndDownloadDocument('lettre_ecartement')} className="px-4 py-2.5 bg-white text-slate-700 text-sm font-semibold rounded-xl border border-slate-200 shadow-sm hover:bg-blue-50 hover:border-blue-200 hover:text-blue-700 transition-all flex items-center gap-2">
+                  <FileText size={16} className="text-blue-500"/> Lettre d'écartement
+                </button>
+              </div>
+            </div>
           </div>
         )}
 
@@ -1035,7 +1091,7 @@ const DetailsConsultation = () => {
                         <tr className="bg-gray-50 border-b border-gray-100">
                           <th className="px-4 py-3 text-xs font-bold text-gray-500 uppercase">Fournisseur</th>
                           <th className="px-4 py-3 text-xs font-bold text-gray-500 uppercase">Statut</th>
-                          <th className="px-4 py-3 text-xs font-bold text-gray-500 uppercase text-right">Montant Proposé (MAD)</th>
+                          <th className="px-4 py-3 text-xs font-bold text-gray-500 uppercase text-right">Montant Proposé (dh)</th>
                           <th className="px-4 py-3 text-xs font-bold text-gray-500 uppercase text-center">Action</th>
                         </tr>
                       </thead>
@@ -1075,14 +1131,14 @@ const DetailsConsultation = () => {
             {/* Formulaires simplifiés pour l'exemple de tab switcher */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               <section className="bg-white dark:bg-gray-800 rounded-3xl shadow-lg border border-gray-100 overflow-hidden">
-                <div className="p-6 border-b border-gray-100 flex items-center gap-3 bg-gray-50"><div className="p-2 bg-purple-100 text-purple-600 rounded-lg"><Calendar size={20} /></div><h2 className="text-xl font-bold">Commission d'Évaluation</h2></div>
+                <div className="p-6 border-b border-gray-100 flex items-center gap-3 bg-gray-50"><div className="p-2 bg-blue-100 text-blue-600 rounded-lg"><Calendar size={20} /></div><h2 className="text-xl font-bold">Commission d'Évaluation</h2></div>
                 <form onSubmit={saveCommission} className="p-6 space-y-5">
                   <div className="grid grid-cols-2 gap-4">
                     <div><label className="block text-sm font-semibold text-gray-700 mb-1">Date</label><input type="date" value={commissionForm.date_reunion} onChange={e => setCommissionForm({...commissionForm, date_reunion: e.target.value})} className="w-full p-2 border rounded-lg" /></div>
                     <div><label className="block text-sm font-semibold text-gray-700 mb-1">Heure</label><input type="time" value={commissionForm.heure_reunion} onChange={e => setCommissionForm({...commissionForm, heure_reunion: e.target.value})} className="w-full p-2 border rounded-lg" /></div>
                   </div>
                   <div><label className="block text-sm font-semibold text-gray-700 mb-1">Président</label><input type="text" value={commissionForm.president_commission} onChange={e => setCommissionForm({...commissionForm, president_commission: e.target.value})} className="w-full p-2 border rounded-lg" /></div>
-                  <div className="flex justify-end pt-2"><button type="submit" disabled={savingCommission} className="px-6 py-2.5 bg-purple-600 text-white font-bold rounded-xl hover:bg-purple-700">{savingCommission ? 'En cours...' : 'Enregistrer'}</button></div>
+                  <div className="flex justify-end pt-2"><button type="submit" disabled={savingCommission} className="px-6 py-2.5 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700">{savingCommission ? 'En cours...' : 'Enregistrer'}</button></div>
                 </form>
               </section>
 
@@ -1117,7 +1173,7 @@ const DetailsConsultation = () => {
               <>
                 <div className="bg-slate-50 border border-slate-200 rounded-3xl p-6 shadow-sm flex flex-col md:flex-row items-center gap-6 justify-between">
                   <div className="flex items-center gap-4"><div className="p-4 bg-slate-200 text-slate-700 rounded-2xl"><Briefcase size={28} /></div><div><p className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-1">Fournisseur Retenu</p><h3 className="text-xl font-extrabold text-slate-900">{engagementData.fournisseur.raison_sociale}</h3></div></div>
-                  <div className="flex gap-8"><div className="text-right"><p className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-1">Type Engagement</p><span className="px-3 py-1 bg-white border border-slate-300 rounded-lg font-bold">{engagementData.type_engagement}</span></div><div className="text-right"><p className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-1">Montant Validé</p><span className="text-2xl font-black text-emerald-600">{formatCurrency(engagementData.montant_valide)} <span className="text-sm font-bold text-emerald-600/70">MAD</span></span></div></div>
+                  <div className="flex gap-8"><div className="text-right"><p className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-1">Type Engagement</p><span className="px-3 py-1 bg-white border border-slate-300 rounded-lg font-bold">{engagementData.type_engagement}</span></div><div className="text-right"><p className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-1">Montant Validé</p><span className="text-2xl font-black text-emerald-600">{formatCurrency(engagementData.montant_valide)} <span className="text-sm font-bold text-emerald-600/70">dh</span></span></div></div>
                 </div>
                 <section className="bg-white dark:bg-gray-800 rounded-3xl shadow-lg border border-gray-100 overflow-hidden">
                   <div className="p-6 border-b border-gray-100 bg-gray-50"><h2 className="text-xl font-bold text-gray-800 flex items-center gap-3"><PenTool size={20} className="text-blue-600" /> Formalisation de l'Engagement</h2></div>
@@ -1428,7 +1484,7 @@ const DetailsConsultation = () => {
             {/* Recap Engagement */}
             {engagementData ? (
               <div className="bg-slate-50 border border-slate-200 rounded-3xl p-6 shadow-sm flex flex-col md:flex-row items-center gap-6 justify-between">
-                <div className="flex items-center gap-4"><div className="p-4 bg-slate-200 text-slate-700 rounded-2xl"><Landmark size={28} /></div><div><p className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-1">Montant Engagé Init.</p><h3 className="text-xl font-extrabold text-slate-900">{formatCurrency(engagementData.montant_valide)} MAD</h3></div></div>
+                <div className="flex items-center gap-4"><div className="p-4 bg-slate-200 text-slate-700 rounded-2xl"><Landmark size={28} /></div><div><p className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-1">Montant Engagé Init.</p><h3 className="text-xl font-extrabold text-slate-900">{formatCurrency(engagementData.montant_valide)} dh</h3></div></div>
                 <div className="text-right">
                   <p className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-1">Prestataire</p>
                   <span className="font-bold text-slate-700">{engagementData.fournisseur.raison_sociale}</span>
@@ -1448,7 +1504,7 @@ const DetailsConsultation = () => {
                 <form onSubmit={saveLiquidation} className="p-6 space-y-6">
                   
                   <div className="bg-indigo-50/50 p-4 rounded-xl border border-indigo-100/50">
-                    <label className="block text-sm font-semibold text-indigo-900 mb-2">Montant final à payer (MAD)</label>
+                    <label className="block text-sm font-semibold text-indigo-900 mb-2">Montant final à payer (dh)</label>
                     <input type="number" step="0.01" min="0" required value={liquidationForm.montant_a_payer} onChange={e => setLiquidationForm({...liquidationForm, montant_a_payer: e.target.value})} className="w-full p-4 border border-indigo-200 rounded-xl font-mono text-xl font-bold text-indigo-700 bg-white shadow-inner focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="0.00" />
                     <p className="text-xs text-indigo-500 mt-2 flex items-center gap-1"><AlertCircle size={12}/> Ce montant ne doit pas dépasser le montant engagé.</p>
                   </div>
@@ -1570,7 +1626,7 @@ const DetailsConsultation = () => {
               <div><label className="block text-sm font-semibold mb-1">Statut de la réponse</label>
                 <select value={devisForm.statut_reponse} onChange={e => setDevisForm({...devisForm, statut_reponse: e.target.value})} className="w-full p-2.5 border rounded-xl"><option value="En attente">En attente</option><option value="Reçu">Reçu</option><option value="Hors délai">Hors délai</option><option value="Refusé">Refusé</option></select>
               </div>
-              <div><label className="block text-sm font-semibold mb-1">Montant Proposé (MAD TTC)</label>
+              <div><label className="block text-sm font-semibold mb-1">Montant Proposé (dh TTC)</label>
                 <input type="number" step="0.01" value={devisForm.montant_propose} onChange={e => setDevisForm({...devisForm, montant_propose: e.target.value})} className="w-full p-2.5 border rounded-xl font-mono" />
               </div>
               <div className="pt-4 flex justify-end gap-3"><button type="button" onClick={() => setIsDevisModalOpen(false)} className="px-4 py-2 border rounded-lg">Annuler</button><button type="submit" className="px-4 py-2 bg-primary text-white rounded-lg">Enregistrer</button></div>

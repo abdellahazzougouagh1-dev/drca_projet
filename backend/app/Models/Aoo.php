@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Aoo extends Model
 {
@@ -12,9 +13,16 @@ class Aoo extends Model
 
     protected $fillable = [
         'num_aoo',
+        'notification_ligne_id',
         'objet',
+        'reference',
+        'date_preparation',
         'journal_fr',
+        'reference_publication_fr',
+        'date_publication_fr',
         'journal_ar',
+        'reference_publication_ar',
+        'date_publication_ar',
         'date_ouverture',
         'heure_ouverture',
         'nombre_lots',
@@ -24,21 +32,59 @@ class Aoo extends Model
         'lig',
         'statut',
         'president_commission',
+        'rapporteur_commission',
+        'commission_validee',
         'membres_commission',
         'etat_avancement',
         'num_decision_nomination',
         'date_lettre',
         'lieu_ouverture',
+        'lieu_ouverture_ar',
+        'objet_ar',
+        'articles_rc',
         'num_aoo_interne',
+        'heure_levee',
+        'date_decision_nomination',
+        'references_juridiques',
+        'signataire_nom',
+        'signataire_fonction',
+        'publications_journaux',
+        'date_publication_portail',
+        'ref_publication_portail',
+        'date_mise_en_ligne_portail',
+        'mode_passation',
+        'prix_reference',
     ];
 
     protected $casts = [
+        'date_preparation' => 'date',
+        'date_publication_fr' => 'date',
+        'date_publication_ar' => 'date',
+        'date_publication_portail' => 'date',
+        'date_mise_en_ligne_portail' => 'date',
         'date_ouverture' => 'date',
         'date_lettre' => 'date',
         'nombre_lots' => 'integer',
         'budget' => 'decimal:2',
+        'prix_reference' => 'decimal:2',
+        'commission_validee' => 'boolean',
         'membres_commission' => 'array',
+        'publications_journaux' => 'array',
+        'date_decision_nomination' => 'date',
+        'references_juridiques' => 'array',
     ];
+
+    protected $appends = ['objet_aoo'];
+
+    public function getObjetAooAttribute(): ?string
+    {
+        return $this->objet;
+    }
+
+    public function notificationLigne(): BelongsTo
+    {
+        return $this->belongsTo(NotificationLigne::class);
+    }
 
     /**
      * Get the marches for the AOO.
@@ -69,3 +115,4 @@ class Aoo extends Model
         return $this->hasMany(ConcurrentLotDecision::class);
     }
 }
+

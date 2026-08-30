@@ -1,0 +1,178 @@
+const buildDefaultNumMarche = (numAoo, lotLabel) => {
+  const lot = toText(lotLabel, 'LOT');
+  if (!numAoo) return '';
+  return `M-${String(numAoo).replace(/\//g, '-')}-${lot}`;
+};
+
+const getLotDropdownLabel = (lot, parentAooObjet) => {
+  const objetLot = (lot?.objet_lot ?? '').trim();
+  const objetParent = (parentAooObjet ?? '').trim();
+  const displayObjet = (!objetLot || objetLot === 'Sans objet')
+    ? (objetParent || 'Sans objet')
+    : objetLot;
+  return `${lot.num_lot} ? ${displayObjet}`;
+};
+
+const resolveFournisseurQualite = (aoo, titulaire, fournisseurId) => {
+  if (!aoo) return '';
+
+  const normalize = (value) => String(value || '').trim().toLowerCase();
+  const targetName = normalize(titulaire);
+  const targetId = fournisseurId ? String(fournisseurId).trim() : '';
+
+  const allFournisseurs = [];
+  (aoo.lots || []).forEach(lot => {
+    if (lot.attributaire) allFournisseurs.push(lot.attributaire);
+    (lot.decisions || []).forEach(decision => {
+      if (decision.fournisseur) allFournisseurs.push(decision.fournisseur);
+    });
+  });
+  (aoo.concurrents || []).forEach(concurrent => {
+    if (concurrent.fournisseur) allFournisseurs.push(concurrent.fournisseur);
+  });
+
+  const match = allFournisseurs.find(fournisseur => {
+    if (!fournisseur) return false;
+    const idMatches = targetId && String(fournisseur.id) === targetId;
+    const nameMatches = targetName && normalize(fournisseur.raison_sociale) === targetName;
+    return idMatches || nameMatches;
+  });
+
+  if (!match) return '';
+  return toText(match.qualite_representant, toText(match.fonction_responsable, ''));
+};
+
+const resolveExercice = (aoo, numMarche = '') => {
+  const src = numMarche || aoo?.num_aoo || '';
+  const match = String(src).match(/\/(\d{4})\//);
+  if (match) return match[1];
+  if (aoo?.date_ouverture) return String(new Date(aoo.date_ouverture).getFullYear());
+  return String(new Date().getFullYear());
+};
+
+const parseNum = (value) => {
+  const n = parseFloat(value);
+  return Number.isFinite(n) ? n : 0;
+};
+
+const formatMoney = (value) => parseNum(value).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+const TVA_RATE = 1.20;
+const round2 = (value) => Math.round(parseNum(value) * 100) / 100;
+
+const htFromTtc = (ttc) => round2(parseNum(ttc) / TVA_RATE);
+const ttcFromHt = (ht) => round2(parseNum(ht) * TVA_RATE);
+
+const buildBordereauFromLot = (lot, savedItems = []) => {
+  const articles = Array.isArray(lot?.items) ? lot.items : [];
+  return articles.map((item, index) => {
+    const saved = savedItems.find(s => String(s.lot_item_id) === String(item.id));
+    const puHt = saved?.prix_unitaire_attributaire;
+    const prixTtc = puHt !== '' && puHt !== null && puHt !== undefined
+      ? ttcFromHt(puHt)
+      : '';
+
+    return {
+      lot_item_id: item.id,
+      numero: item.numero ?? index + 1,
+      designation: item.designation || '',
+      unite: item.unite || '',
+      quantite: item.quantite ?? '',
+      prix_unitaire_ttc: prixTtc,
+    };
+  });
+};
+
+const computeBordereauLine = (item) => {
+  const quantite = parseNum(item.quantite);
+  const puTtc = parseNum(item.prix_unitaire_ttc);
+  const puHt = htFromTtc(puTtc);
+  const montantHt = round2(quantite * puHt);
+  const montantTtc = round2(quantite * puTtc);
+
+  return { puHt, montantHt, montantTtc };
+};
+
+const computeBordereauTotals = (items) => {
+  const totalTtc = round2(items.reduce((sum, item) => sum + computeBordereauLine(item).montantTtc, 0));
+  const totalHt = round2(totalTtc / TVA_RATE);
+  const tva = round2(totalTtc - totalHt);
+
+  return { totalHt, tva, totalTtc };
+};
+
+const GestionMarches = () => {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const [activeTab, setActiveTab] = useState('creation');
+
+  const wizardStepOrder = ['creation', 'approbation', 'execution', 'reception'];
+  const wizardNextLabels = {
+    creation: 'Approbation',
+    approbation: 'Ex?cution & Suivi',
+    execution: 'R?ception & Cl?ture',
+  };
+
+  const getNextStep = (current) => {
+    const currentIndex = wizardStepOrder.indexOf(current);
+    return currentIndex >= 0 && currentIndex < wizardStepOrder.length - 1
+      ? wizardStepOrder[currentIndex + 1]
+      : null;
+  };
+
+  const nextStep = getNextStep(activeTab);
+
+  const handleNextStep = () => {
+    const next = getNextStep(activeTab);
+    if (next) {
+      setActiveTab(next);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  const [loading, setLoading] = useState(false);
+  const [prefilling, setPrefilling] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
+
+  const [aoosList, setAoosList] = useState([]);
+  const [selectedAoo, setSelectedAoo] = useState(null);
+
+  const [formData, setFormData] = useState({
+    aoo_id: '',
+    lot_id: '',
+    fournisseur_id: '',
+    num_marche: '',
+    lot: '',
+    titulaire: '',
+    objet_marche: '',
+    qualite_gerant: '',
+    exercice: String(new Date().getFullYear()),
+    type_budget: 'Investissement',
+    code_budget: '',
+    intitule_budget: '',
+    montant: '',
+    date_signature: '',
+    date_approbation: '',
+    date_notification_marche: '',
+    os_numero: '',
+    os_date_signature: '',
+    os_date_effet: '',
+    num_decision: '',
+    date_decision: '',
+    date_reunion_commission: '',
+    heure_reunion_commission: '',
+    lieu_reunion_commission: 'au si?ge de la DRCA-RSK',
+    statut: 'en_creation',
+    agent_suivi: '',
+    date_reception_finale: '',
+    commission_reception: []
+  });
+
+  const [nouveauMembre, setNouveauMembre] = useState('');
+  const [bordereauItems, setBordereauItems] = useState([]);
+  const [commissionMembres, setCommissionMembres] = useState([]);
+  const [selectedCommissionMembres, setSelectedCommissionMembres] = useState([]);
+
