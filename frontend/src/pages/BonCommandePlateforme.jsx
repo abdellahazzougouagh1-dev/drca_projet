@@ -1,6 +1,7 @@
 import { useMemo, useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import api from '../api/axios';
+import * as XLSX from 'xlsx';
 import UserMenu from '../components/UserMenu';
 import {
   ArrowLeft,
@@ -144,6 +145,7 @@ const documentFieldGroups = {
     { name: 'concurrents', label: 'Synthése des devis reçus', type: 'concurrents_table', required: true },
     { name: 'societes_refusees', label: "Sociétés écartées", type: 'societes_refusees_input', required: true },
     { name: 'attributaire', label: 'Offre retenue ', type: 'attributaire_selector', required: true },
+    { name: 'motif_attribution', label: "Motif du choix / d'attribution (Offre retenue)", placeholder: "Ex: Offre la moins disante conforme aux spécifications du maître d'ouvrage", required: false },
     { name: 'montant_apres_verification', label: 'Montant TTC retenu (DH)', type: 'number', placeholder: '39060', required: true },
     { name: 'heure_fin', label: 'Heure de fin de séance', type: 'time', required: true },
     { name: 'date_document', label: 'Date Pv', type: 'date', required: true },
@@ -255,8 +257,16 @@ const BonCommandePlateforme = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const currentYear = new Date().getFullYear();
-  const [activePhase, setActivePhase] = useState('consultation');
-  const [selectedDocumentId, setSelectedDocumentId] = useState(null);
+
+  const [activePhase, setActivePhase] = useState(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    return searchParams.get('phase') || localStorage.getItem('drca_active_phase') || 'consultation';
+  });
+
+  const [selectedDocumentId, setSelectedDocumentId] = useState(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    return searchParams.get('doc') || localStorage.getItem('drca_selected_doc_id') || null;
+  });
 
   // Formulaire minimal de création (phase Consultation)
   const [formData, setFormData] = useState({
@@ -289,6 +299,27 @@ const BonCommandePlateforme = () => {
   const [savedDocumentIds, setSavedDocumentIds] = useState(new Set()); // documents enregistrés en BD
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+
+  // Synchronisation des états actifs dans le localStorage
+  useEffect(() => {
+    if (savedConsultation?.id) {
+      localStorage.setItem('drca_selected_consultation_id', String(savedConsultation.id));
+    }
+  }, [savedConsultation]);
+
+  useEffect(() => {
+    if (activePhase) {
+      localStorage.setItem('drca_active_phase', activePhase);
+    }
+  }, [activePhase]);
+
+  useEffect(() => {
+    if (selectedDocumentId) {
+      localStorage.setItem('drca_selected_doc_id', selectedDocumentId);
+    } else {
+      localStorage.removeItem('drca_selected_doc_id');
+    }
+  }, [selectedDocumentId]);
 
   // --- Base de consultations (liste) ---
   const [consultationsList, setConsultationsList] = useState([]);
@@ -341,14 +372,16 @@ const BonCommandePlateforme = () => {
         setConsultationsList(sorted);
         setConsultationsError('');
 
-        // Auto-sélection de la consultation nouvellement créée
-        const autoSelectId = location.state?.autoSelectId;
-        if (autoSelectId) {
-          const found = sorted.find((c) => c.id === autoSelectId);
+        // Déterminer la consultation à sélectionner (state router, URL query param, ou localStorage)
+        const searchParams = new URLSearchParams(location.search);
+        const urlConsultationId = searchParams.get('consultation_id') || searchParams.get('consultationId');
+        const targetId = location.state?.autoSelectId || urlConsultationId || localStorage.getItem('drca_selected_consultation_id');
+
+        if (targetId) {
+          const found = sorted.find((c) => String(c.id) === String(targetId));
           if (found) {
             setSavedConsultation(found);
-            setMessage(`Consultation ${found.numero_consultation} créée et sélectionnée avec succès. Vous pouvez maintenant remplir et télécharger tous les documents PDF.`);
-            setActivePhase('consultation');
+            localStorage.setItem('drca_selected_consultation_id', String(found.id));
             const retrievedIntitule = found.intitule || found.type_prestation || found.objet_consultation;
             if (retrievedIntitule) {
               handleDocumentFieldChange('bon_commande', 'intitule', retrievedIntitule);
@@ -363,7 +396,7 @@ const BonCommandePlateforme = () => {
     };
     fetchConsultations();
     fetchMembresCatalog();
-  }, [location.state]);
+  }, [location.state, location.search]);
 
   const handleQuickMembreSubmit = async (e) => {
     e.preventDefault();
@@ -1408,22 +1441,6 @@ const BonCommandePlateforme = () => {
     }
   };
 
-  const inputClass = 'w-full px-4 py-3 rounded-lg border border-slate-200 bg-white outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100';
-
-  const handleDeleteConsultation = async (consultation) => {
-    if (!window.confirm(`Voulez-vous vraiment supprimer la consultation ${consultation.numero_consultation} ?\nCette action est irréversible et supprimera tous les documents associés.`)) {
-      return;
-    }
-    try {
-      await api.delete(`/consultations/${consultation.id}`);
-      setConsultationsList((prev) => prev.filter((c) => c.id !== consultation.id));
-      setError('');
-      setMessage(`Consultation ${consultation.numero_consultation} supprimée avec succès.`);
-    } catch (err) {
-      setError(err.response?.data?.message || 'Impossible de supprimer la consultation.');
-    }
-  };
-
   const selectDocument = (documentId) => {
     setSelectedDocumentId(documentId);
   };
@@ -2086,116 +2103,197 @@ const BonCommandePlateforme = () => {
 
                       const reader = new FileReader();
 
-                      const parseTextContent = (text) => {
-                        const parsedRows = [];
-                        if (text.includes('<table') || text.includes('<tr')) {
-                          const parser = new DOMParser();
-                          const doc = parser.parseFromString(text, 'text/html');
-                          doc.querySelectorAll('tr').forEach((tr) => {
-                            const cells = Array.from(tr.querySelectorAll('td, th')).map((c) => c.textContent.trim());
-                            if (cells.length > 0 && cells.some((c) => c !== '')) {
-                              parsedRows.push(cells);
+                      reader.onload = (evt) => {
+                        try {
+                          let rows = [];
+                          const fileName = file.name.toLowerCase();
+
+                          if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
+                            const data = new Uint8Array(evt.target.result);
+                            const wb = XLSX.read(data, { type: 'array' });
+                            const wsName = wb.SheetNames[0];
+                            const ws = wb.Sheets[wsName];
+                            rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+                          } else {
+                            let text = '';
+                            if (typeof evt.target.result === 'string') {
+                              text = evt.target.result;
+                            } else {
+                              const decoder = new TextDecoder('utf-8', { fatal: false });
+                              text = decoder.decode(evt.target.result);
                             }
-                          });
-                        } else {
-                          const lines = text.split(/\r\n|\n|\r/);
-                          lines.forEach((line) => {
-                            if (!line.trim()) return;
-                            let delimiter = ';';
-                            if (line.includes(';')) delimiter = ';';
-                            else if (line.includes('\t')) delimiter = '\t';
-                            else if (line.includes(',')) delimiter = ',';
 
-                            const cells = line.split(delimiter).map((c) => c.trim().replace(/^["']|["']$/g, ''));
-                            if (cells.length > 0 && cells.some((c) => c !== '')) {
-                              parsedRows.push(cells);
-                            }
-                          });
-                        }
+                            const lines = text.split(/\r\n|\n|\r/);
+                            rows = lines
+                              .filter((line) => line.trim() !== '')
+                              .map((line) => {
+                                let delimiter = ';';
+                                if (line.includes(';')) delimiter = ';';
+                                else if (line.includes('\t')) delimiter = '\t';
+                                else if (line.includes(',')) delimiter = ',';
+                                return line.split(delimiter).map((c) => c.trim().replace(/^["']|["']$/g, ''));
+                              });
+                          }
 
-                        const imported = [];
-                        parsedRows.forEach((row) => {
-                          if (row.length === 0) return;
-                          const col0 = String(row[0] || '').toLowerCase();
-                          const col1 = String(row[1] || '').toLowerCase();
-
-                          if (
-                            col0.includes('nom') || col0.includes('societ') || col0.includes('concurrent') || col0 === 'n°' || col0 === 'no' || col0 === '#' ||
-                            col1.includes('montant') || col1.includes('prix') || col1.includes('ttc') || col1.includes('offre')
-                          ) {
+                          if (!rows || rows.length === 0) {
+                            alert("Le fichier sélectionné est vide.");
                             return;
                           }
 
-                          let nom = '';
-                          let montant = '';
+                          let extractedRef = '';
+                          let extractedObjet = '';
 
-                          if (row.length === 1) {
-                            nom = row[0];
-                          } else if (row.length >= 2) {
-                            if (/^\d+$/.test(row[0]) && row.length >= 3) {
-                              nom = row[1];
-                              montant = row[2];
-                            } else {
-                              nom = row[0];
-                              montant = row[1];
+                          for (let i = 0; i < Math.min(rows.length, 7); i++) {
+                            const rowStr = (rows[i] || []).map((c) => String(c).toLowerCase()).join(' ');
+                            if (rowStr.includes('référence') || rowStr.includes('reference')) {
+                              const valCol = (rows[i] || []).find((c, idx) => idx > 0 && String(c).trim() !== '');
+                              if (valCol) extractedRef = String(valCol).trim();
+                            }
+                            if (rowStr.includes('objet')) {
+                              const valCol = (rows[i] || []).find((c, idx) => idx > 0 && String(c).trim() !== '');
+                              if (valCol) extractedObjet = String(valCol).trim();
                             }
                           }
 
-                          if (montant) {
-                            montant = String(montant).replace(/\s+/g, '').replace(/DH|MAD/gi, '').replace(',', '.');
-                            const num = parseFloat(montant);
-                            if (!isNaN(num)) montant = num;
-                          }
+                          let headerRowIndex = -1;
+                          let colClassement = -1;
+                          let colNom = -1;
+                          let colMontant = -1;
 
-                          if (nom && nom.trim() !== '') {
-                            imported.push({ nom: nom.trim(), montant: montant !== undefined ? montant : '' });
-                          }
-                        });
+                          for (let i = 0; i < rows.length; i++) {
+                            const row = rows[i];
+                            if (!Array.isArray(row)) continue;
 
-                        return imported;
-                      };
+                            let hasNameCol = false;
+                            let hasAmountCol = false;
+                            let cIdx = -1, nIdx = -1, mIdx = -1;
 
-                      reader.onload = (evt) => {
-                        try {
-                          let imported = [];
-                          if (typeof evt.target.result === 'string') {
-                            imported = parseTextContent(evt.target.result);
-                          } else {
-                            const decoder = new TextDecoder('utf-8', { fatal: false });
-                            const rawStr = decoder.decode(evt.target.result);
-                            const matches = [...rawStr.matchAll(/<t[^>]*>([^<]+)<\/t>/gi)];
-                            if (matches.length > 0) {
-                              const textList = matches.map((m) => m[1].trim()).filter((t) => t.length > 0);
-                              for (let i = 0; i < textList.length; i++) {
-                                const item = textList[i];
-                                if (item.toLowerCase().includes('nom') || item.toLowerCase().includes('montant') || item.toLowerCase().includes('societ')) continue;
-                                const nextItem = textList[i + 1];
-                                if (nextItem && !isNaN(parseFloat(nextItem.replace(',', '.')))) {
-                                  imported.push({ nom: item, montant: parseFloat(nextItem.replace(',', '.')) });
-                                  i++;
-                                } else {
-                                  imported.push({ nom: item, montant: '' });
-                                }
+                            row.forEach((cell, colIdx) => {
+                              const s = String(cell).toLowerCase().trim();
+                              if (s.includes('classement') || s.includes('rang') || s === 'n°' || s === 'no' || s === '#') {
+                                cIdx = colIdx;
                               }
-                            } else {
-                              imported = parseTextContent(rawStr);
+                              if (s.includes('entreprise') || s.includes('société') || s.includes('societe') || s.includes('concurrent') || s.includes('dépositaire') || s.includes('fournisseur') || s === 'nom') {
+                                nIdx = colIdx;
+                                hasNameCol = true;
+                              }
+                              if (s.includes('total') || s.includes('ttc') || s.includes('ht') || s.includes('montant') || s.includes('prix') || s.includes('offre')) {
+                                mIdx = colIdx;
+                                hasAmountCol = true;
+                              }
+                            });
+
+                            if (hasNameCol || (cIdx !== -1 && mIdx !== -1) || (hasAmountCol && nIdx !== -1)) {
+                              headerRowIndex = i;
+                              colClassement = cIdx;
+                              colNom = nIdx;
+                              colMontant = mIdx;
+                              break;
                             }
                           }
 
-                          if (imported && imported.length > 0) {
-                            handleDocumentFieldChange(selectedDocument.id, field.name, imported);
-                            syncRefusedWithAttr(imported);
-                            setMessage(`${imported.length} concurrent(s) importé(s) avec succès depuis le fichier.`);
-                          } else {
-                            alert("Aucun concurrent valide n'a été trouvé dans le fichier. Veuillez vérifier qu'il contient au moins les colonnes Nom et Montant TTC.");
+                          const parseMoney = (val) => {
+                            if (typeof val === 'number') return val;
+                            if (!val) return 0;
+                            const clean = String(val).replace(/\s+/g, '').replace(/DH|MAD/gi, '').replace(/,/g, '.').replace(/[^\d.-]/g, '');
+                            const parsed = parseFloat(clean);
+                            return isNaN(parsed) ? 0 : parsed;
+                          };
+
+                          const imported = [];
+                          const startRow = headerRowIndex !== -1 ? headerRowIndex + 1 : 0;
+
+                          for (let i = startRow; i < rows.length; i++) {
+                            const row = rows[i];
+                            if (!row || row.length === 0) continue;
+
+                            let rank = '';
+                            let nom = '';
+                            let montant = 0;
+
+                            if (headerRowIndex !== -1) {
+                              if (colClassement !== -1) rank = row[colClassement];
+                              if (colNom !== -1) nom = row[colNom];
+                              if (colMontant !== -1) montant = parseMoney(row[colMontant]);
+                            }
+
+                            if (!nom || String(nom).trim() === '') {
+                              if (row.length >= 3 && (typeof row[0] === 'number' || /^\d+$/.test(String(row[0]).trim()))) {
+                                rank = row[0];
+                                nom = String(row[1] || '').trim();
+                                montant = parseMoney(row[2]);
+                              } else if (row.length >= 2) {
+                                nom = String(row[0] || '').trim();
+                                montant = parseMoney(row[1]);
+                              }
+                            }
+
+                            nom = String(nom || '').trim();
+                            if (
+                              !nom ||
+                              nom.toLowerCase().includes('synthèse') ||
+                              nom.toLowerCase().includes('entreprise') ||
+                              nom.toLowerCase().includes('nom des concurrents') ||
+                              nom.toLowerCase().includes('total') ||
+                              nom.toLowerCase().includes('direction régionale') ||
+                              nom.toLowerCase() === 'référence' ||
+                              nom.toLowerCase() === 'objet'
+                            ) {
+                              continue;
+                            }
+
+                            const parsedRank = parseInt(rank, 10);
+                            imported.push({
+                              nom: nom,
+                              montant: montant || 0,
+                              classement: !isNaN(parsedRank) && parsedRank > 0 ? parsedRank : null
+                            });
                           }
+
+                          if (imported.length === 0) {
+                            alert("Aucun concurrent valide n'a été trouvé dans le fichier. Veuillez vérifier la structure (colonnes: Classement, Entreprise, Montant TTC).");
+                            return;
+                          }
+
+                          imported.sort((a, b) => {
+                            if (a.classement && b.classement) return a.classement - b.classement;
+                            if (a.montant > 0 && b.montant > 0) return a.montant - b.montant;
+                            return 0;
+                          });
+
+                          imported.forEach((item, index) => {
+                            if (!item.classement) {
+                              item.classement = index + 1;
+                            }
+                          });
+
+                          handleDocumentFieldChange(selectedDocument.id, field.name, imported);
+                          syncRefusedWithAttr(imported);
+
+                          const winner = imported.find((c) => c.classement === 1) || imported[0];
+                          if (winner && winner.nom) {
+                            handleDocumentFieldChange(selectedDocument.id, 'attributaire', winner.nom);
+                            handleDocumentFieldChange(selectedDocument.id, 'montant_apres_verification', winner.montant);
+                            handleDocumentFieldChange('bon_commande', 'titulaire_nom', winner.nom);
+                            handleDocumentFieldChange('bon_commande', 'societe', winner.nom);
+                            handleDocumentFieldChange('ordre_commande', 'societe', winner.nom);
+                          }
+
+                          if (extractedRef && !documentForms[selectedDocument.id]?.numero_consultation) {
+                            handleDocumentFieldChange(selectedDocument.id, 'numero_consultation', extractedRef);
+                          }
+                          if (extractedObjet && !documentForms[selectedDocument.id]?.objet) {
+                            handleDocumentFieldChange(selectedDocument.id, 'objet', extractedObjet);
+                          }
+
+                          setMessage(`${imported.length} concurrent(s) importé(s) avec classement ! Offre retenue : ${winner.nom} (${winner.montant ? winner.montant.toLocaleString('fr-FR') : 0} DH TTC).`);
                         } catch (err) {
                           console.error(err);
                           alert("Erreur lors de la lecture du fichier Excel.");
                         }
                       };
 
-                      if (file.name.endsWith('.xlsx')) {
+                      if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
                         reader.readAsArrayBuffer(file);
                       } else {
                         reader.readAsText(file);
@@ -2204,11 +2302,11 @@ const BonCommandePlateforme = () => {
                     };
 
                     const downloadSampleCsv = () => {
-                      const csvContent = "data:text/csv;charset=utf-8,Nom des concurrents / Société;Montant TTC\nTOPOGRAPHY CONSULTING;30240\nLANDMAP SURVEY;36360\nBUREAU ALAOUI TOPO;39060\nBAJITOP;45240\nGOLDEN GEO;47520";
+                      const csvContent = "data:text/csv;charset=utf-8,Classement;Entreprise;Total TTC (MAD)\n1;CATALYSSIA BUSINESS COMPANY SARL;45313.4\n2;ARTPLUSE FES;49420.8\n3;MENTALSPORT SARL AU;50701.2\n4;DESTIN FLOTTE;60610";
                       const encodedUri = encodeURI(csvContent);
                       const link = document.createElement("a");
                       link.setAttribute("href", encodedUri);
-                      link.setAttribute("download", "modele_concurrents.csv");
+                      link.setAttribute("download", "modele_devis_recus.csv");
                       document.body.appendChild(link);
                       link.click();
                       document.body.removeChild(link);
@@ -2255,50 +2353,60 @@ const BonCommandePlateforme = () => {
                           <table className="w-full bg-white border border-slate-200 rounded-xl overflow-hidden text-xs">
                             <thead>
                               <tr className="bg-slate-100 border-b border-slate-200 text-slate-700 font-bold uppercase tracking-wider">
-                                <th className="py-2.5 px-3 text-center w-16">N°</th>
+                                <th className="py-2.5 px-3 text-center w-36">Classement</th>
                                 <th className="py-2.5 px-3 text-left">Nom des concurrents / Société</th>
                                 <th className="py-2.5 px-3 text-right w-48">Montant de l'offre (TTC)</th>
                                 <th className="py-2.5 px-3 text-center w-12"></th>
                               </tr>
                             </thead>
                             <tbody>
-                              {list.map((c, idx) => (
-                                <tr key={idx} className="border-b border-slate-100 hover:bg-slate-50 transition-all">
-                                  <td className="py-2 px-3 text-center font-bold text-slate-600 bg-slate-50/50">
-                                    {idx + 1}
-                                  </td>
-                                  <td className="py-2 px-3">
-                                    <input
-                                      type="text"
-                                      value={c.nom}
-                                      onChange={(e) => updateConcurrent(idx, 'nom', e.target.value)}
-                                      placeholder="Ex: TOPOGRAPHY CONSULTING"
-                                      className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white font-semibold text-slate-800 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-100"
-                                    />
-                                  </td>
-                                  <td className="py-2 px-3">
-                                    <input
-                                      type="number"
-                                      value={c.montant}
-                                      onChange={(e) => updateConcurrent(idx, 'montant', e.target.value)}
-                                      placeholder="30240"
-                                      className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white font-semibold text-slate-800 text-right outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-100"
-                                    />
-                                  </td>
-                                  <td className="py-2 px-3 text-center">
-                                    {list.length > 1 && (
-                                      <button
-                                        type="button"
-                                        onClick={() => removeConcurrent(idx)}
-                                        className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-all"
-                                        title="Supprimer ce concurrent"
-                                      >
-                                        <Trash2 size={14} />
-                                      </button>
-                                    )}
-                                  </td>
-                                </tr>
-                              ))}
+                              {list.map((c, idx) => {
+                                const rank = c.classement || idx + 1;
+                                const isWinner = rank === 1;
+                                return (
+                                  <tr key={idx} className={`border-b border-slate-100 hover:bg-slate-50 transition-all ${isWinner ? 'bg-emerald-50/50' : ''}`}>
+                                    <td className="py-2 px-3 text-center font-bold">
+                                      <span className={`px-2.5 py-1 rounded-full text-[11px] font-extrabold inline-block ${
+                                        isWinner
+                                          ? 'bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-sm'
+                                          : 'bg-slate-100 text-slate-700 border border-slate-200'
+                                      }`}>
+                                        {rank === 1 ? '🥇 1er (Moins-disant)' : `${rank}ème`}
+                                      </span>
+                                    </td>
+                                    <td className="py-2 px-3">
+                                      <input
+                                        type="text"
+                                        value={c.nom}
+                                        onChange={(e) => updateConcurrent(idx, 'nom', e.target.value)}
+                                        placeholder="Ex: CATALYSSIA BUSINESS COMPANY SARL"
+                                        className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white font-semibold text-slate-800 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-100"
+                                      />
+                                    </td>
+                                    <td className="py-2 px-3">
+                                      <input
+                                        type="number"
+                                        value={c.montant}
+                                        onChange={(e) => updateConcurrent(idx, 'montant', e.target.value)}
+                                        placeholder="45313.4"
+                                        className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white font-semibold text-slate-800 text-right outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-100"
+                                      />
+                                    </td>
+                                    <td className="py-2 px-3 text-center">
+                                      {list.length > 1 && (
+                                        <button
+                                          type="button"
+                                          onClick={() => removeConcurrent(idx)}
+                                          className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                                          title="Supprimer ce concurrent"
+                                        >
+                                          <Trash2 size={14} />
+                                        </button>
+                                      )}
+                                    </td>
+                                  </tr>
+                                );
+                              })}
                             </tbody>
                           </table>
                         </div>
@@ -2312,65 +2420,170 @@ const BonCommandePlateforme = () => {
                       ? rawVal
                       : typeof rawVal === 'string' && rawVal.trim() !== ''
                         ? rawVal.split(',').map((s) => ({ nom: s.trim(), motif: "Refus d'invitation du maître d'ouvrage" }))
-                        : [
-                          { nom: 'LANDMAP SURVEY', motif: "Refus d'invitation du maître d'ouvrage" },
-                        ]
+                        : [];
+
+                    const concurrentsList = Array.isArray(documentForms[selectedDocument.id]?.concurrents)
+                      ? documentForms[selectedDocument.id].concurrents
+                      : [];
+
+                    const standardMotifs = [
+                      "Refus d'invitation du maître d'ouvrage",
+                      "Offre supérieure au budget estimatif",
+                      "Offre financière non conforme / Erreur de calcul",
+                      "Dossier administratif ou technique incomplet",
+                      "Non-respect des spécifications du cahier des charges",
+                      "Abandon ou retrait de l'offre par le concurrent",
+                      "Autre motif (à préciser ci-dessous)"
+                    ];
+
+                    const syncAutoAttributaire = (updatedRefusedList) => {
+                      if (!concurrentsList || concurrentsList.length === 0) return;
+
+                      const refusedNames = updatedRefusedList.map((r) => String(r.nom || '').trim().toLowerCase());
+                      const eligible = concurrentsList.find((c) => !refusedNames.includes(String(c.nom || '').trim().toLowerCase()));
+
+                      if (eligible && eligible.nom) {
+                        handleDocumentFieldChange(selectedDocument.id, 'attributaire', eligible.nom);
+                        if (eligible.montant) {
+                          handleDocumentFieldChange(selectedDocument.id, 'montant_apres_verification', eligible.montant);
+                        }
+                        const rank = eligible.classement || (concurrentsList.findIndex((c) => c.nom === eligible.nom) + 1);
+                        handleDocumentFieldChange(
+                          selectedDocument.id,
+                          'motif_attribution',
+                          `Offre la moins disante conforme (classée N°${rank}) après examen des devis reçus`
+                        );
+                        handleDocumentFieldChange('bon_commande', 'titulaire_nom', eligible.nom);
+                        handleDocumentFieldChange('bon_commande', 'societe', eligible.nom);
+                        handleDocumentFieldChange('ordre_commande', 'societe', eligible.nom);
+                      }
+                    };
 
                     const updateRefused = (idx, key, val) => {
                       const updated = currentList.map((item, i) => (i === idx ? { ...item, [key]: val } : item));
                       handleDocumentFieldChange(selectedDocument.id, field.name, updated);
+                      syncAutoAttributaire(updated);
                     };
 
-                    const addRefused = () => {
-                      handleDocumentFieldChange(selectedDocument.id, field.name, [
-                        ...currentList,
-                        { nom: '', motif: "Refus d'invitation du maître d'ouvrage" },
-                      ]);
+                    const addRefusedCompany = (companyName = '') => {
+                      const defaultMotif = "Refus d'invitation du maître d'ouvrage";
+                      const updated = [...currentList, { nom: companyName, motif: defaultMotif }];
+                      handleDocumentFieldChange(selectedDocument.id, field.name, updated);
+                      syncAutoAttributaire(updated);
                     };
 
                     const removeRefused = (idx) => {
-                      handleDocumentFieldChange(selectedDocument.id, field.name, currentList.filter((_, i) => i !== idx));
+                      const updated = currentList.filter((_, i) => i !== idx);
+                      handleDocumentFieldChange(selectedDocument.id, field.name, updated);
+                      syncAutoAttributaire(updated);
                     };
+
+                    const availableToDiscard = concurrentsList.filter(
+                      (c) => !currentList.some((r) => String(r.nom || '').trim().toLowerCase() === String(c.nom || '').trim().toLowerCase())
+                    );
 
                     return (
                       <div key={`${selectedDocument.id}-${field.name}`} className="col-span-full bg-slate-50 border border-slate-200 rounded-2xl p-5 shadow-sm">
-                        <div className="flex items-center justify-between mb-3">
+                        <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
                           <label className="block text-xs font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-2">
                             ❌ {field.label}
                           </label>
 
+                          <div className="flex flex-wrap items-center gap-2">
+                            {availableToDiscard.length > 0 && (
+                              <select
+                                defaultValue=""
+                                onChange={(e) => {
+                                  if (e.target.value) {
+                                    addRefusedCompany(e.target.value);
+                                    e.target.value = '';
+                                  }
+                                }}
+                                className="px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-700 outline-none focus:border-red-500 transition-all"
+                              >
+                                <option value="">+ Écarter une société des concurrents...</option>
+                                {availableToDiscard.map((c, i) => (
+                                  <option key={i} value={c.nom}>
+                                    {c.nom} ({c.montant ? `${Number(c.montant).toLocaleString('fr-FR')} DH` : 'N/A'})
+                                  </option>
+                                ))}
+                              </select>
+                            )}
+
+                            <button
+                              type="button"
+                              onClick={() => addRefusedCompany('')}
+                              className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white font-bold text-xs rounded-lg inline-flex items-center gap-1 shadow-sm transition-all"
+                            >
+                              <Plus size={14} /> Ajouter manuellement
+                            </button>
+                          </div>
                         </div>
 
                         <div className="space-y-3">
                           {currentList.map((item, idx) => (
-                            <div key={idx} className="flex flex-col sm:flex-row items-center gap-3 bg-white p-3 border border-slate-200 rounded-xl shadow-sm">
+                            <div key={idx} className="flex flex-col sm:flex-row items-start sm:items-center gap-3 bg-white p-3.5 border border-slate-200 rounded-xl shadow-sm">
                               <div className="w-full sm:w-1/3">
-                                <span className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Nom de la société</span>
-                                <input
-                                  type="text"
-                                  value={item.nom}
-                                  onChange={(e) => updateRefused(idx, 'nom', e.target.value)}
-                                  placeholder="Ex: TOPOGRAPHY CONSULTING"
-                                  className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold text-slate-800 outline-none focus:border-blue-500"
-                                />
-                              </div>
-                              <div className="w-full sm:w-2/3 flex items-center gap-2">
-                                <div className="flex-1">
-                                  <span className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Motif du refus</span>
+                                <span className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Société écartée</span>
+                                {concurrentsList.length > 0 ? (
+                                  <select
+                                    value={item.nom}
+                                    onChange={(e) => updateRefused(idx, 'nom', e.target.value)}
+                                    className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs font-bold text-slate-800 bg-slate-50 outline-none focus:border-red-500 focus:bg-white"
+                                  >
+                                    <option value="">-- Choisir la société --</option>
+                                    {concurrentsList.map((c, i) => (
+                                      <option key={i} value={c.nom}>
+                                        {c.nom}
+                                      </option>
+                                    ))}
+                                    {!concurrentsList.some((c) => c.nom === item.nom) && item.nom && (
+                                      <option value={item.nom}>{item.nom}</option>
+                                    )}
+                                  </select>
+                                ) : (
                                   <input
                                     type="text"
+                                    value={item.nom}
+                                    onChange={(e) => updateRefused(idx, 'nom', e.target.value)}
+                                    placeholder="Ex: TOPOGRAPHY CONSULTING"
+                                    className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold text-slate-800 outline-none focus:border-red-500"
+                                  />
+                                )}
+                              </div>
+
+                              <div className="w-full sm:w-2/3 flex items-center gap-2">
+                                <div className="flex-1 space-y-1">
+                                  <span className="block text-[10px] font-bold text-slate-500 uppercase">Motif d'écartement</span>
+                                  <input
+                                    type="text"
+                                    list={`standard-motifs-list-${idx}`}
                                     value={item.motif}
                                     onChange={(e) => updateRefused(idx, 'motif', e.target.value)}
                                     placeholder="Ex: Refus d'invitation du maître d'ouvrage"
-                                    className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold text-slate-800 outline-none focus:border-blue-500"
+                                    className="w-full px-3 py-2 rounded-lg border border-slate-200 text-xs font-semibold text-slate-800 outline-none focus:border-red-500 bg-white"
                                   />
+                                  <datalist id={`standard-motifs-list-${idx}`}>
+                                    {standardMotifs.map((m, i) => (
+                                      <option key={i} value={m} />
+                                    ))}
+                                  </datalist>
                                 </div>
 
+                                <button
+                                  type="button"
+                                  onClick={() => removeRefused(idx)}
+                                  className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-all shrink-0 self-end mb-1"
+                                  title="Annuler l'écartement de cette société"
+                                >
+                                  <Trash2 size={15} />
+                                </button>
                               </div>
                             </div>
                           ))}
+
                           {currentList.length === 0 && (
-                            <div className="p-3 border border-dashed border-slate-300 rounded-xl text-center text-xs text-slate-500 bg-white">
+                            <div className="p-4 border border-dashed border-slate-300 rounded-xl text-center text-xs text-slate-500 bg-white">
                               Aucune société refusée enregistrée (Néant).
                             </div>
                           )}
@@ -2384,15 +2597,13 @@ const BonCommandePlateforme = () => {
                       ? documentForms[selectedDocument.id].concurrents
                       : [];
                     const selectedAttr = documentForms[selectedDocument.id]?.[field.name] || '';
+                    const motifAttr = documentForms[selectedDocument.id]?.motif_attribution || '';
 
                     const handleSelectAttr = (e) => {
                       const selectedNom = e.target.value;
                       handleDocumentFieldChange(selectedDocument.id, field.name, selectedNom);
 
-                      if (!selectedNom) {
-                        handleDocumentFieldChange(selectedDocument.id, 'societes_refusees', []);
-                        return;
-                      }
+                      if (!selectedNom) return;
 
                       const foundIndex = concurrentsList.findIndex((c) => c.nom === selectedNom);
                       if (foundIndex !== -1) {
@@ -2401,25 +2612,32 @@ const BonCommandePlateforme = () => {
                           handleDocumentFieldChange(selectedDocument.id, 'montant_apres_verification', found.montant);
                         }
 
-                        // Auto-calcul des sociétés écartées: toutes les sociétés positionnées AVANT la société retenue
-                        const refusedCompanies = concurrentsList.slice(0, foundIndex).map((c) => ({
-                          nom: c.nom,
-                          motif: "Refus d'invitation du maître d'ouvrage",
-                        }));
-                        handleDocumentFieldChange(selectedDocument.id, 'societes_refusees', refusedCompanies);
+                        const rank = found.classement || (foundIndex + 1);
+                        handleDocumentFieldChange(
+                          selectedDocument.id,
+                          'motif_attribution',
+                          `Offre la moins disante conforme (classée N°${rank}) retenue par le maître d'ouvrage`
+                        );
                       }
 
-                      if (selectedNom) {
-                        handleDocumentFieldChange('bon_commande', 'titulaire_nom', selectedNom);
-                        handleDocumentFieldChange('ordre_commande', 'societe', selectedNom);
-                      }
+                      handleDocumentFieldChange('bon_commande', 'titulaire_nom', selectedNom);
+                      handleDocumentFieldChange('bon_commande', 'societe', selectedNom);
+                      handleDocumentFieldChange('ordre_commande', 'societe', selectedNom);
                     };
 
                     return (
-                      <div key={`${selectedDocument.id}-${field.name}`} className="col-span-full bg-slate-50 border border-slate-200 rounded-2xl p-5 shadow-sm">
-                        <label className="block text-xs font-extrabold text-slate-800 uppercase tracking-wider mb-2">
-                          🏆 {field.label}
-                        </label>
+                      <div key={`${selectedDocument.id}-${field.name}`} className="col-span-full bg-slate-50 border border-slate-200 rounded-2xl p-5 shadow-sm space-y-3">
+                        <div className="flex items-center justify-between">
+                          <label className="block text-xs font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                            🏆 {field.label}
+                          </label>
+                          {selectedAttr && (
+                            <span className="px-2.5 py-1 bg-emerald-100 text-emerald-800 border border-emerald-300 rounded-full text-[11px] font-extrabold">
+                              Société retenue : {selectedAttr}
+                            </span>
+                          )}
+                        </div>
+
                         <select
                           value={selectedAttr}
                           onChange={handleSelectAttr}
@@ -2428,10 +2646,23 @@ const BonCommandePlateforme = () => {
                           <option value="">-- Sélectionner la société retenue parmi les concurrents --</option>
                           {concurrentsList.map((c, i) => (
                             <option key={i} value={c.nom}>
-                              {i + 1}. {c.nom} {c.montant ? `(${Number(c.montant).toLocaleString('fr-FR')} DH TTC)` : ''}
+                              {c.classement || i + 1}. {c.nom} {c.montant ? `(${Number(c.montant).toLocaleString('fr-FR')} DH TTC)` : ''}
                             </option>
                           ))}
                         </select>
+
+                        <div>
+                          <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
+                            Motif du choix / d'attribution (Motif retenu)
+                          </label>
+                          <input
+                            type="text"
+                            value={motifAttr}
+                            onChange={(e) => handleDocumentFieldChange(selectedDocument.id, 'motif_attribution', e.target.value)}
+                            placeholder="Ex: Offre la moins disante conforme aux spécifications du maître d'ouvrage"
+                            className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-semibold text-slate-800 outline-none focus:border-blue-500"
+                          />
+                        </div>
                       </div>
                     );
                   }

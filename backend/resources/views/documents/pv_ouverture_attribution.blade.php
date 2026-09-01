@@ -218,6 +218,12 @@
     <div style="text-align: center; font-weight: bold; font-size: 11.5px; text-transform: uppercase; margin: 4px 0;">
         {{ $doc['attributaire'] }}
     </div>
+    @if(!empty($doc['motif_attribution']))
+    <div style="margin: 4px 0; font-size: 9.5px; text-align: center;">
+        <span style="font-weight: bold;">Motif de retenu :</span> 
+        <span style="font-style: italic;">{{ $doc['motif_attribution'] }}</span>
+    </div>
+    @endif
     <div style="margin: 4px 0; font-size: 10px;">
         Pour un montant global (TTC) de &nbsp;&nbsp;&nbsp;&nbsp;<span style="font-weight: bold; font-size: 11px;">{{ number_format((float) $doc['montant_retenu'], 2, ',', ' ') }}</span> &nbsp;&nbsp;&nbsp;&nbsp; <strong>DH</strong>
     </div>

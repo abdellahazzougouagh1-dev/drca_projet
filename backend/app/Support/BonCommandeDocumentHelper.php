@@ -140,6 +140,7 @@ class BonCommandeDocumentHelper
             'consistance_lignes' => $documentData['consistance_lignes'] ?? null,
             'delai_livraison_jours' => self::value($documentData, 'delai_livraison_jours', ''),
             'motif_ajournement' => self::value($documentData, 'motif_ajournement', 'Planification et disponibilité des agriculteurs'),
+            'motif_attribution' => self::value($documentData, 'motif_attribution', "Offre la moins disante conforme"),
         ];
     }
 

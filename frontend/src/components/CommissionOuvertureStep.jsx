@@ -404,7 +404,7 @@ export default function CommissionOuvertureStep({
     try {
       setDownloadingTableauPdf(true);
       addToast('info', "Génération du tableau officiel en PDF...");
-      
+
       const payload = {
         concurrents: analyzedCompanies
       };
@@ -423,7 +423,7 @@ export default function CommissionOuvertureStep({
       link.click();
       link.remove();
       window.URL.revokeObjectURL(url);
-      
+
       addToast('success', "Tableau PDF téléchargé avec succès !");
       logAction('Téléchargement du tableau d\'examen des offres en PDF', 'bg-indigo-100 text-indigo-800');
     } catch (err) {

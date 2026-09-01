@@ -145,6 +145,8 @@
     if(empty($numerosLettres)) $numerosLettres = '....................';
 @endphp
 
+    @include('documents.partials.bc_footer')
+
     <table class="header-table">
         <tr>
             <td style="width: 25%;">
@@ -293,11 +295,16 @@
     <div class="winner-box">
         Enfin, la commission a décidé de proposer à l'autorité compétente de retenir l'offre qu'elle juge la plus avantageuse pour l'administration présentée ici par la société :<br>
         <div class="winner-name">
-            {{ $gagnant->fournisseur->raison_sociale ?? '......................................................' }}
+            {{ $gagnant->fournisseur->raison_sociale ?? data_get($doc ?? [], 'attributaire', '......................................................') }}
         </div>
-        Pour un montant global (TTC) de <div class="amount-box">{{ number_format($gagnant->montant_apres_verification ?? 0, 2, ',', ' ') }}</div><br>
+        @if(!empty(data_get($doc ?? [], 'motif_attribution')) || !empty(data_get($documentData ?? [], 'motif_attribution')))
+        <div style="margin: 5px 0; font-size: 11px; font-style: italic;">
+            <strong>Motif de retenu :</strong> {{ data_get($doc ?? [], 'motif_attribution', data_get($documentData ?? [], 'motif_attribution', '')) }}
+        </div>
+        @endif
+        Pour un montant global (TTC) de <div class="amount-box">{{ number_format($gagnant->montant_apres_verification ?? data_get($doc ?? [], 'montant_retenu', 0), 2, ',', ' ') }}</div> DH<br>
         <div style="margin-top: 5px;">
-            En lettres : <span class="border-cell" style="display:inline-block; padding: 2px 10px; min-width: 50%;">{{ $montantGagnantEnLettres ?? '#NOM?' }}</span>
+            En lettres : <span class="border-cell" style="display:inline-block; padding: 2px 10px; min-width: 50%;">{{ $montantGagnantEnLettres ?? data_get($doc ?? [], 'montant_en_lettres', '#NOM?') }}</span>
         </div>
     </div>
 
