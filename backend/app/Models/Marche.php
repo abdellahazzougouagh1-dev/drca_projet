@@ -58,12 +58,29 @@ class Marche extends Model
         'os_reprise_numero',
         'os_reprise_date_signature',
         'os_reprise_date_effet',
+        'num_engagement',
+        'reference_engagement',
+        'forme_engagement',
+        'date_engagement',
+        'article_budget',
+        'paragraphe_budget',
+        'ligne_budget',
+        'credit_budget_cp',
+        'credit_budget_ce',
+        'depenses_engagees_cp',
+        'depenses_engagees_ce',
+        'disponible_cp',
+        'disponible_ce',
+        'engagement_propose_cp',
+        'engagement_propose_ce',
+        'pieces_jointes',
     ];
 
     protected $casts = [
         'date_signature' => 'date',
         'date_approbation' => 'date',
         'date_notification_marche' => 'date',
+        'date_engagement' => 'date',
         'os_date_signature' => 'date',
         'os_date_effet' => 'date',
         'date_decision' => 'date',
@@ -76,11 +93,31 @@ class Marche extends Model
         'os_reprise_date_effet' => 'date',
         'montant' => 'decimal:2',
         'taux_tva' => 'decimal:2',
+        'credit_budget_cp' => 'decimal:2',
+        'credit_budget_ce' => 'decimal:2',
+        'depenses_engagees_cp' => 'decimal:2',
+        'depenses_engagees_ce' => 'decimal:2',
+        'disponible_cp' => 'decimal:2',
+        'disponible_ce' => 'decimal:2',
+        'engagement_propose_cp' => 'decimal:2',
+        'engagement_propose_ce' => 'decimal:2',
         'delai_execution' => 'integer',
         'commission_reception' => 'array',
     ];
 
-    protected $appends = ['workflow', 'montant_ht', 'montant_tva'];
+    protected $appends = ['workflow', 'montant_ht', 'montant_tva', 'interet_moratoire', 'montant_total_engagement'];
+
+    public function getInteretMoratoireAttribute(): float
+    {
+        $montant = (float) ($this->montant ?? 0);
+        return round($montant * 0.01, 2);
+    }
+
+    public function getMontantTotalEngagementAttribute(): float
+    {
+        $montant = (float) ($this->montant ?? 0);
+        return round($montant + $this->getInteretMoratoireAttribute(), 2);
+    }
 
     public function getMontantHtAttribute(): ?float
     {

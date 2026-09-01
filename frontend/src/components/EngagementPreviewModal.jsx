@@ -56,29 +56,89 @@ export const EngagementPreviewModal = ({
             {/* Document Specific Preview Rendering */}
             {docType === 'acte-engagement' && (
               <div className="space-y-4">
-                <div className="text-center font-extrabold text-lg text-slate-900 tracking-wide underline">
-                  ACTE D'ENGAGEMENT (PIÈCE N° 2)
-                </div>
-                <div className="p-3 bg-slate-50 rounded-xl space-y-1">
-                  <p><strong>Appel d'offres N° :</strong> {formData.num_aoo}</p>
-                  <p><strong>Objet :</strong> {formData.objet_marche}</p>
-                </div>
-                <div className="space-y-2">
-                  <p><strong>Je soussigné :</strong> {formData.representant || 'DEKKAKI MOHAMMED'}, Gérant</p>
-                  <p><strong>Agissant au nom et pour le compte de :</strong> <span className="font-extrabold text-blue-900">{formData.titulaire}</span></p>
-                  <p><strong>Siège social :</strong> {formData.adresse || 'Meknès, Maroc'}</p>
-                  <p><strong>ICE :</strong> <span className="font-mono">{formData.ice || '001835798000066'}</span> | <strong>RC :</strong> <span className="font-mono">{formData.rc || '34009'}</span> | <strong>CNSS :</strong> <span className="font-mono">{formData.cnss || '9184342'}</span></p>
+                <div className="flex justify-between items-start border border-black p-2 rounded-lg bg-slate-50">
+                  <div>
+                    <span className="font-bold text-xs">N° : </span>
+                    <span className="font-mono font-bold text-xs">{formData.num_engagement || `${formData.id || '22'}/${formData.exercice || new Date().getFullYear()}/FE/DRCA-RSK`}</span>
+                  </div>
+                  <div className="border border-black px-3 py-1 text-right text-[11px] font-bold">
+                    <div>Budget : {formData.type_budget || 'Investissement'}</div>
+                    <div>Exercice : {formData.exercice || new Date().getFullYear()}</div>
+                  </div>
                 </div>
 
-                <div className="p-4 bg-blue-50/50 border border-blue-200 rounded-xl space-y-1 font-mono">
-                  <p className="text-xs font-bold text-blue-900">Engagement financier :</p>
-                  <p>Montant Hors TVA : {parseFloat(formData.montant || 0) / 1.20 ? (parseFloat(formData.montant || 0) / 1.20).toLocaleString('fr-FR', { minimumFractionDigits: 2 }) : 0} DH</p>
-                  <p>TVA (20%) : {(parseFloat(formData.montant || 0) - (parseFloat(formData.montant || 0) / 1.20)).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} DH</p>
-                  <p className="font-extrabold text-sm text-blue-950">Montant Total TTC : {parseFloat(formData.montant || 0).toLocaleString('fr-FR')} dh</p>
+                <div className="text-center font-extrabold text-base text-slate-900 tracking-wide">
+                  FICHE D'ENGAGEMENT
                 </div>
 
-                <div className="p-3 bg-slate-50 rounded-xl">
-                  <p><strong>Compte bancaire (RIB) :</strong> <span className="font-mono">{formData.rib || '127 480 2121155766090007 54'}</span> ({formData.banque || 'Banque Populaire'})</p>
+                <div className="border border-black divide-y divide-black text-xs">
+                  <div className="grid grid-cols-3 p-2">
+                    <span className="font-bold">Référence de l'engagement :</span>
+                    <span className="col-span-2 font-mono font-bold text-center">{formData.reference_engagement || (formData.num_marche ? `BC N° ${formData.num_marche}` : `BC N° 06/INV/${formData.exercice || new Date().getFullYear()}/DRCA-RSK`)}</span>
+                  </div>
+                  <div className="grid grid-cols-3 p-2">
+                    <span className="font-bold">Objet :</span>
+                    <span className="col-span-2 font-bold uppercase text-center">{formData.objet_marche}</span>
+                  </div>
+                  <div className="grid grid-cols-3 p-2">
+                    <span className="font-bold">Forme :</span>
+                    <span className="col-span-2 font-bold text-center">{formData.forme_engagement || 'Marché'}</span>
+                  </div>
+                  <div className="grid grid-cols-3 p-2">
+                    <span className="font-bold">Montant en dirhams :</span>
+                    <span className="col-span-2 font-bold text-center text-sm">{Number(formData.montant || 0).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} DH</span>
+                  </div>
+                </div>
+
+                <div className="border border-black text-xs text-center">
+                  <div className="bg-slate-100 p-1.5 font-bold border-b border-black">Rubrique Budgétaire</div>
+                  <div className="grid grid-cols-3 divide-x divide-black border-b border-black p-1.5 font-mono font-bold">
+                    <div>ARTICLE : {formData.article_budget || '415'}</div>
+                    <div>PARAGRAPHE : {formData.paragraphe_budget || '20'}</div>
+                    <div>LIGNE : {formData.ligne_budget || '16'}</div>
+                  </div>
+                  <div className="grid grid-cols-4 divide-x divide-black p-2 text-[11px]">
+                    <div>
+                      <p className="font-bold text-slate-500">Crédit CP</p>
+                      <p className="font-mono font-bold mt-1">{formData.credit_budget_cp ? Number(formData.credit_budget_cp).toLocaleString('fr-FR') : '-'}</p>
+                    </div>
+                    <div>
+                      <p className="font-bold text-slate-500">Dépenses CP</p>
+                      <p className="font-mono font-bold mt-1">{formData.depenses_engagees_cp ? Number(formData.depenses_engagees_cp).toLocaleString('fr-FR') : '-'}</p>
+                    </div>
+                    <div>
+                      <p className="font-bold text-emerald-700">Disponible CP</p>
+                      <p className="font-mono font-bold mt-1 text-emerald-800">{formData.disponible_cp ? Number(formData.disponible_cp).toLocaleString('fr-FR') : '-'}</p>
+                    </div>
+                    <div>
+                      <p className="font-bold text-blue-700">Engagement CP</p>
+                      <p className="font-mono font-bold mt-1 text-blue-900">{Number((Number(formData.montant || 0) * 1.01)).toLocaleString('fr-FR', { minimumFractionDigits: 2 })}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="border border-black divide-y divide-black text-xs">
+                  <div className="grid grid-cols-3 p-2">
+                    <span className="font-bold">Bénéficiaire :</span>
+                    <span className="col-span-2 font-bold uppercase text-center">{formData.titulaire}</span>
+                  </div>
+                  <div className="grid grid-cols-3 p-2">
+                    <span>Montant de la dépense :</span>
+                    <span className="col-span-2 font-bold text-center">{Number(formData.montant || 0).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} DH</span>
+                  </div>
+                  <div className="grid grid-cols-3 p-2">
+                    <span>Intérêt moratoire (1%) :</span>
+                    <span className="col-span-2 font-bold text-center text-amber-700">{Number((Number(formData.montant || 0) * 0.01)).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} DH</span>
+                  </div>
+                  <div className="grid grid-cols-3 p-2 bg-slate-50">
+                    <span className="font-extrabold">Montant Total Engagement :</span>
+                    <span className="col-span-2 font-extrabold text-center text-sm text-blue-900">{Number((Number(formData.montant || 0) * 1.01)).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} DH</span>
+                  </div>
+                </div>
+
+                <div className="border border-black p-3 text-center">
+                  <p className="font-bold uppercase tracking-wider text-xs mb-8">VISA DU SOUS-ORDONNATEUR</p>
+                  <p className="text-right text-xs font-mono">Date : {formData.date_engagement || formData.date_signature || new Date().toLocaleDateString('fr-FR')}</p>
                 </div>
               </div>
             )}

@@ -52,6 +52,22 @@ class MarcheController extends Controller
             'code_budget' => $request->input('code_budget') ?: null,
             'intitule_budget' => $request->input('intitule_budget') ?: null,
             'agent_suivi' => $request->input('agent_suivi') ?: null,
+            'num_engagement' => $request->input('num_engagement') ?: null,
+            'reference_engagement' => $request->input('reference_engagement') ?: null,
+            'forme_engagement' => $request->input('forme_engagement') ?: null,
+            'date_engagement' => $request->input('date_engagement') ?: null,
+            'article_budget' => $request->input('article_budget') ?: null,
+            'paragraphe_budget' => $request->input('paragraphe_budget') ?: null,
+            'ligne_budget' => $request->input('ligne_budget') ?: null,
+            'credit_budget_cp' => $request->filled('credit_budget_cp') ? $request->input('credit_budget_cp') : null,
+            'credit_budget_ce' => $request->filled('credit_budget_ce') ? $request->input('credit_budget_ce') : null,
+            'depenses_engagees_cp' => $request->filled('depenses_engagees_cp') ? $request->input('depenses_engagees_cp') : null,
+            'depenses_engagees_ce' => $request->filled('depenses_engagees_ce') ? $request->input('depenses_engagees_ce') : null,
+            'disponible_cp' => $request->filled('disponible_cp') ? $request->input('disponible_cp') : null,
+            'disponible_ce' => $request->filled('disponible_ce') ? $request->input('disponible_ce') : null,
+            'engagement_propose_cp' => $request->filled('engagement_propose_cp') ? $request->input('engagement_propose_cp') : null,
+            'engagement_propose_ce' => $request->filled('engagement_propose_ce') ? $request->input('engagement_propose_ce') : null,
+            'pieces_jointes' => $request->input('pieces_jointes') ?: null,
             'lot' => is_array($request->input('lot'))
                 ? ($request->input('lot')['num_lot'] ?? null)
                 : $request->input('lot'),
@@ -102,6 +118,22 @@ class MarcheController extends Controller
             'lieu_reunion_commission' => 'nullable|string|max:255',
             'statut' => 'nullable|string|max:255',
             'agent_suivi' => 'nullable|string|max:255',
+            'num_engagement' => 'nullable|string|max:255',
+            'reference_engagement' => 'nullable|string|max:255',
+            'forme_engagement' => 'nullable|string|max:255',
+            'date_engagement' => 'nullable|date',
+            'article_budget' => 'nullable|string|max:255',
+            'paragraphe_budget' => 'nullable|string|max:255',
+            'ligne_budget' => 'nullable|string|max:255',
+            'credit_budget_cp' => 'nullable|numeric',
+            'credit_budget_ce' => 'nullable|numeric',
+            'depenses_engagees_cp' => 'nullable|numeric',
+            'depenses_engagees_ce' => 'nullable|numeric',
+            'disponible_cp' => 'nullable|numeric',
+            'disponible_ce' => 'nullable|numeric',
+            'engagement_propose_cp' => 'nullable|numeric',
+            'engagement_propose_ce' => 'nullable|numeric',
+            'pieces_jointes' => 'nullable|string',
             'date_reception_finale' => 'nullable|date',
             'commission_reception' => 'nullable|array',
             'bordereau_items' => 'nullable|array',
@@ -143,6 +175,10 @@ class MarcheController extends Controller
             $data['exercice'] = date('Y');
         }
 
+        if (empty($data['forme_engagement'])) {
+            $data['forme_engagement'] = 'Marché';
+        }
+
         if (!empty($data['lot_id']) && empty($data['montant'])) {
             $decision = ConcurrentLotDecision::where('aoo_id', $data['aoo_id'])
                 ->where('lot_id', $data['lot_id'])
@@ -162,7 +198,7 @@ class MarcheController extends Controller
         if ($marche->fournisseur_id && $request->filled('fournisseur_data')) {
             $fournisseur = Fournisseur::find($marche->fournisseur_id);
             if ($fournisseur) {
-                $fData = $request->input('fournisseur_data');
+                $fData = $request->input('fournisseur_data', []);
                 $allowed = [
                     'raison_sociale', 'ice', 'if', 'rc', 'forme_juridique', 'capital',
                     'patente', 'cnss', 'adresse', 'ville', 'telephone', 'fax',
@@ -186,13 +222,13 @@ class MarcheController extends Controller
 
         return response()->json([
             'message' => 'Dossier Marche enregistre avec succes',
-            'data' => $marche->load(['aoo', 'lot', 'fournisseur', 'bordereauItems.lotItem']),
+            'data' => $marche->load(['aoo.notificationLigne', 'lot', 'fournisseur', 'bordereauItems.lotItem', 'notificationLigne']),
         ], 200);
     }
 
     public function show($id)
     {
-        $marche = Marche::with(['aoo.lots.items', 'lot.items', 'fournisseur', 'bordereauItems.lotItem'])
+        $marche = Marche::with(['aoo.lots.items', 'aoo.notificationLigne', 'lot.items', 'fournisseur', 'bordereauItems.lotItem', 'notificationLigne'])
             ->findOrFail($id);
 
         return response()->json(array_merge($marche->toArray(), [

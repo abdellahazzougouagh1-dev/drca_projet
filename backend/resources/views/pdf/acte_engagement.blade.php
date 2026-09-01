@@ -2,167 +2,357 @@
 <html lang="fr" dir="ltr">
 <head>
     <meta charset="UTF-8">
-    <title>Acte d'Engagement</title>
+    <title>Fiche d'Engagement</title>
     <style>
         @page {
-            margin: 20mm 15mm;
+            margin: 8mm 10mm 8mm 10mm;
+            size: A4 portrait;
+        }
+        * {
+            box-sizing: border-box;
         }
         body { 
-            font-family: "Times New Roman", Times, serif; 
-            font-size: 14px; 
-            line-height: 1.3; 
+            font-family: "DejaVu Sans", "Helvetica", Arial, sans-serif; 
+            font-size: 11px; 
+            line-height: 1.25; 
             margin: 0; 
             padding: 0;
             color: #000;
         }
         .text-center { text-align: center; }
+        .text-left { text-align: left; }
+        .text-right { text-align: right; }
         .font-bold { font-weight: bold; }
-        .underline { text-decoration: underline; }
-        .italic { font-style: italic; }
-        .mb-1 { margin-bottom: 5px; }
-        .mb-2 { margin-bottom: 10px; }
-        .mb-4 { margin-bottom: 15px; }
-        .mt-4 { margin-top: 15px; }
-        .title { 
-            font-size: 15px; 
-            font-weight: bold; 
-            text-align: center; 
-            margin-bottom: 20px; 
-            text-transform: uppercase; 
-            line-height: 1.2; 
+        .uppercase { text-transform: uppercase; }
+        
+        .header-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 5px;
         }
-        .section { margin-bottom: 8px; text-align: justify; }
-        .table-prices { width: 100%; border: none; margin-left: 0px; margin-top: 10px; margin-bottom: 15px; }
-        .table-prices td { padding: 2px; vertical-align: top; font-size: 14px; }
-        .bullet { width: 15px; font-weight: normal; }
-        .footer { font-size: 11px; margin-top: 30px; border-top: 1px solid #000; padding-top: 5px; }
+        .header-table td {
+            vertical-align: middle;
+            padding: 0;
+        }
+        
+        .budget-box {
+            width: 250px;
+            border-collapse: collapse;
+            margin-left: auto;
+            margin-bottom: 5px;
+        }
+        .budget-box td {
+            border: 1.5px solid #000;
+            padding: 4px 8px;
+            font-size: 11px;
+        }
+        
+        .main-title-container {
+            width: 100%;
+            margin-top: 5px;
+            margin-bottom: 12px;
+            position: relative;
+        }
+        .num-fe {
+            font-size: 11px;
+            font-weight: bold;
+            text-align: left;
+            margin-bottom: 2px;
+            padding-left: 50px;
+        }
+        .main-title {
+            font-size: 16px;
+            font-weight: bold;
+            text-align: center;
+            letter-spacing: 0.5px;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 12px;
+            border: 1.5px solid #000;
+        }
+        .data-table th, .data-table td {
+            border: 1px solid #000;
+            padding: 5px 6px;
+            font-size: 10.5px;
+        }
+        
+        .rubrique-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 12px;
+            border: 1.5px solid #000;
+            text-align: center;
+        }
+        .rubrique-table th, .rubrique-table td {
+            border: 1px solid #000;
+            padding: 4px 3px;
+            font-size: 9.5px;
+        }
+        .rubrique-table th {
+            font-weight: bold;
+            background-color: #fff;
+        }
+        
+        .visa-box {
+            width: 100%;
+            border-collapse: collapse;
+            border: 1.5px solid #000;
+            margin-top: 5px;
+        }
+        .visa-box td {
+            border: 1px solid #000;
+            padding: 5px 8px;
+        }
     </style>
 </head>
 <body>
 
-    <div class="title">
-        PIECE N° 2<br>
-        MODELE D'ACTE D'ENGAGEMENT<br>
-        ACTE D'ENGAGEMENT
-    </div>
-
-    <div class="section font-bold underline italic mb-4">
-        A - Partie réservée à l'Administration :
-    </div>
-
-    <div class="section mb-2">
-        Appel d'offres ouvert national sur offres de prix n° <strong>{{ $marche->aoo->num_aoo ?? '06/2026/DRCA-RSK' }}</strong> du <strong>{{ $marche->aoo->date_ouverture ? \Carbon\Carbon::parse($marche->aoo->date_ouverture)->format('d/m/Y') : '10/06/2026' }}</strong> à <strong>{{ $marche->aoo->heure_ouverture ? \Carbon\Carbon::parse($marche->aoo->heure_ouverture)->format('H\h i\m\n') : '10 Heures 00 mn' }}</strong>.
-    </div>
-
-    <div class="section mb-2">
-        <span class="font-bold underline">Objet du marché</span> : <strong>{{ $marche->aoo->objet ?? $marche->objet_marche }}</strong><br>
-        @if($marche->lot && strtolower(trim($marche->lot)) !== 'lot unique' && strtolower(trim($marche->lot)) !== 'unique')
-        {{ stripos($marche->lot, 'lot') !== false ? $marche->lot : 'Lot ' . $marche->lot }} : {{ $marche->objet_marche }}
-        @endif
-    </div>
-
-    <div class="section mb-4">
-        Passé en application de l'alinéa 1 du paragraphe 1, l'alinéa a) du paragraphe 3 de la partie I) de l'article 19 et du paragraphe 1 de l'article 20 et de l'alinéa b du paragraphe 3 de l'article 20 du décret n° 2-22-431 du 15 Chaabane 1444 (08 mars 2023) relatif aux marchés publics.
-    </div>
-
-    <div class="section font-bold text-center mt-4 mb-1">
-        B - Partie réservée au concurrent
-    </div>
-    <div class="section font-bold mb-2 text-center">
-        a) Pour les personnes morales
-    </div>
-
-    <div class="section mb-2">
-        Je soussigné <strong>{{ strtoupper($marche->fournisseur->representant ?? '........................................') }}</strong>, gérant, agissant au nom et pour le compte de <strong>{{ strtoupper($marche->fournisseur->raison_sociale ?? '........................................') }}</strong>,<br>
-        Au capital social de : <strong>10 000,00 Dh</strong><br>
-        Numéro téléphone : .<strong>{{ $marche->fournisseur->telephone ?? '........................' }}</strong>..........................................<br>
-        Numéro du fax : ....................................................................................................................<br>
-        Adresse électronique : ...<strong>{{ $marche->fournisseur->email ?? '........................' }}</strong>.<br>
-        Adresse du siège social de la société : <strong>{{ $marche->fournisseur->adresse ?? '........................................' }}, {{ $marche->fournisseur->ville ?? '' }} - MAROC</strong><br>
-        Adresse du domicile élu : ............ <strong>{{ $marche->fournisseur->adresse ?? '........................................' }}, {{ $marche->fournisseur->ville ?? '' }} - MAROC</strong><br>
-        Affiliée à la CNSS, sous le numéro :(2) ............. <strong>{{ $marche->fournisseur->cnss ?? '........................' }}</strong>...................................................<br>
-        Inscrite au registre du commerce...<strong>{{ $marche->fournisseur->ville ?? '........................' }}</strong> sous le numéro : .......<strong>{{ $marche->fournisseur->rc ?? '........................' }}</strong>........................<br>
-        N°de la taxe professionnelle sous le numéro : ......... <strong>{{ $marche->fournisseur->patente ?? '........................' }}</strong>..................................<br>
-        Numéro de l'identifiant commun de l'entreprise : .............. <strong>{{ $marche->fournisseur->ice ?? '........................' }}</strong>.
-    </div>
-
-    <div class="section font-bold mb-1">
-        En vertu des pouvoirs qui me sont conférés :
-    </div>
-    <div class="section mb-1">
-        Après avoir pris connaissance du dossier d'appel d'offres concernant les prestations précisées en objet de la 
-        partie A ci-dessus ;
-    </div>
-    <div class="section mb-1">
-        Après avoir apprécié à mon point de vue et sous ma responsabilité la nature et les difficultés que comportent 
-        ces prestations :
-    </div>
-
-    <div class="section mb-2" style="margin-left: 15px;">
-        1. Remets, revêtu de ma signature un bordereau de prix, un détail estimatif et/ou la décomposition du montant global) établi (s) conformément aux modèles figurant au dossier d'appel d'offres ;<br>
-        2. M'engage à exécuter lesdites prestations conformément au cahier des prescriptions spéciales et moyennant les prix que j'ai établi moi-même, lesquels font ressortir :
-    </div>
-
     @php
-        $montantHt = $marche->montant_ht ?? 0;
-        $montantTva = $marche->montant_tva ?? 0;
-        $montantTtc = $marche->montant ?? 0;
-        $tauxTva = $marche->taux_tva ?? 20;
+        $logoOncaPath = public_path('images/logo-onca.png');
+        $logoOncaSrc = file_exists($logoOncaPath) ? 'data:image/png;base64,' . base64_encode(file_get_contents($logoOncaPath)) : '';
+        
+        $sceauMarocPath = public_path('images/sceau-maroc.png');
+        $sceauMarocSrc = file_exists($sceauMarocPath) ? 'data:image/png;base64,' . base64_encode(file_get_contents($sceauMarocPath)) : '';
 
-        $htWords = \App\Helpers\NumberToWordsHelper::toFrenchWords($montantHt);
-        $tvaWords = \App\Helpers\NumberToWordsHelper::toFrenchWords($montantTva);
-        $ttcWords = \App\Helpers\NumberToWordsHelper::toFrenchWords($montantTtc);
+        $montantDepense = (float) ($marche->montant ?? 0);
+        $interetMoratoire = round($montantDepense * 0.01, 2);
+        $montantTotal = round($montantDepense + $interetMoratoire, 2);
+
+        $montantEnLettres = \App\Helpers\NumberToWordsHelper::toFrenchMoneyWords($montantTotal);
+        
+        $numEngagement = $marche->num_engagement ?: ($marche->id . '/' . ($marche->exercice ?: date('Y')) . '/FE/DRCA-RSK');
+        $refEngagement = $marche->reference_engagement ?: ($marche->num_marche ? (stripos($marche->num_marche, 'marché') !== false ? $marche->num_marche : 'Marché N° ' . $marche->num_marche) : 'Marché N° 06/' . ($marche->exercice ?: date('Y')) . '/DRCA-RSK');
+        $formeEngagement = ($marche->forme_engagement && !in_array(strtolower(trim($marche->forme_engagement)), ['bon de commande', 'bc', ''])) ? $marche->forme_engagement : 'Marché';
+        $typeBudget = $marche->type_budget ?: 'Investissement';
+        $exercice = $marche->exercice ?: date('Y');
+
+        $nl = $marche->notificationLigne ?? ($marche->aoo->notificationLigne ?? null);
+
+        $article = $nl ? $nl->article : ($marche->article_budget ?: '415');
+        $paragraphe = $nl ? $nl->paragraphe : ($marche->paragraphe_budget ?: '20');
+        $ligne = $nl ? $nl->ligne_budgetaire : ($marche->ligne_budget ?: '16');
+
+        $creditCp = $nl ? ((float)($nl->reports ?? 0) + (float)($nl->credits_neufs ?? 0)) : ($marche->credit_budget_cp !== null ? $marche->credit_budget_cp : null);
+        $creditCe = $nl ? ((float)($nl->credits_engagements ?? 0)) : ($marche->credit_budget_ce !== null ? $marche->credit_budget_ce : null);
+
+        $depensesCp = $nl ? ((float)($nl->credits_engages ?? 0)) : ($marche->depenses_engagees_cp !== null ? $marche->depenses_engagees_cp : null);
+        $depensesCe = $marche->depenses_engagees_ce !== null ? $marche->depenses_engagees_ce : null;
+        
+        $disponibleCp = $nl ? ((float)($nl->credits_disponibles ?? 0)) : ($creditCp !== null && $depensesCp !== null ? ($creditCp - $depensesCp) : null);
+        $disponibleCe = $marche->disponible_ce !== null ? $marche->disponible_ce : null;
+        
+        $engagementProposeCp = $marche->engagement_propose_cp !== null ? $marche->engagement_propose_cp : $montantTotal;
+        $engagementProposeCe = $marche->engagement_propose_ce;
+
+        $piecesJointes = $marche->pieces_jointes ?: $refEngagement;
+        $dateEngagement = $marche->date_engagement ? \Carbon\Carbon::parse($marche->date_engagement)->format('d/m/Y') : ($marche->date_signature ? \Carbon\Carbon::parse($marche->date_signature)->format('d/m/Y') : date('d/m/Y'));
     @endphp
 
-    <table class="table-prices mb-2">
+    <!-- HEADER LOGOS & TITRE REGIONAL -->
+    <table class="header-table">
         <tr>
-            <td class="bullet">➢</td>
-            <td>Montant Hors T.V.A : <strong>{{ ucfirst($htWords) }} Dirhams [{{ number_format($montantHt, 2, ',', ' ') }}Dh]</strong></td>
+            <td style="width: 25%; text-align: left; vertical-align: middle;">
+                @if($logoOncaSrc)
+                    <img src="{{ $logoOncaSrc }}" style="height: 62px; width: auto; max-width: 150px;" alt="ONCA">
+                @else
+                    <div style="font-size: 8px; font-weight: bold; line-height: 1.3;">
+                        المكتب الوطني للإستشارة الفلاحية<br>
+                        <span style="font-size: 7.5px;">Office National du Conseil Agricole</span>
+                    </div>
+                @endif
+            </td>
+            <td style="width: 50%; text-align: center; vertical-align: middle; padding: 0 5px;">
+                <div style="font-size: 13px; font-weight: bold; text-transform: uppercase; line-height: 1.35; color: #000; letter-spacing: 0.3px;">
+                    Direction Régionale du Conseil Agricole<br>
+                    <span style="font-size: 13.5px; letter-spacing: 0.5px;">RABAT SALE KENITRA</span>
+                </div>
+            </td>
+            <td style="width: 25%; text-align: right; vertical-align: middle;">
+                @if($sceauMarocSrc)
+                    <img src="{{ $sceauMarocSrc }}" style="height: 62px; width: auto; max-width: 150px;" alt="Royaume du Maroc">
+                @else
+                    <div style="font-size: 8px; font-weight: bold; line-height: 1.3;">
+                        المملكة المغربية<br>
+                        <span style="font-size: 7px;">وزارة الفلاحة والصيد البحري</span>
+                    </div>
+                @endif
+            </td>
+        </tr>
+    </table>
+    <div style="border-bottom: 1.5px solid #000; margin-top: 4px; margin-bottom: 10px;"></div>
+
+    <!-- CADRE BUDGET / EXERCICE -->
+    <table class="budget-box">
+        <tr>
+            <td style="width: 35%; font-weight: bold;">Budget</td>
+            <td style="width: 65%; font-weight: bold; text-align: center;">{{ $typeBudget }}</td>
         </tr>
         <tr>
-            <td class="bullet">➢</td>
-            <td>Taux de la T.V.A &nbsp;&nbsp;&nbsp;&nbsp; Prix 1 = &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <strong>{{ number_format($tauxTva, 0, ',', ' ') }}%</strong> - &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; .............................................[en pourcentage]</td>
-        </tr>
-        <tr>
-            <td class="bullet">➢</td>
-            <td>Montant de la T.V.A Prix 1 = <strong>{{ ucfirst($tvaWords) }} Dirhams &nbsp;&nbsp;&nbsp; ({{ number_format($montantTva, 2, ',', ' ') }} Dh)</strong></td>
-        </tr>
-        <tr>
-            <td class="bullet">➢</td>
-            <td>Taux de la T.V.A &nbsp;&nbsp;&nbsp;&nbsp; Prix 2 = &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <strong>10%</strong> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; .............................................[en pourcentage]</td>
-        </tr>
-        <tr>
-            <td class="bullet">➢</td>
-            <td>Montant de la T.V.A : Prix 2 = .................................................... Dirhams (........................ Dh)</td>
-        </tr>
-        <tr>
-            <td class="bullet">➢</td>
-            <td>Montant T.V.A Comprise : <strong>{{ ucfirst($ttcWords) }} Dirhams ({{ number_format($montantTtc, 2, ',', ' ') }} Dh)</strong></td>
+            <td style="width: 35%; font-weight: bold;">Exercice</td>
+            <td style="width: 65%; font-weight: bold; text-align: center;">{{ $exercice }}</td>
         </tr>
     </table>
 
-    <div class="section mb-2">
-        La DRCA Rabat-Salé-Kénitra se libérera des sommes dues par lui en faisant donner crédit au compte bancaire (5), ouvert Banque populaire au nom <strong>{{ strtoupper($marche->fournisseur->raison_sociale ?? '........................................') }}</strong> (5), à {{ $marche->fournisseur->ville ?? '........................' }} - {{ $marche->fournisseur->agence_bancaire ?? '........................' }}..], sous relevé d'identification bancaire (RIB*) numéro <strong>{{ $marche->fournisseur->rib ?? '........................................................' }}</strong> (6)
+    <!-- TITRE PRINCIPAL -->
+    <div class="main-title-container">
+        <div class="num-fe">N° &nbsp;&nbsp; {{ $numEngagement }}</div>
+        <div class="main-title">FICHE D'ENGAGEMENT</div>
     </div>
 
-    <table style="width: 100%; border: none; margin-top: 20px;">
+    <!-- TABLEAU 1 : IDENTIFICATION DE L'ENGAGEMENT -->
+    <table class="data-table">
         <tr>
-            <td style="width: 40%; border: none;"></td>
-            <td style="width: 60%; border: none; text-align: center; font-weight: bold;">
-                Fait à {{ $marche->fournisseur->ville ?? '........................' }} le {{ $marche->date_signature ? \Carbon\Carbon::parse($marche->date_signature)->format('d/m/Y') : '........................' }}<br>
-                [Signature et cachet du concurrent]
+            <td style="width: 28%; font-weight: bold;">Référence de l'engagement</td>
+            <td style="width: 72%; text-align: center; font-weight: bold;">{{ $refEngagement }}</td>
+        </tr>
+        <tr>
+            <td style="font-weight: bold; text-align: center;">Objet</td>
+            <td style="text-align: center; font-weight: bold; text-transform: uppercase;">
+                {{ $marche->objet_marche ?? ($marche->aoo->objet ?? '') }}
+            </td>
+        </tr>
+        <tr>
+            <td style="font-weight: bold; text-align: center;">Forme</td>
+            <td style="text-align: center; font-weight: bold;">{{ $formeEngagement }}</td>
+        </tr>
+        <tr>
+            <td style="font-weight: bold; text-align: center;">Montant en dirhams</td>
+            <td style="text-align: center; font-weight: bold; font-size: 11.5px;">
+                {{ number_format($montantDepense, 2, ',', ' ') }}
             </td>
         </tr>
     </table>
 
-    <div class="footer">
-        <table style="width: 100%; border: none;">
+    <!-- TABLEAU 2 : RUBRIQUE BUDGÉTAIRE -->
+    <table class="rubrique-table">
+        <thead>
             <tr>
-                <td style="text-align: left;">APPEL D'OFFRES OUVERT NATIONAL N° {{ $marche->aoo->num_aoo ?? '........................' }} - Règlement de consultation</td>
-                <td style="text-align: right;">20</td>
+                <th colspan="2" style="width: 22%;">Rubrique budgétaire</th>
+                <th colspan="2" style="width: 20%;">Crédit budgétaire</th>
+                <th colspan="2" style="width: 20%;">Dépenses engagées</th>
+                <th colspan="2" style="width: 19%;">Disponible</th>
+                <th colspan="2" style="width: 19%;">Engagement de la dépense proposée</th>
             </tr>
-        </table>
-    </div>
+            <tr>
+                <th style="width: 13%;"></th>
+                <th style="width: 9%;"></th>
+                <th style="width: 10%;">CP</th>
+                <th style="width: 10%;">CE</th>
+                <th style="width: 10%;">CP</th>
+                <th style="width: 10%;">CE</th>
+                <th style="width: 10%;">CP</th>
+                <th style="width: 9%;">CE</th>
+                <th style="width: 10%;">CP</th>
+                <th style="width: 9%;">CE</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td style="font-weight: bold; text-align: left;">ARTICLE</td>
+                <td style="font-weight: bold;">{{ $article }}</td>
+                <td rowspan="3" style="font-weight: bold; vertical-align: middle;">
+                    {{ $creditCp !== null ? number_format((float)$creditCp, 2, ',', ' ') : '-' }}
+                </td>
+                <td rowspan="3" style="font-weight: bold; vertical-align: middle;">
+                    {{ $creditCe !== null && $creditCe > 0 ? number_format((float)$creditCe, 2, ',', ' ') : '-' }}
+                </td>
+                <td rowspan="3" style="font-weight: bold; vertical-align: middle;">
+                    {{ $depensesCp !== null ? number_format((float)$depensesCp, 2, ',', ' ') : '-' }}
+                </td>
+                <td rowspan="3" style="font-weight: bold; vertical-align: middle;">
+                    {{ $depensesCe !== null && $depensesCe > 0 ? number_format((float)$depensesCe, 2, ',', ' ') : '-' }}
+                </td>
+                <td rowspan="3" style="font-weight: bold; vertical-align: middle;">
+                    {{ $disponibleCp !== null ? number_format((float)$disponibleCp, 2, ',', ' ') : '-' }}
+                </td>
+                <td rowspan="3" style="font-weight: bold; vertical-align: middle;">
+                    {{ $disponibleCe !== null && $disponibleCe > 0 ? number_format((float)$disponibleCe, 2, ',', ' ') : '-' }}
+                </td>
+                <td rowspan="3" style="font-weight: bold; vertical-align: middle;">
+                    {{ $engagementProposeCp !== null ? number_format((float)$engagementProposeCp, 2, ',', ' ') : number_format($montantTotal, 2, ',', ' ') }}
+                </td>
+                <td rowspan="3" style="font-weight: bold; vertical-align: middle;">
+                    {{ $engagementProposeCe !== null && $engagementProposeCe > 0 ? number_format((float)$engagementProposeCe, 2, ',', ' ') : '-' }}
+                </td>
+            </tr>
+            <tr>
+                <td style="font-weight: bold; text-align: left;">PARAGRAPHE</td>
+                <td style="font-weight: bold;">{{ $paragraphe }}</td>
+            </tr>
+            <tr>
+                <td style="font-weight: bold; text-align: left;">LIGNE</td>
+                <td style="font-weight: bold;">{{ $ligne }}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- TABLEAU 3 : BÉNÉFICIAIRE & CALCULS FINANCIERS -->
+    <table class="data-table">
+        <tr>
+            <td style="width: 35%; font-weight: bold;">Bénéficiaire</td>
+            <td style="width: 65%; text-align: center; font-weight: bold; text-transform: uppercase;">
+                {{ $marche->fournisseur->raison_sociale ?? ($marche->titulaire ?? '-') }}
+            </td>
+        </tr>
+        <tr>
+            <td style="font-weight: bold;">Montant de la depense en dirhams</td>
+            <td style="text-align: center; font-weight: bold;">
+                {{ number_format($montantDepense, 2, ',', ' ') }}
+            </td>
+        </tr>
+        <tr>
+            <td style="font-weight: bold;">
+                Somme à valoir pour intérêt moratoire<br>
+                <span style="font-size: 10px; font-weight: normal;">(1% du montant en dirhams)</span>
+            </td>
+            <td style="text-align: center; font-weight: bold;">
+                {{ number_format($interetMoratoire, 2, ',', ' ') }}
+            </td>
+        </tr>
+        <tr>
+            <td style="font-weight: bold;">Montant total de l'engagement en dirhams</td>
+            <td style="text-align: center; font-weight: bold; font-size: 11.5px;">
+                {{ number_format($montantTotal, 2, ',', ' ') }}
+            </td>
+        </tr>
+        <tr>
+            <td style="font-weight: bold; text-align: center;">En Lettre</td>
+            <td style="text-align: center; font-weight: bold; font-style: italic;">
+                {{ $montantEnLettres }}
+            </td>
+        </tr>
+    </table>
+
+    <!-- TABLEAU 4 : PIÈCES JOINTES & VISA DU SOUS-ORDONNATEUR -->
+    <table class="visa-box">
+        <tr>
+            <td colspan="2" style="background-color: #fafafa; padding: 4px 8px;">
+                <span style="font-weight: bold;">Pièces jointes :</span><br>
+                <span style="font-weight: bold; margin-left: 10px;">{{ $piecesJointes }}</span>
+            </td>
+        </tr>
+        <tr>
+            <td colspan="2" style="text-align: center; font-weight: bold; font-size: 12px; padding: 6px; letter-spacing: 0.5px;">
+                VISA DU SOUS-ORDONNATEUR
+            </td>
+        </tr>
+        <tr>
+            <td colspan="2" style="height: 95px; vertical-align: top; border-bottom: none;">
+                <!-- Zone réservée au visa, signature et cachet -->
+            </td>
+        </tr>
+        <tr>
+            <td style="width: 45%; font-weight: bold; text-align: center; border-top: 1px solid #000;">
+                Date:
+            </td>
+            <td style="width: 55%; font-weight: bold; text-align: center; border-top: 1px solid #000;">
+                {{ $dateEngagement }}
+            </td>
+        </tr>
+    </table>
 
 </body>
 </html>

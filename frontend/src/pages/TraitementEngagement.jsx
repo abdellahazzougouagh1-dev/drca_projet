@@ -92,6 +92,24 @@ const TraitementEngagement = () => {
     os_reprise_numero: '',
     os_reprise_date_signature: '',
     os_reprise_date_effet: '',
+    num_engagement: '',
+    reference_engagement: '',
+    forme_engagement: 'Marché',
+    type_budget: 'Investissement',
+    exercice: '',
+    date_engagement: '',
+    article_budget: '415',
+    paragraphe_budget: '20',
+    ligne_budget: '16',
+    credit_budget_cp: '',
+    credit_budget_ce: '',
+    depenses_engagees_cp: '',
+    depenses_engagees_ce: '',
+    disponible_cp: '',
+    disponible_ce: '',
+    engagement_propose_cp: '',
+    engagement_propose_ce: '',
+    pieces_jointes: '',
   });
 
   const [isUploadingCps, setIsUploadingCps] = useState(false);
@@ -104,9 +122,20 @@ const TraitementEngagement = () => {
       const response = await api.get(`/marches/${id}`);
       const data = response.data;
       const f = data.fournisseur || {};
+      const nl = data.notification_ligne || data.aoo?.notification_ligne || {};
       const montantTtc = data.montant ?? '';
       const tauxTva = data.taux_tva ?? '20';
       const montantHt = data.montant_ht || (montantTtc ? (Number(montantTtc) / (1 + (Number(tauxTva) / 100))).toFixed(2) : '');
+      const currentYear = data.exercice || (data.num_marche && data.num_marche.match(/\/(\d{4})\//) ? data.num_marche.match(/\/(\d{4})\//)[1] : new Date().getFullYear().toString());
+
+      const creditCp = data.credit_budget_cp !== null && data.credit_budget_cp !== undefined ? data.credit_budget_cp : (nl.total_credits ?? '');
+      const depensesCp = data.depenses_engagees_cp !== null && data.depenses_engagees_cp !== undefined ? data.depenses_engagees_cp : (nl.credits_engages ?? '');
+      const dispoCp = data.disponible_cp !== null && data.disponible_cp !== undefined ? data.disponible_cp : (creditCp !== '' && depensesCp !== '' ? (Number(creditCp) - Number(depensesCp)).toFixed(2) : '');
+      const montantEngageTotal = montantTtc ? (Number(montantTtc) * 1.01).toFixed(2) : '';
+
+      const marcheRef = data.num_marche ? (data.num_marche.toLowerCase().startsWith('marché') ? data.num_marche : `Marché N° ${data.num_marche}`) : `Marché N° 06/${currentYear}/DRCA-RSK`;
+      const cleanRefEngagement = data.reference_engagement && !data.reference_engagement.startsWith('BC N°') ? data.reference_engagement : marcheRef;
+      const cleanFormeEngagement = data.forme_engagement && data.forme_engagement !== 'Bon de Commande' ? data.forme_engagement : 'Marché';
 
       setFormData(prev => ({
         ...prev,
@@ -135,6 +164,24 @@ const TraitementEngagement = () => {
         date_debut_prevue: data.date_debut_prevue ?? '',
         date_fin_prevue: data.date_fin_prevue ?? '',
         observations: data.observations ?? '',
+        num_engagement: data.num_engagement || (data.id ? `${data.id}/${currentYear}/FE/DRCA-RSK` : ''),
+        reference_engagement: cleanRefEngagement,
+        forme_engagement: cleanFormeEngagement,
+        type_budget: data.type_budget || 'Investissement',
+        exercice: currentYear,
+        date_engagement: data.date_engagement || data.date_signature || '',
+        article_budget: data.article_budget || (nl.article || '415'),
+        paragraphe_budget: data.paragraphe_budget || (nl.paragraphe || '20'),
+        ligne_budget: data.ligne_budget || (nl.ligne_budgetaire || '16'),
+        credit_budget_cp: creditCp,
+        credit_budget_ce: data.credit_budget_ce ?? '',
+        depenses_engagees_cp: depensesCp,
+        depenses_engagees_ce: data.depenses_engagees_ce ?? '',
+        disponible_cp: dispoCp,
+        disponible_ce: data.disponible_ce ?? '',
+        engagement_propose_cp: data.engagement_propose_cp ?? montantEngageTotal,
+        engagement_propose_ce: data.engagement_propose_ce ?? '',
+        pieces_jointes: data.pieces_jointes && !data.pieces_jointes.startsWith('BC N°') ? data.pieces_jointes : cleanRefEngagement,
       }));
 
       if (data.chemin_cps) {
@@ -165,15 +212,36 @@ const TraitementEngagement = () => {
         const ht = parseFloat(value) || 0;
         const tva = parseFloat(next.taux_tva) || 20;
         next.montant = ht > 0 ? (ht * (1 + tva / 100)).toFixed(2) : '';
+        const totalEng = ht > 0 ? (Number(next.montant) * 1.01).toFixed(2) : '';
+        next.engagement_propose_cp = totalEng;
       } else if (name === 'montant') {
         const ttc = parseFloat(value) || 0;
         const tva = parseFloat(next.taux_tva) || 20;
         next.montant_ht = ttc > 0 ? (ttc / (1 + tva / 100)).toFixed(2) : '';
+        const totalEng = ttc > 0 ? (ttc * 1.01).toFixed(2) : '';
+        next.engagement_propose_cp = totalEng;
       } else if (name === 'taux_tva') {
         const ht = parseFloat(next.montant_ht) || 0;
         const tva = parseFloat(value) || 20;
         if (ht > 0) {
           next.montant = (ht * (1 + tva / 100)).toFixed(2);
+          next.engagement_propose_cp = (Number(next.montant) * 1.01).toFixed(2);
+        }
+      }
+
+      // Live budget disponible calculation
+      if (name === 'credit_budget_cp' || name === 'depenses_engagees_cp') {
+        const c = parseFloat(name === 'credit_budget_cp' ? value : next.credit_budget_cp);
+        const d = parseFloat(name === 'depenses_engagees_cp' ? value : next.depenses_engagees_cp);
+        if (!isNaN(c) && !isNaN(d)) {
+          next.disponible_cp = (c - d).toFixed(2);
+        }
+      }
+      if (name === 'credit_budget_ce' || name === 'depenses_engagees_ce') {
+        const c = parseFloat(name === 'credit_budget_ce' ? value : next.credit_budget_ce);
+        const d = parseFloat(name === 'depenses_engagees_ce' ? value : next.depenses_engagees_ce);
+        if (!isNaN(c) && !isNaN(d)) {
+          next.disponible_ce = (c - d).toFixed(2);
         }
       }
 
@@ -218,6 +286,14 @@ const TraitementEngagement = () => {
         ...formData,
         taux_tva: formData.taux_tva ? Number(formData.taux_tva) : 20,
         delai_execution: formData.delai_execution ? Number(formData.delai_execution) : null,
+        credit_budget_cp: formData.credit_budget_cp !== '' ? Number(formData.credit_budget_cp) : null,
+        credit_budget_ce: formData.credit_budget_ce !== '' ? Number(formData.credit_budget_ce) : null,
+        depenses_engagees_cp: formData.depenses_engagees_cp !== '' ? Number(formData.depenses_engagees_cp) : null,
+        depenses_engagees_ce: formData.depenses_engagees_ce !== '' ? Number(formData.depenses_engagees_ce) : null,
+        disponible_cp: formData.disponible_cp !== '' ? Number(formData.disponible_cp) : null,
+        disponible_ce: formData.disponible_ce !== '' ? Number(formData.disponible_ce) : null,
+        engagement_propose_cp: formData.engagement_propose_cp !== '' ? Number(formData.engagement_propose_cp) : null,
+        engagement_propose_ce: formData.engagement_propose_ce !== '' ? Number(formData.engagement_propose_ce) : null,
         lot: typeof formData.lot === 'object' ? (formData.lot?.num_lot || 'Lot Unique') : formData.lot,
         statut: 'engagement_validee',
         fournisseur_data: {
@@ -302,19 +378,12 @@ const TraitementEngagement = () => {
         break;
       case 'decision-approbation':
         if (!formData.num_marche) missingFields.push("Numéro du marché");
-        if (!formData.num_decision) missingFields.push("N° Décision d'approbation");
-        if (!formData.date_approbation) missingFields.push("Date d'approbation");
         break;
       case 'designation-agent-suivi':
         if (!formData.num_marche) missingFields.push("Numéro du marché");
-        if (!formData.num_decision) missingFields.push("N° Décision d'approbation");
-        if (!formData.date_approbation) missingFields.push("Date d'approbation");
         break;
       case 'os-commencement':
         if (!formData.num_marche) missingFields.push("Numéro du marché");
-        if (!formData.date_notification_marche) missingFields.push("Date de notification");
-        if (!formData.os_numero) missingFields.push("N° OS Commencement");
-        if (!formData.os_date_effet) missingFields.push("Date d'effet (OS de commencement)");
         break;
       case 'os-arret-reprise':
         if (!formData.num_marche) missingFields.push("Numéro du marché");
@@ -403,19 +472,12 @@ const TraitementEngagement = () => {
         break;
       case 'decision-approbation':
         if (!formData.num_marche) missingFields.push("Numéro du marché");
-        if (!formData.num_decision) missingFields.push("N° Décision d'approbation");
-        if (!formData.date_approbation) missingFields.push("Date d'approbation");
         break;
       case 'designation-agent-suivi':
         if (!formData.num_marche) missingFields.push("Numéro du marché");
-        if (!formData.num_decision) missingFields.push("N° Décision d'approbation");
-        if (!formData.date_approbation) missingFields.push("Date d'approbation");
         break;
       case 'os-commencement':
         if (!formData.num_marche) missingFields.push("Numéro du marché");
-        if (!formData.date_notification_marche) missingFields.push("Date de notification");
-        if (!formData.os_numero) missingFields.push("N° OS Commencement");
-        if (!formData.os_date_effet) missingFields.push("Date d'effet (OS de commencement)");
         break;
       case 'os-arret-reprise':
         if (!formData.num_marche) missingFields.push("Numéro du marché");
@@ -531,189 +593,180 @@ const TraitementEngagement = () => {
         )}
 
         {/* RÉSUMÉ DU DOSSIER */}
-        <div className="bg-gradient-to-br from-blue-900 via-blue-800 to-indigo-900 rounded-[1.5rem] p-5 shadow-xl shadow-blue-900/20 mb-6 relative overflow-hidden border border-white/10">
+        <div className="bg-gradient-to-br from-blue-900 via-blue-800 to-indigo-900 rounded-[1.5rem] p-6 shadow-xl shadow-blue-900/20 mb-6 relative overflow-hidden border border-white/10 space-y-4">
           <div className="absolute top-0 right-0 p-4 opacity-[0.03] pointer-events-none transform translate-x-5 -translate-y-5">
             <Briefcase size={120} />
           </div>
           <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_top_right,_rgba(255,255,255,0.1),_transparent_40%)] pointer-events-none" />
 
-          <h3 className="text-lg font-black text-white mb-4 flex items-center gap-2 relative z-10">
-            <div className="p-2 bg-white/10 rounded-lg backdrop-blur-sm border border-white/10 shadow-inner">
-              <Briefcase size={18} className="text-blue-200" />
+          <div className="flex items-center justify-between relative z-10">
+            <h3 className="text-lg font-black text-white flex items-center gap-2">
+              <div className="p-2 bg-white/10 rounded-lg backdrop-blur-sm border border-white/10 shadow-inner">
+                <Briefcase size={18} className="text-blue-200" />
+              </div>
+              Registre des Ordres de service & Engagement
+            </h3>
+            <div className="flex items-center gap-2">
+              <span className="px-3 py-1 bg-blue-500/20 text-blue-200 border border-blue-400/30 rounded-lg text-xs font-bold font-mono">
+                Nature: {formData.forme_engagement || 'Marché'}
+              </span>
+              <span className="px-3 py-1 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-lg text-xs font-bold font-mono">
+                Budget: {formData.type_budget || 'Investissement'}
+              </span>
             </div>
-            Résumé du Dossier
-          </h3>
+          </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 relative z-10">
+          {/* Ligne 1 : Attributaire, Code Ste, N° Marché / CV, AOO /consult, date OA */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 relative z-10">
             <div className="lg:col-span-2 bg-black/20 rounded-xl p-3 border border-white/5 backdrop-blur-sm hover:bg-black/30 transition-colors">
-              <p className="text-[10px] font-bold text-blue-300/80 uppercase tracking-widest mb-1">Titulaire</p>
+              <p className="text-[10px] font-bold text-blue-300/80 uppercase tracking-widest mb-1">Attributaire & Code Ste</p>
               <div className="flex flex-col">
-                <span className="text-sm font-bold text-white truncate max-w-full" title={formData.fournisseur?.raison_sociale || formData.titulaire}>{formData.fournisseur?.raison_sociale || formData.titulaire || '-'}</span>
-                {formData.fournisseur?.ice && (
-                  <span className="text-[10px] text-blue-200/80 font-mono mt-0.5">
-                    ICE: {formData.fournisseur.ice} {formData.fournisseur.if ? `| IF: ${formData.fournisseur.if}` : ''}
-                  </span>
-                )}
+                <span className="text-sm font-bold text-white truncate max-w-full" title={formData.fournisseur?.raison_sociale || formData.titulaire}>
+                  {formData.fournisseur?.raison_sociale || formData.titulaire || '-'}
+                </span>
+                <span className="text-[10px] text-blue-200/80 font-mono mt-0.5">
+                  Code Ste: {formData.code_ste || formData.fournisseur_id || '-'} {formData.fournisseur?.ice ? `| ICE: ${formData.fournisseur.ice}` : ''}
+                </span>
               </div>
             </div>
             <div className="bg-black/20 rounded-xl p-3 border border-white/5 backdrop-blur-sm hover:bg-black/30 transition-colors">
-              <p className="text-[10px] font-bold text-blue-300/80 uppercase tracking-widest mb-1">Lot</p>
-              <p className="text-sm font-bold text-white line-clamp-1">{getLotText(formData.lot)}</p>
+              <p className="text-[10px] font-bold text-blue-300/80 uppercase tracking-widest mb-1">N° de Marché / CV</p>
+              <p className="text-sm font-bold text-white font-mono">{formData.num_marche || '-'}</p>
+              <p className="text-[10px] text-blue-300 mt-0.5 truncate">{getLotText(formData.lot)}</p>
             </div>
-            <div className="lg:col-span-2 bg-gradient-to-br from-emerald-900/40 to-emerald-800/20 rounded-xl p-3 border border-emerald-500/20 backdrop-blur-sm flex flex-col justify-center">
-              <p className="text-[10px] font-bold text-emerald-400/80 uppercase tracking-widest mb-1">Montant d'Attribution TTC</p>
-              <div className="flex items-center gap-2">
-                <div className="p-1.5 bg-emerald-500/20 rounded-lg shadow-inner border border-emerald-500/30">
-                  <Banknote size={16} className="text-emerald-400" />
-                </div>
-                <span className="text-xl font-black text-white tracking-tight drop-shadow-md">{formatMoney(formData.montant)}</span>
-              </div>
+            <div className="bg-black/20 rounded-xl p-3 border border-white/5 backdrop-blur-sm hover:bg-black/30 transition-colors">
+              <p className="text-[10px] font-bold text-blue-300/80 uppercase tracking-widest mb-1">AOO /consult & date OA</p>
+              <p className="text-xs font-bold text-white font-mono">{formData.aoo?.num_aoo || formData.num_aoo || '-'}</p>
+              <p className="text-[10px] text-blue-300 mt-0.5">
+                date OA: {formData.date_oa || formData.aoo?.date_ouverture || '-'}
+              </p>
+            </div>
+          </div>
+
+          {/* Ligne 2 : Dépense, Intérêt moratoire 1%, Montant Total Engagé, Crédit Disponible */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 relative z-10">
+            <div className="bg-white/10 rounded-xl p-3 border border-white/10 backdrop-blur-sm">
+              <p className="text-[10px] font-bold text-blue-200 uppercase tracking-wider">Montant de la Dépense (DH)</p>
+              <p className="text-base font-black text-white mt-1">{formatMoney(formData.montant)}</p>
+            </div>
+            <div className="bg-amber-500/20 rounded-xl p-3 border border-amber-400/30 backdrop-blur-sm">
+              <p className="text-[10px] font-bold text-amber-300 uppercase tracking-wider">Intérêt Moratoire (1%)</p>
+              <p className="text-base font-black text-amber-200 mt-1">
+                {formData.montant ? formatMoney(Number(formData.montant) * 0.01) : '-'}
+              </p>
+            </div>
+            <div className="bg-gradient-to-br from-emerald-600/60 to-emerald-800/40 rounded-xl p-3 border border-emerald-400/30 backdrop-blur-sm shadow-md">
+              <p className="text-[10px] font-bold text-emerald-200 uppercase tracking-wider">Montant Total Engagement</p>
+              <p className="text-lg font-black text-white mt-0.5 drop-shadow">
+                {formData.montant ? formatMoney(Number(formData.montant) * 1.01) : '-'}
+              </p>
+            </div>
+            <div className="bg-white/10 rounded-xl p-3 border border-white/10 backdrop-blur-sm">
+              <p className="text-[10px] font-bold text-cyan-300 uppercase tracking-wider">Crédit Disponible (CP)</p>
+              <p className="text-base font-black text-white mt-1">
+                {formData.disponible_cp ? formatMoney(formData.disponible_cp) : '-'}
+              </p>
             </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+        <div className="space-y-8">
 
-          {/* COLONNE GAUCHE: FORMULAIRES */}
-          <div className="xl:col-span-2 space-y-8">
+          {/* FORMULAIRES DE SAISIE */}
+          <div className="space-y-6">
 
-            {/* 1. INFORMATIONS DE L'ATTRIBUTION (EN 1ÈRE POSITION) */}
-            <div className="bg-white rounded-3xl border border-blue-200 p-6 shadow-md relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-blue-600/5 rounded-full blur-2xl pointer-events-none" />
-
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-blue-100 mb-6">
+            {/* 1. INFORMATIONS DE L'ATTRIBUTAIRE */}
+            <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm relative overflow-hidden">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-100 mb-6">
                 <div>
-                  <h3 className="text-xl font-extrabold text-blue-950 flex items-center gap-2">
-                    <Award size={24} className="text-blue-600" />
-                    Attribution du Marché
+                  <h3 className="text-lg font-black text-slate-900 flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-xs">
+                      1
+                    </div>
+                    Données de la Société (Attributaire)
                   </h3>
-                  <p className="text-sm text-blue-700 mt-1">
-                    Entreprise retenue par la commission : <strong className="uppercase">{formData.titulaire || 'En attente'}</strong> (Offre : {formatMoney(formData.montant)})
+                  <p className="text-xs text-slate-500 mt-1">
+                    Entreprise attributaire : <strong className="uppercase text-slate-800">{formData.titulaire || 'En attente'}</strong> (Code Ste: {formData.code_ste || formData.fournisseur_id || '-'})
                   </p>
                 </div>
               </div>
 
-              <div className="space-y-8 relative z-10">
+              <div className="space-y-6 relative z-10">
 
-                {/* SOUS-BLOC 1 : INFORMATIONS DU TITULAIRE */}
-                <div className="bg-slate-50 rounded-2xl p-6 border border-slate-200">
-                  <h4 className="text-sm font-bold text-slate-800 mb-4 uppercase tracking-wider flex items-center gap-2">
-                    <Building2 size={18} className="text-slate-500" /> Informations du Titulaire
+                {/* SOUS-BLOC 1 : IDENTIFICATION SOCIETE */}
+                <div className="bg-slate-50 rounded-2xl p-5 border border-slate-200">
+                  <h4 className="text-xs font-bold text-slate-700 mb-3 uppercase tracking-wider flex items-center gap-2">
+                    <Building2 size={16} className="text-slate-500" /> Identification Juridique & Fiscale
                   </h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-1.5 md:col-span-2">
-                      <label className="text-xs font-bold text-slate-700">Raison Sociale <span className="text-red-500">*</span></label>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+                    <div className="space-y-1 md:col-span-2">
+                      <label className="text-xs font-bold text-slate-700">Nom de la societe <span className="text-red-500">*</span></label>
                       <input type="text" name="titulaire" value={formData.titulaire || ''} onChange={handleChange} required className={inputClass} />
                     </div>
-                    <div className="space-y-1.5">
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-slate-700">N° (Code Ste)</label>
+                      <input type="text" name="code_ste" value={formData.code_ste || formData.fournisseur_id || ''} onChange={handleChange} className={`${inputClass} font-mono`} placeholder="Ex: 14" />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-slate-700">Responsable (Gérant)</label>
+                      <input type="text" name="representant" value={formData.representant || ''} onChange={handleChange} className={inputClass} placeholder="Ex: OULACHGAR NOUREDDINE" />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-slate-700">Qualité</label>
+                      <input type="text" name="qualite_gerant" value={formData.qualite_gerant || formData.qualite_representant || 'Gérant'} onChange={handleChange} className={inputClass} placeholder="Ex: Gérant" />
+                    </div>
+                    <div className="space-y-1">
                       <label className="text-xs font-bold text-slate-700">ICE <span className="text-red-500">*</span></label>
                       <input type="text" name="ice" value={formData.ice || ''} onChange={handleChange} required className={`${inputClass} font-mono`} />
                     </div>
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-slate-700">Identifiant Fiscal (IF)</label>
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-slate-700">IF (Identifiant Fiscal)</label>
                       <input type="text" name="if" value={formData.if || ''} onChange={handleChange} className={`${inputClass} font-mono`} />
                     </div>
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-slate-700">Registre Commerce (RC)</label>
-                      <input type="text" name="rc" value={formData.rc || ''} onChange={handleChange} className={`${inputClass} font-mono`} />
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-slate-700">N° registre de commerce (RC)</label>
+                      <input type="text" name="rc" value={formData.rc || ''} onChange={handleChange} className={`${inputClass} font-mono`} placeholder="Ex: 56139" />
                     </div>
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-slate-700">Forme Juridique</label>
-                      <input type="text" name="forme_juridique" value={formData.forme_juridique || ''} onChange={handleChange} className={inputClass} placeholder="Ex: SARL, SA, SARL AU" />
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-slate-700">N° Pat (Patente)</label>
+                      <input type="text" name="patente" value={formData.patente || ''} onChange={handleChange} className={`${inputClass} font-mono`} placeholder="Ex: 17201039" />
                     </div>
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-slate-700">Capital Social (DH)</label>
-                      <input type="text" name="capital" value={formData.capital || ''} onChange={handleChange} className={inputClass} placeholder="Ex: 100 000" />
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-slate-700">N° CNSS</label>
+                      <input type="text" name="cnss" value={formData.cnss || ''} onChange={handleChange} className={`${inputClass} font-mono`} placeholder="Ex: 4170153" />
                     </div>
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-slate-700">N° Taxe Pro. (Patente)</label>
-                      <input type="text" name="patente" value={formData.patente || ''} onChange={handleChange} className={`${inputClass} font-mono`} />
-                    </div>
-                    <div className="space-y-1.5 md:col-span-2">
-                      <label className="text-xs font-bold text-slate-700">N° d'Affiliation CNSS</label>
-                      <input type="text" name="cnss" value={formData.cnss || ''} onChange={handleChange} className={`${inputClass} font-mono`} />
-                    </div>
-                    <div className="space-y-1.5 md:col-span-2">
+                    <div className="space-y-1 md:col-span-2">
                       <label className="text-xs font-bold text-slate-700">Adresse <span className="text-red-500">*</span></label>
                       <input type="text" name="adresse" value={formData.adresse || ''} onChange={handleChange} required className={inputClass} />
                     </div>
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-slate-700">Ville <span className="text-red-500">*</span></label>
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-slate-700">ville <span className="text-red-500">*</span></label>
                       <input type="text" name="ville" value={formData.ville || ''} onChange={handleChange} required className={inputClass} />
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-slate-700">Téléphone</label>
-                      <input type="text" name="telephone" value={formData.telephone || ''} onChange={handleChange} className={inputClass} />
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-slate-700">Fax</label>
-                      <input type="text" name="fax" value={formData.fax || ''} onChange={handleChange} className={inputClass} />
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-slate-700">Email</label>
-                      <input type="email" name="email" value={formData.email || ''} onChange={handleChange} className={inputClass} />
-                    </div>
-                    <div className="space-y-1.5 md:col-span-2">
-                      <label className="text-xs font-bold text-slate-700">Représentant (Gérant)</label>
-                      <input type="text" name="representant" value={formData.representant || ''} onChange={handleChange} className={inputClass} />
                     </div>
                   </div>
                 </div>
 
                 {/* SOUS-BLOC 2 : INFORMATIONS BANCAIRES */}
-                <div className="bg-slate-50 rounded-2xl p-6 border border-slate-200">
-                  <h4 className="text-sm font-bold text-slate-800 mb-4 uppercase tracking-wider flex items-center gap-2">
-                    <Landmark size={18} className="text-slate-500" /> Informations Bancaires
+                <div className="bg-slate-50 rounded-2xl p-5 border border-slate-200">
+                  <h4 className="text-xs font-bold text-slate-700 mb-3 uppercase tracking-wider flex items-center gap-2">
+                    <Landmark size={16} className="text-slate-500" /> Coordonnées Bancaires
                   </h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                    <div className="space-y-1">
                       <label className="text-xs font-bold text-slate-700">Banque</label>
-                      <input type="text" name="banque" value={formData.banque || ''} onChange={handleChange} className={inputClass} placeholder="Ex: Attijariwafa bank, BCP" />
+                      <input type="text" name="banque" value={formData.banque || ''} onChange={handleChange} className={inputClass} placeholder="Ex: CREDIT AGRICOLE, ATTIJARIWAFA BANK" />
                     </div>
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-slate-700">Agence Bancaire</label>
-                      <input type="text" name="agence_bancaire" value={formData.agence_bancaire || ''} onChange={handleChange} className={inputClass} placeholder="Ex: Agence Rabat Hassan" />
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-slate-700">Agence</label>
+                      <input type="text" name="agence_bancaire" value={formData.agence_bancaire || ''} onChange={handleChange} className={inputClass} placeholder="Ex: Agence Moulay Ali Cherif" />
                     </div>
-                    <div className="space-y-1.5 md:col-span-2">
-                      <label className="text-xs font-bold text-slate-700">RIB (24 chiffres)</label>
-                      <input type="text" name="rib" value={formData.rib || ''} onChange={handleChange} maxLength={24} className={`${inputClass} font-mono tracking-wider`} placeholder="Ex: 011780000012345678901234" />
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-slate-700">compte N° (RIB 24 chiffres)</label>
+                      <input type="text" name="rib" value={formData.rib || ''} onChange={handleChange} maxLength={24} className={`${inputClass} font-mono tracking-wider`} placeholder="Ex: 225480078501359651010167" />
                     </div>
-                  </div>
-                </div>
-
-                {/* SOUS-BLOC 3 : INFORMATIONS DU MARCHÉ ATTRIBUÉ */}
-                <div className="bg-blue-50/60 rounded-2xl p-6 border border-blue-200">
-                  <h4 className="text-sm font-bold text-blue-900 mb-4 uppercase tracking-wider flex items-center gap-2">
-                    <Briefcase size={18} className="text-blue-600" /> Informations du Marché Attribué
-                  </h4>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-slate-700">Montant HT (DH)</label>
-                      <input type="number" step="0.01" name="montant_ht" value={formData.montant_ht || ''} onChange={handleChange} className={inputClass} />
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-slate-700">TVA (%)</label>
-                      <input type="number" step="0.01" name="taux_tva" value={formData.taux_tva || '20'} onChange={handleChange} className={inputClass} />
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-slate-700">Montant TTC (DH) <span className="text-red-500">*</span></label>
-                      <input type="number" step="0.01" name="montant" value={formData.montant || ''} onChange={handleChange} required className={`${inputClass} font-bold text-blue-900`} />
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-slate-700">Délai d'exécution (Jours) <span className="text-red-500">*</span></label>
-                      <input type="number" name="delai_execution" value={formData.delai_execution || ''} onChange={handleChange} required className={inputClass} placeholder="Ex: 60" />
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-slate-700">Date début prévue</label>
-                      <input type="date" name="date_debut_prevue" value={formData.date_debut_prevue || ''} onChange={handleChange} className={inputClass} />
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-slate-700">Date fin prévue</label>
-                      <input type="date" name="date_fin_prevue" value={formData.date_fin_prevue || ''} onChange={handleChange} className={inputClass} />
-                    </div>
-                    <div className="space-y-1.5 md:col-span-3">
-                      <label className="text-xs font-bold text-slate-700">Observations</label>
-                      <textarea name="observations" value={formData.observations || ''} onChange={handleChange} rows={2} className={inputClass} placeholder="Remarques et conditions particulières d'attribution..." />
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-slate-700">Nom à la Banque (Titulaire du compte)</label>
+                      <input type="text" name="titulaire_compte" value={formData.titulaire_compte || formData.titulaire || ''} onChange={handleChange} className={inputClass} placeholder="Ex: AYDO ENG" />
                     </div>
                   </div>
                 </div>
@@ -721,78 +774,140 @@ const TraitementEngagement = () => {
               </div>
             </div>
 
-            {/* PARAMÈTRES GÉNÉRAUX & DATES CONTRACTUELLES */}
-            <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm">
-              <h3 className="text-base font-extrabold text-slate-800 border-b border-slate-100 pb-3 mb-4 flex items-center gap-2">
-                <FileSignature size={18} className="text-blue-600" />
-                Paramètres du marché & Dates
+            {/* 2. FICHE D'ENGAGEMENT */}
+            <div className="bg-white rounded-3xl border border-blue-200 p-6 shadow-sm">
+              <h3 className="text-base font-extrabold text-slate-900 border-b border-slate-100 pb-3 mb-4 flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-xs">
+                  2
+                </div>
+                Fiche d'Engagement Budgétaire
               </h3>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-
                 <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-2">Délai d'exécution (jours) *</label>
-                  <input type="number" name="delai_execution" value={formData.delai_execution || ''} onChange={handleChange} required className={inputClass} />
+                  <label className="block text-sm font-bold text-slate-700 mb-2">N° Fiche d'Engagement</label>
+                  <input
+                    type="text"
+                    name="num_engagement"
+                    value={formData.num_engagement || ''}
+                    onChange={handleChange}
+                    placeholder="Ex: 22/2024/FE/DRCA-RSK"
+                    className={`${inputClass} font-mono font-bold text-blue-900`}
+                  />
                 </div>
                 <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-2">Date de signature</label>
-                  <input type="date" name="date_signature" value={formData.date_signature || ''} onChange={handleChange} className={inputClass} />
+                  <label className="block text-sm font-bold text-slate-700 mb-2">Date visa / engagement</label>
+                  <input
+                    type="date"
+                    name="date_engagement"
+                    value={formData.date_engagement || ''}
+                    onChange={handleChange}
+                    className={inputClass}
+                  />
                 </div>
-                <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-2">N° Décision d'approbation</label>
-                  <input type="text" name="num_decision" value={formData.num_decision || ''} onChange={handleChange} className={inputClass} />
-                </div>
-                <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-2">Date d'approbation</label>
-                  <input type="date" name="date_approbation" value={formData.date_approbation || ''} onChange={handleChange} className={inputClass} />
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-bold text-slate-700 mb-2">Pièces jointes mentionnées sur la fiche</label>
+                  <input
+                    type="text"
+                    name="pieces_jointes"
+                    value={formData.pieces_jointes || ''}
+                    onChange={handleChange}
+                    placeholder="Ex: Marché N° M-29-2026-DRCA-RSK"
+                    className={inputClass}
+                  />
                 </div>
               </div>
             </div>
 
-            {/* NOTIFICATION & OS */}
-            <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm">
-              <h3 className="text-base font-extrabold text-slate-800 border-b border-slate-100 pb-3 mb-4 flex items-center gap-2">
-                <ReceiptText size={18} className="text-amber-600" />
-                Notification & Ordre de Service
-              </h3>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                <div className="md:col-span-2 bg-amber-50 p-4 rounded-xl border border-amber-100">
-                  <label className="block text-sm font-bold text-amber-900 mb-2">Date de notification de l'approbation du marché *</label>
-                  <input type="date" name="date_notification_marche" value={formData.date_notification_marche || ''} onChange={handleChange} className={`${inputClass} border-amber-200 focus:ring-amber-100 focus:border-amber-500`} />
-                  <p className="text-xs text-amber-700 mt-1">Obligatoire pour générer l'OS de commencement.</p>
+            {/* 3. NOTIFICATION DE L'APPROBATION DU MARCHÉ */}
+            <div className="bg-white rounded-3xl border border-emerald-200 p-6 shadow-sm">
+              <h3 className="text-base font-extrabold text-slate-900 border-b border-slate-100 pb-3 mb-4 flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-xs">
+                  3
                 </div>
-              </div>
+                Notification de l'approbation du Marché
+              </h3>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-2">N° OS Commencement</label>
-                  <input type="text" name="os_numero" value={formData.os_numero || ''} onChange={handleChange} className={inputClass} placeholder="Ex: 01/2026/M10" />
+                  <label className="block text-sm font-bold text-slate-700 mb-2">N° d'or. de service (Notification)</label>
+                  <input
+                    type="text"
+                    name="num_decision"
+                    value={formData.num_decision || ''}
+                    onChange={handleChange}
+                    className={`${inputClass} font-mono font-bold text-emerald-900`}
+                    placeholder="Ex: 01/2024/M06"
+                  />
                 </div>
                 <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-2">Date signature OS</label>
+                  <label className="block text-sm font-bold text-emerald-900 mb-2">Date de notification de l'approbation *</label>
+                  <input
+                    type="date"
+                    name="date_notification_marche"
+                    value={formData.date_notification_marche || ''}
+                    onChange={handleChange}
+                    required
+                    className={`${inputClass} border-emerald-300 focus:ring-emerald-100 focus:border-emerald-500`}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">Caution definitive (DH)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    name="caution_definitive"
+                    value={formData.caution_definitive || formData.montant_caution_definitive || ''}
+                    onChange={handleChange}
+                    className={inputClass}
+                    placeholder="Ex: 15214.59 (Calculé auto à 3% si vide)"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* 4. ORDRE DE SERVICE DE COMMENCEMENT */}
+            <div className="bg-white rounded-3xl border border-amber-200 p-6 shadow-sm">
+              <h3 className="text-base font-extrabold text-slate-900 border-b border-slate-100 pb-3 mb-4 flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center font-bold text-xs">
+                  4
+                </div>
+                Ordre de Service de Commencement de l'exécution
+              </h3>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">N° d'or. de service *</label>
+                  <input type="text" name="os_numero" value={formData.os_numero || ''} onChange={handleChange} className={`${inputClass} font-mono font-bold text-amber-900`} placeholder="Ex: 03/2024/M10" />
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">Date (Date signature OS) *</label>
                   <input type="date" name="os_date_signature" value={formData.os_date_signature || ''} onChange={handleChange} className={inputClass} />
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-slate-700 mb-2">Date d'effet (Démarrage)</label>
-                  <input type="date" name="os_date_effet" value={formData.os_date_effet || ''} onChange={handleChange} className={inputClass} />
+                  <input type="date" name="os_date_effet" value={formData.os_date_effet || ''} onChange={handleChange} className={inputClass} placeholder="Laisser vide si à la réception" />
                 </div>
               </div>
             </div>
 
-            {/* OS ARRÊT & REPRISE */}
+            {/* 5. OS ARRÊT & REPRISE */}
             <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm">
-              <h3 className="text-base font-extrabold text-slate-800 border-b border-slate-100 pb-3 mb-4 flex items-center gap-2">
-                <AlertCircle size={18} className="text-red-500" />
-                Ajournement & Reprise
+              <h3 className="text-base font-extrabold text-slate-900 border-b border-slate-100 pb-3 mb-4 flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg bg-red-50 text-red-600 flex items-center justify-center font-bold text-xs">
+                  5
+                </div>
+                Ajournement & Reprise (Événements)
               </h3>
 
               <div className="mb-6 p-4 border border-red-100 bg-red-50 rounded-2xl">
-                <h4 className="font-bold text-red-900 mb-3 text-sm">Ordre de Service d'Arrêt (Ajournement)</h4>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <h4 className="font-bold text-red-900 mb-3 text-sm flex items-center gap-1.5">
+                  <AlertCircle size={16} className="text-red-600" /> Ordre de Service d'Arrêt (Ajournement)
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
                   <div>
                     <label className="block text-sm font-bold text-slate-700 mb-2">N° OS d'Arrêt</label>
-                    <input type="text" name="os_arret_numero" value={formData.os_arret_numero || ''} onChange={handleChange} className={inputClass} placeholder="Ex: 02/2026/M10" />
+                    <input type="text" name="os_arret_numero" value={formData.os_arret_numero || ''} onChange={handleChange} className={inputClass} placeholder="Ex: 02/2024/M03" />
                   </div>
                   <div>
                     <label className="block text-sm font-bold text-slate-700 mb-2">Date signature OS Arrêt</label>
@@ -800,21 +915,23 @@ const TraitementEngagement = () => {
                   </div>
                   <div>
                     <label className="block text-sm font-bold text-slate-700 mb-2">Date d'effet (Arrêt)</label>
-                    <input type="date" name="os_arret_date_effet" value={formData.os_arret_date_effet || ''} onChange={handleChange} className={inputClass} />
+                    <input type="date" name="os_arret_date_effet" value={formData.os_arret_date_effet || ''} onChange={handleChange} className={inputClass} placeholder="Laisser vide si à la réception" />
                   </div>
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-slate-700 mb-2">Motif d'arrêt</label>
-                  <input type="text" name="os_arret_motif" value={formData.os_arret_motif || ''} onChange={handleChange} className={inputClass} placeholder="Ex: Conditions climatiques défavorables" />
+                  <input type="text" name="os_arret_motif" value={formData.os_arret_motif || ''} onChange={handleChange} className={inputClass} placeholder="Ex: Attente des autorisations ou conditions climatiques" />
                 </div>
               </div>
 
               <div className="p-4 border border-emerald-100 bg-emerald-50 rounded-2xl">
-                <h4 className="font-bold text-emerald-900 mb-3 text-sm">Ordre de Service de Reprise</h4>
+                <h4 className="font-bold text-emerald-900 mb-3 text-sm flex items-center gap-1.5">
+                  <CheckCircle size={16} className="text-emerald-600" /> Ordre de Service de Reprise
+                </h4>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
                     <label className="block text-sm font-bold text-slate-700 mb-2">N° OS de Reprise</label>
-                    <input type="text" name="os_reprise_numero" value={formData.os_reprise_numero || ''} onChange={handleChange} className={inputClass} placeholder="Ex: 03/2026/M10" />
+                    <input type="text" name="os_reprise_numero" value={formData.os_reprise_numero || ''} onChange={handleChange} className={inputClass} placeholder="Ex: 03/2024/M03" />
                   </div>
                   <div>
                     <label className="block text-sm font-bold text-slate-700 mb-2">Date signature OS Reprise</label>
@@ -822,7 +939,7 @@ const TraitementEngagement = () => {
                   </div>
                   <div>
                     <label className="block text-sm font-bold text-slate-700 mb-2">Date d'effet (Reprise)</label>
-                    <input type="date" name="os_reprise_date_effet" value={formData.os_reprise_date_effet || ''} onChange={handleChange} className={inputClass} />
+                    <input type="date" name="os_reprise_date_effet" value={formData.os_reprise_date_effet || ''} onChange={handleChange} className={inputClass} placeholder="Laisser vide si à la réception" />
                   </div>
                 </div>
               </div>
@@ -830,235 +947,238 @@ const TraitementEngagement = () => {
 
           </div>
 
-          {/* COLONNE DROITE: GÉNÉRATION DE DOCUMENTS */}
-          <div className="space-y-4">
-            <h3 className="text-base font-extrabold text-slate-800 px-2 flex items-center gap-2">
-              <Download size={18} className="text-blue-600" />
-              Documents à générer
-            </h3>
-
-            {/* CARTE 1 : ACTE D'ENGAGEMENT */}
-            <div className="bg-white rounded-[1.5rem] border border-slate-200 p-5 shadow-sm hover:-translate-y-1 hover:shadow-xl hover:shadow-blue-900/5 transition-all duration-300 group relative overflow-hidden">
-              <div className="flex items-center gap-3 mb-3 border-b border-slate-100 pb-3">
-                <div className="p-2.5 bg-blue-50 text-blue-600 rounded-xl"><FileSignature size={20} /></div>
-                <div>
-                  <h3 className="font-extrabold text-slate-900 text-sm">Fiche d'Engagement</h3>
-                  <p className="text-[11px] text-slate-500 font-mono">Modèle officiel</p>
-                </div>
+          {/* SECTION DU BAS : DOCUMENTS OFFICIELS À GÉNÉRER */}
+          <div className="mt-12 pt-8 border-t border-slate-200 space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h3 className="text-xl font-black text-slate-900 flex items-center gap-2.5">
+                  <div className="p-2 bg-blue-50 text-blue-600 rounded-xl">
+                    <Download size={22} />
+                  </div>
+                  Documents Officiels de la Phase d'Engagement
+                </h3>
+                <p className="text-xs text-slate-500 mt-1">
+                  Visualisez et téléchargez directement les documents officiels conformes aux modèles réglementaires.
+                </p>
               </div>
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() => previewDocument('acte-engagement')}
-                  className="py-2.5 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-1.5"
-                >
-                  <Eye size={15} className="text-blue-600" /> Aperçu
-                </button>
-                <button
-                  type="button"
-                  onClick={() => downloadDocument('acte-engagement')}
-                  className="py-2.5 px-3 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white font-bold text-xs rounded-xl shadow transition-all flex items-center justify-center gap-1.5"
-                >
-                  <Download size={15} /> Télécharger
-                </button>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-slate-400 bg-slate-100 px-3 py-1.5 rounded-xl">
+                  5 Documents Disponibles
+                </span>
               </div>
             </div>
 
-            {/* CARTE 2 : NOTIFICATION */}
-            <div className="bg-white rounded-[1.5rem] border border-slate-200 p-5 shadow-sm hover:-translate-y-1 hover:shadow-xl hover:shadow-emerald-900/5 transition-all duration-300 group relative overflow-hidden">
-              <div className="flex items-center gap-3 mb-3 border-b border-slate-100 pb-3">
-                <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-xl"><CheckCircle size={20} /></div>
-                <div>
-                  <h3 className="font-extrabold text-slate-900 text-sm">Notification d'Approbation</h3>
-                  <p className="text-[11px] text-slate-500 font-mono">Document de probation</p>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() => previewDocument('decision-approbation')}
-                  className="py-2.5 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-1.5"
-                >
-                  <Eye size={15} className="text-emerald-600" /> Aperçu
-                </button>
-                <button
-                  type="button"
-                  onClick={() => downloadDocument('decision-approbation')}
-                  className="py-2.5 px-3 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600 text-white font-bold text-xs rounded-xl shadow transition-all flex items-center justify-center gap-1.5"
-                >
-                  <Download size={15} /> Télécharger
-                </button>
-              </div>
-            </div>
+            {/* GRILLE HORIZONTALE DES 5 DOCUMENTS */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
 
-            {/* CARTE 3 : OS DE COMMENCEMENT */}
-            <div className="bg-white rounded-[1.5rem] border border-slate-200 p-5 shadow-sm hover:-translate-y-1 hover:shadow-xl hover:shadow-amber-900/5 transition-all duration-300 group relative overflow-hidden">
-              <div className="flex items-center gap-3 mb-3 border-b border-slate-100 pb-3">
-                <div className="p-2.5 bg-amber-50 text-amber-600 rounded-xl"><ReceiptText size={20} /></div>
+              {/* DOCUMENT 1 : FICHE D'ENGAGEMENT */}
+              <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm hover:-translate-y-1 hover:shadow-lg hover:shadow-blue-900/5 transition-all duration-300 flex flex-col justify-between group">
                 <div>
-                  <h3 className="font-extrabold text-slate-900 text-sm">OS de Commencement</h3>
-                  <p className="text-[11px] text-slate-500 font-mono">Ordre de service officiel</p>
+                  <div className="flex items-center gap-2.5 mb-3 border-b border-slate-100 pb-2.5">
+                    <div className="p-2 bg-blue-50 text-blue-600 rounded-lg group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                      <FileSignature size={18} />
+                    </div>
+                    <div>
+                      <h4 className="font-extrabold text-slate-900 text-xs">Fiche d'Engagement</h4>
+                      <p className="text-[10px] text-slate-400 font-mono">Modèle officiel</p>
+                    </div>
+                  </div>
+                  <p className="text-[11px] text-slate-600 mb-3 line-clamp-2">
+                    Fiche d'engagement comptable avec ventilation et moratoire 1%.
+                  </p>
                 </div>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() => previewDocument('os-commencement')}
-                  className="py-2.5 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-1.5"
-                >
-                  <Eye size={15} className="text-amber-600" /> Aperçu
-                </button>
-                <button
-                  type="button"
-                  onClick={() => downloadDocument('os-commencement')}
-                  className="py-2.5 px-3 bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-600 hover:to-amber-500 text-white font-bold text-xs rounded-xl shadow transition-all flex items-center justify-center gap-1.5"
-                >
-                  <Download size={15} /> Télécharger
-                </button>
-              </div>
-            </div>
-
-            {/* CARTE 4 : OS ARRÊT ET REPRISE */}
-            <div className="bg-white rounded-[1.5rem] border border-slate-200 p-5 shadow-sm hover:-translate-y-1 hover:shadow-xl hover:shadow-red-900/5 transition-all duration-300 group relative overflow-hidden">
-              <div className="flex items-center gap-3 mb-3 border-b border-slate-100 pb-3">
-                <div className="p-2.5 bg-red-50 text-red-600 rounded-xl"><AlertCircle size={20} /></div>
-                <div>
-                  <h3 className="font-extrabold text-slate-900 text-sm">OS d'Arrêt & Reprise</h3>
-                  <p className="text-[11px] text-slate-500 font-mono">Ajournement et Reprise</p>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() => previewDocument('os-arret-reprise')}
-                  className="py-2.5 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-1.5"
-                >
-                  <Eye size={15} className="text-red-600" /> Aperçu
-                </button>
-                <button
-                  type="button"
-                  onClick={() => downloadDocument('os-arret-reprise')}
-                  className="py-2.5 px-3 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-700 hover:to-red-600 text-white font-bold text-xs rounded-xl shadow transition-all flex items-center justify-center gap-1.5"
-                >
-                  <Download size={15} /> Télécharger
-                </button>
-              </div>
-            </div>
-
-            {/* CARTE 6 & 7 : CPS / MARCHE FINAL */}
-            <div className="bg-white rounded-[1.5rem] border border-blue-200 p-5 shadow-sm hover:-translate-y-1 hover:shadow-xl hover:shadow-indigo-900/10 transition-all duration-300 group relative overflow-hidden ring-1 ring-blue-50">
-              <div className="flex items-center gap-3 mb-4 border-b border-slate-100 pb-3">
-                <div className="p-2.5 bg-indigo-50 text-indigo-600 rounded-xl"><FileSignature size={20} /></div>
-                <div>
-                  <h3 className="font-extrabold text-slate-900 text-sm">CPS / Marché Définitif</h3>
-                  <p className="text-[11px] text-slate-500 font-mono">Le CPS se transforme en marché</p>
+                <div className="grid grid-cols-2 gap-1.5 pt-2 border-t border-slate-50">
+                  <button
+                    type="button"
+                    onClick={() => previewDocument('acte-engagement')}
+                    className="py-2 px-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-lg transition-all flex items-center justify-center gap-1"
+                  >
+                    <Eye size={13} className="text-blue-600" /> Aperçu
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => downloadDocument('acte-engagement')}
+                    className="py-2 px-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-lg shadow-sm transition-all flex items-center justify-center gap-1"
+                  >
+                    <Download size={13} /> PDF
+                  </button>
                 </div>
               </div>
 
-              <div className="space-y-3">
-                {/* Bouton Import CPS */}
-                <label className={`w-full py-2.5 px-4 font-extrabold text-xs rounded-xl border transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer ${cpsUploaded
-                  ? 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-200'
-                  : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200 group/upload'
-                  }`}>
-                  {isUploadingCps ? (
-                    <Loader2 size={16} className="animate-spin text-slate-500" />
-                  ) : cpsUploaded ? (
-                    <CheckCircle size={16} className="text-emerald-500" />
-                  ) : (
-                    <Upload size={16} className="text-slate-500 group-hover/upload:-translate-y-0.5 transition-transform" />
-                  )}
-                  {isUploadingCps ? 'Importation...' : cpsUploaded ? '1. CPS Importé' : '1. Importer le CPS'}
+              {/* DOCUMENT 2 : NOTIFICATION D'APPROBATION */}
+              <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm hover:-translate-y-1 hover:shadow-lg hover:shadow-emerald-900/5 transition-all duration-300 flex flex-col justify-between group">
+                <div>
+                  <div className="flex items-center gap-2.5 mb-3 border-b border-slate-100 pb-2.5">
+                    <div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg group-hover:bg-emerald-600 group-hover:text-white transition-colors">
+                      <CheckCircle size={18} />
+                    </div>
+                    <div>
+                      <h4 className="font-extrabold text-slate-900 text-xs">Notification Approbation</h4>
+                      <p className="text-[10px] text-slate-400 font-mono">Lettre officielle</p>
+                    </div>
+                  </div>
+                  <p className="text-[11px] text-slate-600 mb-3 line-clamp-2">
+                    Notification d'approbation et demande de constitution de caution.
+                  </p>
+                </div>
+                <div className="grid grid-cols-2 gap-1.5 pt-2 border-t border-slate-50">
+                  <button
+                    type="button"
+                    onClick={() => previewDocument('decision-approbation')}
+                    className="py-2 px-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-lg transition-all flex items-center justify-center gap-1"
+                  >
+                    <Eye size={13} className="text-emerald-600" /> Aperçu
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => downloadDocument('decision-approbation')}
+                    className="py-2 px-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg shadow-sm transition-all flex items-center justify-center gap-1"
+                  >
+                    <Download size={13} /> PDF
+                  </button>
+                </div>
+              </div>
 
-                  <input
-                    type="file"
-                    accept=".pdf,.doc,.docx"
-                    className="hidden"
-                    onChange={handleUploadCps}
-                    disabled={isUploadingCps}
-                  />
-                </label>
+              {/* DOCUMENT 3 : OS DE COMMENCEMENT */}
+              <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm hover:-translate-y-1 hover:shadow-lg hover:shadow-amber-900/5 transition-all duration-300 flex flex-col justify-between group">
+                <div>
+                  <div className="flex items-center gap-2.5 mb-3 border-b border-slate-100 pb-2.5">
+                    <div className="p-2 bg-amber-50 text-amber-600 rounded-lg group-hover:bg-amber-600 group-hover:text-white transition-colors">
+                      <ReceiptText size={18} />
+                    </div>
+                    <div>
+                      <h4 className="font-extrabold text-slate-900 text-xs">OS Commencement</h4>
+                      <p className="text-[10px] text-slate-400 font-mono">Ordre de service</p>
+                    </div>
+                  </div>
+                  <p className="text-[11px] text-slate-600 mb-3 line-clamp-2">
+                    Ordre de démarrage des prestations avec date d'effet et accusé.
+                  </p>
+                </div>
+                <div className="grid grid-cols-2 gap-1.5 pt-2 border-t border-slate-50">
+                  <button
+                    type="button"
+                    onClick={() => previewDocument('os-commencement')}
+                    className="py-2 px-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-lg transition-all flex items-center justify-center gap-1"
+                  >
+                    <Eye size={13} className="text-amber-600" /> Aperçu
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => downloadDocument('os-commencement')}
+                    className="py-2 px-2 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs rounded-lg shadow-sm transition-all flex items-center justify-center gap-1"
+                  >
+                    <Download size={13} /> PDF
+                  </button>
+                </div>
+              </div>
 
-                {/* Boutons Aperçu & Générer Marché */}
-                <div className="grid grid-cols-2 gap-2">
+              {/* DOCUMENT 4 : OS ARRÊT ET REPRISE */}
+              <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm hover:-translate-y-1 hover:shadow-lg hover:shadow-red-900/5 transition-all duration-300 flex flex-col justify-between group">
+                <div>
+                  <div className="flex items-center gap-2.5 mb-3 border-b border-slate-100 pb-2.5">
+                    <div className="p-2 bg-red-50 text-red-600 rounded-lg group-hover:bg-red-600 group-hover:text-white transition-colors">
+                      <AlertCircle size={18} />
+                    </div>
+                    <div>
+                      <h4 className="font-extrabold text-slate-900 text-xs">OS Arrêt & Reprise</h4>
+                      <p className="text-[10px] text-slate-400 font-mono">Ajournement / Reprise</p>
+                    </div>
+                  </div>
+                  <p className="text-[11px] text-slate-600 mb-3 line-clamp-2">
+                    Ordres officiels d'interruption temporaire et de reprise des travaux.
+                  </p>
+                </div>
+                <div className="grid grid-cols-2 gap-1.5 pt-2 border-t border-slate-50">
+                  <button
+                    type="button"
+                    onClick={() => previewDocument('os-arret-reprise')}
+                    className="py-2 px-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-lg transition-all flex items-center justify-center gap-1"
+                  >
+                    <Eye size={13} className="text-red-600" /> Aperçu
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => downloadDocument('os-arret-reprise')}
+                    className="py-2 px-2 bg-red-600 hover:bg-red-700 text-white font-bold text-xs rounded-lg shadow-sm transition-all flex items-center justify-center gap-1"
+                  >
+                    <Download size={13} /> PDF
+                  </button>
+                </div>
+              </div>
+
+              {/* DOCUMENT 5 : CPS / MARCHÉ DÉFINITIF */}
+              <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm hover:-translate-y-1 hover:shadow-lg hover:shadow-indigo-900/5 transition-all duration-300 flex flex-col justify-between group">
+                <div>
+                  <div className="flex items-center gap-2.5 mb-3 border-b border-slate-100 pb-2.5">
+                    <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+                      <FileSignature size={18} />
+                    </div>
+                    <div>
+                      <h4 className="font-extrabold text-slate-900 text-xs">Marché Définitif</h4>
+                      <p className="text-[10px] text-slate-400 font-mono">Contrat contractuel</p>
+                    </div>
+                  </div>
+                  <div className="mb-2">
+                    <label className={`w-full py-1.5 px-2 font-bold text-[10px] rounded-lg border transition-all flex items-center justify-center gap-1.5 cursor-pointer ${cpsUploaded ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'}`}>
+                      {isUploadingCps ? <Loader2 size={12} className="animate-spin" /> : cpsUploaded ? <CheckCircle size={12} className="text-emerald-500" /> : <Upload size={12} />}
+                      {isUploadingCps ? 'Import...' : cpsUploaded ? 'CPS Importé' : 'Importer CPS'}
+                      <input type="file" accept=".pdf,.doc,.docx" className="hidden" onChange={handleUploadCps} disabled={isUploadingCps} />
+                    </label>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-1.5 pt-2 border-t border-slate-50">
                   <button
                     type="button"
                     onClick={() => previewDocument('contrat-marche')}
-                    className="py-2.5 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-1.5"
+                    className="py-2 px-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-lg transition-all flex items-center justify-center gap-1"
                   >
-                    <Eye size={15} className="text-indigo-600" /> Aperçu
+                    <Eye size={13} className="text-indigo-600" /> Aperçu
                   </button>
                   <button
                     type="button"
                     onClick={() => downloadDocument('contrat-marche')}
-                    className="py-2.5 px-3 bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-700 hover:to-indigo-600 text-white font-bold text-xs rounded-xl shadow transition-all flex items-center justify-center gap-1.5"
+                    className="py-2 px-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-lg shadow-sm transition-all flex items-center justify-center gap-1"
                   >
-                    <Download size={15} /> Télécharger
+                    <Download size={13} /> {formData.chemin_cps ? 'Word' : 'PDF'}
                   </button>
                 </div>
               </div>
+
             </div>
 
-            {/* CARTE 8 : DESIGNATION AGENT SUIVI */}
-            <div className="bg-white rounded-3xl border border-slate-200 p-5 shadow-sm hover:shadow-md transition-all">
-              <div className="flex items-center gap-3 mb-3 border-b border-slate-100 pb-3">
-                <div className="p-2.5 bg-teal-50 text-teal-600 rounded-xl"><FileSignature size={20} /></div>
-                <div>
-                  <h3 className="font-extrabold text-slate-900 text-sm">Agent de Suivi</h3>
-                  <p className="text-[11px] text-slate-500 font-mono">Décision de nomination</p>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() => previewDocument('designation-agent-suivi')}
-                  className="py-2.5 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-1.5"
-                >
-                  <Eye size={15} className="text-teal-600" /> Aperçu
-                </button>
-                <button
-                  type="button"
-                  onClick={() => downloadDocument('designation-agent-suivi')}
-                  className="py-2.5 px-3 bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-700 hover:to-teal-600 text-white font-bold text-xs rounded-xl shadow transition-all flex items-center justify-center gap-1.5"
-                >
-                  <Download size={15} /> Télécharger
-                </button>
-              </div>
-            </div>
-
-            {/* CARTE PASSAGE LIQUIDATION */}
+            {/* BANNIÈRE ETAPE SUIVANTE : LIQUIDATION */}
             {id && id !== 'nouveau' && (
-              <div className="bg-gradient-to-br from-indigo-700 via-indigo-800 to-slate-900 text-white rounded-3xl p-5 shadow-lg shadow-indigo-950/20 border border-indigo-500/20">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="p-2.5 bg-white/15 rounded-xl backdrop-blur-sm">
-                    <ReceiptText size={22} className="text-white" />
+              <div className="bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 text-white rounded-2xl p-4 shadow-md flex flex-col sm:flex-row items-center justify-between gap-4 border border-white/10">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-white/10 rounded-xl backdrop-blur-sm">
+                    <ReceiptText size={20} className="text-blue-200" />
                   </div>
                   <div>
-                    <h3 className="font-extrabold text-white text-sm">Étape Suivante</h3>
-                    <p className="text-[11px] text-indigo-200 font-medium">Liquidation & Décomptes</p>
+                    <h4 className="font-extrabold text-white text-sm">Étape Suivante : Liquidation & Décomptes</h4>
+                    <p className="text-xs text-blue-200">
+                      L'engagement est validé ? Accédez directement au traitement des décomptes et constats de service fait.
+                    </p>
                   </div>
                 </div>
-                <p className="text-xs text-indigo-100 mb-4 leading-relaxed">
-                  L'engagement est validé ? Accédez directement au traitement de la liquidation, aux services faits et aux décomptes de ce marché.
-                </p>
                 <button
                   type="button"
                   onClick={() => navigate(`/liquidations/marches/${id}`)}
-                  className="w-full py-3 px-4 bg-white text-indigo-900 hover:bg-indigo-50 font-bold text-xs rounded-xl shadow transition-all flex items-center justify-center gap-2 group"
+                  className="py-2.5 px-4 bg-white text-blue-950 hover:bg-blue-50 font-bold text-xs rounded-xl shadow transition-all flex items-center justify-center gap-2 whitespace-nowrap group"
                 >
                   <span>Passer à la Liquidation</span>
-                  <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
+                  <ArrowRight size={15} className="group-hover:translate-x-1 transition-transform" />
                 </button>
               </div>
             )}
 
-            <div className="p-4 bg-blue-50 border border-blue-100 rounded-2xl">
+            <div className="p-3.5 bg-blue-50/70 border border-blue-100 rounded-xl">
               <p className="text-xs text-blue-800 leading-relaxed font-medium">
-                <strong>Astuce :</strong> Assurez-vous d'avoir cliqué sur <span className="font-bold">"Enregistrer l'Engagement"</span> après vos modifications avant de télécharger les documents, afin qu'ils incluent les dernières valeurs saisies.
+                💡 <strong>Rappel :</strong> Assurez-vous d'avoir cliqué sur <span className="font-bold">"Enregistrer l'Engagement"</span> après vos modifications avant de télécharger les documents, afin qu'ils incluent les dernières valeurs saisies.
               </p>
             </div>
-
           </div>
+
         </div>
 
       </main>
