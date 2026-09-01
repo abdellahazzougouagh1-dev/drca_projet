@@ -5,145 +5,176 @@
     <title>Notification de l'approbation</title>
     <style>
         @page {
-            margin: 8mm 12mm 12mm 12mm;
+            margin: 6mm 10mm 15mm 10mm;
         }
-        body { font-family: 'DejaVu Sans', sans-serif; font-size: 12px; line-height: 1.25; margin: 0; padding: 0; }
+        body { 
+            font-family: 'DejaVu Sans', sans-serif; 
+            font-size: 11.5px; 
+            line-height: 1.3; 
+            margin: 0; 
+            padding: 0; 
+            color: #000;
+        }
         .text-center { text-align: center; }
+        .text-right { text-align: right; }
         .font-bold { font-weight: bold; }
         .underline { text-decoration: underline; }
-        .mb-2 { margin-bottom: 5px; }
-        .mb-4 { margin-bottom: 8px; }
-        .mt-4 { margin-top: 10px; }
-        .title { font-size: 13px; font-weight: bold; text-align: center; margin-bottom: 8px; }
-        .section { margin-bottom: 8px; }
+        
+        .header-table { width: 100%; margin-bottom: 4px; }
+        .header-table td { vertical-align: middle; border: none; padding: 0; }
+        .center-header { text-align: center; font-size: 11px; }
+
         .table-borderless { width: 100%; border-collapse: collapse; }
-        .table-borderless td { border: none; padding: 1px 3px; vertical-align: top; }
-        .header-table { width: 100%; margin-bottom: 10px; }
-        .header-table td { vertical-align: middle; border: none; }
+        .table-borderless td { border: none; padding: 1px 2px; vertical-align: top; }
         
         /* Fixed Footer */
         .footer {
             position: fixed;
-            bottom: -8mm;
+            bottom: -10mm;
             left: 0;
             right: 0;
             width: 100%;
-            font-size: 7px;
             text-align: center;
         }
-        .footer-line { border-bottom: 1.5px solid #4a6344; margin: 3px auto; width: 80%; }
+        .footer-banner {
+            width: 100%;
+            height: auto;
+            max-height: 45px;
+        }
     </style>
 </head>
 <body>
 
-    <!-- FOOTER (must be declared before content in dompdf) -->
+    <!-- FOOTER -->
     <div class="footer">
-        <div style="text-align: center; color: #555; line-height: 1.3;">
-            المديرية الجهوية للاستشارة الفلاحية لجهة الرباط سلا القنيطرة، ملتقى زنقة سبتة، شارع محمد الخامس (قرب بنك المغرب) - القنيطرة<br>
-            الهاتف : 212537325599+ / الفاكس : 212537361320+ - الموقع الإلكتروني : www.onca.gov.ma<br>
-            <div class="footer-line"></div>
-            Direction Régionale du Conseil Agricole de la Région de Rabat Salé Kénitra, Angle Rue Sebta - Bd Mohamed V (à côté de Bank Al-Maghreb) - Kénitra<br>
-            Tél. : +212 (0) 537 32 55 99 - Fax : +212 (0) 537 36 13 20 - Site web : www.onca.gov.ma
-        </div>
+        @if(file_exists(public_path('images/info_DRCA.png')))
+            <img src="{{ public_path('images/info_DRCA.png') }}" class="footer-banner" alt="ONCA DRCA">
+        @else
+            <div style="text-align: center; color: #555; font-size: 7.5px; line-height: 1.25;">
+                المديرية الجهوية للاستشارة الفلاحية لجهة الرباط سلا القنيطرة، ملتقى زنقة سبتة، شارع محمد الخامس (قرب بنك المغرب) - القنيطرة<br>
+                الهاتف : 212537325599+ / الفاكس : 212537361320+ - الموقع الإلكتروني : www.onca.gov.ma<br>
+                Direction Régionale du Conseil Agricole de la Région de Rabat Salé Kénitra, Angle Rue Sebta - Bd Mohamed V (à côté de Bank Al-Maghreb) - Kénitra<br>
+                Tél. : +212 (0) 537 32 55 99 - Fax : +212 (0) 537 36 13 20 - Site web : www.onca.gov.ma
+            </div>
+        @endif
     </div>
 
-    <!-- HEADER -->
+    <!-- HEADER LOGOS -->
     <table class="header-table">
         <tr>
-            <td style="width: 33%; text-align: left;">
+            <td style="width: 30%; text-align: left;">
                 @if(file_exists(public_path('images/logo-onca.png')))
-                    <img src="{{ public_path('images/logo-onca.png') }}" style="height: 65px;" alt="ONCA">
+                    <img src="{{ public_path('images/logo-onca.png') }}" style="height: 55px;" alt="ONCA">
                 @endif
             </td>
-            <td style="width: 34%; text-align: center; font-size: 11px; font-weight: bold;">
-                Direction Régionale du Conseil Agricole<br>Rabat-Salé-Kénitra
+            <td class="center-header" style="width: 40%;">
+                Direction Régionale du Conseil Agricole Rabat-Salé-Kénitra
             </td>
-            <td style="width: 33%; text-align: right;">
+            <td style="width: 30%; text-align: right;">
                 @if(file_exists(public_path('images/sceau-maroc.png')))
-                    <img src="{{ public_path('images/sceau-maroc.png') }}" style="height: 65px;" alt="Royaume du Maroc">
+                    <img src="{{ public_path('images/sceau-maroc.png') }}" style="height: 55px;" alt="Royaume du Maroc">
                 @endif
             </td>
         </tr>
     </table>
     
-    <hr style="border: 1px solid #000; margin-top: 0px; margin-bottom: 10px;">
+    <hr style="border: 1.5px solid #000; margin-top: 0px; margin-bottom: 8px;">
 
-    <table class="table-borderless" style="margin-bottom: 10px;">
+    <!-- N° & DATE -->
+    <table class="table-borderless" style="margin-bottom: 8px;">
         <tr>
-            <td style="width: 50%; font-weight: bold;">N° {{ $marche->num_decision ?? '........................' }}</td>
-            <td style="width: 50%; text-align: right; font-weight: bold;">Kénitra le: {{ $marche->date_notification_marche ? \Carbon\Carbon::parse($marche->date_notification_marche)->format('d/m/Y') : ($marche->date_approbation ? \Carbon\Carbon::parse($marche->date_approbation)->format('d/m/Y') : date('d/m/Y')) }}</td>
-        </tr>
-    </table>
-
-    <div class="title" style="font-size: 15px;">Le Directeur Régional du Conseil Agricole Rabat-Salé-Kénitra</div>
-
-    <div class="text-center font-bold mb-4" style="font-size: 14px;">
-        A<br>
-        Monsieur le gérant de la société<br>
-        {{ strtoupper($marche->fournisseur->raison_sociale ?? '........................................') }}<br>
-        {{ strtoupper($marche->fournisseur->adresse ?? '........................................') }} {{ strtoupper($marche->fournisseur->ville ?? '') }}
-    </div>
-
-    <table class="table-borderless mb-4">
-        <tr>
-            <td style="width: 15%;" class="font-bold">Objet :</td>
-            <td style="width: 85%;" class="font-bold">Notification de l'approbation</td>
-        </tr>
-        <tr>
-            <td class="font-bold">Référence :</td>
-            <td class="font-bold">
-                Marché Numéro {{ $marche->num_marche }}<br>
-                Appel d'offre N° {{ $marche->aoo->num_aoo ?? '........................' }} en date du {{ $marche->aoo->date_ouverture ? \Carbon\Carbon::parse($marche->aoo->date_ouverture)->format('d/m/Y') : '........................' }}
+            <td style="width: 50%; font-size: 13px; font-weight: bold;">N° &nbsp;&nbsp;{{ $marche->num_decision ?? $marche->os_numero ?? '01/2024/M06' }}</td>
+            <td style="width: 50%; text-align: right; font-size: 13px;">
+                Kénitra le: &nbsp;{{ $marche->date_notification_marche ? \Carbon\Carbon::parse($marche->date_notification_marche)->format('d/m/Y') : ($marche->os_date_signature ? \Carbon\Carbon::parse($marche->os_date_signature)->format('d/m/Y') : date('d/m/Y')) }}<br>
+                <span style="font-weight: bold; margin-top: 3px; display: inline-block;">Kénitra</span>
             </td>
         </tr>
     </table>
 
-    <div class="section mb-2">
-        Madame/Monsieur,<br><br>
-        J'ai l'honneur de vous informer que le Marché Numéro <strong>{{ $marche->num_marche }}</strong> ayant pour objet :<br>
-        <strong>{{ $marche->aoo->objet ?? $marche->objet_marche }}</strong><br>
-        @if($marche->lot && strtolower(trim($marche->lot)) !== 'lot unique' && strtolower(trim($marche->lot)) !== 'unique')
-        <strong>{{ stripos($marche->lot, 'lot') !== false ? $marche->lot : 'Lot ' . $marche->lot }} : {{ $marche->objet_marche }}</strong><br>
-        @endif
-        a été approuvé(e) par l'autorité competente le {{ $marche->date_approbation ? \Carbon\Carbon::parse($marche->date_approbation)->format('d/m/Y') : '........................' }}.<br>
-        A cet effet, je vous invite à signer la présente notification de l'approbation, à enregistrer le marché et à présenter la caution définitive relative au marché sus-cité dans les délais réglementaires.
+    <!-- TITRE & DESTINATAIRE -->
+    <div style="font-size: 13px; font-weight: bold; text-align: center; margin-bottom: 10px;">
+        Le Directeur Régional du Conseil Agricole Rabat-Salé-Kénitra
     </div>
 
-    <div class="section text-center mb-4" style="margin-left: 50%;">
+    <div style="text-align: center; font-weight: bold; font-size: 12.5px; line-height: 1.35; margin-bottom: 4px;">
+        A<br>
+        Monsieur le gérant de la société<br>
+        <span style="font-size: 13px;">{{ strtoupper($marche->fournisseur->raison_sociale ?? $marche->titulaire) }}</span><br>
+        <span style="font-size: 11.5px;">{{ strtoupper($marche->fournisseur->adresse ?? '') }}</span>
+    </div>
+    <div style="text-align: right; font-weight: bold; font-size: 12.5px; padding-right: 40px; margin-bottom: 10px;">
+        {{ strtoupper($marche->fournisseur->ville ?? 'CASABLANCA') }}
+    </div>
+
+    <!-- OBJET & REFERENCE -->
+    <table class="table-borderless" style="font-size: 12px; margin-bottom: 8px;">
+        <tr>
+            <td style="width: 14%; font-weight: bold;">Objet</td>
+            <td style="width: 3%; font-weight: bold;">:</td>
+            <td style="width: 28%; font-weight: bold;">Ordre de service de</td>
+            <td style="width: 55%; font-weight: bold;">Notification de l'approbation</td>
+        </tr>
+        <tr>
+            <td style="font-weight: bold;">Référence</td>
+            <td style="font-weight: bold;">:</td>
+            <td style="font-weight: bold;">Marché Numéro</td>
+            <td style="font-weight: bold;">{{ $marche->num_marche }}</td>
+        </tr>
+        <tr>
+            <td></td>
+            <td></td>
+            <td style="font-weight: bold;">Appel d'offre N°</td>
+            <td style="font-weight: bold;">
+                {{ $marche->aoo->num_aoo ?? '........................' }} &nbsp;&nbsp;&nbsp;&nbsp;en date du &nbsp;&nbsp;{{ $marche->date_oa ? \Carbon\Carbon::parse($marche->date_oa)->format('d/m/Y') : ($marche->aoo->date_ouverture ? \Carbon\Carbon::parse($marche->aoo->date_ouverture)->format('d/m/Y') : '........................') }}
+            </td>
+        </tr>
+    </table>
+
+    <!-- CORPS -->
+    <div style="font-size: 11.5px; line-height: 1.4; margin-bottom: 6px;">
+        Madame/Monsieur,<br>
+        J'ai l'honneur de vous informer que le Marché Numéro &nbsp;&nbsp;&nbsp;&nbsp;<strong>{{ $marche->num_marche }}</strong> &nbsp;&nbsp;ayant pour objet<br><br>
+        <strong>{{ $marche->objet_marche ?? ($marche->aoo->objet ?? '') }}</strong><br><br>
+        a été approuvé(e) par l'autorité competente<br><br>
+        A cet effet, je vous invite à signer le présente notification de l'approbation, à enregistrer le marché et à présenter la caution définitive relative au marché sus-cité dans les délais réglementaires
+    </div>
+
+    <!-- MAITRE D'OUVRAGE -->
+    <div style="text-align: right; padding-right: 60px; font-weight: bold; font-size: 12px; margin-top: 15px; margin-bottom: 12px;">
         Le maître d'ouvrage
     </div>
 
-    <div class="section mb-2">
+    <!-- OBSERVATION -->
+    <div style="font-size: 11.5px; margin-bottom: 12px;">
         <strong><u>Observation</u></strong><br>
         Le montant de la caution definitive à presenter est de (en DH)<br>
-        <strong>{{ number_format($marche->montant_caution_definitive ?? (($marche->montant ?? 0) * 0.03), 2, ',', ' ') }}</strong>
+        <span style="font-size: 13px; font-weight: bold; margin-left: 20px; display: inline-block; margin-top: 2px;">
+            {{ number_format((float)($marche->caution_definitive ?? $marche->montant_caution_definitive ?? (($marche->montant ?? 0) * 0.03)), 2, ',', ' ') }}
+        </span>
     </div>
 
-    <hr style="border: 1px solid #000; margin: 15px 0;">
-
-    <div class="title" style="font-size: 15px;">Accusé de reception</div>
-
-    <div class="section mb-2">
-        Je soussigné, Madame/Monsieur <strong>{{ strtoupper($marche->fournisseur->representant ?? '........................................') }}</strong><br>
-        Gérant/ agissant au nom et pour le compte de la société : <strong>{{ strtoupper($marche->fournisseur->raison_sociale ?? '........................................') }}</strong><br>
-        Faisant élection de domicile à : <strong>{{ strtoupper($marche->fournisseur->adresse ?? '........................................') }} {{ strtoupper($marche->fournisseur->ville ?? '') }}</strong><br>
-        Atteste avoir réçu du directeur régional du conseil agricole Rabat-Salé-Kénitra la notification de l'approbation du marché: <strong>{{ $marche->num_marche }}</strong><br>
-        Ayant pour objet :<br>
-        <strong>{{ $marche->aoo->objet ?? $marche->objet_marche }}</strong><br>
-        @if($marche->lot && strtolower(trim($marche->lot)) !== 'lot unique' && strtolower(trim($marche->lot)) !== 'unique')
-        <strong>{{ stripos($marche->lot, 'lot') !== false ? $marche->lot : 'Lot ' . $marche->lot }} : {{ $marche->objet_marche }}</strong>
+    <div style="width: 100%; text-align: center; margin: 6px 0 8px 0;">
+        @if(file_exists(public_path('images/info_DRCA.png')))
+            <img src="{{ public_path('images/info_DRCA.png') }}" style="width: 100%; height: auto; max-height: 36px;" alt="ONCA Separator">
         @endif
+        <hr style="border: 1.2px solid #000; margin-top: 3px;">
     </div>
 
-    <table class="table-borderless mt-2">
-        <tr>
-            <td style="width: 50%;"></td>
-            <td style="width: 50%; text-align: center;">
-                Fait à {{ strtoupper($marche->fournisseur->ville ?? '........................................') }} le {{ $marche->date_notification_marche ? \Carbon\Carbon::parse($marche->date_notification_marche)->format('d/m/Y') : '........................................' }}<br><br><br>
-                <strong>Signature et cachet</strong>
-            </td>
-        </tr>
-    </table>
+    <!-- ACCUSE DE RECEPTION -->
+    <div style="text-align: center; font-size: 15px; font-weight: bold; margin-bottom: 8px;">
+        Accusé de reception
+    </div>
+
+    <div style="font-size: 11.5px; line-height: 1.45;">
+        Je sousigne, Madame/Monsieur &nbsp;&nbsp;&nbsp;&nbsp;<strong>{{ strtoupper($marche->fournisseur->representant ?? $marche->representant ?? '........................................') }}</strong><br>
+        Gérant/ agissant au nom et pour le compte de la société : &nbsp;&nbsp;&nbsp;&nbsp;<strong>{{ strtoupper($marche->fournisseur->raison_sociale ?? $marche->titulaire) }}</strong><br>
+        Faisant élection de domicile à : &nbsp;&nbsp;&nbsp;&nbsp;<strong>{{ strtoupper($marche->fournisseur->adresse ?? '') }} {{ strtoupper($marche->fournisseur->ville ?? '') }}</strong><br>
+        Atteste avoir réçu du directeur régional du conseil agricole Rabat-Salé-Kénitra la notification de l'approbation<br>
+        du marché: <strong>{{ $marche->num_marche }}</strong><br>
+        Ayant pour objet :<br><br>
+        <strong>{{ $marche->objet_marche ?? ($marche->aoo->objet ?? '') }}</strong><br><br>
+        J'accuse, par la presente, la réception de l'ordre de service de notification de l'approbation du marché sus-cité
+    </div>
 
 </body>
 </html>

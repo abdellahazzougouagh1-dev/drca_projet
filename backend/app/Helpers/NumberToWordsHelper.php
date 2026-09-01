@@ -26,6 +26,23 @@ class NumberToWordsHelper
         return ucfirst(self::convertIntegerToFrenchWords($integerPart));
     }
 
+    public static function toFrenchMoneyWords(float $amount, string $currency = 'dirhams', string $subCurrency = 'centimes'): string
+    {
+        $rounded = round($amount, 2);
+        $integerPart = (int) floor($rounded);
+        $decimalPart = (int) round(($rounded - $integerPart) * 100);
+
+        $words = $integerPart === 0 ? 'zéro' : self::convertIntegerToFrenchWords($integerPart);
+        $result = $words . ' ' . $currency;
+
+        if ($decimalPart > 0) {
+            $decimalWords = self::convertIntegerToFrenchWords($decimalPart);
+            $result .= ' et ' . $decimalWords . ' ' . ($decimalPart === 1 ? 'centime' : $subCurrency);
+        }
+
+        return ucfirst(trim($result));
+    }
+
     private static function convertIntegerToFrenchWords(int $n): string
     {
         if ($n < 20) {

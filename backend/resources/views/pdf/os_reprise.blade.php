@@ -39,28 +39,36 @@
             margin-bottom: 15px;
         }
 
+        /* Fixed Footer */
         .footer {
             position: fixed;
-            bottom: -12mm;
+            bottom: -10mm;
             left: 0;
             right: 0;
             width: 100%;
-            font-size: 8px;
             text-align: center;
         }
-        .footer-line { border-bottom: 1.5px solid #4a6344; margin: 3px auto; width: 80%; }
+        .footer-banner {
+            width: 100%;
+            height: auto;
+            max-height: 45px;
+        }
     </style>
 </head>
 <body>
 
+    <!-- FOOTER -->
     <div class="footer">
-        <div style="text-align: center; color: #555; line-height: 1.3;">
-            المديرية الجهوية للاستشارة الفلاحية لجهة الرباط سلا القنيطرة، ملتقى زنقة سبتة، شارع محمد الخامس (قرب بنك المغرب) - القنيطرة<br>
-            الهاتف : 212537325599+ / الفاكس : 212537361320+ - الموقع الإلكتروني : www.onca.gov.ma<br>
-            <div class="footer-line"></div>
-            Direction Régionale du Conseil Agricole de la Région de Rabat Salé Kénitra, Angle Rue Sebta - Bd Mohamed V (à côté de Bank Al-Maghreb) - Kénitra<br>
-            Tél. : +212 (0) 537 32 55 99 - Fax : +212 (0) 537 36 13 20 - Site web : www.onca.gov.ma
-        </div>
+        @if(file_exists(public_path('images/info_DRCA.png')))
+            <img src="{{ public_path('images/info_DRCA.png') }}" class="footer-banner" alt="ONCA DRCA">
+        @else
+            <div style="text-align: center; color: #555; font-size: 7.5px; line-height: 1.25;">
+                المديرية الجهوية للاستشارة الفلاحية لجهة الرباط سلا القنيطرة، ملتقى زنقة سبتة، شارع محمد الخامس (قرب بنك المغرب) - القنيطرة<br>
+                الهاتف : 212537325599+ / الفاكس : 212537361320+ - الموقع الإلكتروني : www.onca.gov.ma<br>
+                Direction Régionale du Conseil Agricole de la Région de Rabat Salé Kénitra, Angle Rue Sebta - Bd Mohamed V (à côté de Bank Al-Maghreb) - Kénitra<br>
+                Tél. : +212 (0) 537 32 55 99 - Fax : +212 (0) 537 36 13 20 - Site web : www.onca.gov.ma
+            </div>
+        @endif
     </div>
 
     <!-- Header Logos & Direction -->
@@ -115,7 +123,7 @@
             <td style="font-weight: bold;">:</td>
             <td style="font-weight: bold;">
                 Marché Numéro &nbsp;&nbsp;&nbsp;&nbsp;{{ $marche->num_marche }}<br>
-                Appel d'offre N° &nbsp;&nbsp;&nbsp;&nbsp;{{ $marche->aoo->num_aoo ?? '........................' }} &nbsp;&nbsp;en date du&nbsp;&nbsp; {{ $marche->aoo->date_ouverture ? \Carbon\Carbon::parse($marche->aoo->date_ouverture)->format('d/m/Y') : '........................' }}
+                Appel d'offre N° &nbsp;&nbsp;&nbsp;&nbsp;{{ $marche->aoo->num_aoo ?? '........................' }} &nbsp;&nbsp;en date du&nbsp;&nbsp; {{ $marche->date_oa ? \Carbon\Carbon::parse($marche->date_oa)->format('d/m/Y') : ($marche->aoo->date_ouverture ? \Carbon\Carbon::parse($marche->aoo->date_ouverture)->format('d/m/Y') : '........................') }}
             </td>
         </tr>
     </table>
@@ -135,7 +143,12 @@
         Fait à Kénitra le: &nbsp;{{ $marche->os_reprise_date_signature ? \Carbon\Carbon::parse($marche->os_reprise_date_signature)->format('d/m/Y') : '........................' }}
     </div>
 
-    <hr style="border: 2px solid #000; margin: 20px 0;">
+    <div style="width: 100%; text-align: center; margin: 8px 0 10px 0;">
+        @if(file_exists(public_path('images/info_DRCA.png')))
+            <img src="{{ public_path('images/info_DRCA.png') }}" style="width: 100%; height: auto; max-height: 36px;" alt="ONCA Separator">
+        @endif
+        <hr style="border: 1.2px solid #000; margin-top: 3px;">
+    </div>
 
     <div class="accuse-title">Accusé de reception</div>
 

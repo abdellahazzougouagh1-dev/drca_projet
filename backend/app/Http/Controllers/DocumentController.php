@@ -115,10 +115,10 @@ class DocumentController extends Controller
 
     public function generateActe($id)
     {
-        $marche = Marche::with(['aoo', 'fournisseur', 'lot'])->findOrFail($id);
+        $marche = Marche::with(['aoo.notificationLigne', 'fournisseur', 'lot', 'notificationLigne'])->findOrFail($id);
         
         $pdf = Pdf::loadView('pdf.acte_engagement', compact('marche'));
-        return $pdf->download($this->safeFileName('Acte_Engagement', $marche->num_marche));
+        return $pdf->download($this->safeFileName('Fiche_Engagement', $marche->num_marche ?: $marche->id));
     }
 
     public function generateNotification($id)

@@ -66,27 +66,33 @@
         /* Fixed Footer */
         .footer {
             position: fixed;
-            bottom: -12mm; /* Sit inside the 15mm bottom margin */
+            bottom: -10mm;
             left: 0;
             right: 0;
             width: 100%;
-            font-size: 7px;
             text-align: center;
         }
-        .footer-line { border-bottom: 1.5px solid #4a6344; margin: 3px auto; width: 80%; }
+        .footer-banner {
+            width: 100%;
+            height: auto;
+            max-height: 45px;
+        }
     </style>
 </head>
 <body>
 
-    <!-- FOOTER (must be declared before content in dompdf) -->
+    <!-- FOOTER -->
     <div class="footer">
-        <div style="text-align: center; color: #555; line-height: 1.3;">
-            المديرية الجهوية للاستشارة الفلاحية لجهة الرباط سلا القنيطرة، ملتقى زنقة سبتة، شارع محمد الخامس (قرب بنك المغرب) - القنيطرة<br>
-            الهاتف : 212537325599+ / الفاكس : 212537361320+ - الموقع الإلكتروني : www.onca.gov.ma<br>
-            <div class="footer-line"></div>
-            Direction Régionale du Conseil Agricole de la Région de Rabat Salé Kénitra, Angle Rue Sebta - Bd Mohamed V (à côté de Bank Al-Maghreb) - Kénitra<br>
-            Tél. : +212 (0) 537 32 55 99 - Fax : +212 (0) 537 36 13 20 - Site web : www.onca.gov.ma
-        </div>
+        @if(file_exists(public_path('images/info_DRCA.png')))
+            <img src="{{ public_path('images/info_DRCA.png') }}" class="footer-banner" alt="ONCA DRCA">
+        @else
+            <div style="text-align: center; color: #555; font-size: 7.5px; line-height: 1.25;">
+                المديرية الجهوية للاستشارة الفلاحية لجهة الرباط سلا القنيطرة، ملتقى زنقة سبتة، شارع محمد الخامس (قرب بنك المغرب) - القنيطرة<br>
+                الهاتف : 212537325599+ / الفاكس : 212537361320+ - الموقع الإلكتروني : www.onca.gov.ma<br>
+                Direction Régionale du Conseil Agricole de la Région de Rabat Salé Kénitra, Angle Rue Sebta - Bd Mohamed V (à côté de Bank Al-Maghreb) - Kénitra<br>
+                Tél. : +212 (0) 537 32 55 99 - Fax : +212 (0) 537 36 13 20 - Site web : www.onca.gov.ma
+            </div>
+        @endif
     </div>
 
     <!-- Header Logos & Direction -->
@@ -112,75 +118,74 @@
 
     <table class="table-borderless" style="margin-bottom: 10px;">
         <tr>
-            <td style="width: 50%; font-weight: bold;">N° {{ $marche->os_numero ?? '......../2024/M10' }}</td>
-            <td style="width: 50%; text-align: right; font-weight: bold;">Kénitra le: {{ $marche->os_date_signature ? \Carbon\Carbon::parse($marche->os_date_signature)->format('d/m/Y') : '........................' }}</td>
+            <td style="width: 50%; font-weight: bold; font-size: 13px;">N° {{ $marche->os_numero ?? '03/2024/M10' }}</td>
+            <td style="width: 50%; text-align: right; font-weight: bold; font-size: 13px;">Kénitra le: {{ $marche->os_date_signature ? \Carbon\Carbon::parse($marche->os_date_signature)->format('d/m/Y') : date('d/m/Y') }}</td>
         </tr>
     </table>
 
-    <div class="title" style="font-size: 15px; font-weight: bold; text-align: center; margin-bottom: 8px;">Le Directeur Régional du Conseil Agricole Rabat-Salé-Kénitra</div>
+    <div class="title" style="font-size: 14px; font-weight: bold; text-align: center; margin-bottom: 12px;">Le Directeur Régional du Conseil Agricole Rabat-Salé-Kénitra</div>
 
-    <div class="text-center font-bold mb-4" style="font-size: 14px;">
+    <div class="text-center font-bold mb-4" style="font-size: 13px; line-height: 1.4;">
         A<br>
         Monsieur le gérant de la société<br>
-        {{ strtoupper($marche->fournisseur->raison_sociale ?? '........................................') }}<br>
-        {{ strtoupper($marche->fournisseur->adresse ?? '........................................') }} {{ strtoupper($marche->fournisseur->ville ?? '') }}
+        <span style="font-size: 14px;">{{ strtoupper($marche->fournisseur->raison_sociale ?? $marche->titulaire) }}</span><br>
+        {{ strtoupper($marche->fournisseur->adresse ?? '') }}<br>
+        <div style="text-align: right; margin-right: 40px; margin-top: 4px;">{{ strtoupper($marche->fournisseur->ville ?? 'Kénitra') }}</div>
     </div>
 
-    <table class="table-borderless mb-4">
+    <table class="table-borderless mb-3" style="font-size: 12.5px;">
         <tr>
-            <td style="width: 15%;" class="font-bold">Objet :</td>
-            <td style="width: 85%;" class="font-bold">Ordre de service de Commencement de l'exécution</td>
+            <td style="width: 15%;" class="font-bold">Objet</td>
+            <td style="width: 3%;" class="font-bold">:</td>
+            <td style="width: 30%;" class="font-bold">Ordre de service de</td>
+            <td style="width: 52%;" class="font-bold">Commencement de l'execution</td>
         </tr>
         <tr>
-            <td class="font-bold">Référence :</td>
-            <td class="font-bold">
-                Marché Numéro {{ $marche->num_marche }}<br>
-                Appel d'offre N° {{ $marche->aoo->num_aoo ?? '........................' }} en date du {{ $marche->aoo->date_ouverture ? \Carbon\Carbon::parse($marche->aoo->date_ouverture)->format('d/m/Y') : '........................' }}
-            </td>
+            <td class="font-bold">Référence</td>
+            <td class="font-bold">:</td>
+            <td class="font-bold">Marché Numéro</td>
+            <td class="font-bold">{{ $marche->num_marche }}</td>
+        </tr>
+        <tr>
+            <td></td>
+            <td></td>
+            <td class="font-bold">Appel d'offre N°</td>
+            <td class="font-bold">{{ $marche->aoo->num_aoo ?? '........................' }} &nbsp;&nbsp;&nbsp;&nbsp;en date du &nbsp;&nbsp;{{ $marche->date_oa ? \Carbon\Carbon::parse($marche->date_oa)->format('d/m/Y') : ($marche->aoo->date_ouverture ? \Carbon\Carbon::parse($marche->aoo->date_ouverture)->format('d/m/Y') : '........................') }}</td>
         </tr>
     </table>
 
-    <div class="content-body" style="margin-bottom: 8px;">
-        Madame/Monsieur,<br><br>
-        J'ai l'honneur de vous demander de commencer l'exécution du marché: <strong>{{ $marche->num_marche }}</strong> ayant pour objet :<br>
-        <strong>{{ $marche->objet_marche }}</strong>
-        @if($marche->lot && $marche->lot !== 'Lot Unique')
-        <br><strong>Lot :</strong> {{ $marche->lot }}
+    <div class="content-body" style="font-size: 12px; line-height: 1.45; margin-bottom: 12px;">
+        Monsieur,<br><br>
+        J'ai l'honneur de vous demander de commencer l'exécution du marché: &nbsp;&nbsp;&nbsp;&nbsp;<strong>{{ $marche->num_marche }}</strong> &nbsp;&nbsp;ayant pour objet<br><br>
+        <strong>{{ strtoupper($marche->aoo->objet ?? $marche->objet_marche) }}</strong>
+        @if($marche->lot && strtolower(trim($marche->lot)) !== 'lot unique' && strtolower(trim($marche->lot)) !== 'unique')
+        <br><strong>{{ stripos($marche->lot, 'lot') !== false ? $marche->lot : 'Lot ' . $marche->lot }} : {{ strtoupper($marche->objet_marche) }}</strong>
         @endif
         <br><br>
-        Le commencement de l'exécution du dit marché prendra effet -suite à son approbation par l'autorité compétente- à compter de <strong>{{ $marche->os_date_effet ? \Carbon\Carbon::parse($marche->os_date_effet)->format('d/m/Y') : '........................' }}</strong>.
+        Le commencement de l'éxecution du dit marché prendra effet -suite à son approbation par l'autorité compétente- à compter de <strong>{{ $marche->os_date_effet ? \Carbon\Carbon::parse($marche->os_date_effet)->format('d/m/Y') : 'la date de la récéption du présent ordre de service' }}</strong>.
     </div>
 
-    <div class="signature-box" style="margin-left: 50%; text-align: center; font-weight: bold; margin-bottom: 15px;">
-        Le Directeur Régional
-    </div>
-
-    <hr style="border: 1px solid #000; margin: 15px 0;">
-
-    <div class="accuse-title" style="font-size: 15px; font-weight: bold; text-align: center; margin-bottom: 8px;">Accusé de réception</div>
-
-    <div class="content-body" style="margin-bottom: 8px;">
-        Je soussigné, Madame/Monsieur <strong>{{ strtoupper($marche->fournisseur->representant ?? '........................................') }}</strong><br>
-        Gérant/ agissant au nom et pour le compte de la société : <strong>{{ strtoupper($marche->fournisseur->raison_sociale ?? '........................................') }}</strong><br>
-        Faisant élection de domicile à : <strong>{{ strtoupper($marche->fournisseur->adresse ?? '........................................') }} {{ strtoupper($marche->fournisseur->ville ?? '') }}</strong><br>
-        Atteste avoir reçu du directeur régional du conseil agricole Rabat-Salé-Kénitra l'ordre de service de commencement de l'exécution du marché: <strong>{{ $marche->num_marche }}</strong><br>
-        Ayant pour objet :<br>
-        <strong>{{ $marche->objet_marche }}</strong>
-        @if($marche->lot && $marche->lot !== 'Lot Unique')
-        <br><strong>Lot :</strong> {{ $marche->lot }}
+    <div style="width: 100%; text-align: center; margin: 6px 0 8px 0;">
+        @if(file_exists(public_path('images/info_DRCA.png')))
+            <img src="{{ public_path('images/info_DRCA.png') }}" style="width: 100%; height: auto; max-height: 36px;" alt="ONCA Separator">
         @endif
-        <br>
-        J'accuse, par la présente, la réception de l'ordre de service de commencement de l'exécution du marché sus-cité.
+        <hr style="border: 1.2px solid #000; margin-top: 3px;">
     </div>
 
-    <table class="table-borderless mt-2" style="margin-top: 5px;">
-        <tr>
-            <td style="width: 50%;"></td>
-            <td style="width: 50%; text-align: center;">
-                Fait à ........................................ le ........................................<br><br><br>
-                <strong>Signature et cachet du Titulaire</strong>
-            </td>
-        </tr>
-    </table>
+    <div class="accuse-title" style="font-size: 14px; font-weight: bold; text-align: center; margin-bottom: 8px;">Accusé de reception</div>
+
+    <div class="content-body" style="font-size: 12px; line-height: 1.4; margin-bottom: 8px;">
+        Je sousigne, Monsieur &nbsp;&nbsp;&nbsp;&nbsp;<strong>{{ strtoupper($marche->fournisseur->representant ?? $marche->representant ?? '........................................') }}</strong><br>
+        Gérant/ agissant au nom et pour le compte de la société : &nbsp;&nbsp;&nbsp;&nbsp;<strong>{{ strtoupper($marche->fournisseur->raison_sociale ?? $marche->titulaire) }}</strong><br>
+        Faisant élection de domicile à : &nbsp;&nbsp;&nbsp;&nbsp;<strong>{{ strtoupper($marche->fournisseur->adresse ?? '') }} {{ strtoupper($marche->fournisseur->ville ?? '') }}</strong><br>
+        Atteste avoir reçu du directeur régional du conseil agricole Rabat-Salé-Kénitra l'ordre de service de commencement de l'execution du marché: <strong>{{ $marche->num_marche }}</strong><br>
+        Ayant pour objet :<br>
+        <strong>{{ strtoupper($marche->aoo->objet ?? $marche->objet_marche) }}</strong>
+        @if($marche->lot && strtolower(trim($marche->lot)) !== 'lot unique' && strtolower(trim($marche->lot)) !== 'unique')
+        <br><strong>{{ stripos($marche->lot, 'lot') !== false ? $marche->lot : 'Lot ' . $marche->lot }} : {{ strtoupper($marche->objet_marche) }}</strong>
+        @endif
+        <br><br>
+        J'accuse, par la presente, la récéption de l'ordre de service de commencement de l'execution du marché sus-cité
+    </div>
 </body>
 </html>
