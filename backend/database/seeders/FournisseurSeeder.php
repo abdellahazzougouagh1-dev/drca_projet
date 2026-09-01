@@ -377,7 +377,7 @@ class FournisseurSeeder extends Seeder
         ];
 
         foreach ($fournisseurs as $data) {
-            Fournisseur::create($data);
+            Fournisseur::updateOrCreate(['ice' => $data['ice']], $data);
         }
     }
 }
