@@ -93,6 +93,33 @@ class ConsultationController extends Controller
         return response()->json($consultation->load(['fournisseur', 'budget', 'prestations', 'engagement', 'offres']));
     }
 
+    public function destroy(Consultation $consultation)
+    {
+        try {
+            DB::transaction(function () use ($consultation) {
+                $consultation->budget()?->delete();
+                $consultation->prestations()?->delete();
+                $consultation->offres()?->delete();
+                $consultation->engagement()?->delete();
+                $consultation->suiviExecution()?->delete();
+                $consultation->receptions()?->delete();
+                $consultation->receptionCommission()?->delete();
+                $consultation->liquidation()?->delete();
+
+                $consultation->delete();
+            });
+
+            return response()->json([
+                'message' => 'Consultation supprimée avec succès.'
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Erreur lors de la suppression de la consultation.',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
     public function update(Request $request, Consultation $consultation)
     {
         $validated = $request->validate([

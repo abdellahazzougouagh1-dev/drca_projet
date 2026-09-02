@@ -1,13 +1,24 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../api/axios';
-import { ArrowLeft, Loader2, Plus, AlertCircle, Eye } from 'lucide-react';
+import { ArrowLeft, Loader2, Plus, AlertCircle, Eye, Trash2 } from 'lucide-react';
 
 const ListeConsultations = () => {
   const navigate = useNavigate();
   const [consultations, setConsultations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  const handleDelete = async (item) => {
+    if (!item.id || item.global_id.startsWith('aoo_')) return;
+    if (!window.confirm(`Êtes-vous sûr de vouloir supprimer la consultation "${item.global_numero}" ?`)) return;
+    try {
+      await api.delete(`/consultations/${item.id}`);
+      setConsultations(prev => prev.filter(c => c.global_id !== item.global_id));
+    } catch (err) {
+      alert("Erreur lors de la suppression de la consultation.");
+    }
+  };
 
   useEffect(() => {
     const fetchAllDossiers = async () => {
@@ -184,13 +195,24 @@ const ListeConsultations = () => {
                         {getStatusBadge(consultation.global_statut)}
                       </td>
                       <td className="px-6 py-5 whitespace-nowrap text-right">
-                        <Link 
-                          to={consultation.route}
-                          className="inline-flex items-center justify-center h-9 w-9 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50 transition-colors"
-                          title="Voir détails"
-                        >
-                          <Eye size={18} />
-                        </Link>
+                        <div className="flex items-center justify-end gap-2">
+                          <Link 
+                            to={consultation.route}
+                            className="inline-flex items-center justify-center h-9 w-9 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50 transition-colors"
+                            title="Voir détails"
+                          >
+                            <Eye size={18} />
+                          </Link>
+                          {!consultation.global_id.startsWith('aoo_') && (
+                            <button
+                              onClick={() => handleDelete(consultation)}
+                              className="inline-flex items-center justify-center h-9 w-9 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50 transition-colors"
+                              title="Supprimer la consultation"
+                            >
+                              <Trash2 size={18} />
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))

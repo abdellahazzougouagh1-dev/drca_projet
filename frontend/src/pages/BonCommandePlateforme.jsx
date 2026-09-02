@@ -145,7 +145,6 @@ const documentFieldGroups = {
     { name: 'concurrents', label: 'Synthése des devis reçus', type: 'concurrents_table', required: true },
     { name: 'societes_refusees', label: "Sociétés écartées", type: 'societes_refusees_input', required: true },
     { name: 'attributaire', label: 'Offre retenue ', type: 'attributaire_selector', required: true },
-    { name: 'motif_attribution', label: "Motif du choix / d'attribution (Offre retenue)", placeholder: "Ex: Offre la moins disante conforme aux spécifications du maître d'ouvrage", required: false },
     { name: 'montant_apres_verification', label: 'Montant TTC retenu (DH)', type: 'number', placeholder: '39060', required: true },
     { name: 'heure_fin', label: 'Heure de fin de séance', type: 'time', required: true },
     { name: 'date_document', label: 'Date Pv', type: 'date', required: true },
@@ -204,7 +203,7 @@ const documentFieldGroups = {
   ],
   decision_commission_reception: [
     { name: 'numero_decision', label: 'Numéro de décision', placeholder: 'Ex: 05/DR/2024', required: true },
-    { name: 'type_reception', label: 'Type de réception', type: 'select', options: ['définitive', 'partielle','Provisoire'], required: true },
+    { name: 'type_reception', label: 'Type de réception', type: 'select', options: ['définitive', 'partielle', 'Provisoire'], required: true },
     { name: 'date_document', label: 'Date de la décision', type: 'date', required: true },
     { name: 'numero_bc', label: 'Numéro Bon de commande', placeholder: '09/INV/2023/DRCA-RSK', required: true },
     { name: 'objet', label: 'Objet de la prestation', placeholder: 'Achat de matériel...', required: true },
@@ -455,13 +454,19 @@ const BonCommandePlateforme = () => {
   };
 
   const handleEditPrestationChange = (index, field, value) => {
-    setEditingPrestations((prev) => prev.map((line, lineIndex) => (
-      lineIndex === index ? { ...line, [field]: value } : line
-    )));
+    setEditingPrestations((prev) => prev.map((line, lineIndex) => {
+      if (field === 'tva' && index === 0) {
+        return { ...line, tva: value };
+      }
+      return lineIndex === index ? { ...line, [field]: value } : line;
+    }));
   };
 
   const addEditPrestationLine = () => {
-    setEditingPrestations((prev) => [...prev, emptyLine()]);
+    setEditingPrestations((prev) => {
+      const firstTva = prev[0]?.tva ?? 20;
+      return [...prev, { ...emptyLine(), tva: firstTva }];
+    });
   };
 
   const removeEditPrestationLine = (index) => {
@@ -532,6 +537,29 @@ const BonCommandePlateforme = () => {
       setEditingError(err.response?.data?.message || err.response?.data?.error || 'Erreur lors de la modification.');
     } finally {
       setEditingSaving(false);
+    }
+  };
+
+  const handleDeleteConsultation = async (consultation) => {
+    if (!window.confirm(`Êtes-vous sûr de vouloir supprimer la consultation "${consultation.numero_consultation}" ? Cette action est irréversible.`)) {
+      return;
+    }
+
+    try {
+      await api.delete(`/consultations/${consultation.id}`);
+
+      setConsultationsList((prev) => prev.filter((c) => c.id !== consultation.id));
+
+      if (savedConsultation?.id === consultation.id) {
+        setSavedConsultation(null);
+        localStorage.removeItem('drca_selected_consultation_id');
+      }
+
+      setMessage(`La consultation ${consultation.numero_consultation} a été supprimée avec succès.`);
+      setError('');
+    } catch (err) {
+      console.error('Erreur lors de la suppression de la consultation:', err);
+      setError(err.response?.data?.message || err.response?.data?.error || 'Erreur lors de la suppression de la consultation.');
     }
   };
 
@@ -978,8 +1006,7 @@ const BonCommandePlateforme = () => {
               !l.numero_prix || String(l.numero_prix).trim() === '' ||
               !l.designation || String(l.designation).trim() === '' ||
               !l.unite_mesure || String(l.unite_mesure).trim() === '' ||
-              !l.quantite || String(l.quantite).trim() === '' ||
-              !l.garantie_exigee || String(l.garantie_exigee).trim() === ''
+              !l.quantite || String(l.quantite).trim() === ''
             ) {
               hasEmptyCell = true;
             }
@@ -1630,9 +1657,8 @@ const BonCommandePlateforme = () => {
                             return (
                               <tr
                                 key={consultation.id}
-                                className={`transition-colors hover:bg-slate-50/80 ${
-                                  isCurrent ? 'bg-blue-50/60 font-medium' : ''
-                                }`}
+                                className={`transition-colors hover:bg-slate-50/80 ${isCurrent ? 'bg-blue-50/60 font-medium' : ''
+                                  }`}
                               >
                                 <td className="px-6 py-4 whitespace-nowrap">
                                   <div className="flex items-center gap-2">
@@ -1656,15 +1682,14 @@ const BonCommandePlateforme = () => {
                                 </td>
                                 <td className="px-4 py-4 whitespace-nowrap">
                                   <span
-                                    className={`px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wide inline-block ${
-                                      consultation.statut_dossier === 'Validé'
-                                        ? 'bg-emerald-100 text-emerald-800'
-                                        : consultation.statut_dossier === 'En cours'
+                                    className={`px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wide inline-block ${consultation.statut_dossier === 'Validé'
+                                      ? 'bg-emerald-100 text-emerald-800'
+                                      : consultation.statut_dossier === 'En cours'
                                         ? 'bg-amber-100 text-amber-800'
                                         : consultation.statut_dossier === 'Clôturé'
-                                        ? 'bg-slate-100 text-slate-700'
-                                        : 'bg-blue-100 text-blue-800'
-                                    }`}
+                                          ? 'bg-slate-100 text-slate-700'
+                                          : 'bg-blue-100 text-blue-800'
+                                      }`}
                                   >
                                     {consultation.statut_dossier}
                                   </span>
@@ -1674,11 +1699,10 @@ const BonCommandePlateforme = () => {
                                     <button
                                       type="button"
                                       onClick={() => selectConsultation(consultation)}
-                                      className={`px-3.5 py-2 font-bold text-xs rounded-xl inline-flex items-center gap-1.5 transition-all shadow-sm ${
-                                        isCurrent
-                                          ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
-                                          : 'bg-blue-700 hover:bg-blue-800 text-white'
-                                      }`}
+                                      className={`px-3.5 py-2 font-bold text-xs rounded-xl inline-flex items-center gap-1.5 transition-all shadow-sm ${isCurrent
+                                        ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                                        : 'bg-blue-700 hover:bg-blue-800 text-white'
+                                        }`}
                                     >
                                       {isCurrent ? (
                                         <>
@@ -1934,15 +1958,21 @@ const BonCommandePlateforme = () => {
                     const lignes = Array.isArray(rawLignes) && rawLignes.length > 0 ? rawLignes : initialLignes;
 
                     const updateLigne = (idx, key, val) => {
-                      const updated = lignes.map((l, i) => i === idx ? { ...l, [key]: val } : l);
+                      const updated = lignes.map((l, i) => {
+                        if (key === 'tva' && idx === 0) {
+                          return { ...l, tva: val };
+                        }
+                        return i === idx ? { ...l, [key]: val } : l;
+                      });
                       handleDocumentFieldChange(selectedDocument.id, field.name, updated);
                       if (selectedDocument.id !== 'avis_achat') handleDocumentFieldChange('avis_achat', field.name, updated);
                       if (selectedDocument.id !== 'bon_commande') handleDocumentFieldChange('bon_commande', field.name, updated);
                     };
                     const addLigne = () => {
+                      const firstTva = lignes[0]?.tva ?? '20';
                       const updated = [
                         ...lignes,
-                        { numero_prix: String(lignes.length + 1), designation: '', specification: '', unite_mesure: 'Unite', quantite: '1', prix_unitaire_ht: '0', tva: '20', garantie_exigee: '' },
+                        { numero_prix: String(lignes.length + 1), designation: '', specification: '', unite_mesure: 'Unite', quantite: '1', prix_unitaire_ht: '0', tva: String(firstTva), garantie_exigee: '' },
                       ];
                       handleDocumentFieldChange(selectedDocument.id, field.name, updated);
                       if (selectedDocument.id !== 'avis_achat') handleDocumentFieldChange('avis_achat', field.name, updated);
@@ -2019,7 +2049,17 @@ const BonCommandePlateforme = () => {
                                 {isAvisAchat && (
                                   <div>
                                     <span style={colStyle}>TVA (%)</span>
-                                    <input type="number" value={ligne.tva ?? '20'} onChange={e => updateLigne(idx, 'tva', e.target.value)} className={getCellInputCls(ligne.tva)} placeholder="20" min="0" max="100" />
+                                    <input
+                                      type="number"
+                                      value={idx === 0 ? (ligne.tva ?? '20') : (lignes[0]?.tva ?? '20')}
+                                      onChange={e => updateLigne(0, 'tva', e.target.value)}
+                                      disabled={idx > 0}
+                                      className={`${getCellInputCls(ligne.tva)} ${idx > 0 ? 'bg-slate-100/90 text-slate-500 cursor-not-allowed border-slate-200' : ''}`}
+                                      placeholder="20"
+                                      min="0"
+                                      max="100"
+                                      title={idx > 0 ? "La TVA est identique pour toutes les lignes (définie par la 1ère ligne)" : ""}
+                                    />
                                   </div>
                                 )}
                                 {showPrices && (
@@ -2036,7 +2076,7 @@ const BonCommandePlateforme = () => {
                                 )}
                                 <div className="col-span-2">
                                   <span style={colStyle}>Garantie Exigée</span>
-                                  <input type="text" value={ligne.garantie_exigee || ''} onChange={e => updateLigne(idx, 'garantie_exigee', e.target.value)} className={getCellInputCls(ligne.garantie_exigee)} placeholder="ex: 12 mois, 2 ans..." />
+                                  <input type="text" value={ligne.garantie_exigee || ''} onChange={e => updateLigne(idx, 'garantie_exigee', e.target.value)} className={getCellInputCls(ligne.garantie_exigee)} placeholder="Facultative (ex: 12 mois...)" />
                                 </div>
                               </div>
                             </div>
@@ -2366,11 +2406,10 @@ const BonCommandePlateforme = () => {
                                 return (
                                   <tr key={idx} className={`border-b border-slate-100 hover:bg-slate-50 transition-all ${isWinner ? 'bg-emerald-50/50' : ''}`}>
                                     <td className="py-2 px-3 text-center font-bold">
-                                      <span className={`px-2.5 py-1 rounded-full text-[11px] font-extrabold inline-block ${
-                                        isWinner
-                                          ? 'bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-sm'
-                                          : 'bg-slate-100 text-slate-700 border border-slate-200'
-                                      }`}>
+                                      <span className={`px-2.5 py-1 rounded-full text-[11px] font-extrabold inline-block ${isWinner
+                                        ? 'bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-sm'
+                                        : 'bg-slate-100 text-slate-700 border border-slate-200'
+                                        }`}>
                                         {rank === 1 ? '🥇 1er (Moins-disant)' : `${rank}ème`}
                                       </span>
                                     </td>
@@ -2459,15 +2498,17 @@ const BonCommandePlateforme = () => {
                       }
                     };
 
-                    const updateRefused = (idx, key, val) => {
-                      const updated = currentList.map((item, i) => (i === idx ? { ...item, [key]: val } : item));
-                      handleDocumentFieldChange(selectedDocument.id, field.name, updated);
-                      syncAutoAttributaire(updated);
-                    };
-
                     const addRefusedCompany = (companyName = '') => {
                       const defaultMotif = "Refus d'invitation du maître d'ouvrage";
-                      const updated = [...currentList, { nom: companyName, motif: defaultMotif }];
+                      let targetName = companyName;
+                      if (!targetName && concurrentsList && concurrentsList.length > 0) {
+                        const existingRefusedNames = currentList.map((r) => String(r.nom || '').trim().toLowerCase());
+                        const firstUnused = concurrentsList.find((c) => !existingRefusedNames.includes(String(c.nom || '').trim().toLowerCase()));
+                        if (firstUnused) {
+                          targetName = firstUnused.nom;
+                        }
+                      }
+                      const updated = [...currentList, { nom: targetName, motif: defaultMotif }];
                       handleDocumentFieldChange(selectedDocument.id, field.name, updated);
                       syncAutoAttributaire(updated);
                     };
@@ -2478,10 +2519,6 @@ const BonCommandePlateforme = () => {
                       syncAutoAttributaire(updated);
                     };
 
-                    const availableToDiscard = concurrentsList.filter(
-                      (c) => !currentList.some((r) => String(r.nom || '').trim().toLowerCase() === String(c.nom || '').trim().toLowerCase())
-                    );
-
                     return (
                       <div key={`${selectedDocument.id}-${field.name}`} className="col-span-full bg-slate-50 border border-slate-200 rounded-2xl p-5 shadow-sm">
                         <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
@@ -2490,26 +2527,6 @@ const BonCommandePlateforme = () => {
                           </label>
 
                           <div className="flex flex-wrap items-center gap-2">
-                            {availableToDiscard.length > 0 && (
-                              <select
-                                defaultValue=""
-                                onChange={(e) => {
-                                  if (e.target.value) {
-                                    addRefusedCompany(e.target.value);
-                                    e.target.value = '';
-                                  }
-                                }}
-                                className="px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-700 outline-none focus:border-red-500 transition-all"
-                              >
-                                <option value="">+ Écarter une société des concurrents...</option>
-                                {availableToDiscard.map((c, i) => (
-                                  <option key={i} value={c.nom}>
-                                    {c.nom} ({c.montant ? `${Number(c.montant).toLocaleString('fr-FR')} DH` : 'N/A'})
-                                  </option>
-                                ))}
-                              </select>
-                            )}
-
                             <button
                               type="button"
                               onClick={() => addRefusedCompany('')}
@@ -2521,66 +2538,78 @@ const BonCommandePlateforme = () => {
                         </div>
 
                         <div className="space-y-3">
-                          {currentList.map((item, idx) => (
-                            <div key={idx} className="flex flex-col sm:flex-row items-start sm:items-center gap-3 bg-white p-3.5 border border-slate-200 rounded-xl shadow-sm">
-                              <div className="w-full sm:w-1/3">
-                                <span className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Société écartée</span>
-                                {concurrentsList.length > 0 ? (
-                                  <select
-                                    value={item.nom}
-                                    onChange={(e) => updateRefused(idx, 'nom', e.target.value)}
-                                    className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs font-bold text-slate-800 bg-slate-50 outline-none focus:border-red-500 focus:bg-white"
-                                  >
-                                    <option value="">-- Choisir la société --</option>
-                                    {concurrentsList.map((c, i) => (
-                                      <option key={i} value={c.nom}>
-                                        {c.nom}
-                                      </option>
-                                    ))}
-                                    {!concurrentsList.some((c) => c.nom === item.nom) && item.nom && (
-                                      <option value={item.nom}>{item.nom}</option>
-                                    )}
-                                  </select>
-                                ) : (
-                                  <input
-                                    type="text"
-                                    value={item.nom}
-                                    onChange={(e) => updateRefused(idx, 'nom', e.target.value)}
-                                    placeholder="Ex: TOPOGRAPHY CONSULTING"
-                                    className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold text-slate-800 outline-none focus:border-red-500"
-                                  />
-                                )}
-                              </div>
+                          {currentList.map((item, idx) => {
+                            const takenByOthers = currentList
+                              .filter((_, i) => i !== idx)
+                              .map((r) => String(r.nom || '').trim().toLowerCase());
 
-                              <div className="w-full sm:w-2/3 flex items-center gap-2">
-                                <div className="flex-1 space-y-1">
-                                  <span className="block text-[10px] font-bold text-slate-500 uppercase">Motif d'écartement</span>
-                                  <input
-                                    type="text"
-                                    list={`standard-motifs-list-${idx}`}
-                                    value={item.motif}
-                                    onChange={(e) => updateRefused(idx, 'motif', e.target.value)}
-                                    placeholder="Ex: Refus d'invitation du maître d'ouvrage"
-                                    className="w-full px-3 py-2 rounded-lg border border-slate-200 text-xs font-semibold text-slate-800 outline-none focus:border-red-500 bg-white"
-                                  />
-                                  <datalist id={`standard-motifs-list-${idx}`}>
-                                    {standardMotifs.map((m, i) => (
-                                      <option key={i} value={m} />
-                                    ))}
-                                  </datalist>
+                            const availableOptions = concurrentsList.filter((c) => {
+                              const normName = String(c.nom || '').trim().toLowerCase();
+                              const isSelf = normName === String(item.nom || '').trim().toLowerCase();
+                              return isSelf || !takenByOthers.includes(normName);
+                            });
+
+                            return (
+                              <div key={idx} className="flex flex-col sm:flex-row items-start sm:items-center gap-3 bg-white p-3.5 border border-slate-200 rounded-xl shadow-sm">
+                                <div className="w-full sm:w-1/3">
+                                  <span className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Société écartée</span>
+                                  {concurrentsList.length > 0 ? (
+                                    <select
+                                      value={item.nom}
+                                      onChange={(e) => updateRefused(idx, 'nom', e.target.value)}
+                                      className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs font-bold text-slate-800 bg-slate-50 outline-none focus:border-red-500 focus:bg-white"
+                                    >
+                                      <option value="">-- Choisir la société --</option>
+                                      {availableOptions.map((c, i) => (
+                                        <option key={i} value={c.nom}>
+                                          {c.nom}
+                                        </option>
+                                      ))}
+                                      {!availableOptions.some((c) => c.nom === item.nom) && item.nom && (
+                                        <option value={item.nom}>{item.nom}</option>
+                                      )}
+                                    </select>
+                                  ) : (
+                                    <input
+                                      type="text"
+                                      value={item.nom}
+                                      onChange={(e) => updateRefused(idx, 'nom', e.target.value)}
+                                      placeholder="Ex: TOPOGRAPHY CONSULTING"
+                                      className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold text-slate-800 outline-none focus:border-red-500"
+                                    />
+                                  )}
                                 </div>
 
-                                <button
-                                  type="button"
-                                  onClick={() => removeRefused(idx)}
-                                  className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-all shrink-0 self-end mb-1"
-                                  title="Annuler l'écartement de cette société"
-                                >
-                                  <Trash2 size={15} />
-                                </button>
+                                <div className="w-full sm:w-2/3 flex items-center gap-2">
+                                  <div className="flex-1 space-y-1">
+                                    <span className="block text-[10px] font-bold text-slate-500 uppercase">Motif d'écartement</span>
+                                    <input
+                                      type="text"
+                                      list={`standard-motifs-list-${idx}`}
+                                      value={item.motif}
+                                      onChange={(e) => updateRefused(idx, 'motif', e.target.value)}
+                                      placeholder="Ex: Refus d'invitation du maître d'ouvrage"
+                                      className="w-full px-3 py-2 rounded-lg border border-slate-200 text-xs font-semibold text-slate-800 outline-none focus:border-red-500 bg-white"
+                                    />
+                                    <datalist id={`standard-motifs-list-${idx}`}>
+                                      {standardMotifs.map((m, i) => (
+                                        <option key={i} value={m} />
+                                      ))}
+                                    </datalist>
+                                  </div>
+
+                                  <button
+                                    type="button"
+                                    onClick={() => removeRefused(idx)}
+                                    className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-all shrink-0 self-end mb-1"
+                                    title="Annuler l'écartement de cette société"
+                                  >
+                                    <Trash2 size={15} />
+                                  </button>
+                                </div>
                               </div>
-                            </div>
-                          ))}
+                            );
+                          })}
 
                           {currentList.length === 0 && (
                             <div className="p-4 border border-dashed border-slate-300 rounded-xl text-center text-xs text-slate-500 bg-white">
@@ -2651,18 +2680,6 @@ const BonCommandePlateforme = () => {
                           ))}
                         </select>
 
-                        <div>
-                          <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
-                            Motif du choix / d'attribution (Motif retenu)
-                          </label>
-                          <input
-                            type="text"
-                            value={motifAttr}
-                            onChange={(e) => handleDocumentFieldChange(selectedDocument.id, 'motif_attribution', e.target.value)}
-                            placeholder="Ex: Offre la moins disante conforme aux spécifications du maître d'ouvrage"
-                            className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-semibold text-slate-800 outline-none focus:border-blue-500"
-                          />
-                        </div>
                       </div>
                     );
                   }
@@ -2685,7 +2702,7 @@ const BonCommandePlateforme = () => {
                             <Users size={16} className="text-blue-700" />
                             {field.label}
                           </label>
-                         
+
                         </div>
 
                         {!isPV && (
@@ -2802,11 +2819,10 @@ const BonCommandePlateforme = () => {
                       <span className="block text-xs font-bold text-slate-700 mb-1.5 flex items-center justify-between">
                         <span>{field.label}</span>
                         {maxLen && (
-                          <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full font-bold transition-all ${
-                            currentLen === maxLen
-                              ? 'bg-amber-100 text-amber-800 border border-amber-300 font-extrabold'
-                              : 'text-slate-400 bg-slate-100'
-                          }`}>
+                          <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full font-bold transition-all ${currentLen === maxLen
+                            ? 'bg-amber-100 text-amber-800 border border-amber-300 font-extrabold'
+                            : 'text-slate-400 bg-slate-100'
+                            }`}>
                             {currentLen} / {maxLen} chiffres max
                           </span>
                         )}
@@ -2874,19 +2890,6 @@ const BonCommandePlateforme = () => {
                     {downloading === selectedDocument.id ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} />}
                     Télécharger le PDF
                   </button>
-
-                  {isLastDocumentOfPhase(selectedDocument.id, activePhase) && (
-                    <button
-                      type="button"
-                      disabled={!savedConsultation || downloading === 'archive'}
-                      onClick={() => downloadArchive(activePhase)}
-                      className="px-6 py-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold inline-flex items-center gap-2 disabled:opacity-50 transition-all shadow-md hover:shadow-lg"
-                      title="Télécharger l'archive ZIP complète de cette phase"
-                    >
-                      {downloading === 'archive' ? <Loader2 size={18} className="animate-spin" /> : <FileArchive size={18} />}
-                      Télécharger l'Archive ZIP (Phase {phases.find((p) => p.id === activePhase)?.label})
-                    </button>
-                  )}
                 </div>
 
                 {/* Bouton Suivant → document suivant dans la phase */}
