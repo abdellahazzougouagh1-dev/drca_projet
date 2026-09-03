@@ -7,9 +7,9 @@
         @page { margin: 115px 40px 70px 40px; }
         body {
             font-family: 'Times New Roman', Times, serif;
-            font-size: 12.5px;
+            font-size: 14px;
             color: #000;
-            line-height: 1.45;
+            line-height: 1.5;
             margin: 0;
         }
         table { width: 100%; border-collapse: collapse; }
@@ -110,8 +110,30 @@
         </tbody>
     </table>
 
+    @php
+        $rawComm = data_get($doc, 'commission', data_get($doc, 'membres_commission', []));
+        $presM = null;
+        if (is_array($rawComm)) {
+            foreach ($rawComm as $m) {
+                $q = mb_strtolower(data_get($m, 'qualite', ''));
+                if (str_contains($q, 'président') || str_contains($q, 'president')) {
+                    $presM = $m;
+                    break;
+                }
+            }
+            if (!$presM && !empty($rawComm)) {
+                $presM = reset($rawComm);
+            }
+        }
+        $pQualite = mb_strtolower(data_get($presM, 'qualite', ''));
+        $pNom = mb_strtolower(data_get($presM, 'nom', ''));
+        $isPresFem = str_contains($pQualite, 'présidente') || str_contains($pQualite, 'presidente') || str_contains($pNom, 'mme') || str_contains($pNom, 'mlle');
+        $lePresTxt = $isPresFem ? 'la présidente' : 'le président';
+        $LePresTxt = $isPresFem ? 'La présidente' : 'Le président';
+    @endphp
+
     <p style="text-align: justify; margin-bottom: 10px; line-height: 1.4;">
-        À l’ouverture de la séance, la présidente rappelle aux membres de la commission l’objet de la réunion et fait une lecture du contenu du Bon de Commande susmentionné, notamment les désignations précisant les prestations demandées. Ensuite, la présidente demande aux membres de la commission de formuler leurs observations sur la conformité et la qualité des prestations livrées.
+        À l’ouverture de la séance, {{ $lePresTxt }} rappelle aux membres de la commission l’objet de la réunion et fait une lecture du contenu du Bon de Commande susmentionné, notamment les désignations précisant les prestations demandées. Ensuite, {{ $lePresTxt }} demande aux membres de la commission de formuler leurs observations sur la conformité et la qualité des prestations livrées.
     </p>
 
     <p style="text-align: justify; margin-bottom: 12px; line-height: 1.4;">

@@ -236,6 +236,10 @@ const NouvelleConsultation = () => {
           </div>
         )}
 
+        <div className="mb-6 flex items-center gap-1.5 text-xs font-semibold text-slate-600 dark:text-slate-300 bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-700 px-4 py-2.5 rounded-xl w-fit shadow-sm">
+          <span className="text-red-600 font-extrabold text-sm">*</span> : Les champs obligatoires
+        </div>
+
         <form onSubmit={handleSubmit} className="space-y-8" noValidate>
 
           {/* BLOC 1 : Informations Générales */}
@@ -249,99 +253,72 @@ const NouvelleConsultation = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Numéro de consultation *</label>
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                  Numéro de consultation <span className="text-red-600 font-bold ml-0.5">*</span>
+                </label>
                 <input type="text" name="numero_consultation" value={formData.numero_consultation} onChange={handleChange} placeholder="Ex: 04/2026/DRCA-RSK" className={getInputClass('numero_consultation')} />
-                {fieldErrors.numero_consultation && (
-                  <span className="block text-xs font-semibold text-red-600 mt-1 flex items-center gap-1">
-                    <AlertCircle size={12} /> {fieldErrors.numero_consultation}
-                  </span>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Numéro de  la décision  de  la commission d'ouverture *</label>
-                <input type="text" name="numero_decision" value={formData.numero_decision} onChange={handleChange} placeholder="Ex: 06/2026/DRCA-RSK" className={getInputClass('numero_decision')} />
-                {fieldErrors.numero_decision && (
-                  <span className="block text-xs font-semibold text-red-600 mt-1 flex items-center gap-1">
-                    <AlertCircle size={12} /> {fieldErrors.numero_decision}
-                  </span>
-                )}
               </div>
 
               <div>
                 <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                  Numéro de bon de commande {formData.mode_engagement === 'BC' ? '*' : '(Optionnel)'}
+                  Numéro de la décision de la commission d'ouverture <span className="text-red-600 font-bold ml-0.5">*</span>
+                </label>
+                <input type="text" name="numero_decision" value={formData.numero_decision} onChange={handleChange} placeholder="Ex: 06/2026/DRCA-RSK" className={getInputClass('numero_decision')} />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                  Numéro de bon de commande {formData.mode_engagement === 'BC' ? <span className="text-red-600 font-bold ml-0.5">*</span> : '(Optionnel)'}
                 </label>
                 <input type="text" name="numero_bc" value={formData.numero_bc} onChange={handleChange} placeholder="Ex: BC CONS-2026-0001" className={getInputClass('numero_bc')} />
-                {fieldErrors.numero_bc && (
-                  <span className="block text-xs font-semibold text-red-600 mt-1 flex items-center gap-1">
-                    <AlertCircle size={12} /> {fieldErrors.numero_bc}
-                  </span>
-                )}
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Date limite de réception des devis *</label>
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                  Date limite de réception des devis <span className="text-red-600 font-bold ml-0.5">*</span>
+                </label>
                 <input type="date" name="date_limite_devis" min="2026-01-01" max="2099-12-31" value={formData.date_limite_devis} onChange={handleChange} className={getInputClass('date_limite_devis')} />
-                {fieldErrors.date_limite_devis && (
-                  <span className="block text-xs font-semibold text-red-600 mt-1 flex items-center gap-1">
-                    <AlertCircle size={12} /> {fieldErrors.date_limite_devis}
-                  </span>
-                )}
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Heure limite *</label>
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                  Heure limite <span className="text-red-600 font-bold ml-0.5">*</span>
+                </label>
                 <input type="text" name="heure_limite_devis" value={formData.heure_limite_devis} onChange={handleChange} placeholder="Ex: 10:00" className={getInputClass('heure_limite_devis')} />
-                {fieldErrors.heure_limite_devis && (
-                  <span className="block text-xs font-semibold text-red-600 mt-1 flex items-center gap-1">
-                    <AlertCircle size={12} /> {fieldErrors.heure_limite_devis}
-                  </span>
-                )}
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Lieu d'exécution *</label>
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                  Lieu d'exécution <span className="text-red-600 font-bold ml-0.5">*</span>
+                </label>
                 <input type="text" name="lieu_execution" value={formData.lieu_execution} onChange={handleChange} placeholder="Ex: REGION DE RABAT SALE KENITRA" className={getInputClass('lieu_execution')} />
-                {fieldErrors.lieu_execution && (
-                  <span className="block text-xs font-semibold text-red-600 mt-1 flex items-center gap-1">
-                    <AlertCircle size={12} /> {fieldErrors.lieu_execution}
-                  </span>
-                )}
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Année *</label>
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                  Année <span className="text-red-600 font-bold ml-0.5">*</span>
+                </label>
                 <input type="number" name="annee" min="2026" max="2099" onInput={(e) => { if (e.target.value.length > 4) e.target.value = e.target.value.slice(0, 4); }} value={formData.annee} onChange={handleChange} className={getInputClass('annee')} />
-                {fieldErrors.annee && (
-                  <span className="block text-xs font-semibold text-red-600 mt-1 flex items-center gap-1">
-                    <AlertCircle size={12} /> {fieldErrors.annee}
-                  </span>
-                )}
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Date de consultation *</label>
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                  Date de consultation <span className="text-red-600 font-bold ml-0.5">*</span>
+                </label>
                 <input type="date" name="date_consultation" min="2026-01-01" max="2099-12-31" value={formData.date_consultation} onChange={handleChange} className={getInputClass('date_consultation')} />
-                {fieldErrors.date_consultation && (
-                  <span className="block text-xs font-semibold text-red-600 mt-1 flex items-center gap-1">
-                    <AlertCircle size={12} /> {fieldErrors.date_consultation}
-                  </span>
-                )}
               </div>
 
               <div className="md:col-span-2">
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Objet de la consultation *</label>
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                  Objet de la consultation <span className="text-red-600 font-bold ml-0.5">*</span>
+                </label>
                 <input type="text" name="objet_consultation" value={formData.objet_consultation} onChange={handleChange} placeholder="Ex: Achat de matériel informatique..." className={getInputClass('objet_consultation')} />
-                {fieldErrors.objet_consultation && (
-                  <span className="block text-xs font-semibold text-red-600 mt-1 flex items-center gap-1">
-                    <AlertCircle size={12} /> {fieldErrors.objet_consultation}
-                  </span>
-                )}
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Mode d'engagement *</label>
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                  Mode d'engagement <span className="text-red-600 font-bold ml-0.5">*</span>
+                </label>
                 <select name="mode_engagement" value={formData.mode_engagement} onChange={handleChange} className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all dark:text-white font-semibold">
                   <option value="BC">Bon de commande</option>
                   <option value="AO">Appel d'offres</option>
@@ -349,7 +326,9 @@ const NouvelleConsultation = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Catégorie *</label>
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                  Catégorie <span className="text-red-600 font-bold ml-0.5">*</span>
+                </label>
                 <select name="categorie" value={formData.categorie} onChange={handleChange} className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all dark:text-white">
                   <option value="Travaux">Travaux</option>
                   <option value="Fournitures">Fournitures</option>
@@ -358,7 +337,9 @@ const NouvelleConsultation = () => {
               </div>
 
               <div className="md:col-span-2">
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Intitulé (Nature de la prestation) *</label>
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                  Intitulé (Nature de la prestation) <span className="text-red-600 font-bold ml-0.5">*</span>
+                </label>
                 <input type="text" name="intitule" value={formData.intitule} onChange={(e) => {
                   const val = e.target.value;
                   setFormData((prev) => ({ ...prev, intitule: val, type_prestation: val }));
@@ -366,15 +347,12 @@ const NouvelleConsultation = () => {
                     setFieldErrors((prev) => ({ ...prev, intitule: null }));
                   }
                 }} placeholder="Ex: Prestation de même nature / Achat de matériel technique..." className={getInputClass('intitule')} />
-                {fieldErrors.intitule && (
-                  <span className="block text-xs font-semibold text-red-600 mt-1 flex items-center gap-1">
-                    <AlertCircle size={12} /> {fieldErrors.intitule}
-                  </span>
-                )}
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Type de budget *</label>
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                  Type de budget <span className="text-red-600 font-bold ml-0.5">*</span>
+                </label>
                 <select name="type_budget" value={formData.type_budget} onChange={handleChange} className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all dark:text-white">
                   <option value="Investissement">Investissement</option>
                   <option value="Fonctionnement">Fonctionnement</option>
@@ -382,13 +360,10 @@ const NouvelleConsultation = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Délai d'exécution (en jours) *</label>
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                  Délai d'exécution (en jours) <span className="text-red-600 font-bold ml-0.5">*</span>
+                </label>
                 <input type="number" min="1" name="delai_execution" value={formData.delai_execution} onChange={handleChange} className={getInputClass('delai_execution')} />
-                {fieldErrors.delai_execution && (
-                  <span className="block text-xs font-semibold text-red-600 mt-1 flex items-center gap-1">
-                    <AlertCircle size={12} /> {fieldErrors.delai_execution}
-                  </span>
-                )}
               </div>
             </div>
           </section>
@@ -404,33 +379,24 @@ const NouvelleConsultation = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Article (ART) *</label>
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                  Article (ART) <span className="text-red-600 font-bold ml-0.5">*</span>
+                </label>
                 <input type="text" name="art" value={formData.art} onChange={handleChange} placeholder="Ex: 10" className={getInputClass('art')} />
-                {fieldErrors.art && (
-                  <span className="block text-xs font-semibold text-red-600 mt-1 flex items-center gap-1">
-                    <AlertCircle size={12} /> {fieldErrors.art}
-                  </span>
-                )}
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Paragraphe (PAR) *</label>
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                  Paragraphe (PAR) <span className="text-red-600 font-bold ml-0.5">*</span>
+                </label>
                 <input type="text" name="par" value={formData.par} onChange={handleChange} placeholder="Ex: 20" className={getInputClass('par')} />
-                {fieldErrors.par && (
-                  <span className="block text-xs font-semibold text-red-600 mt-1 flex items-center gap-1">
-                    <AlertCircle size={12} /> {fieldErrors.par}
-                  </span>
-                )}
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Ligne (LIG) *</label>
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                  Ligne (LIG) <span className="text-red-600 font-bold ml-0.5">*</span>
+                </label>
                 <input type="text" name="lig" value={formData.lig} onChange={handleChange} placeholder="Ex: 30" className={getInputClass('lig')} />
-                {fieldErrors.lig && (
-                  <span className="block text-xs font-semibold text-red-600 mt-1 flex items-center gap-1">
-                    <AlertCircle size={12} /> {fieldErrors.lig}
-                  </span>
-                )}
               </div>
 
               <div>
@@ -439,13 +405,10 @@ const NouvelleConsultation = () => {
               </div>
 
               <div className="md:col-span-2">
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Exercice budgétaire *</label>
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                  Exercice budgétaire <span className="text-red-600 font-bold ml-0.5">*</span>
+                </label>
                 <input type="number" name="exercice_budgetaire" min="2026" max="2099" onInput={(e) => { if (e.target.value.length > 4) e.target.value = e.target.value.slice(0, 4); }} value={formData.exercice_budgetaire} onChange={handleChange} className={getInputClass('exercice_budgetaire')} />
-                {fieldErrors.exercice_budgetaire && (
-                  <span className="block text-xs font-semibold text-red-600 mt-1 flex items-center gap-1">
-                    <AlertCircle size={12} /> {fieldErrors.exercice_budgetaire}
-                  </span>
-                )}
               </div>
             </div>
           </section>

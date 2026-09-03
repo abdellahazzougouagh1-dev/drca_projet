@@ -7,9 +7,9 @@
         @page { margin: 115px 40px 70px 40px; }
         body {
             font-family: 'Times New Roman', Times, serif;
-            font-size: 12px;
+            font-size: 14px;
             color: #000;
-            line-height: 1.4;
+            line-height: 1.5;
             margin: 0;
         }
         .header-logo { height: 45px; width: auto; }

@@ -117,20 +117,20 @@ const documentsByPhase = {
 
 const documentFieldGroups = {
   avis_achat: [
-    { name: 'numero_consultation', label: "Numéro d'avis d'achat / Consultation", placeholder: '04/2024/DRCA-RSK', required: true },
-    { name: 'numero_bc', label: 'Numéro de bon de commande', placeholder: '04/2024/DRCA-RSK', required: true },
-    { name: 'objet', label: 'Objet de la prestation', placeholder: 'Achat de matériel de valorisation des produits agricoles', required: true },
-    { name: 'consistance_lignes', label: 'Bordereaux des prix', type: 'consistance_table', required: true },
-    { name: 'lieu_execution', label: "Lieu d'exécution", placeholder: 'REGION DE RABAT SALE KENITRA', required: true },
-    { name: 'delai_livraison', label: 'Délai de livraison (en jours)', placeholder: '90', type: 'number', required: true },
-    { name: 'date_limite', label: 'Date limite de réception des devis', type: 'date', required: true },
-    { name: 'heure_limite', label: 'Heure limite de réception des devis', type: 'time', required: true },
+    { name: 'numero_consultation', label: "Numéro d'avis d'achat / Consultation", placeholder: '04/2024/DRCA-RSK', required: true, fromDb: true },
+    { name: 'numero_bc', label: 'Numéro de bon de commande', placeholder: '04/2024/DRCA-RSK', required: true, fromDb: true },
+    { name: 'objet', label: 'Objet de la prestation', placeholder: 'Achat de matériel de valorisation des produits agricoles', required: true, fromDb: true },
+    { name: 'consistance_lignes', label: 'Bordereaux des prix', type: 'consistance_table', required: true, fromDb: true },
+    { name: 'lieu_execution', label: "Lieu d'exécution", placeholder: 'REGION DE RABAT SALE KENITRA', required: true, fromDb: true },
+    { name: 'delai_livraison', label: 'Délai de livraison (en jours)', placeholder: '90', type: 'number', required: true, fromDb: true },
+    { name: 'date_limite', label: 'Date limite de réception des devis', type: 'date', required: true, fromDb: true },
+    { name: 'heure_limite', label: 'Heure limite de réception des devis', type: 'time', required: true, fromDb: true },
     { name: 'date_document', label: 'Date avis_achat', type: 'date', required: true },
   ],
   decision_commission_ouverture: [
-    { name: 'numero_consultation', label: 'Numéro consultation', placeholder: '04/2024/DRCA-RSK', required: true },
-    { name: 'numero_decision', label: "Numéro de la décision de la commission d'ouverture", placeholder: '06/2024/DRCA-RSK', required: true },
-    { name: 'objet', label: 'Objet de la consultation', placeholder: 'Prestations topographiques...', required: true },
+    { name: 'numero_consultation', label: 'Numéro consultation', placeholder: '04/2024/DRCA-RSK', required: true, fromDb: true },
+    { name: 'numero_decision', label: "Numéro de la décision de la commission d'ouverture", placeholder: '06/2024/DRCA-RSK', required: true, fromDb: true },
+    { name: 'objet', label: 'Objet de la consultation', placeholder: 'Prestations topographiques...', required: true, fromDb: true },
     { name: 'membres_commission', label: 'Composition de la commission (Président & Membres)', type: 'commission_selector', required: true },
     { name: 'date_reunion', label: "Date séance d'ouverture", type: 'date', required: true },
     { name: 'heure_reunion', label: 'Heure de séance', type: 'time', required: true },
@@ -138,10 +138,10 @@ const documentFieldGroups = {
     { name: 'date_document', label: 'Date de la décision', type: 'date', required: true },
   ],
   pv_ouverture_attribution: [
-    { name: 'numero_consultation', label: "Numéro d'avis d'achat", placeholder: '04/2024/DRCA-RSK', required: true },
+    { name: 'numero_consultation', label: "Numéro d'avis d'achat", placeholder: '04/2024/DRCA-RSK', required: true, fromDb: true },
     { name: 'date_reunion', label: "Date d'ouverture des devis", type: 'date', required: true },
     { name: 'heure_reunion', label: "Heure d'ouverture", type: 'time', required: true },
-    { name: 'objet', label: 'Objet de la prestation', placeholder: 'Prestations topographiques...', required: true },
+    { name: 'objet', label: 'Objet de la prestation', placeholder: 'Prestations topographiques...', required: true, fromDb: true },
     { name: 'concurrents', label: 'Synthése des devis reçus', type: 'concurrents_table', required: true },
     { name: 'societes_refusees', label: "Sociétés écartées", type: 'societes_refusees_input', required: true },
     { name: 'attributaire', label: 'Société retenue ', type: 'attributaire_selector', required: true },
@@ -151,20 +151,20 @@ const documentFieldGroups = {
     { name: 'membres_commission', label: 'Membres de la commission', type: 'commission_selector', required: true },
   ],
   bon_commande: [
-    { name: 'numero_bc', label: 'Numéro bon de commande', placeholder: '05/INV/2024/DRCA-RSK', required: true },
-    { name: 'objet', label: 'Objet de la prestation', placeholder: 'Achat de matériel de démonstration', required: true },
-    { name: 'titulaire_nom', label: 'Titulaire / Raison sociale', placeholder: 'COMPTOIR COMMERCIAL DE DISTRIBUTION ET D\'EXPLOITATION', required: true },
-    { name: 'art', label: 'Article Imputation (ART)', placeholder: '415', required: true },
-    { name: 'par', label: 'Paragraphe Imputation (PAR)', placeholder: '30', required: true },
-    { name: 'lig', label: 'Ligne Imputation (LIG)', placeholder: '60', required: true },
-    { name: 'intitule', label: 'Intitulé / Nature de la prestation', placeholder: 'Achat de matériel technique, de logiciels et de matériel informatique', required: true },
-    { name: 'adresse_societe', label: 'Adresse / Domicile de la société', placeholder: 'Ex: N° 12 Avenue Hassan II, Kénitra', required: true },
-    { name: 'patente', label: 'Patente', placeholder: 'Ex: 34255474', required: true },
-    { name: 'cnss', label: 'CNSS', placeholder: 'Ex: 5614814', required: true },
-    { name: 'ice', label: 'ICE', placeholder: 'Ex: 001964167000010 (15 chiffres)', required: true },
-    { name: 'if', label: 'Identifiant fiscal (IF)', placeholder: 'Ex: 4025112 (5 ou 8 chiffres)', required: true },
-    { name: 'rib', label: 'RIB / Compte bancaire', placeholder: 'Ex: 022010000342002749835925 (24 chiffres)', required: true },
-    { name: 'consistance_lignes', label: 'Borderaux des Prix ', type: 'consistance_table', required: true },
+    { name: 'numero_bc', label: 'Numéro bon de commande', placeholder: '05/INV/2024/DRCA-RSK', required: true, fromDb: true },
+    { name: 'objet', label: 'Objet de la prestation', placeholder: 'Achat de matériel de démonstration', required: true, fromDb: true },
+    { name: 'titulaire_nom', label: 'Titulaire / Raison sociale', placeholder: 'COMPTOIR COMMERCIAL DE DISTRIBUTION ET D\'EXPLOITATION', required: true, fromDb: true },
+    { name: 'art', label: 'Article Imputation (ART)', placeholder: '415', required: true, fromDb: true },
+    { name: 'par', label: 'Paragraphe Imputation (PAR)', placeholder: '30', required: true, fromDb: true },
+    { name: 'lig', label: 'Ligne Imputation (LIG)', placeholder: '60', required: true, fromDb: true },
+    { name: 'intitule', label: 'Intitulé / Nature de la prestation', placeholder: 'Achat de matériel technique, de logiciels et de matériel informatique', required: true, fromDb: true },
+    { name: 'adresse_societe', label: 'Adresse / Domicile de la société', placeholder: 'Ex: N° 12 Avenue Hassan II, Kénitra', required: true, fromDb: true },
+    { name: 'patente', label: 'Patente', placeholder: 'Ex: 34255474', required: true, fromDb: true },
+    { name: 'cnss', label: 'CNSS', placeholder: 'Ex: 5614814', required: true, fromDb: true },
+    { name: 'ice', label: 'ICE', placeholder: 'Ex: 001964167000010 (15 chiffres)', required: true, fromDb: true },
+    { name: 'if', label: 'Identifiant fiscal (IF)', placeholder: 'Ex: 4025112 (5 ou 8 chiffres)', required: true, fromDb: true },
+    { name: 'rib', label: 'RIB / Compte bancaire', placeholder: 'Ex: 022010000342002749835925 (24 chiffres)', required: true, fromDb: true },
+    { name: 'consistance_lignes', label: 'Borderaux des Prix ', type: 'consistance_table', required: true, fromDb: true },
     { name: 'date_document', label: 'Date Bon de commande', type: 'date', required: true },
   ],
 
@@ -183,53 +183,53 @@ const documentFieldGroups = {
     { name: 'motif_ajournement', label: "Motif de l'ajournement (si ajournement)", placeholder: 'Planification et disponibilité des agriculteurs', required: true, condition: (form) => form?.nature_os === "Ajournement de l'exécution" },
     { name: 'numero_lettre', label: "Numéro d'ordre de service / lettre", placeholder: '11/2024/DRCA-RSK/OS', required: true },
     { name: 'date_document', label: 'Date du document', type: 'date', required: true },
-    { name: 'numero_consultation', label: ' Consultation N°', placeholder: '04/2024/DRCA-RSK', required: true },
-    { name: 'numero_bc', label: 'Bon de commande N°', placeholder: '04/2024/DRCA-RSK', required: true },
-    { name: 'societe', label: 'Nom de la société ', placeholder: 'DESTIN FLOTTE', required: true },
-    { name: 'adresse_societe', label: 'Adresse de Société', placeholder: 'Ex: N° 12 Avenue Hassan II, Kénitra', required: true },
-    { name: 'ville_societe', label: 'Ville', placeholder: 'Rabat', required: true },
-    { name: 'objet', label: 'Objet de la prestation', placeholder: 'Prestation de transport des agriculteurs...', required: true },
+    { name: 'numero_consultation', label: ' Consultation N°', placeholder: '04/2024/DRCA-RSK', required: true, fromDb: true },
+    { name: 'numero_bc', label: 'Bon de commande N°', placeholder: '04/2024/DRCA-RSK', required: true, fromDb: true },
+    { name: 'societe', label: 'Nom de la société ', placeholder: 'DESTIN FLOTTE', required: true, fromDb: true },
+    { name: 'adresse_societe', label: 'Adresse de Société', placeholder: 'Ex: N° 12 Avenue Hassan II, Kénitra', required: true, fromDb: true },
+    { name: 'ville_societe', label: 'Ville', placeholder: 'Rabat', required: true, fromDb: true },
+    { name: 'objet', label: 'Objet de la prestation', placeholder: 'Prestation de transport des agriculteurs...', required: true, fromDb: true },
   ],
   accuse_reception: [
     { name: 'nature_os', label: "Nature de l'ordre de service", placeholder: "Notification de l'approbation", required: true },
     { name: 'numero_lettre', label: "Numéro d'ordre de service ", placeholder: '11/2024/DRCA-RSK/OS', required: true },
     { name: 'date_document', label: 'Date du document ', type: 'date', required: true },
-    { name: 'numero_consultation', label: 'Convention / Consultation N°', placeholder: '04/2024/DRCA-RSK', required: true },
-    { name: 'numero_bc', label: 'Bon de commande N°', placeholder: '04/2024/DRCA-RSK', required: true },
-    { name: 'societe', label: 'Nom de la société / Prestataire', placeholder: 'DESTIN FLOTTE', required: true },
-    { name: 'adresse_societe', label: 'Adresse / Domicile de la société', placeholder: 'Ex: N° 12 Avenue Hassan II, Kénitra', required: true },
-    { name: 'ville_societe', label: 'Ville', placeholder: 'Rabat', required: true },
-    { name: 'objet', label: 'Objet de la prestation', placeholder: 'Prestation de transport des agriculteurs...', required: true },
+    { name: 'numero_consultation', label: 'Convention / Consultation N°', placeholder: '04/2024/DRCA-RSK', required: true, fromDb: true },
+    { name: 'numero_bc', label: 'Bon de commande N°', placeholder: '04/2024/DRCA-RSK', required: true, fromDb: true },
+    { name: 'societe', label: 'Nom de la société / Prestataire', placeholder: 'DESTIN FLOTTE', required: true, fromDb: true },
+    { name: 'adresse_societe', label: 'Adresse / Domicile de la société', placeholder: 'Ex: N° 12 Avenue Hassan II, Kénitra', required: true, fromDb: true },
+    { name: 'ville_societe', label: 'Ville', placeholder: 'Rabat', required: true, fromDb: true },
+    { name: 'objet', label: 'Objet de la prestation', placeholder: 'Prestation de transport des agriculteurs...', required: true, fromDb: true },
   ],
   decision_commission_reception: [
     { name: 'numero_decision', label: 'Numéro de décision', placeholder: 'Ex: 05/DR/2024', required: true },
     { name: 'type_reception', label: 'Type de réception', type: 'select', options: ['définitive', 'provisoire', 'partielle'], required: true },
     { name: 'date_reception_definitive', label: 'Date de la réception définitive', type: 'date', required: true, condition: (form) => !form?.type_reception || form?.type_reception?.toLowerCase() === 'définitive' },
     { name: 'date_document', label: 'Date de la décision', type: 'date', required: true },
-    { name: 'numero_bc', label: 'Numéro Bon de commande', placeholder: '09/INV/2023/DRCA-RSK', required: true },
-    { name: 'objet', label: 'Objet de la prestation', placeholder: 'Achat de matériel...', required: true },
+    { name: 'numero_bc', label: 'Numéro Bon de commande', placeholder: '09/INV/2023/DRCA-RSK', required: true, fromDb: true },
+    { name: 'objet', label: 'Objet de la prestation', placeholder: 'Achat de matériel...', required: true, fromDb: true },
     { name: 'membres_commission', label: 'Membres de la commission de réception', type: 'commission_selector', required: true },
     { name: 'date_reunion', label: 'Date de la séance de réception', type: 'date', required: true },
     { name: 'heure_reunion', label: 'Heure de la séance', type: 'time', required: true },
   ],
   pv_reception: [
-    { name: 'numero_bc', label: 'Numéro bon de commande', placeholder: '03/INV/2024/DRCA-RSK', required: true },
-    { name: 'numero_decision', label: 'Numéro de décision de réception', placeholder: 'Ex: 05/DR/2024', required: true },
-    { name: 'type_reception', label: 'Type de réception', type: 'select', options: ['définitive', 'provisoire', 'partielle'], required: true },
+    { name: 'numero_bc', label: 'Numéro bon de commande', placeholder: '03/INV/2024/DRCA-RSK', required: true, fromDb: true },
+    { name: 'numero_decision', label: 'Numéro de décision de réception', placeholder: 'Ex: 05/DR/2024', required: true, fromDb: true },
+    { name: 'type_reception', label: 'Type de réception', type: 'select', options: ['définitive', 'provisoire', 'partielle'], required: true, fromDb: true },
     { name: 'date_reception_definitive', label: 'Date de la réception définitive', type: 'date', required: true, condition: (form) => !form?.type_reception || form?.type_reception?.toLowerCase() === 'définitive' },
     { name: 'periode_du', label: 'Période de réception (provisoire/partielle) - Du', type: 'date', required: true, condition: (form) => ['provisoire', 'partielle'].includes(form?.type_reception?.toLowerCase()) },
     { name: 'periode_au', label: 'Période de réception (provisoire/partielle) - Au', type: 'date', required: true, condition: (form) => ['provisoire', 'partielle'].includes(form?.type_reception?.toLowerCase()) },
-    { name: 'date_decision', label: 'Date de la décision de reception', type: 'date', required: true },
-    { name: 'objet', label: 'Objet de la prestation', placeholder: 'Prestations...', required: true },
-    { name: 'societe', label: 'Nom de titulaire', placeholder: 'BUREAU ALAOUI TOPO', required: true },
-    { name: 'adresse_societe', label: 'Adresse de Titulaire', placeholder: 'APP N 6 Immeuble 01', required: true },
-    { name: 'ville_societe', label: 'Ville', placeholder: 'KHENIFRA', required: true },
-    { name: 'membres_commission', label: 'Membres de la commission de réception', type: 'commission_selector', required: true },
-    { name: 'date_reunion', label: 'Date de séance de réception', type: 'date', required: true },
+    { name: 'date_decision', label: 'Date de la décision de reception', type: 'date', required: true, fromDb: true },
+    { name: 'objet', label: 'Objet de la prestation', placeholder: 'Prestations...', required: true, fromDb: true },
+    { name: 'societe', label: 'Nom de titulaire', placeholder: 'BUREAU ALAOUI TOPO', required: true, fromDb: true },
+    { name: 'adresse_societe', label: 'Adresse de Titulaire', placeholder: 'APP N 6 Immeuble 01', required: true, fromDb: true },
+    { name: 'ville_societe', label: 'Ville', placeholder: 'KHENIFRA', required: true, fromDb: true },
+    { name: 'membres_commission', label: 'Membres de la commission de réception', type: 'commission_selector', required: true, fromDb: true },
+    { name: 'date_reunion', label: 'Date de séance de réception', type: 'date', required: true, fromDb: true },
     { name: 'heure_reunion', label: 'Heure de séance', type: 'time', required: true },
     { name: 'heure_fin', label: 'Heure de fin de séance', type: 'time', required: true },
     { name: 'date_document', label: 'date de pv de reception', type: 'date', required: true },
-    { name: 'prestations_receptionnees', label: 'Détails des prestations (Réception Provisoire / Partielle)', type: 'prestations_partielles_table', required: true, condition: (form) => ['provisoire', 'partielle'].includes(form?.type_reception?.toLowerCase()) },
+    { name: 'prestations_receptionnees', label: 'Détails des prestations (Réception Provisoire / Partielle)', type: 'prestations_partielles_table', required: true, condition: (form) => ['provisoire', 'partielle'].includes(form?.type_reception?.toLowerCase()), fromDb: true },
   ],
 };
 
@@ -1876,6 +1876,10 @@ const BonCommandePlateforme = () => {
                 </div>
               </div>
 
+              <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-600 mb-5 bg-slate-50 border border-slate-200/60 px-3.5 py-2 rounded-xl w-fit">
+                <span className="text-red-600 font-extrabold text-sm">*</span> : Les champs obligatoires
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
                 {selectedFields.map((field) => {
                   if (field.condition && !field.condition(documentForms[selectedDocument.id])) {
@@ -1918,7 +1922,7 @@ const BonCommandePlateforme = () => {
                         <div className="flex items-center justify-between mb-3">
                           <div>
                             <label className="block text-xs font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-2">
-                              📦 {field.label}
+                              📦 {field.label} {field.required && !field.fromDb && <span className="text-red-600 font-bold ml-0.5">*</span>}
                             </label>
                             <p className="text-xs text-slate-500 mt-0.5">
                               Cochez les désignations réceptionnées et ajustez la quantité réceptionnée (≤ quantité commandée).
@@ -2056,7 +2060,7 @@ const BonCommandePlateforme = () => {
                       <div key={`${selectedDocument.id}-${field.name}`} className="col-span-full">
                         <div className="flex items-center justify-between mb-3">
                           <span className="text-xs font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-2">
-                            📋 {field.label}
+                            📋 {field.label} {field.required && !field.fromDb && <span className="text-red-600 font-bold ml-0.5">*</span>}
                           </span>
                           <button
                             type="button"
@@ -2136,12 +2140,6 @@ const BonCommandePlateforme = () => {
                             </div>
                           ))}
                         </div>
-
-                        {hasError && (
-                          <span className="block text-xs font-semibold text-red-600 mt-2 flex items-center gap-1">
-                            <AlertCircle size={14} /> {formErrors[selectedDocument.id][field.name]}
-                          </span>
-                        )}
                       </div>
                     );
                   }
@@ -2399,7 +2397,7 @@ const BonCommandePlateforme = () => {
                       <div key={`${selectedDocument.id}-${field.name}`} className="col-span-full bg-slate-50 border border-slate-200 rounded-2xl p-5 shadow-sm">
                         <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
                           <label className="block text-xs font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-2">
-                            🏢 {field.label}
+                            🏢 {field.label} {field.required && !field.fromDb && <span className="text-red-600 font-bold ml-0.5">*</span>}
                           </label>
 
                           <div className="flex flex-wrap items-center gap-2">
@@ -2565,7 +2563,7 @@ const BonCommandePlateforme = () => {
                       <div key={`${selectedDocument.id}-${field.name}`} className="col-span-full bg-slate-50 border border-slate-200 rounded-2xl p-5 shadow-sm">
                         <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
                           <label className="block text-xs font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-2">
-                            ❌ {field.label}
+                            ❌ {field.label} {field.required && !field.fromDb && <span className="text-red-600 font-bold ml-0.5">*</span>}
                           </label>
 
                           <div className="flex flex-wrap items-center gap-2">
@@ -2700,7 +2698,7 @@ const BonCommandePlateforme = () => {
                       <div key={`${selectedDocument.id}-${field.name}`} className="col-span-full bg-slate-50 border border-slate-200 rounded-2xl p-5 shadow-sm space-y-3">
                         <div className="flex items-center justify-between">
                           <label className="block text-xs font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-2">
-                            🏆 {field.label}
+                            🏆 {field.label} {field.required && !field.fromDb && <span className="text-red-600 font-bold ml-0.5">*</span>}
                           </label>
                           {selectedAttr && (
                             <span className="px-2.5 py-1 bg-emerald-100 text-emerald-800 border border-emerald-300 rounded-full text-[11px] font-extrabold">
@@ -2755,7 +2753,7 @@ const BonCommandePlateforme = () => {
                         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-3">
                           <label className="block text-xs font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-2">
                             <Users size={16} className="text-blue-700" />
-                            {field.label}
+                            {field.label} {field.required && !field.fromDb && <span className="text-red-600 font-bold ml-0.5">*</span>}
                           </label>
 
                         </div>
@@ -2847,12 +2845,6 @@ const BonCommandePlateforme = () => {
                             Aucun membre sélectionné pour cette commission. Choisissez un membre ci-dessus et cliquez sur « Ajouter ».
                           </div>
                         )}
-
-                        {hasError && (
-                          <span className="block text-xs font-semibold text-red-600 mt-2 flex items-center gap-1">
-                            <AlertCircle size={14} /> {formErrors[selectedDocument.id][field.name]}
-                          </span>
-                        )}
                       </div>
                     );
                   }
@@ -2872,7 +2864,9 @@ const BonCommandePlateforme = () => {
                   return (
                     <label key={`${selectedDocument.id}-${field.name}`} className="block">
                       <span className="block text-xs font-bold text-slate-700 mb-1.5 flex items-center justify-between">
-                        <span>{field.label}</span>
+                        <span>
+                          {field.label} {field.required && !field.fromDb && <span className="text-red-600 font-bold ml-0.5">*</span>}
+                        </span>
                         {maxLen && (
                           <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full font-bold transition-all ${currentLen === maxLen
                             ? 'bg-amber-100 text-amber-800 border border-amber-300 font-extrabold'
@@ -2911,12 +2905,6 @@ const BonCommandePlateforme = () => {
                           placeholder={field.placeholder || ''}
                           className={fieldClass}
                         />
-                      )}
-
-                      {hasError && (
-                        <span className="block text-xs font-semibold text-red-600 mt-1 flex items-center gap-1">
-                          <AlertCircle size={12} /> {formErrors[selectedDocument.id][field.name]}
-                        </span>
                       )}
                     </label>
                   );

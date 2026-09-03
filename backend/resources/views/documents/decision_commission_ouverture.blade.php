@@ -7,9 +7,9 @@
         @page { margin: 95px 40px 45px 40px; }
         body {
             font-family: 'Times New Roman', Times, serif;
-            font-size: 12px;
+            font-size: 14px;
             color: #000;
-            line-height: 1.4;
+            line-height: 1.5;
             margin: 0;
         }
         table { width: 100%; border-collapse: collapse; }
@@ -18,46 +18,48 @@
         .bold { font-weight: bold; }
         .center { text-align: center; }
         .right { text-align: right; }
-        .meta { width: 100%; margin-bottom: 12px; font-size: 12px; }
+        .meta { width: 100%; margin-bottom: 12px; font-size: 14px; }
         .sub-title {
             text-align: center;
             font-weight: bold;
-            font-size: 14px;
+            font-size: 16px;
             margin: 10px 0 4px;
             text-transform: uppercase;
+            text-decoration: underline;
         }
         .header-desc {
             text-align: center;
             font-weight: bold;
             font-size: 14px;
             margin-bottom: 14px;
-            line-height: 1.4;
+            line-height: 1.5;
         }
         .article-text {
             text-align: justify;
-            line-height: 1.4;
-            font-size: 11.5px;
+            line-height: 1.5;
+            font-size: 13px;
             margin: 10px 0 14px 0;
         }
         .decide-title {
             text-align: center;
             font-weight: bold;
-            font-size: 14px;
+            font-size: 16px;
             margin: 14px 0 10px;
             text-transform: uppercase;
+            text-decoration: underline;
         }
-        p { margin: 9px 0; font-size: 12px; line-height: 1.4; }
-        .section { font-weight: bold; font-size: 12px; text-decoration: underline; }
+        p { margin: 9px 0; font-size: 14px; line-height: 1.5; }
+        .section { font-weight: bold; font-size: 14px; text-decoration: underline; }
         .box td, .box th {
             border: 1px solid #000;
             padding: 7px 8px;
             vertical-align: middle;
-            font-size: 12px;
+            font-size: 13px;
         }
         .box th {
             background: #f4f4f4;
             font-weight: bold;
-            font-size: 12px;
+            font-size: 13px;
         }
         .box { margin: 10px 0 14px 0; }
     </style>
@@ -114,13 +116,40 @@
                 <td class="center">{{ data_get($membre, 'qualite') }}</td>
             </tr>
         @endforeach
-    </table>
-
     <p><span class="section">Article 3 :</span><br>
         La-dite commission se réunira le <span class="bold">{{ $doc['date_reunion'] }}</span>
         à <span class="bold">{{ $doc['heure_reunion'] }}</span> au siège de la DRCA-RSK pour procéder à l’ouverture des plis.
     </p>
-    <p><span class="section">Article 4 :</span><br> Le président de la commission est chargé de l'exécution de la présente décision.</p>
+
+@php
+    $presidentMember = null;
+    $commissionList = data_get($doc, 'commission', []);
+    if (is_array($commissionList)) {
+        foreach ($commissionList as $m) {
+            $q = mb_strtolower(data_get($m, 'qualite', ''));
+            if (str_contains($q, 'président') || str_contains($q, 'president')) {
+                $presidentMember = $m;
+                break;
+            }
+        }
+        if (!$presidentMember && !empty($commissionList)) {
+            $presidentMember = $commissionList[0];
+        }
+    }
+
+    $presQualite = mb_strtolower(data_get($presidentMember, 'qualite', ''));
+    $presNom = mb_strtolower(data_get($presidentMember, 'nom', ''));
+
+    $isFeminin = str_contains($presQualite, 'présidente') 
+        || str_contains($presQualite, 'presidente') 
+        || str_contains($presNom, 'mme') 
+        || str_contains($presNom, 'mlle');
+
+    $titrePresident = $isFeminin ? 'La présidente' : 'Le président';
+    $estCharge = $isFeminin ? 'est chargée' : 'est chargé';
+@endphp
+
+    <p><span class="section">Article 4 :</span><br> {{ $titrePresident }} de la commission {{ $estCharge }} de l'exécution de la présente décision.</p>
 
 </div>
 </body>

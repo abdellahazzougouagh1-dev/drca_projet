@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <title>{{ $docTitle }}</title>
     <style>
-        body { font-family: 'Times New Roman', Times, serif; font-size: 12px; color: #333; line-height: 1.5; margin: 30px; }
+        body { font-family: 'Times New Roman', Times, serif; font-size: 14px; color: #333; line-height: 1.5; margin: 30px; }
         .header-table {
             margin-bottom: 5px;
             width: 100%;

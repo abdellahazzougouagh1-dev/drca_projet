@@ -7,9 +7,9 @@
         @page { margin: 115px 40px 70px 40px; }
         body {
             font-family: 'Times New Roman', Times, serif;
-            font-size: 11.5px;
+            font-size: 14px;
             color: #000;
-            line-height: 1.4;
+            line-height: 1.5;
             margin: 0;
         }
         table { width: 100%; border-collapse: collapse; }
