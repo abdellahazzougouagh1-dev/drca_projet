@@ -41,12 +41,15 @@
 
     <div style="border: 2px solid #000; text-align: center; font-weight: bold; padding: 8px; margin: 15px auto 18px; width: 75%;">
         <div style="font-size: 14px; text-transform: uppercase; margin-bottom: 4px;">PROCÈS-VERBAL DE LA RÉCEPTION {{ mb_strtoupper($doc['type_reception'] ?? 'DÉFINITIVE', 'UTF-8') }}</div>
-        @if(strtolower($doc['type_reception'] ?? '') === 'partielle' && (!empty($doc['periode_du']) || !empty($doc['periode_au'])))
+        @if(in_array(strtolower($doc['type_reception'] ?? ''), ['partielle', 'provisoire']) && (!empty($doc['periode_du']) || !empty($doc['periode_au'])))
             <div style="font-size: 12px; margin-top: 4px;">
                 Période : du <span style="font-weight: bold;">{{ $doc['periode_du'] ?? '.....' }}</span> au <span style="font-weight: bold;">{{ $doc['periode_au'] ?? '.....' }}</span>
             </div>
         @else
             <div style="font-size: 12px;">Bon de Commande N° : {{ $doc['numero_bc'] }}</div>
+            @if(!empty($doc['date_reception_definitive']))
+                <div style="font-size: 12px; margin-top: 3px;">Date de réception définitive : <span style="font-weight: bold;">{{ $doc['date_reception_definitive'] }}</span></div>
+            @endif
         @endif
     </div>
 
@@ -112,10 +115,13 @@
     </p>
 
     <p style="text-align: justify; margin-bottom: 12px; line-height: 1.4;">
-        La commission atteste que les prestations objet du bon de commande N° : <span class="bold">{{ $doc['numero_bc'] }}</span> sont conformes aux dispositions prévues et certifie qu’elles sont {{ (isset($doc['type_reception']) && strtolower($doc['type_reception']) === 'partielle') ? 'partiellement' : 'définitivement' }} réceptionnées.
+        La commission atteste que les prestations objet du bon de commande N° : <span class="bold">{{ $doc['numero_bc'] }}</span> sont conformes aux dispositions prévues et certifie qu’elles sont {{ (isset($doc['type_reception']) && in_array(strtolower($doc['type_reception']), ['partielle', 'provisoire'])) ? (strtolower($doc['type_reception']) === 'provisoire' ? 'provisoirement' : 'partiellement') : 'définitivement' }} réceptionnées
+        @if(!in_array(strtolower($doc['type_reception'] ?? ''), ['partielle', 'provisoire']) && !empty($doc['date_reception_definitive']))
+            en date du <span class="bold">{{ $doc['date_reception_definitive'] }}</span>
+        @endif.
     </p>
 
-    @if(strtolower($doc['type_reception'] ?? '') === 'partielle')
+    @if(in_array(strtolower($doc['type_reception'] ?? ''), ['partielle', 'provisoire']))
     <p class="bold" style="margin-bottom: 6px;">Comme suivant :</p>
     <table class="box tight" style="margin-bottom: 14px;">
         <thead>

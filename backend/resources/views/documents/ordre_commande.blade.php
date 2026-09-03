@@ -181,7 +181,7 @@
             </p>
         @else
             <p style="margin: 0 0 6px 0;">
-                J'ai l'honneur de demander de commencer l'exécution du bon de commande N° : <span class="bold">{{ $doc['numero_bc'] }}</span>
+                J'ai l'honneur de  vous demander de bien vouloir  proceder au Commencement de l'exécution du bon de commande N° : <span class="bold">{{ $doc['numero_bc'] }}</span>
             </p>
             <p style="margin: 0 0 6px 0;">ayant pour objet :</p>
             <p class="bold justify" style="margin: 0 0 10px 0;">

@@ -14,8 +14,10 @@ class CommissionReception extends Model
 
     protected $fillable = [
         'consultation_id',
+        'numero_bc',
         'numero_decision',
         'type_reception',
+        'date_reception_definitive',
         'periode_du',
         'periode_au',
         'prestations_receptionnees',
@@ -32,6 +34,7 @@ class CommissionReception extends Model
         'prestations_receptionnees' => 'array',
         'date_decision' => 'date',
         'date_reunion' => 'date',
+        'date_reception_definitive' => 'date',
         'periode_du' => 'date',
         'periode_au' => 'date',
     ];

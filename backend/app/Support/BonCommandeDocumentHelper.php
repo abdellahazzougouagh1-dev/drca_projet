@@ -32,7 +32,13 @@ class BonCommandeDocumentHelper
         $tva = $totalHt * $tvaRate;
         $totalTtc = $totalHt + $tva;
 
-        $rawBc = self::value($documentData, 'numero_bc', $consultation->numero_bc ?? $consultation->numero_consultation ?? '');
+        $isReceptionDoc = in_array($documentType, ['decision_commission_reception', 'pv_reception']) || data_get($documentData, 'type_document') === 'reception';
+
+        if ($isReceptionDoc) {
+            $rawBc = self::value($documentData, 'numero_bc', $consultation->receptionCommission->numero_bc ?? $consultation->numero_bc ?? $consultation->numero_consultation ?? '');
+        } else {
+            $rawBc = self::value($documentData, 'numero_bc', $consultation->numero_bc ?? $consultation->numero_consultation ?? '');
+        }
         $numeroBc = preg_replace('/^BC\s+/i', '', (string) $rawBc);
 
         $fournisseurRetenu = self::fournisseurRetenu($consultation);
@@ -45,11 +51,11 @@ class BonCommandeDocumentHelper
 
         $txtLettres = $montantEnLettres ?: MontantEnLettres::convert($montantRetenu);
 
-        $isReceptionDoc = in_array($documentType, ['decision_commission_reception', 'pv_reception']) || data_get($documentData, 'type_document') === 'reception';
-
         if ($isReceptionDoc) {
             $numeroDecision = self::value($documentData, 'numero_decision', $consultation->receptionCommission->numero_decision ?? '');
             $typeReception = self::value($documentData, 'type_reception', $consultation->receptionCommission->type_reception ?? 'définitive');
+            $rawDateDefinitive = self::value($documentData, 'date_reception_definitive', self::value($documentData, 'date_definitive', $consultation->receptionCommission->date_reception_definitive ?? null));
+            $dateReceptionDefinitive = $rawDateDefinitive ? self::date($rawDateDefinitive) : '';
             $rawPeriodeDu = self::value($documentData, 'periode_du', $consultation->receptionCommission->periode_du ?? null);
             $rawPeriodeAu = self::value($documentData, 'periode_au', $consultation->receptionCommission->periode_au ?? null);
             $periodeDu = $rawPeriodeDu ? self::date($rawPeriodeDu) : '';
@@ -61,6 +67,7 @@ class BonCommandeDocumentHelper
             $commissionMembers = self::receptionCommission($consultation, $documentData);
         } else {
             $typeReception = 'définitive';
+            $dateReceptionDefinitive = '';
             $periodeDu = '';
             $periodeAu = '';
             $prestationsReceptionnees = null;
@@ -115,6 +122,7 @@ class BonCommandeDocumentHelper
             'lig' => self::value($documentData, 'lig', $consultation->budget->lig ?? '60'),
             'numero_decision' => $numeroDecision,
             'type_reception' => $typeReception,
+            'date_reception_definitive' => $dateReceptionDefinitive,
             'periode_du' => $periodeDu,
             'periode_au' => $periodeAu,
             'prestations_receptionnees' => $prestationsReceptionnees,

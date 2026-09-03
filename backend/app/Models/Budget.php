@@ -16,6 +16,7 @@ class Budget extends Model
         'par',
         'lig',
         'code_imputation',
+        'intitule_ligne',
         'exercice_budgetaire',
         'montant_estimatif_ht',
         'tva',

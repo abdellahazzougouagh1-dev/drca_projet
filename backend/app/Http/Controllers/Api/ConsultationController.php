@@ -14,7 +14,7 @@ class ConsultationController extends Controller
 {
     public function index()
     {
-        return response()->json(Consultation::with(['fournisseur', 'budget'])->get());
+        return response()->json(Consultation::with(['fournisseur', 'budget', 'prestations', 'receptionCommission'])->get());
     }
 
     public function store(Request $request)
@@ -23,28 +23,38 @@ class ConsultationController extends Controller
             // Infos Générales
             'annee' => 'required|integer|min:2000',
             'date_consultation' => 'required|date',
-            'objet_consultation' => 'required|string|max:255',
+            'objet_consultation' => 'required|string|max:65000',
             'description_detaillee' => 'nullable|string',
             'categorie' => 'required|string|max:255',
-            'type_prestation' => 'required|string|max:255',
-            'mode_engagement' => 'required|in:BC,Convention',
+            'type_prestation' => 'required|string|max:65000',
+            'intitule' => 'nullable|string|max:65000',
+            'mode_engagement' => 'required|in:BC,Convention,AO,Bon de commande,Appel d\'offres,Appel d\'offre',
             'type_budget' => 'required|in:Investissement,Fonctionnement',
             'delai_execution' => 'required|integer|min:1',
             'statut_dossier' => 'required|string|max:255',
             'fournisseur_id' => 'nullable|exists:fournisseurs,id',
             // Infos Budgétaires
-            'notification_ligne_id' => 'required|exists:notification_lignes,id',
+            'notification_ligne_id' => 'nullable|exists:notification_lignes,id',
             'montant_estimatif_ht' => 'required|numeric|min:0',
             'tva' => 'required|numeric|min:0',
         ]);
 
         try {
-            $consultation = DB::transaction(function () use ($validated) {
-                // Auto-génération du numéro
+            $consultation = DB::transaction(function () use ($validated, $request) {
                 $annee = $validated['annee'];
-                // Générer un ID unique temporaire pour le format
                 $randomId = str_pad(rand(1, 9999), 4, '0', STR_PAD_LEFT);
-                $numero_consultation = "CONS-{$annee}-{$randomId}";
+                $numero_consultation = !empty($request->numero_consultation) ? $request->numero_consultation : "CONS-{$annee}-{$randomId}";
+
+                $notifLigneId = $validated['notification_ligne_id'] ?? null;
+                if (!$notifLigneId && $request->filled(['art', 'par', 'lig'])) {
+                    $matchedLigne = \App\Models\NotificationLigne::where('article', $request->art)
+                        ->where('paragraphe', $request->par)
+                        ->where('ligne_budgetaire', $request->lig)
+                        ->first();
+                    if ($matchedLigne) {
+                        $notifLigneId = $matchedLigne->id;
+                    }
+                }
 
                 // Création de la Consultation
                 $consultation = Consultation::create([
@@ -52,31 +62,36 @@ class ConsultationController extends Controller
                     'annee' => $validated['annee'],
                     'date_consultation' => $validated['date_consultation'],
                     'objet_consultation' => $validated['objet_consultation'],
-                    'description_detaillee' => $validated['description_detaillee'],
+                    'description_detaillee' => $validated['description_detaillee'] ?? null,
                     'categorie' => $validated['categorie'],
                     'type_prestation' => $validated['type_prestation'],
+                    'intitule' => $validated['intitule'] ?? ($request->intitule ?? $validated['type_prestation']),
                     'mode_engagement' => $validated['mode_engagement'],
                     'type_budget' => $validated['type_budget'],
                     'delai_execution' => $validated['delai_execution'],
                     'statut_dossier' => $validated['statut_dossier'],
                     'fournisseur_id' => $validated['fournisseur_id'] ?? null,
-                    'notification_ligne_id' => $validated['notification_ligne_id'],
+                    'notification_ligne_id' => $notifLigneId,
+                    'date_limite_devis' => $request->date_limite_devis ?? date('Y-m-d', strtotime($validated['date_consultation'] . ' +2 days')),
+                    'heure_limite_devis' => $request->heure_limite_devis ?? '10:00',
+                    'lieu_execution' => $request->lieu_execution ?? 'REGION DE RABAT SALE KENITRA',
                 ]);
 
-                // Récupération de la ligne budgétaire pour auto-remplir le budget (rétrocompatibilité)
-                $ligne = \App\Models\NotificationLigne::with('notification')->find($validated['notification_ligne_id']);
+                // Récupération de la ligne budgétaire pour auto-remplir le budget
+                $ligne = $notifLigneId ? \App\Models\NotificationLigne::with('notification')->find($notifLigneId) : null;
 
                 // Création du Budget associé
                 $budget = Budget::create([
                     'consultation_id' => $consultation->id,
-                    'art' => $ligne->article,
-                    'par' => $ligne->paragraphe,
-                    'lig' => $ligne->ligne_budgetaire,
-                    'code_imputation' => "{$ligne->article}/{$ligne->paragraphe}/{$ligne->ligne_budgetaire}",
-                    'exercice_budgetaire' => $ligne->notification->exercice,
+                    'art' => $ligne ? $ligne->article : ($request->art ?? ''),
+                    'par' => $ligne ? $ligne->paragraphe : ($request->par ?? ''),
+                    'lig' => $ligne ? $ligne->ligne_budgetaire : ($request->lig ?? ''),
+                    'code_imputation' => $ligne
+                        ? "{$ligne->article}/{$ligne->paragraphe}/{$ligne->ligne_budgetaire}"
+                        : ($request->code_imputation ?? (($request->art ?? '') . ($request->par ?? '') . ($request->lig ?? ''))),
+                    'exercice_budgetaire' => $ligne?->notification?->exercice ?? ($request->exercice_budgetaire ?? $validated['annee']),
                     'montant_estimatif_ht' => $validated['montant_estimatif_ht'],
                     'tva' => $validated['tva'],
-                    // montant_ttc est calculé automatiquement dans le modèle Budget
                 ]);
 
                 return $consultation->load('budget');
@@ -90,7 +105,7 @@ class ConsultationController extends Controller
 
     public function show(Consultation $consultation)
     {
-        return response()->json($consultation->load(['fournisseur', 'budget', 'prestations', 'engagement', 'offres']));
+        return response()->json($consultation->load(['fournisseur', 'budget', 'prestations', 'engagement', 'offres', 'receptionCommission']));
     }
 
     public function destroy(Consultation $consultation)
@@ -123,10 +138,16 @@ class ConsultationController extends Controller
     public function update(Request $request, Consultation $consultation)
     {
         $validated = $request->validate([
-            'objet_consultation' => 'sometimes|required|string|max:255',
-            'objet_consultation_ar' => 'nullable|string|max:255',
-            'mode_engagement' => 'sometimes|required|in:BC,Convention',
+            'objet_consultation' => 'sometimes|required|string|max:65000',
+            'objet_consultation_ar' => 'nullable|string|max:65000',
+            'intitule' => 'nullable|string|max:65000',
+            'type_prestation' => 'nullable|string|max:65000',
+            'mode_engagement' => 'sometimes|required|in:BC,Convention,AO,Bon de commande,Appel d\'offres,Appel d\'offre',
             'date_consultation' => 'sometimes|required|date',
+            'date_limite_devis' => 'nullable|date',
+            'heure_limite_devis' => 'nullable|string|max:50',
+            'lieu_execution' => 'nullable|string|max:255',
+            'delai_execution' => 'nullable|integer|min:1',
             'lieu_consultation' => 'nullable|string|max:255',
             'lieu_reunion_ar' => 'nullable|string|max:255',
             'cautionnement_provisoire' => 'nullable|numeric|min:0',
@@ -135,8 +156,32 @@ class ConsultationController extends Controller
         ]);
 
         $consultation->update($validated);
+
+        if ($request->hasAny(['art', 'par', 'lig', 'code_imputation', 'exercice_budgetaire'])) {
+            $budgetData = array_filter([
+                'art' => $request->art,
+                'par' => $request->par,
+                'lig' => $request->lig,
+                'code_imputation' => $request->code_imputation,
+                'exercice_budgetaire' => $request->exercice_budgetaire,
+            ], fn($v) => $v !== null);
+
+            if ($consultation->budget) {
+                $consultation->budget->update($budgetData);
+            } else {
+                $consultation->budget()->create(array_merge([
+                    'art' => $request->art ?? '',
+                    'par' => $request->par ?? '',
+                    'lig' => $request->lig ?? '',
+                    'code_imputation' => $request->code_imputation ?? '',
+                    'exercice_budgetaire' => $request->exercice_budgetaire ?? date('Y'),
+                    'montant_estimatif_ht' => 0,
+                    'tva' => 20,
+                ], $budgetData));
+            }
+        }
         
-        return response()->json($consultation);
+        return response()->json($consultation->load('budget'));
     }
 
     public function syncPrestations(Request $request, Consultation $consultation)
@@ -290,6 +335,36 @@ class ConsultationController extends Controller
         return response()->json([
             'message' => 'Résultats de l\'ouverture des plis enregistrés.',
             'offres' => $consultation->offres()->with('fournisseur')->get()
+        ]);
+    }
+
+    public function saveReceptionCommission(Request $request, Consultation $consultation)
+    {
+        $validated = $request->validate([
+            'numero_bc' => 'nullable|string|max:255',
+            'numero_decision' => 'nullable|string|max:255',
+            'type_reception' => 'nullable|string|max:255',
+            'date_reception_definitive' => 'nullable|date',
+            'periode_du' => 'nullable|date',
+            'periode_au' => 'nullable|date',
+            'prestations_receptionnees' => 'nullable|array',
+            'date_decision' => 'nullable|date',
+            'date_reunion' => 'nullable|date',
+            'heure_reunion' => 'nullable|string|max:50',
+            'heure_fin' => 'nullable|string|max:50',
+            'lieu_reunion' => 'nullable|string|max:255',
+            'membres_commission' => 'nullable|array',
+        ]);
+
+        $commission = $consultation->receptionCommission()->updateOrCreate(
+            ['consultation_id' => $consultation->id],
+            $validated
+        );
+
+        return response()->json([
+            'message' => 'Commission de réception enregistrée.',
+            'reception_commission' => $commission,
+            'consultation' => $consultation->load(['receptionCommission', 'budget', 'prestations', 'fournisseur', 'offres'])
         ]);
     }
 }

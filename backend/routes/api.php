@@ -49,6 +49,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Réception des prestations (Module 08)
     Route::get('consultations/{consultation}/receptions', [\App\Http\Controllers\Api\ReceptionController::class, 'getReceptions']);
     Route::post('consultations/{consultation}/receptions', [\App\Http\Controllers\Api\ReceptionController::class, 'store']);
+    Route::post('consultations/{consultation}/reception-commission', [ConsultationController::class, 'saveReceptionCommission']);
 
     // Liquidation financière (Module 09)
     Route::get('consultations/{consultation}/liquidation', [\App\Http\Controllers\Api\LiquidationFinanciereController::class, 'getLiquidation']);

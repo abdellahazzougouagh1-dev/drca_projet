@@ -144,7 +144,7 @@ const documentFieldGroups = {
     { name: 'objet', label: 'Objet de la prestation', placeholder: 'Prestations topographiques...', required: true },
     { name: 'concurrents', label: 'Synthése des devis reçus', type: 'concurrents_table', required: true },
     { name: 'societes_refusees', label: "Sociétés écartées", type: 'societes_refusees_input', required: true },
-    { name: 'attributaire', label: 'Offre retenue ', type: 'attributaire_selector', required: true },
+    { name: 'attributaire', label: 'Société retenue ', type: 'attributaire_selector', required: true },
     { name: 'montant_apres_verification', label: 'Montant TTC retenu (DH)', type: 'number', placeholder: '39060', required: true },
     { name: 'heure_fin', label: 'Heure de fin de séance', type: 'time', required: true },
     { name: 'date_document', label: 'Date Pv', type: 'date', required: true },
@@ -203,7 +203,8 @@ const documentFieldGroups = {
   ],
   decision_commission_reception: [
     { name: 'numero_decision', label: 'Numéro de décision', placeholder: 'Ex: 05/DR/2024', required: true },
-    { name: 'type_reception', label: 'Type de réception', type: 'select', options: ['définitive', 'partielle', 'Provisoire'], required: true },
+    { name: 'type_reception', label: 'Type de réception', type: 'select', options: ['définitive', 'provisoire', 'partielle'], required: true },
+    { name: 'date_reception_definitive', label: 'Date de la réception définitive', type: 'date', required: true, condition: (form) => !form?.type_reception || form?.type_reception?.toLowerCase() === 'définitive' },
     { name: 'date_document', label: 'Date de la décision', type: 'date', required: true },
     { name: 'numero_bc', label: 'Numéro Bon de commande', placeholder: '09/INV/2023/DRCA-RSK', required: true },
     { name: 'objet', label: 'Objet de la prestation', placeholder: 'Achat de matériel...', required: true },
@@ -214,9 +215,10 @@ const documentFieldGroups = {
   pv_reception: [
     { name: 'numero_bc', label: 'Numéro bon de commande', placeholder: '03/INV/2024/DRCA-RSK', required: true },
     { name: 'numero_decision', label: 'Numéro de décision de réception', placeholder: 'Ex: 05/DR/2024', required: true },
-    { name: 'type_reception', label: 'Type de réception', type: 'select', options: ['définitive', 'partielle', 'Provisoire'], required: true },
-    { name: 'periode_du', label: 'Période de réception partielle - Du', type: 'date', required: true, condition: (form) => form?.type_reception === 'partielle' },
-    { name: 'periode_au', label: 'Période de réception partielle - Au', type: 'date', required: true, condition: (form) => form?.type_reception === 'partielle' },
+    { name: 'type_reception', label: 'Type de réception', type: 'select', options: ['définitive', 'provisoire', 'partielle'], required: true },
+    { name: 'date_reception_definitive', label: 'Date de la réception définitive', type: 'date', required: true, condition: (form) => !form?.type_reception || form?.type_reception?.toLowerCase() === 'définitive' },
+    { name: 'periode_du', label: 'Période de réception (provisoire/partielle) - Du', type: 'date', required: true, condition: (form) => ['provisoire', 'partielle'].includes(form?.type_reception?.toLowerCase()) },
+    { name: 'periode_au', label: 'Période de réception (provisoire/partielle) - Au', type: 'date', required: true, condition: (form) => ['provisoire', 'partielle'].includes(form?.type_reception?.toLowerCase()) },
     { name: 'date_decision', label: 'Date de la décision de reception', type: 'date', required: true },
     { name: 'objet', label: 'Objet de la prestation', placeholder: 'Prestations...', required: true },
     { name: 'societe', label: 'Nom de titulaire', placeholder: 'BUREAU ALAOUI TOPO', required: true },
@@ -227,7 +229,7 @@ const documentFieldGroups = {
     { name: 'heure_reunion', label: 'Heure de séance', type: 'time', required: true },
     { name: 'heure_fin', label: 'Heure de fin de séance', type: 'time', required: true },
     { name: 'date_document', label: 'date de pv de reception', type: 'date', required: true },
-    { name: 'prestations_receptionnees', label: 'Détails des prestations (Réception Partielle)', type: 'prestations_partielles_table', required: true, condition: (form) => form?.type_reception === 'partielle' },
+    { name: 'prestations_receptionnees', label: 'Détails des prestations (Réception Provisoire / Partielle)', type: 'prestations_partielles_table', required: true, condition: (form) => ['provisoire', 'partielle'].includes(form?.type_reception?.toLowerCase()) },
   ],
 };
 
@@ -303,6 +305,20 @@ const BonCommandePlateforme = () => {
   useEffect(() => {
     if (savedConsultation?.id) {
       localStorage.setItem('drca_selected_consultation_id', String(savedConsultation.id));
+    }
+  }, [savedConsultation]);
+
+  useEffect(() => {
+    if (savedConsultation?.prestations && Array.isArray(savedConsultation.prestations) && savedConsultation.prestations.length > 0) {
+      setPrestations(savedConsultation.prestations.map((p) => ({
+        id: p.id,
+        numero_prix: p.numero_prix || 1,
+        designation: p.designation || '',
+        unite: p.unite || p.unite_mesure || 'Unite',
+        quantite: p.quantite || 1,
+        prix_unitaire_ht: p.prix_unitaire_ht || 0,
+        tva: p.tva || 20,
+      })));
     }
   }, [savedConsultation]);
 
@@ -428,6 +444,7 @@ const BonCommandePlateforme = () => {
       date_consultation: consultation.date_consultation || '',
       categorie: consultation.categorie || 'Services',
       type_prestation: consultation.type_prestation || '',
+      intitule: consultation.intitule || consultation.type_prestation || '',
       mode_engagement: consultation.mode_engagement || 'BC',
       type_budget: consultation.type_budget || 'Fonctionnement',
       delai_execution: consultation.delai_execution || 30,
@@ -491,7 +508,8 @@ const BonCommandePlateforme = () => {
         annee: Number(editingConsultationData.annee) || new Date().getFullYear(),
         date_consultation: editingConsultationData.date_consultation,
         categorie: editingConsultationData.categorie,
-        type_prestation: editingConsultationData.type_prestation,
+        type_prestation: editingConsultationData.intitule || editingConsultationData.type_prestation,
+        intitule: editingConsultationData.intitule || editingConsultationData.type_prestation,
         mode_engagement: editingConsultationData.mode_engagement,
         type_budget: editingConsultationData.type_budget,
         delai_execution: Number(editingConsultationData.delai_execution) || 30,
@@ -638,8 +656,10 @@ const BonCommandePlateforme = () => {
       }
       if (documentId === 'decision_commission_reception') {
         const fieldMap = {
+          numero_bc: 'numero_bc',
           numero_decision: 'numero_decision',
           type_reception: 'type_reception',
+          date_reception_definitive: 'date_reception_definitive',
           periode_du: 'periode_du',
           periode_au: 'periode_au',
           prestations_receptionnees: 'prestations_receptionnees',
@@ -657,8 +677,10 @@ const BonCommandePlateforme = () => {
       }
       if (documentId === 'pv_reception') {
         const fieldMap = {
+          numero_bc: 'numero_bc',
           numero_decision: 'numero_decision',
           type_reception: 'type_reception',
+          date_reception_definitive: 'date_reception_definitive',
           periode_du: 'periode_du',
           periode_au: 'periode_au',
           prestations_receptionnees: 'prestations_receptionnees',
@@ -727,8 +749,13 @@ const BonCommandePlateforme = () => {
     fields.forEach((field) => {
       if (field.name === 'numero_consultation') defaults.numero_consultation = savedConsultation?.numero_consultation || formData.numero_consultation || '04/2024/DRCA-RSK';
       else if (field.name === 'numero_bc') {
-        const rawBc = savedConsultation?.numero_bc || formData.numero_bc || savedConsultation?.numero_consultation || '05/2024/DRCA-RSK';
-        defaults.numero_bc = String(rawBc).replace(/^BC\s+/i, '');
+        let rawBc;
+        if (documentId === 'decision_commission_reception' || documentId === 'pv_reception') {
+          rawBc = savedConsultation?.reception_commission?.numero_bc || savedConsultation?.receptionCommission?.numero_bc || documentForms.decision_commission_reception?.numero_bc || '';
+        } else {
+          rawBc = savedConsultation?.numero_bc || formData.numero_bc || savedConsultation?.numero_consultation || '05/2024/DRCA-RSK';
+        }
+        defaults.numero_bc = rawBc ? String(rawBc).replace(/^BC\s+/i, '') : '';
       }
       else if (field.name === 'objet') defaults.objet = savedConsultation?.objet_consultation || formData.objet_consultation || 'Achat de matériel de valorisation des produits agricoles';
       else if (field.name === 'numero_avis') defaults.numero_avis = savedConsultation?.numero_consultation || formData.numero_consultation || '04/2024/DRCA-RSK';
@@ -742,6 +769,9 @@ const BonCommandePlateforme = () => {
       else if (field.name === 'type_reception') {
         defaults.type_reception = savedConsultation?.reception_commission?.type_reception || savedConsultation?.receptionCommission?.type_reception || documentForms.decision_commission_reception?.type_reception || 'définitive';
       }
+      else if (field.name === 'date_reception_definitive') {
+        defaults.date_reception_definitive = savedConsultation?.reception_commission?.date_reception_definitive || savedConsultation?.receptionCommission?.date_reception_definitive || documentForms.decision_commission_reception?.date_reception_definitive || '';
+      }
       else if (field.name === 'periode_du') {
         defaults.periode_du = savedConsultation?.reception_commission?.periode_du || savedConsultation?.receptionCommission?.periode_du || documentForms.decision_commission_reception?.periode_du || '';
       }
@@ -750,10 +780,14 @@ const BonCommandePlateforme = () => {
       }
       else if (field.name === 'prestations_receptionnees') {
         const savedList = savedConsultation?.reception_commission?.prestations_receptionnees || savedConsultation?.receptionCommission?.prestations_receptionnees || documentForms.decision_commission_reception?.prestations_receptionnees;
+        const srcPrestations = (savedConsultation?.prestations && savedConsultation.prestations.length > 0)
+          ? savedConsultation.prestations
+          : (prestations && prestations.filter((p) => p.designation?.trim()).length > 0 ? prestations.filter((p) => p.designation?.trim()) : []);
+
         if (Array.isArray(savedList) && savedList.length > 0) {
           defaults.prestations_receptionnees = savedList;
         } else {
-          const list = (savedConsultation?.prestations || prestations || []).map((p, idx) => ({
+          const list = srcPrestations.map((p, idx) => ({
             id: p.id || idx,
             receptionne: true,
             numero_prix: p.numero_prix || (idx + 1),
@@ -762,7 +796,7 @@ const BonCommandePlateforme = () => {
             quantite: Number(p.quantite) || 1,
             quantite_receptionnee: Number(p.quantite) || 1,
           }));
-          defaults.prestations_receptionnees = list.length > 0 ? list : [{ id: 0, receptionne: true, numero_prix: 1, designation: 'Prestation', unite: 'Unité', quantite: 1, quantite_receptionnee: 1 }];
+          defaults.prestations_receptionnees = list;
         }
       }
       else if (field.name === 'numero_engagement') defaults.numero_engagement = `05/DR/${savedConsultation?.annee || new Date().getFullYear()}`;
@@ -791,9 +825,23 @@ const BonCommandePlateforme = () => {
       else if (field.name === 'lieu_execution' || field.name === 'lieu_livraison' || field.name === 'lieu_reunion') {
         defaults[field.name] = savedConsultation?.lieu_execution || formData.lieu_execution || 'REGION DE RABAT SALE KENITRA';
       }
-      else if (field.name === 'delai_livraison' || field.name === 'delais_execution') defaults[field.name] = `${savedConsultation?.delai_execution || 30} jours`;
+      else if (field.name === 'delai_livraison' || field.name === 'delais_execution') {
+        const val = savedConsultation?.delai_execution ?? formData?.delai_execution ?? 30;
+        defaults[field.name] = field.type === 'number' ? (parseInt(val, 10) || 30) : `${val} jours`;
+      }
       else if (field.name === 'date_limite') {
-        defaults.date_limite = savedConsultation?.date_limite_devis || formData.date_limite_devis || '';
+        let dLimite = savedConsultation?.date_limite_devis || formData?.date_limite_devis;
+        if (!dLimite && (savedConsultation?.date_consultation || formData?.date_consultation)) {
+          const dCons = new Date(savedConsultation?.date_consultation || formData?.date_consultation);
+          if (!isNaN(dCons.getTime())) {
+            dCons.setDate(dCons.getDate() + 2);
+            const yyyy = dCons.getFullYear();
+            const mm = String(dCons.getMonth() + 1).padStart(2, '0');
+            const dd = String(dCons.getDate()).padStart(2, '0');
+            dLimite = `${yyyy}-${mm}-${dd}`;
+          }
+        }
+        defaults.date_limite = dLimite || '';
       }
       else if (field.name === 'heure_limite') {
         defaults.heure_limite = savedConsultation?.heure_limite_devis || formData.heure_limite_devis || '10:00';
@@ -1248,8 +1296,8 @@ const BonCommandePlateforme = () => {
     const values = documentForms[documentId] || {};
 
     const updatePayload = {};
-    if (values.numero_bc !== undefined && values.numero_bc !== null) updatePayload.numero_bc = values.numero_bc;
     if (documentId !== 'decision_commission_reception' && documentId !== 'pv_reception') {
+      if (values.numero_bc !== undefined && values.numero_bc !== null) updatePayload.numero_bc = values.numero_bc;
       if (values.numero_decision !== undefined && values.numero_decision !== null) updatePayload.numero_decision = values.numero_decision;
     }
     if (values.date_limite !== undefined && values.date_limite !== null) updatePayload.date_limite_devis = values.date_limite;
@@ -1316,8 +1364,10 @@ const BonCommandePlateforme = () => {
       // Sauvegarde des informations spécifiques de la commission de réception en base de données
       if (documentId === 'decision_commission_reception' || documentId === 'pv_reception') {
         const recData = {
+          numero_bc: values.numero_bc !== undefined ? values.numero_bc : (documentForms.decision_commission_reception?.numero_bc || ''),
           numero_decision: values.numero_decision !== undefined ? values.numero_decision : (documentForms.decision_commission_reception?.numero_decision || ''),
           type_reception: values.type_reception || documentForms.decision_commission_reception?.type_reception || 'définitive',
+          date_reception_definitive: values.date_reception_definitive || documentForms.decision_commission_reception?.date_reception_definitive || null,
           periode_du: values.periode_du || documentForms.decision_commission_reception?.periode_du || null,
           periode_au: values.periode_au || documentForms.decision_commission_reception?.periode_au || null,
           prestations_receptionnees: values.prestations_receptionnees || documentForms.decision_commission_reception?.prestations_receptionnees || null,
@@ -1502,7 +1552,7 @@ const BonCommandePlateforme = () => {
       {/* Sidebar */}
       <aside className="w-64 bg-[#1e3a8a] text-white flex flex-col h-screen sticky top-0 shadow-xl shrink-0">
         <div className="px-6 py-6 border-b border-blue-800">
-          <Link to="/choix" className="flex items-center gap-3">
+          <Link to="/bons-commande" className="flex items-center gap-3">
             <div className="w-10 h-10 bg-white/10 rounded-lg flex items-center justify-center font-bold">ON</div>
             <div>
               <p className="text-sm font-semibold">ERP ONCA</p>
@@ -1555,7 +1605,7 @@ const BonCommandePlateforme = () => {
           {/* Header */}
           <header className="mb-8 flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <button onClick={() => navigate('/choix')} className="p-2 bg-white hover:bg-slate-100 text-slate-600 rounded-xl border border-slate-200 transition-all">
+              <button onClick={() => navigate('/bons-commande')} className="p-2 bg-white hover:bg-slate-100 text-slate-600 rounded-xl border border-slate-200 transition-all">
                 <ArrowLeft size={20} />
               </button>
               <div>
@@ -1842,9 +1892,13 @@ const BonCommandePlateforme = () => {
                   const hasError = !!formErrors[selectedDocument.id]?.[field.name];
 
                   if (field.type === 'prestations_partielles_table') {
-                    const currentList = Array.isArray(documentForms[selectedDocument.id]?.prestations_receptionnees)
+                    const srcPrestations = (savedConsultation?.prestations && savedConsultation.prestations.length > 0)
+                      ? savedConsultation.prestations
+                      : (prestations && prestations.filter((p) => p.designation?.trim()).length > 0 ? prestations.filter((p) => p.designation?.trim()) : []);
+
+                    const currentList = Array.isArray(documentForms[selectedDocument.id]?.prestations_receptionnees) && documentForms[selectedDocument.id].prestations_receptionnees.length > 0
                       ? documentForms[selectedDocument.id].prestations_receptionnees
-                      : (savedConsultation?.prestations || prestations || []).map((p, idx) => ({
+                      : srcPrestations.map((p, idx) => ({
                         id: p.id || idx,
                         receptionne: true,
                         numero_prix: p.numero_prix || (idx + 1),
@@ -2341,17 +2395,6 @@ const BonCommandePlateforme = () => {
                       e.target.value = '';
                     };
 
-                    const downloadSampleCsv = () => {
-                      const csvContent = "data:text/csv;charset=utf-8,Classement;Entreprise;Total TTC (MAD)\n1;CATALYSSIA BUSINESS COMPANY SARL;45313.4\n2;ARTPLUSE FES;49420.8\n3;MENTALSPORT SARL AU;50701.2\n4;DESTIN FLOTTE;60610";
-                      const encodedUri = encodeURI(csvContent);
-                      const link = document.createElement("a");
-                      link.setAttribute("href", encodedUri);
-                      link.setAttribute("download", "modele_devis_recus.csv");
-                      document.body.appendChild(link);
-                      link.click();
-                      document.body.removeChild(link);
-                    };
-
                     return (
                       <div key={`${selectedDocument.id}-${field.name}`} className="col-span-full bg-slate-50 border border-slate-200 rounded-2xl p-5 shadow-sm">
                         <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
@@ -2360,15 +2403,6 @@ const BonCommandePlateforme = () => {
                           </label>
 
                           <div className="flex flex-wrap items-center gap-2">
-                            <button
-                              type="button"
-                              onClick={downloadSampleCsv}
-                              className="px-2.5 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold text-xs rounded-lg inline-flex items-center gap-1 transition-all"
-                              title="Télécharger un fichier exemple CSV"
-                            >
-                              <Download size={13} /> Modèle CSV
-                            </button>
-
                             <label className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg inline-flex items-center gap-1.5 shadow-sm transition-all cursor-pointer">
                               <FileSpreadsheet size={14} /> Importer Excel / CSV
                               <input
@@ -2511,6 +2545,14 @@ const BonCommandePlateforme = () => {
                       const updated = [...currentList, { nom: targetName, motif: defaultMotif }];
                       handleDocumentFieldChange(selectedDocument.id, field.name, updated);
                       syncAutoAttributaire(updated);
+                    };
+
+                    const updateRefused = (idx, key, value) => {
+                      const updated = currentList.map((item, i) => (i === idx ? { ...item, [key]: value } : item));
+                      handleDocumentFieldChange(selectedDocument.id, field.name, updated);
+                      if (key === 'nom') {
+                        syncAutoAttributaire(updated);
+                      }
                     };
 
                     const removeRefused = (idx) => {
@@ -2679,6 +2721,19 @@ const BonCommandePlateforme = () => {
                             </option>
                           ))}
                         </select>
+
+                        <div className="pt-2">
+                          <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1 flex items-center gap-1.5">
+                            📝 Motif du choix de l'offre retenue
+                          </label>
+                          <input
+                            type="text"
+                            value={motifAttr}
+                            onChange={(e) => handleDocumentFieldChange(selectedDocument.id, 'motif_attribution', e.target.value)}
+                            placeholder="Ex: Offre la moins disante conforme retenue par le maître d'ouvrage"
+                            className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-semibold text-slate-800 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                          />
+                        </div>
 
                       </div>
                     );
@@ -3159,11 +3214,12 @@ const BonCommandePlateforme = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Nature de la prestation</label>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Intitulé (Nature de la prestation)</label>
                   <input
                     type="text"
-                    value={editingConsultationData.type_prestation}
-                    onChange={(e) => setEditingConsultationData({ ...editingConsultationData, type_prestation: e.target.value })}
+                    value={editingConsultationData.intitule || editingConsultationData.type_prestation || ''}
+                    onChange={(e) => setEditingConsultationData({ ...editingConsultationData, intitule: e.target.value, type_prestation: e.target.value })}
+                    placeholder="Ex: Prestation de même nature / Achat de matériel..."
                     className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
                   />
                 </div>
@@ -3178,6 +3234,7 @@ const BonCommandePlateforme = () => {
                     className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
                   >
                     <option value="BC">BC (Bon de commande)</option>
+                    <option value="AO">AO (Appel d'offres)</option>
                     <option value="Convention">Convention</option>
                   </select>
                 </div>

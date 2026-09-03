@@ -302,7 +302,9 @@ const DetailsConsultation = () => {
       setProgrammationForm({
         objet_consultation: consultData.objet_consultation || '',
         objet_consultation_ar: consultData.objet_consultation_ar || '',
-        mode_engagement: consultData.mode_engagement || '',
+        mode_engagement: consultData.mode_engagement || 'BC',
+        intitule: consultData.intitule || consultData.type_prestation || '',
+        type_prestation: consultData.type_prestation || consultData.intitule || '',
         date_consultation: consultData.date_consultation || '',
         lieu_consultation: consultData.lieu_consultation || consultData.lieu || '',
         budget_previsionnel: consultData.budget?.montant_ttc || '',
@@ -920,13 +922,23 @@ const DetailsConsultation = () => {
                   </div>
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-1">Mode d'engagement</label>
-                    <input type="text" value={programmationForm.mode_engagement} onChange={e => setProgrammationForm({...programmationForm, mode_engagement: e.target.value})} className="w-full p-3 border border-gray-200 rounded-xl" placeholder="Ex: BC, Convention, etc." />
+                    <select value={programmationForm.mode_engagement} onChange={e => setProgrammationForm({...programmationForm, mode_engagement: e.target.value})} className="w-full p-3 border border-gray-200 rounded-xl bg-white font-semibold">
+                      <option value="BC">Bon de commande (BC)</option>
+                      <option value="AO">Appel d'offres (AO)</option>
+                      <option value="Convention">Convention</option>
+                    </select>
                   </div>
                 </div>
 
-                <div className="mb-6">
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">Objet de la consultation (Arabe)</label>
-                  <input type="text" dir="rtl" value={programmationForm.objet_consultation_ar} onChange={e => setProgrammationForm({...programmationForm, objet_consultation_ar: e.target.value})} className="w-full p-3 border border-gray-200 rounded-xl font-arabic" placeholder="موضوع الاستشارة" />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1">Intitulé (Nature de la prestation)</label>
+                    <input type="text" value={programmationForm.intitule || programmationForm.type_prestation || ''} onChange={e => setProgrammationForm({...programmationForm, intitule: e.target.value, type_prestation: e.target.value})} className="w-full p-3 border border-gray-200 rounded-xl" placeholder="Ex: Prestation de même nature / Achat de matériel..." />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1">Objet de la consultation (Arabe)</label>
+                    <input type="text" dir="rtl" value={programmationForm.objet_consultation_ar} onChange={e => setProgrammationForm({...programmationForm, objet_consultation_ar: e.target.value})} className="w-full p-3 border border-gray-200 rounded-xl font-arabic" placeholder="موضوع الاستشارة" />
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
