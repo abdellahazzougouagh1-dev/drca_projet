@@ -10,7 +10,7 @@ export default function GestionBonDeCommande() {
         <div className="px-8 pb-6 pt-12">
           <Link to="/dashboard" className="flex items-center gap-4">
             <div className="grid h-14 w-14 place-items-center rounded-full border-2 border-cyan-300 font-serif text-xl font-bold text-cyan-200 text-center leading-tight">
-              <span>DR<br/><span className="text-[10px]">RSK</span></span>
+              <span>DR<br /><span className="text-[10px]">RSK</span></span>
             </div>
             <div>
               <p className="font-serif text-2xl font-bold tracking-wide">DRCA - RSK</p>

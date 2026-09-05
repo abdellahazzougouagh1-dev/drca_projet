@@ -121,6 +121,9 @@ class DocumentController extends Controller
             'accuse_reception',
             'decision_commission_reception',
             'pv_reception',
+            'ordre_imputation',
+            'ordre_paiement',
+            'ordre_virement',
             'ordre_imputation_paiement_virement',
         ];
 

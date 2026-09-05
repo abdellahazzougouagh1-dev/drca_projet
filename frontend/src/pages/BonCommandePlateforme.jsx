@@ -58,8 +58,8 @@ const phases = [
   {
     id: 'Ordonnancement',
     label: 'Ordonnancement',
-    icon: Users,
-    description: 'Commission de réception et procès verbal de réception.',
+    icon: FileArchive,
+    description: 'Bulletin de décompte, Ordre d\'Imputation, Ordre de Paiement et Ordre de Virement.',
   },
 ];
 
@@ -98,12 +98,18 @@ const documentsByPhase = {
       title: 'Ordre de service / Accusé de réception',
       data: ['Référence du bon de commande', "Date d'effet / notification", 'Validation & Accusé de réception'],
     },
+    {
+      step: 6,
+      id: 'fiche_engagement',
+      title: "Fiche d'Engagement Budgétaire",
+      data: ["N° d'engagement", 'Montant TTC & intérêt moratoire', 'Imputation budgétaire', 'Bénéficiaire'],
+    },
   ],
   liquidation: [
     {
       step: 6,
       id: 'decision_commission_reception',
-      title: 'Décision commission  de réception',
+      title: 'Décision commission de réception',
       data: ['Agents de vérification', 'Périmètre de mission', 'Référence du BC', 'Signature direction'],
     },
     {
@@ -111,6 +117,26 @@ const documentsByPhase = {
       id: 'pv_reception',
       title: 'PV de réception',
       data: ['Service fait', 'Inventaire contradictoire', 'Réserves éventuelles', 'Signatures'],
+    },
+  ],
+  Ordonnancement: [
+    {
+      step: 8,
+      id: 'ordre_imputation',
+      title: "Ordre d'Imputation (OI)",
+      data: ['N° OI', 'Bénéficiaire & montant', 'Imputation comptable Débit/Crédit', 'Visa sous-ordonnateur'],
+    },
+    {
+      step: 9,
+      id: 'ordre_paiement',
+      title: 'Ordre de Paiement (OP)',
+      data: ['N° OP', 'Bénéficiaire & RIB', 'Pièces jointes', 'Imputation comptable & visa'],
+    },
+    {
+      step: 10,
+      id: 'ordre_virement',
+      title: 'Ordre de Virement (OV)',
+      data: ['N° OV', 'Compte à débiter', 'Bénéficiaire & RIB', 'Signatures Directeur & Fondé de pouvoirs'],
     },
   ],
 };
@@ -168,6 +194,20 @@ const documentFieldGroups = {
     { name: 'date_document', label: 'Date Bon de commande', type: 'date', required: true },
   ],
 
+  fiche_engagement: [
+    { name: 'numero_engagement', label: "N° Fiche d'Engagement", placeholder: '02/2024/FE/DRCA-RSK', required: true, fromDb: false },
+    { name: 'date_document', label: "Date de visa / engagement", type: 'date', required: true },
+    { name: 'objet', label: 'Objet de la prestation', placeholder: 'Achat de matériel de valorisation des produits agricoles', required: true, fromDb: true },
+    { name: 'societe', label: 'Bénéficiaire (Société attributaire)', placeholder: 'COMPTOIR COMMERCIAL DE DISTRIBUTION', required: true, fromDb: true },
+    { name: 'montant_ttc', label: 'Montant de la dépense TTC (DH)', type: 'number', placeholder: '107820.00', required: true, fromDb: true },
+    { name: 'art', label: 'Article budgétaire (ART)', placeholder: '415', required: true, fromDb: true },
+    { name: 'par', label: 'Paragraphe (PAR)', placeholder: '10', required: true, fromDb: true },
+    { name: 'lig', label: 'Ligne (LIG)', placeholder: '33', required: true, fromDb: true },
+    { name: 'credit_budget_cp', label: 'Crédit budgétaire (CP)', type: 'number', placeholder: '387480.00', required: false },
+    { name: 'depenses_engagees_cp', label: 'Dépenses engagées (CP)', type: 'number', placeholder: '202680.00', required: false },
+    { name: 'engagement_propose_cp', label: 'Engagement proposé (CP)', type: 'number', placeholder: '107820.00', required: false },
+    { name: 'pieces_jointes', label: 'Pièces jointes', placeholder: 'Bon de commande N° 04/2024/DRCA-RSK', required: false, fromDb: true },
+  ],
   ordre_commande: [
     {
       name: 'nature_os',
@@ -230,6 +270,60 @@ const documentFieldGroups = {
     { name: 'heure_fin', label: 'Heure de fin de séance', type: 'time', required: true },
     { name: 'date_document', label: 'date de pv de reception', type: 'date', required: true },
     { name: 'prestations_receptionnees', label: 'Détails des prestations (Réception Provisoire / Partielle)', type: 'prestations_partielles_table', required: true, condition: (form) => ['provisoire', 'partielle'].includes(form?.type_reception?.toLowerCase()), fromDb: true },
+  ],
+
+  // ── ORDONNANCEMENT ──────────────────────────────────────────────────────────
+  ordre_imputation: [
+    { name: 'numero_oi', label: "N° Ordre d'Imputation (OI)", placeholder: '38', required: true },
+    { name: 'date_document', label: "Date de l'ordre d'imputation", type: 'date', required: true },
+    { name: 'annee_origine', label: "Année d'origine", placeholder: String(new Date().getFullYear()), type: 'number', required: true },
+    { name: 'credit_type', label: 'Type de crédit', type: 'select', options: ['Crédit Consolidés', 'Crédit Ouvert', 'Report'], required: true },
+    { name: 'societe', label: 'Bénéficiaire', placeholder: 'PLANIFICATION INGENIEUR CONSEIL', required: true, fromDb: true },
+    { name: 'objet', label: 'Objet de la prestation', placeholder: "Organisation de voyages d'agriculteurs...", required: true, fromDb: true },
+    { name: 'forme_engagement', label: "Forme d'engagement", type: 'select', options: ['Bon de commande', 'Marché'], required: true },
+    { name: 'reference_bc', label: 'Référence (N° BC / Marché)', placeholder: 'Marché N°06/2024/DRCA-RSK', required: true, fromDb: true },
+    { name: 'montant_oi', label: 'Montant (DH)', type: 'number', placeholder: '98700.60', required: true, fromDb: true },
+    { name: 'mode_reglement', label: 'Mode de règlement', type: 'select', options: ['Virement', 'Chèque', 'Espèces'], required: true },
+    { name: 'compte_debit', label: 'N° Compte Débit', placeholder: '3103301006024701547601 81', required: true },
+    { name: 'libelle_debit', label: 'Libellé Débit (ex: T.P KENITRA)', placeholder: 'T.P KENITRA', required: true },
+    { name: 'compte_credit', label: 'N° Compte Crédit', placeholder: '021 825 000 027 403 003 150 252', required: true },
+    { name: 'art', label: 'ART', placeholder: '415', required: true, fromDb: true },
+    { name: 'par', label: 'PAR', placeholder: '20', required: true, fromDb: true },
+    { name: 'lig', label: 'LIG (LIGNE)', placeholder: '14', required: true, fromDb: true },
+    { name: 'intitule_rubrique', label: 'Intitulé de la rubrique', placeholder: 'Frais de voyage des agriculteurs et techniciens', required: true, fromDb: true },
+  ],
+
+  ordre_paiement: [
+    { name: 'numero_op', label: "N° Ordre de Paiement (OP)", placeholder: '6', required: true },
+    { name: 'date_document', label: "Date de l'ordre de paiement", type: 'date', required: true },
+    { name: 'credit_type', label: 'Type de crédit', type: 'select', options: ['Crédit Consolidés', 'Crédit Ouvert', 'Report'], required: true },
+    { name: 'exercice_origine', label: "Exercice d'origine", placeholder: String(new Date().getFullYear() - 1), type: 'number', required: true },
+    { name: 'societe', label: 'Bénéficiaire', placeholder: 'VERDA DRIP', required: true, fromDb: true },
+    { name: 'adresse_societe', label: 'Adresse du bénéficiaire', placeholder: '59 AV MOULAY ABDELAZIZ, RCE MLY ABDELAZIZ, BUR 4, Kénitra', required: true, fromDb: true },
+    { name: 'rib', label: 'RIB N°', placeholder: '011 330 000 006 210 000 814 386', required: true, fromDb: true },
+    { name: 'banque', label: 'Banque', placeholder: 'BMCE BANK', required: true, fromDb: true },
+    { name: 'objet', label: 'Objet (OBJET)', placeholder: 'ACQUISITIONS DES INTRANTS AGRICOLES...', required: true, fromDb: true },
+    { name: 'reference_bc', label: 'Référence (N° BC / Marché)', placeholder: 'Marché N°04/2023/DRCA-RSK', required: true, fromDb: true },
+    { name: 'montant_op', label: 'Montant à payer (DH)', type: 'number', placeholder: '79573.63', required: true, fromDb: true },
+    { name: 'montant_engagement', label: 'Montant engagement total (DH)', type: 'number', placeholder: '159400.48', required: true, fromDb: true },
+    { name: 'pieces_jointes_op', label: 'Pièces jointes (liste)', placeholder: 'Facture N°005/2023 Du 02/05/2024\nDécompte provisoire N°2 et dernier\nPV de réception définitif du 03/05/2024\nOrdre de service d\'ajournement\nOrdre de service de reprise', type: 'textarea', required: true },
+    { name: 'art', label: 'Chap / ART', placeholder: '415', required: true, fromDb: true },
+    { name: 'par', label: 'Parag (PAR)', placeholder: '20', required: true, fromDb: true },
+    { name: 'lig', label: 'Ligne (LIG)', placeholder: '13', required: true, fromDb: true },
+    { name: 'intitule_rubrique', label: 'Intitulé de la rubrique', placeholder: 'Essais de démonstration et achat des intrants pour FFS', required: true, fromDb: true },
+    { name: 'prestation_meme_nature', label: 'Prestation de même nature', placeholder: 'PRESTATION DE MEME NATURE', required: false },
+  ],
+
+  ordre_virement: [
+    { name: 'numero_ov', label: "N° Ordre de Virement (OV)", placeholder: '41', required: true },
+    { name: 'numero_op', label: 'N° OP associé', placeholder: '48', required: true, fromDb: true },
+    { name: 'date_document', label: "Date de l'ordre de virement", type: 'date', required: true },
+    { name: 'compte_courant', label: 'N° Compte courant à débiter (ONCA)', placeholder: '31033010060247015476 0181', required: true },
+    { name: 'libelle_compte', label: 'Intitulé du compte (ONCA DR)', placeholder: 'ONCA DR RABAT-SALE-KENITRA INVESTISSEMENT', required: true },
+    { name: 'montant_ov', label: 'La somme de (DH)', type: 'number', placeholder: '98700.60', required: true, fromDb: true },
+    { name: 'societe', label: 'Au profit de (Bénéficiaire)', placeholder: 'PLANIFICATION INGENIEUR CONSEIL', required: true, fromDb: true },
+    { name: 'rib', label: 'RIB (Titulaire du compte)', placeholder: '021 825 000 027 403 003 150 252', required: true, fromDb: true },
+    { name: 'reference_bc', label: 'Pour fin de règlement de (Référence)', placeholder: 'Marché N°06/2024/DRCA-RSK', required: true, fromDb: true },
   ],
 };
 
@@ -799,7 +893,36 @@ const BonCommandePlateforme = () => {
           defaults.prestations_receptionnees = list;
         }
       }
-      else if (field.name === 'numero_engagement') defaults.numero_engagement = `05/DR/${savedConsultation?.annee || new Date().getFullYear()}`;
+      else if (field.name === 'numero_engagement') {
+        if (documentId === 'fiche_engagement') {
+          defaults.numero_engagement = savedConsultation?.numero_bc
+            ? `${savedConsultation.numero_bc}`
+            : `${savedConsultation?.annee || new Date().getFullYear()}/FE/DRCA-RSK`;
+        } else {
+          defaults.numero_engagement = `05/DR/${savedConsultation?.annee || new Date().getFullYear()}`;
+        }
+      }
+      else if (field.name === 'montant_ttc') {
+        const srcPrestations = savedConsultation?.prestations?.length > 0 ? savedConsultation.prestations : prestations.filter(p => p.designation?.trim());
+        const ttc = srcPrestations.reduce((sum, p) => {
+          const ht = (Number(p.quantite) || 0) * (Number(p.prix_unitaire_ht) || 0);
+          return sum + ht * (1 + ((Number(p.tva) || 20) / 100));
+        }, 0);
+        defaults.montant_ttc = ttc > 0 ? ttc.toFixed(2) : (savedConsultation?.budget?.montant_ttc || '');
+      }
+      else if (field.name === 'credit_budget_cp') defaults.credit_budget_cp = '';
+      else if (field.name === 'depenses_engagees_cp') defaults.depenses_engagees_cp = '';
+      else if (field.name === 'engagement_propose_cp') {
+        const srcPrestations = savedConsultation?.prestations?.length > 0 ? savedConsultation.prestations : prestations.filter(p => p.designation?.trim());
+        const ttc = srcPrestations.reduce((sum, p) => {
+          const ht = (Number(p.quantite) || 0) * (Number(p.prix_unitaire_ht) || 0);
+          return sum + ht * (1 + ((Number(p.tva) || 20) / 100));
+        }, 0);
+        defaults.engagement_propose_cp = ttc > 0 ? (ttc * 1.01).toFixed(2) : '';
+      }
+      else if (field.name === 'pieces_jointes' && documentId === 'fiche_engagement') {
+        defaults.pieces_jointes = savedConsultation?.numero_bc ? `Bon de commande N° ${savedConsultation.numero_bc}` : '';
+      }
       else if (field.name === 'numero_lettre') defaults.numero_lettre = `${new Date().getFullYear()}/DRCA-RSK/SOS`;
       else if (field.name === 'nature_os') defaults.nature_os = "Commencement de l'exécution";
       else if (field.name === 'societe' || field.name === 'participant_1' || field.name === 'titulaire_nom') {
@@ -980,6 +1103,58 @@ const BonCommandePlateforme = () => {
       else if (field.name === 'observation') defaults.observation = 'Démarrage immédiat des prestations après notification';
       else if (field.name === 'constat_service_fait') defaults.constat_service_fait = 'Prestations exécutées conformément aux clauses du Bon de Commande';
       else if (field.name === 'direction') defaults.direction = 'Direction Régionale du Conseil Agricole Rabat-Salé-Kénitra';
+      // ── Champs OI / OP / OV ────────────────────────────────────────────────
+      else if (field.name === 'numero_oi') defaults.numero_oi = '';
+      else if (field.name === 'numero_op') {
+        // Pour ordre_virement, reprend le numéro OP déjà saisi dans ordre_paiement
+        defaults.numero_op = documentForms.ordre_paiement?.numero_op || '';
+      }
+      else if (field.name === 'numero_ov') defaults.numero_ov = '';
+      else if (field.name === 'annee_origine') defaults.annee_origine = savedConsultation?.annee || currentYear;
+      else if (field.name === 'exercice_origine') defaults.exercice_origine = (savedConsultation?.annee || currentYear) - 1;
+      else if (field.name === 'credit_type') defaults.credit_type = 'Crédit Consolidés';
+      else if (field.name === 'forme_engagement') defaults.forme_engagement = 'Bon de commande';
+      else if (field.name === 'reference_bc') {
+        defaults.reference_bc = savedConsultation?.numero_bc
+          ? `Bon de commande N° ${savedConsultation.numero_bc}`
+          : (savedConsultation?.numero_consultation ? `Bon de commande N° ${savedConsultation.numero_consultation}` : '');
+      }
+      else if (field.name === 'montant_oi' || field.name === 'montant_op' || field.name === 'montant_ov') {
+        // Calcul du montant TTC depuis les prestations
+        const srcP = savedConsultation?.prestations?.length > 0 ? savedConsultation.prestations : prestations.filter(p => p.designation?.trim());
+        const ttc = srcP.reduce((sum, p) => {
+          const ht = (Number(p.quantite) || 0) * (Number(p.prix_unitaire_ht) || 0);
+          return sum + ht * (1 + ((Number(p.tva) || 20) / 100));
+        }, 0);
+        const val = ttc > 0 ? ttc : (savedConsultation?.budget?.montant_ttc || 0);
+        defaults[field.name] = val ? Number(val).toFixed(2) : '';
+      }
+      else if (field.name === 'montant_engagement') {
+        const srcP = savedConsultation?.prestations?.length > 0 ? savedConsultation.prestations : prestations.filter(p => p.designation?.trim());
+        const ttc = srcP.reduce((sum, p) => {
+          const ht = (Number(p.quantite) || 0) * (Number(p.prix_unitaire_ht) || 0);
+          return sum + ht * (1 + ((Number(p.tva) || 20) / 100));
+        }, 0);
+        defaults.montant_engagement = ttc > 0 ? Number(ttc).toFixed(2) : '';
+      }
+      else if (field.name === 'mode_reglement') defaults.mode_reglement = 'Virement';
+      else if (field.name === 'compte_debit') defaults.compte_debit = '310330100602470154760181';
+      else if (field.name === 'libelle_debit') defaults.libelle_debit = 'T.P KENITRA';
+      else if (field.name === 'compte_credit') {
+        defaults.compte_credit = documentForms.bon_commande?.rib || savedConsultation?.fournisseur?.rib || '';
+      }
+      else if (field.name === 'compte_courant') defaults.compte_courant = '310330100602470154760181';
+      else if (field.name === 'libelle_compte') defaults.libelle_compte = 'ONCA DR RABAT-SALE-KENITRA INVESTISSEMENT';
+      else if (field.name === 'banque') {
+        defaults.banque = documentForms.bon_commande?.banque || savedConsultation?.fournisseur?.banque || '';
+      }
+      else if (field.name === 'intitule_rubrique') {
+        defaults.intitule_rubrique = savedConsultation?.intitule || savedConsultation?.type_prestation || savedConsultation?.objet_consultation || '';
+      }
+      else if (field.name === 'prestation_meme_nature') defaults.prestation_meme_nature = 'PRESTATION DE MEME NATURE';
+      else if (field.name === 'pieces_jointes_op') {
+        defaults.pieces_jointes_op = `Facture N°\nDécompte provisoire N°\nPV de réception définitif\nOrdre de service d'ajournement\nOrdre de service de reprise`;
+      }
     });
 
     setDocumentForms((prev) => ({
@@ -1548,21 +1723,21 @@ const BonCommandePlateforme = () => {
   ];
 
   return (
-    <div className="flex min-h-screen bg-slate-50">
+    <div className="flex min-h-screen" style={{ backgroundColor: "#f1f5f9" }}>
       {/* Sidebar */}
-      <aside className="w-64 bg-[#1e3a8a] text-white flex flex-col h-screen sticky top-0 shadow-xl shrink-0">
-        <div className="px-6 py-6 border-b border-blue-800">
+      <aside className="w-64 bg-[#0f172a] text-white flex flex-col h-screen sticky top-0 shadow-xl shrink-0">
+        <div className="px-5 py-5 border-b border-white/10">
           <Link to="/bons-commande" className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-white/10 rounded-lg flex items-center justify-center font-bold">ON</div>
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center font-black text-white text-xs shadow-md">ON</div>
             <div>
-              <p className="text-sm font-semibold">ERP ONCA</p>
-              <p className="text-xs text-white/80">Bon de commande</p>
+              <p className="text-sm font-extrabold text-white tracking-wide">ERP ONCA</p>
+              <p className="text-xs text-blue-400 font-semibold">Bon de commande</p>
             </div>
           </Link>
         </div>
 
-        <nav className="flex-1 mt-4 overflow-y-auto">
-          <ul className="space-y-1">
+        <nav className="flex-1 px-3 py-4 overflow-y-auto">
+          <ul className="space-y-1.5">
             {sidebarNav.map((item) => {
               const Icon = item.icon;
               const isActive = activePhase === item.id;
@@ -1581,11 +1756,11 @@ const BonCommandePlateforme = () => {
               );
             })}
 
-            <li key="commission-membres-link" className="pt-3 mt-3 border-t border-blue-800/60">
+            <li key="commission-membres-link" className="pt-3 mt-3 border-t border-white/10">
               <Link
                 to="/commission-membres"
                 target="_blank"
-                className="flex items-center space-x-3 px-6 py-4 text-slate-100 font-medium hover:bg-blue-800/50 transition-all duration-200 rounded-xl mx-2 my-1"
+                className="flex items-center gap-3 px-3 py-3 text-sm font-semibold text-slate-300 hover:bg-white/5 hover:text-white transition-all rounded-xl"
               >
                 <Users size={18} />
                 <span>Membres commission</span>
@@ -1594,37 +1769,51 @@ const BonCommandePlateforme = () => {
           </ul>
         </nav>
 
-        <div className="px-6 py-4 border-t border-blue-800 mb-6">
+        <div className="px-5 py-4 border-t border-white/10">
           <UserMenu variant="dark" />
         </div>
       </aside>
 
       {/* Main content */}
       <main className="flex-1 p-8 overflow-y-auto">
-        <div className="max-w-6xl mx-auto">
-          {/* Header */}
-          <header className="mb-8 flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <button onClick={() => navigate('/bons-commande')} className="p-2 bg-white hover:bg-slate-100 text-slate-600 rounded-xl border border-slate-200 transition-all">
-                <ArrowLeft size={20} />
+        <div className="max-w-6xl mx-auto space-y-5">
+          {/* Header bar */}
+          <div className="bg-white border border-slate-200/80 rounded-2xl px-6 py-4 flex items-center justify-between shadow-sm">
+            <div className="flex items-center gap-3">
+              <button onClick={() => navigate('/bons-commande')} className="p-2 rounded-lg text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition-colors" title="Retour">
+                <ArrowLeft size={18} />
               </button>
+              <div className="h-5 w-px bg-slate-200" />
               <div>
-                <p className="text-xs font-bold text-emerald-700 uppercase tracking-widest">Plateforme Bon de commande</p>
-                <h1 className="text-3xl font-extrabold text-slate-900">
-                  {`Phase : ${phases.find((p) => p.id === activePhase)?.label}`}
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-xs font-bold text-blue-600 uppercase tracking-widest">Bon de commande</span>
+                  {savedConsultation && (
+                    <span className="px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-[10px] font-extrabold">
+                      N° {savedConsultation.numero_consultation}
+                    </span>
+                  )}
+                </div>
+                <h1 className="text-xl font-black text-slate-900 tracking-tight leading-tight">
+                  Phase : {phases.find((p) => p.id === activePhase)?.label}
                 </h1>
               </div>
             </div>
-          </header>
+            {savedConsultation && (
+              <div className="hidden sm:flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2">
+                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="text-xs font-semibold text-slate-600 max-w-xs truncate">{savedConsultation.objet_consultation}</span>
+              </div>
+            )}
+          </div>
 
           {message && (
-            <div className="p-4 mb-6 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 font-semibold flex items-center gap-2">
+            <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 font-semibold flex items-center gap-3 shadow-sm animate-fadeIn">
               <CheckCircle2 size={20} />
               {message}
             </div>
           )}
           {error && (
-            <div className="p-4 mb-6 rounded-xl bg-red-50 border border-red-200 text-red-700 font-semibold">
+            <div className="p-4 rounded-2xl bg-red-50 border border-red-200 text-red-800 font-semibold flex items-center gap-3 shadow-sm">
               {error}
             </div>
           )}
@@ -1797,10 +1986,10 @@ const BonCommandePlateforme = () => {
               )}
 
               <div className="mt-8 flex items-center justify-between">
-                <button type="button" onClick={goPrev} className="inline-flex items-center gap-2 px-5 py-2.5 bg-white border border-slate-200 text-slate-700 font-bold rounded-xl hover:bg-slate-50">
+                <button type="button" onClick={goPrev} className="inline-flex items-center gap-2 px-5 py-2.5 bg-white border border-slate-200 text-slate-700 font-semibold rounded-xl hover:bg-slate-50 shadow-sm transition-all">
                   <ArrowLeft size={18} /> Précédent
                 </button>
-                <button type="button" onClick={goNext} className="inline-flex items-center gap-2 px-6 py-3 bg-blue-700 text-white font-bold rounded-xl hover:bg-blue-800">
+                <button type="button" onClick={goNext} className="inline-flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 shadow-md shadow-blue-500/20 transition-all">
                   Suivant : Documents de consultation <ArrowRight size={18} />
                 </button>
               </div>
@@ -1809,10 +1998,10 @@ const BonCommandePlateforme = () => {
 
           {activePhase !== 'dashboard' && activePhase !== 'consultation' && !selectedDocument && (
             <div className="flex items-center justify-between mb-6">
-              <button type="button" onClick={goPrev} className="inline-flex items-center gap-2 px-5 py-2.5 bg-white border border-slate-200 text-slate-700 font-bold rounded-xl hover:bg-slate-50">
+              <button type="button" onClick={goPrev} className="inline-flex items-center gap-2 px-5 py-2.5 bg-white border border-slate-200 text-slate-700 font-semibold rounded-xl hover:bg-slate-50 shadow-sm transition-all">
                 <ArrowLeft size={18} /> Précédent
               </button>
-              <button type="button" onClick={goNext} className="inline-flex items-center gap-2 px-6 py-3 bg-blue-700 text-white font-bold rounded-xl hover:bg-blue-800">
+              <button type="button" onClick={goNext} className="inline-flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 shadow-md shadow-blue-500/20 transition-all">
                 Suivant : {phaseIndex < phases.length - 1 ? phases[phaseIndex + 1].label : 'Fin du processus'} <ArrowRight size={18} />
               </button>
             </div>
@@ -1821,7 +2010,7 @@ const BonCommandePlateforme = () => {
           {activePhase !== 'dashboard' && !selectedDocument && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {(documentsByPhase[activePhase] || []).map((doc) => (
-                <div key={doc.id} className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm hover:shadow-lg transition-all">
+                <div key={doc.id} className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-sm hover:shadow-md hover:border-blue-200 transition-all duration-200 flex flex-col">
                   <div className="flex items-start justify-between gap-4">
                     <div>
                       <div className="text-xs font-extrabold text-blue-700 uppercase tracking-wide">
@@ -1833,7 +2022,7 @@ const BonCommandePlateforme = () => {
                     <button
                       type="button"
                       onClick={() => selectDocument(doc.id)}
-                      className="px-3 h-10 rounded-lg bg-slate-900 text-white font-bold text-xs shrink-0"
+                      className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shrink-0 shadow-sm transition-colors"
                     >
                       Remplir
                     </button>
@@ -2850,8 +3039,8 @@ const BonCommandePlateforme = () => {
                   }
 
                   const fieldClass = `w-full px-4 py-3 rounded-lg border outline-none transition-all ${hasError
-                    ? 'border-red-500 bg-red-50/20 text-slate-900 focus:border-red-600 focus:ring-2 focus:ring-red-100'
-                    : 'border-slate-200 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-100'
+                    ? 'border-red-400 bg-red-50/30 text-slate-900 focus:border-red-500 focus:ring-2 focus:ring-red-100'
+                    : 'border-slate-200 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-50/80 hover:border-slate-300'
                     }`;
 
                   const maxLen = fieldMaxLengthMap[field.name];
@@ -2918,7 +3107,7 @@ const BonCommandePlateforme = () => {
                     type="button"
                     disabled={!savedConsultation}
                     onClick={() => saveDocumentDataToDatabase(selectedDocument.id, true)}
-                    className="px-5 py-3.5 rounded-xl bg-blue-700 hover:bg-blue-800 text-white font-bold inline-flex items-center gap-2 disabled:opacity-50 transition-all shadow-md hover:shadow-lg"
+                    className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold inline-flex items-center gap-2 disabled:opacity-50 transition-all shadow-md shadow-blue-500/20 hover:shadow-lg hover:shadow-blue-500/30"
                     title="Enregistrer les informations modifiées dans la base de données"
                   >
                     <Save size={18} />
@@ -2928,7 +3117,7 @@ const BonCommandePlateforme = () => {
                     type="button"
                     disabled={!savedConsultation || downloading === selectedDocument.id}
                     onClick={() => downloadDocument(selectedDocument)}
-                    className="px-6 py-3.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold inline-flex items-center gap-2 disabled:opacity-50 transition-all shadow-md hover:shadow-lg"
+                    className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold inline-flex items-center gap-2 disabled:opacity-50 transition-all shadow-md shadow-emerald-500/20"
                   >
                     {downloading === selectedDocument.id ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} />}
                     Télécharger le PDF

@@ -1,137 +1,369 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="fr" dir="ltr">
 <head>
     <meta charset="UTF-8">
-    <title>{{ $docTitle }}</title>
+    <title>Fiche d'Engagement</title>
     <style>
-        @page { margin: 115px 40px 70px 40px; }
+        @page {
+            margin: 8mm 10mm 8mm 10mm;
+            size: A4 portrait;
+        }
+        * { box-sizing: border-box; }
         body {
-            font-family: 'Times New Roman', Times, serif;
-            font-size: 12px;
-            color: #000;
-            line-height: 1.45;
+            font-family: "DejaVu Sans", Arial, sans-serif;
+            font-size: 10.5px;
+            line-height: 1.25;
             margin: 0;
+            padding: 0;
+            color: #000;
         }
-        table { width: 100%; border-collapse: collapse; }
-        td, th { vertical-align: middle; }
-        .page { position: relative; }
-        .header-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 4px;
-            margin-top: 10px;
-        }
-        .header-table td { vertical-align: middle; }
+
+        /* ── HEADER ── */
+        .header-table { width: 100%; border-collapse: collapse; margin-bottom: 4px; }
+        .header-table td { vertical-align: middle; padding: 0; }
+
         .header-center {
             text-align: center;
-            font-size: 12px;
+            font-size: 12.5px;
             font-weight: bold;
-            padding: 0 8px;
-        }
-        .header-logo { height: 45px; width: auto; }
-        .header-line {
-            border-bottom: 2px solid #000080;
-            margin-bottom: 18px;
-        }
-        footer {
-            position: fixed;
-            bottom: -90px;
-            left: 0;
-            right: 0;
-            border-top: 1px solid #999;
-            padding-top: 8px;
-            font-size: 8px;
-            color: #333;
-        }
-        .footer-table { width: 100%; border-collapse: collapse; }
-        .footer-table td { vertical-align: top; border: none; }
-        .footer-left { width: 22%; font-weight: bold; font-size: 9px; line-height: 1.3; }
-        .footer-center { width: 56%; text-align: center; font-size: 8px; line-height: 1.35; }
-        .footer-right { width: 22%; text-align: right; }
-        .footer-logo { height: 48px; width: auto; }
-        .footer-green-logo { height: 28px; width: auto; }
-        .meta { width: 100%; margin-bottom: 15px; }
-        .meta td { vertical-align: top; padding: 3px 4px; }
-        .title {
-            text-align: center;
-            font-weight: bold;
-            font-size: 14px;
-            line-height: 1.45;
             text-transform: uppercase;
-            margin: 18px auto 24px;
+            letter-spacing: 0.4px;
+            line-height: 1.4;
         }
-        .sub-title {
-            text-align: center;
+        .header-divider { border-bottom: 1.5px solid #000; margin: 5px 0 8px 0; }
+
+        /* ── CADRE BUDGET ── */
+        .budget-box {
+            width: 230px;
+            border-collapse: collapse;
+            margin-left: auto;
+            margin-bottom: 5px;
+        }
+        .budget-box td {
+            border: 1.5px solid #000;
+            padding: 4px 8px;
+            font-size: 10.5px;
+        }
+
+        /* ── TITRE ── */
+        .num-fe {
+            font-size: 10.5px;
             font-weight: bold;
-            font-size: 16px;
-            margin: 18px 0 8px;
-            line-height: 1.5;
+            text-align: left;
+            margin-bottom: 2px;
+            padding-left: 40px;
         }
-        .box td, .box th,
-        .details-table td,
-        .info-grid td,
-        .data-table th,
-        .data-table td,
-        .totals-table td {
+        .main-title {
+            text-align: center;
+            font-size: 15px;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+            margin-bottom: 10px;
+        }
+
+        /* ── TABLEAUX PRINCIPAUX ── */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 10px;
+            border: 1.5px solid #000;
+        }
+        .data-table th, .data-table td {
             border: 1px solid #000;
-            padding: 8px;
-            vertical-align: top;
+            padding: 5px 7px;
+            font-size: 10px;
         }
-        .box th,
-        .data-table th,
-        .details-label {
-            background: #f4f4f4;
+        .data-table .label-col {
+            font-weight: bold;
+            width: 34%;
+            text-align: center;
+        }
+        .data-table .value-col {
+            width: 66%;
+            text-align: center;
             font-weight: bold;
         }
-        .tight td, .tight th { padding: 6px; }
-        .center { text-align: center; }
-        .right { text-align: right; }
-        .bold { font-weight: bold; }
-        .underline { text-decoration: underline; }
-        .mt { margin-top: 15px; }
-        .mb { margin-bottom: 15px; }
-        .small { font-size: 10px; }
-        .section { font-weight: bold; text-decoration: underline; margin-top: 8px; }
-        .article-text { text-align: justify; line-height: 1.45; }
-        .signature { margin-top: 20px; page-break-inside: avoid; }
-        .signature td { border: 1px solid #000; height: 90px; text-align: center; }
-        .signature th { border: 1px solid #000; background: #f4f4f4; padding: 6px; }
-        .objet-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
-        .objet-table td { padding: 8px 4px; border: none; vertical-align: top; }
-        .objet-label { font-weight: bold; width: 150px; }
-        .details-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-        .details-label { width: 35%; }
-        .info-grid { margin-bottom: 20px; }
-        .info-grid .label { font-weight: bold; width: 15%; background: #f4f4f4; }
-        .imputation-table td {
-            border: none;
-            border-bottom: 1px solid #000;
-            border-left: 1px solid #000;
+
+        /* ── TABLEAU RUBRIQUE BUDGETAIRE ── */
+        .rubrique-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 10px;
+            border: 1.5px solid #000;
             text-align: center;
-            padding: 4px;
         }
-        .imputation-table tr:last-child td { border-bottom: none; }
-        .data-table { margin-bottom: 18px; }
-        .data-table .col-left { text-align: left; }
-        .totals-table { width: 360px; margin-left: auto; margin-bottom: 14px; border: 2px solid #000; }
-        .date-box { border: 1px solid #000; padding: 6px 10px; width: 250px; font-weight: bold; margin-top: 28px; }
+        .rubrique-table th, .rubrique-table td {
+            border: 1px solid #000;
+            padding: 3.5px 2px;
+            font-size: 9px;
+        }
+        .rubrique-table th { font-weight: bold; }
+
+        /* ── TABLEAU FINANCIER ── */
+        .finance-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 10px;
+            border: 1.5px solid #000;
+        }
+        .finance-table td {
+            border: 1px solid #000;
+            padding: 5px 7px;
+            font-size: 10px;
+        }
+        .finance-table .flabel { font-weight: bold; width: 48%; }
+        .finance-table .fval   { text-align: center; font-weight: bold; width: 52%; }
+
+        /* ── VISA BOX ── */
+        .visa-box {
+            width: 100%;
+            border-collapse: collapse;
+            border: 1.5px solid #000;
+            margin-top: 5px;
+        }
+        .visa-box td { border: 1px solid #000; padding: 5px 8px; }
     </style>
 </head>
 <body>
-    @include('documents.partials.bc_header')
-    @include('documents.partials.bc_footer')
-<div class="page">
 
-    <div class="title">Fiche d'engagement budgétaire</div>
-    <table class="box">
-        <tr><td class="bold">Exercice</td><td>{{ $consultation->annee ?? date('Y') }}</td><td class="bold">Budget</td><td>{{ $consultation->type_budget ?? 'Investissement' }}</td></tr>
-        <tr><td class="bold">N° d'engagement</td><td>{{ $doc['numero_engagement'] }}</td><td class="bold">Date</td><td>{{ $doc['date_document'] }}</td></tr>
-        <tr><td class="bold">Objet</td><td colspan="3">{{ $doc['objet'] }}</td></tr>
-        <tr><td class="bold">Imputation</td><td colspan="3">ART {{ $consultation->budget->art ?? '' }} / PAR {{ $consultation->budget->par ?? '' }} / LIG {{ $consultation->budget->lig ?? '' }} / Code {{ $consultation->budget->code_imputation ?? '' }}</td></tr>
-        <tr><td class="bold">Bénéficiaire</td><td>{{ $doc['societe'] }}</td><td class="bold">Montant TTC</td><td class="right bold">{{ number_format($doc['total_ttc'], 2, ',', ' ') }}</td></tr>
-        <tr><td class="bold">En lettres</td><td colspan="3">{{ $doc['montant_en_lettres'] }}</td></tr>
+    @php
+        /* ── Logos ── */
+        $logoOncaPath  = public_path('images/logo-onca.png');
+        $logoOncaSrc   = file_exists($logoOncaPath)  ? 'data:image/png;base64,'.base64_encode(file_get_contents($logoOncaPath))  : '';
+        $sceauMarocPath = public_path('images/sceau-maroc.png');
+        $sceauMarocSrc  = file_exists($sceauMarocPath) ? 'data:image/png;base64,'.base64_encode(file_get_contents($sceauMarocPath)) : '';
+
+        /* ── Données de base ── */
+        $typeBudget = $consultation->type_budget ?? 'Fonctionnement';
+        $exercice   = $consultation->annee ?? date('Y');
+
+        /* ── N° Engagement : depuis documentData en priorité ── */
+        $numEngagement = data_get($documentData, 'numero_engagement')
+            ?: ($consultation->numero_bc
+                ? $consultation->numero_bc
+                : ($doc['numero_bc'] ?? ($doc['numero_engagement'] ?? '')));
+
+        /* ── Date d'engagement ── */
+        $dateEngagement = data_get($documentData, 'date_document')
+            ? \Carbon\Carbon::parse(data_get($documentData, 'date_document'))->format('d/m/Y')
+            : date('d/m/Y');
+
+        /* ── Objet ── */
+        $objet = data_get($documentData, 'objet')
+            ?: ($consultation->objet_consultation ?? '');
+
+        /* ── Bénéficiaire ── */
+        $beneficiaire = data_get($documentData, 'societe')
+            ?: ($doc['titulaire_nom']
+                ?? ($doc['societe']
+                    ?? ($consultation->fournisseur->raison_sociale
+                        ?? ($consultation->engagement?->fournisseur?->raison_sociale ?? ''))));
+
+        /* ── Montant de la dépense ── */
+        $rawMontant = data_get($documentData, 'montant_ttc');
+        if ($rawMontant === null || $rawMontant === '') {
+            $rawMontant = $doc['total_ttc'] ?? 0;
+        }
+        $montantDepense   = (float) $rawMontant;
+        $interetMoratoire = round($montantDepense * 0.01, 2);
+        $montantTotal     = round($montantDepense + $interetMoratoire, 2);
+        $montantEnLettres = \App\Helpers\NumberToWordsHelper::toFrenchMoneyWords($montantTotal);
+
+        /* ── Imputation budgétaire ── */
+        $article    = data_get($documentData, 'art')    ?: ($consultation->budget->art  ?? ($doc['art']  ?? '415'));
+        $paragraphe = data_get($documentData, 'par')    ?: ($consultation->budget->par  ?? ($doc['par']  ?? ''));
+        $ligne      = data_get($documentData, 'lig')    ?: ($consultation->budget->lig  ?? ($doc['lig']  ?? ''));
+
+        /* ── Crédits budgétaires ── */
+        $creditCp         = data_get($documentData, 'credit_budget_cp');
+        $depensesCp       = data_get($documentData, 'depenses_engagees_cp');
+        $disponibleCp     = ($creditCp !== null && $creditCp !== '' && $depensesCp !== null && $depensesCp !== '')
+                            ? ((float)$creditCp - (float)$depensesCp)
+                            : null;
+        $engagementProposeCp = data_get($documentData, 'engagement_propose_cp');
+        if (!$engagementProposeCp) {
+            $engagementProposeCp = $montantTotal;
+        }
+
+        /* ── Pièces jointes ── */
+        $piecesJointes = data_get($documentData, 'pieces_jointes')
+            ?: ($consultation->numero_bc ? 'Bon de commande N° '.$consultation->numero_bc : '');
+    @endphp
+
+    <!-- ══════════ HEADER LOGOS ══════════ -->
+    <table class="header-table">
+        <tr>
+            <td style="width:22%; text-align:left; vertical-align:middle;">
+                @if($logoOncaSrc)
+                    <img src="{{ $logoOncaSrc }}" style="height:58px; width:auto; max-width:140px;" alt="ONCA">
+                @else
+                    <div style="font-size:7.5px; font-weight:bold; line-height:1.3;">
+                        المكتب الوطني للإستشارة الفلاحية<br>
+                        <span style="font-size:7px;">Office National du Conseil Agricole</span>
+                    </div>
+                @endif
+            </td>
+            <td style="width:56%; text-align:center; vertical-align:middle; padding:0 5px;">
+                <div class="header-center">
+                    Direction Régionale du Conseil Agricole<br>
+                    <span style="font-size:13px; letter-spacing:0.5px;">RABAT SALE KENITRA</span>
+                </div>
+            </td>
+            <td style="width:22%; text-align:right; vertical-align:middle;">
+                @if($sceauMarocSrc)
+                    <img src="{{ $sceauMarocSrc }}" style="height:58px; width:auto; max-width:140px;" alt="Royaume du Maroc">
+                @else
+                    <div style="font-size:7.5px; font-weight:bold; line-height:1.3; text-align:right;">
+                        المملكة المغربية<br>
+                        <span style="font-size:7px;">وزارة الفلاحة والصيد البحري</span>
+                    </div>
+                @endif
+            </td>
+        </tr>
     </table>
-    <table class="signature mt"><tr><th>Service demandeur</th><th>Service budgétaire</th><th>Sous-Ordonnateur</th></tr><tr><td></td><td></td><td></td></tr></table>
-</div>
+    <div class="header-divider"></div>
+
+    <!-- ══════════ CADRE BUDGET / EXERCICE ══════════ -->
+    <table class="budget-box">
+        <tr>
+            <td style="width:40%; font-weight:bold;">Budget</td>
+            <td style="width:60%; font-weight:bold; text-align:center;">{{ $typeBudget }}</td>
+        </tr>
+        <tr>
+            <td style="font-weight:bold;">Exercice</td>
+            <td style="font-weight:bold; text-align:center;">{{ $exercice }}</td>
+        </tr>
+    </table>
+
+    <!-- ══════════ TITRE PRINCIPAL ══════════ -->
+    <div class="num-fe">N° &nbsp;&nbsp; {{ $numEngagement }}</div>
+    <div class="main-title">FICHE D'ENGAGEMENT</div>
+
+    <!-- ══════════ TABLEAU 1 : IDENTIFICATION ══════════ -->
+    <table class="data-table">
+        <tr>
+            <td class="label-col">Référence de l'engagement</td>
+            <td class="value-col">{{ $numEngagement }}</td>
+        </tr>
+        <tr>
+            <td class="label-col">Objet</td>
+            <td class="value-col" style="text-transform:uppercase;">{{ $objet }}</td>
+        </tr>
+        <tr>
+            <td class="label-col">Forme</td>
+            <td class="value-col">Bon de commande</td>
+        </tr>
+        <tr>
+            <td class="label-col">Montant en dirhams</td>
+            <td class="value-col" style="font-size:11px;">{{ number_format($montantDepense, 2, ',', ' ') }}</td>
+        </tr>
+    </table>
+
+    <!-- ══════════ TABLEAU 2 : RUBRIQUE BUDGÉTAIRE ══════════ -->
+    <table class="rubrique-table">
+        <thead>
+            <tr>
+                <th colspan="2" style="width:22%;">Rubrique budgétaire</th>
+                <th colspan="2" style="width:20%;">Crédit budgétaire</th>
+                <th colspan="2" style="width:20%;">Dépenses engagées</th>
+                <th colspan="2" style="width:19%;">Disponible</th>
+                <th colspan="2" style="width:19%;">Engagement de la dépense proposée</th>
+            </tr>
+            <tr>
+                <th style="width:13%;"></th>
+                <th style="width:9%;"></th>
+                <th style="width:10%;">CP</th>
+                <th style="width:10%;">CE</th>
+                <th style="width:10%;">CP</th>
+                <th style="width:10%;">CE</th>
+                <th style="width:10%;">CP</th>
+                <th style="width:9%;">CE</th>
+                <th style="width:10%;">CP</th>
+                <th style="width:9%;">CE</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td style="font-weight:bold; text-align:left;">ARTICLE</td>
+                <td style="font-weight:bold;">{{ $article }}</td>
+                <td rowspan="3" style="font-weight:bold; vertical-align:middle;">
+                    {{ $creditCp !== null && $creditCp !== '' ? number_format((float)$creditCp, 2, ',', ' ') : '-' }}
+                </td>
+                <td rowspan="3" style="font-weight:bold; vertical-align:middle;">-</td>
+                <td rowspan="3" style="font-weight:bold; vertical-align:middle;">
+                    {{ $depensesCp !== null && $depensesCp !== '' ? number_format((float)$depensesCp, 2, ',', ' ') : '-' }}
+                </td>
+                <td rowspan="3" style="font-weight:bold; vertical-align:middle;">-</td>
+                <td rowspan="3" style="font-weight:bold; vertical-align:middle;">
+                    {{ $disponibleCp !== null ? number_format((float)$disponibleCp, 2, ',', ' ') : '-' }}
+                </td>
+                <td rowspan="3" style="font-weight:bold; vertical-align:middle;">-</td>
+                <td rowspan="3" style="font-weight:bold; vertical-align:middle;">
+                    {{ number_format((float)$engagementProposeCp, 2, ',', ' ') }}
+                </td>
+                <td rowspan="3" style="font-weight:bold; vertical-align:middle;">-</td>
+            </tr>
+            <tr>
+                <td style="font-weight:bold; text-align:left;">PARAGRAPHE</td>
+                <td style="font-weight:bold;">{{ $paragraphe }}</td>
+            </tr>
+            <tr>
+                <td style="font-weight:bold; text-align:left;">LIGNE</td>
+                <td style="font-weight:bold;">{{ $ligne }}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- ══════════ TABLEAU 3 : FINANCIER ══════════ -->
+    <table class="finance-table">
+        <tr>
+            <td class="flabel">Bénéficiaire</td>
+            <td class="fval" style="text-transform:uppercase;">{{ $beneficiaire }}</td>
+        </tr>
+        <tr>
+            <td class="flabel">Montant de la depense en dirhams</td>
+            <td class="fval">{{ number_format($montantDepense, 2, ',', ' ') }}</td>
+        </tr>
+        <tr>
+            <td class="flabel">
+                Somme à valoir pour intérêt moratoire<br>
+                <span style="font-size:9px; font-weight:normal;">(1% du montant en dirhams)</span>
+            </td>
+            <td class="fval">{{ number_format($interetMoratoire, 2, ',', ' ') }}</td>
+        </tr>
+        <tr>
+            <td class="flabel">Montant total de l'engagement en dirhams</td>
+            <td class="fval" style="font-size:11px;">{{ number_format($montantTotal, 2, ',', ' ') }}</td>
+        </tr>
+        <tr>
+            <td class="flabel" style="text-align:center;">En Lettre</td>
+            <td class="fval" style="font-style:italic;">{{ $montantEnLettres }}</td>
+        </tr>
+    </table>
+
+    <!-- ══════════ TABLEAU 4 : PIÈCES JOINTES & VISA ══════════ -->
+    <table class="visa-box">
+        <tr>
+            <td colspan="2" style="background:#fafafa; padding:4px 8px;">
+                <span style="font-weight:bold;">Pièces jointes :</span><br>
+                <span style="margin-left:10px; font-weight:bold;">{{ $piecesJointes }}</span>
+            </td>
+        </tr>
+        <tr>
+            <td colspan="2" style="text-align:center; font-weight:bold; font-size:11.5px; padding:5px; letter-spacing:0.5px;">
+                VISA DU SOUS-ORDONNATEUR
+            </td>
+        </tr>
+        <tr>
+            <td colspan="2" style="height:90px; vertical-align:top; border-bottom:none;">
+                <!-- Zone réservée au visa, signature et cachet -->
+            </td>
+        </tr>
+        <tr>
+            <td style="width:45%; font-weight:bold; text-align:center; border-top:1px solid #000;">Date :</td>
+            <td style="width:55%; font-weight:bold; text-align:center; border-top:1px solid #000;">{{ $dateEngagement }}</td>
+        </tr>
+    </table>
+
 </body>
 </html>
