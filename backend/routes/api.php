@@ -60,6 +60,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::match(['get', 'post'], 'consultations/{consultation}/documents/{type}', [\App\Http\Controllers\Api\DocumentController::class, 'generateWithData']);
 
     // Notifications budgétaires (Module Base)
+    Route::get('notifications/report-status', [\App\Http\Controllers\Api\NotificationController::class, 'getReportExerciceStatus']);
+    Route::get('notifications/recapitulatif-exercice', [\App\Http\Controllers\Api\NotificationController::class, 'getRecapitulatifExercice']);
+    Route::get('notifications/lignes-existantes', [\App\Http\Controllers\Api\NotificationController::class, 'getLignesExistantes']);
     Route::apiResource('notifications', \App\Http\Controllers\Api\NotificationController::class);
     Route::get('dashboard/budget', [\App\Http\Controllers\Api\NotificationController::class, 'getDashboardStats']);
     Route::get('notification-lignes', [\App\Http\Controllers\Api\NotificationController::class, 'getLignes']);

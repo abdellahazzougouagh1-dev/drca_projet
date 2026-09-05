@@ -17,11 +17,14 @@ class NotificationLigne extends Model
         'paragraphe',
         'ligne_budgetaire',
         'libelle',
+        'type_budget',
+        'domaine',
         'reports',
         'diminution_report',
         'credits_neufs',
         'diminution_credit_neuf',
         'credits_engagements',
+        'diminution_credit_engagement',
         'total_credits',
     ];
 
@@ -31,6 +34,7 @@ class NotificationLigne extends Model
         'credits_neufs' => 'decimal:2',
         'diminution_credit_neuf' => 'decimal:2',
         'credits_engagements' => 'decimal:2',
+        'diminution_credit_engagement' => 'decimal:2',
         'total_credits' => 'decimal:2',
     ];
 
@@ -48,6 +52,11 @@ class NotificationLigne extends Model
     public function notification(): BelongsTo
     {
         return $this->belongsTo(Notification::class);
+    }
+
+    public function mouvements(): HasMany
+    {
+        return $this->hasMany(NotificationMouvement::class, 'notification_ligne_id');
     }
 
     public function consultations(): HasMany
@@ -79,6 +88,11 @@ class NotificationLigne extends Model
 
     public function getCreditsDisponiblesAttribute()
     {
-        return round($this->total_credits - $this->getCreditsEngagesAttribute(), 2);
+        $netReports = ($this->reports ?? 0) - ($this->diminution_report ?? 0);
+        $netCreditsNeufs = ($this->credits_neufs ?? 0) - ($this->diminution_credit_neuf ?? 0);
+        $netEngagement = ($this->credits_engagements ?? 0) - ($this->diminution_credit_engagement ?? 0);
+        $totalNet = $netReports + $netCreditsNeufs + $netEngagement;
+
+        return round($totalNet - $this->getCreditsEngagesAttribute(), 2);
     }
 }

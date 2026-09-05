@@ -12,6 +12,8 @@ class Notification extends Model
 
     protected $fillable = [
         'numero',
+        'type_budget',
+        'domaine',
         'exercice',
         'date_notification',
         'montant',
@@ -29,5 +31,10 @@ class Notification extends Model
     public function lignes(): HasMany
     {
         return $this->hasMany(NotificationLigne::class);
+    }
+
+    public function mouvements(): HasMany
+    {
+        return $this->hasMany(NotificationMouvement::class);
     }
 }
