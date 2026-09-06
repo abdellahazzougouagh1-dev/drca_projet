@@ -175,11 +175,17 @@
         $ligne      = data_get($documentData, 'lig')    ?: ($consultation->budget->lig  ?? ($doc['lig']  ?? ''));
 
         /* ── Crédits budgétaires ── */
-        $creditCp         = data_get($documentData, 'credit_budget_cp');
-        $depensesCp       = data_get($documentData, 'depenses_engagees_cp');
+        $creditCp         = data_get($documentData, 'credit_budget_cp', data_get($documentData, 'credit_ouvert_cp'));
+        $creditCe         = data_get($documentData, 'credit_budget_ce', data_get($documentData, 'credit_ouvert_ce'));
+        $depensesCp       = data_get($documentData, 'depenses_engagees_cp', data_get($documentData, 'depenses_anterieures_cp'));
+        $depensesCe       = data_get($documentData, 'depenses_engagees_ce', data_get($documentData, 'depenses_anterieures_ce'));
         $disponibleCp     = ($creditCp !== null && $creditCp !== '' && $depensesCp !== null && $depensesCp !== '')
-                            ? ((float)$creditCp - (float)$depensesCp)
-                            : null;
+                    ? ((float)$creditCp - (float)$depensesCp) : null;
+        $disponibleCe     = ($creditCe !== null && $creditCe !== '' && $depensesCe !== null && $depensesCe !== '')
+                    ? ((float)$creditCe - (float)$depensesCe) : null;
+        $montantDepense = (float) data_get($documentData, 'montant_depense_neuf', $montantDepense);
+        $interetMoratoire = round($montantDepense * 0.01, 2);
+        $montantTotal = round($montantDepense + $interetMoratoire, 2);
         $engagementProposeCp = data_get($documentData, 'engagement_propose_cp');
         if (!$engagementProposeCp) {
             $engagementProposeCp = $montantTotal;
@@ -260,6 +266,42 @@
     </table>
 
     <!-- ══════════ TABLEAU 2 : RUBRIQUE BUDGÉTAIRE ══════════ -->
+    @if(strtolower((string) $typeBudget) === 'fonctionnement')
+    <table class="rubrique-table">
+        <thead>
+            <tr>
+                <th style="width:28%;">Rubrique budgétaire</th>
+                <th style="width:18%;">Crédit budgétaire</th>
+                <th style="width:18%;">Dépenses engagées</th>
+                <th style="width:18%;">Disponible</th>
+                <th style="width:18%;">Engagement de la dépense proposée</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td style="font-weight:bold; text-align:left;">ARTICLE<br>PARAGRAPHE<br>LIGNE</td>
+                <td style="font-weight:bold; vertical-align:middle;">
+                    {{ $creditCp !== null && $creditCp !== '' ? number_format((float)$creditCp, 2, ',', ' ') : '-' }}
+                </td>
+                <td style="font-weight:bold; vertical-align:middle;">
+                    {{ $depensesCp !== null && $depensesCp !== '' ? number_format((float)$depensesCp, 2, ',', ' ') : '-' }}
+                </td>
+                <td style="font-weight:bold; vertical-align:middle;">
+                    {{ $disponibleCp !== null ? number_format((float)$disponibleCp, 2, ',', ' ') : '-' }}
+                </td>
+                <td style="font-weight:bold; vertical-align:middle;">
+                    {{ number_format((float)$engagementProposeCp, 2, ',', ' ') }}
+                </td>
+            </tr>
+            <tr>
+                <td style="font-weight:bold; text-align:left;">Valeurs</td>
+                <td colspan="4" style="font-weight:bold; text-align:left;">
+                    ARTICLE {{ $article }} &nbsp;&nbsp; PARAGRAPHE {{ $paragraphe }} &nbsp;&nbsp; LIGNE {{ $ligne }}
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    @else
     <table class="rubrique-table">
         <thead>
             <tr>
@@ -289,15 +331,21 @@
                 <td rowspan="3" style="font-weight:bold; vertical-align:middle;">
                     {{ $creditCp !== null && $creditCp !== '' ? number_format((float)$creditCp, 2, ',', ' ') : '-' }}
                 </td>
-                <td rowspan="3" style="font-weight:bold; vertical-align:middle;">-</td>
+                <td rowspan="3" style="font-weight:bold; vertical-align:middle;">
+                    {{ $creditCe !== null && $creditCe !== '' ? number_format((float)$creditCe, 2, ',', ' ') : '-' }}
+                </td>
                 <td rowspan="3" style="font-weight:bold; vertical-align:middle;">
                     {{ $depensesCp !== null && $depensesCp !== '' ? number_format((float)$depensesCp, 2, ',', ' ') : '-' }}
                 </td>
-                <td rowspan="3" style="font-weight:bold; vertical-align:middle;">-</td>
+                <td rowspan="3" style="font-weight:bold; vertical-align:middle;">
+                    {{ $depensesCe !== null && $depensesCe !== '' ? number_format((float)$depensesCe, 2, ',', ' ') : '-' }}
+                </td>
                 <td rowspan="3" style="font-weight:bold; vertical-align:middle;">
                     {{ $disponibleCp !== null ? number_format((float)$disponibleCp, 2, ',', ' ') : '-' }}
                 </td>
-                <td rowspan="3" style="font-weight:bold; vertical-align:middle;">-</td>
+                <td rowspan="3" style="font-weight:bold; vertical-align:middle;">
+                    {{ $disponibleCe !== null ? number_format((float)$disponibleCe, 2, ',', ' ') : '-' }}
+                </td>
                 <td rowspan="3" style="font-weight:bold; vertical-align:middle;">
                     {{ number_format((float)$engagementProposeCp, 2, ',', ' ') }}
                 </td>
@@ -313,6 +361,7 @@
             </tr>
         </tbody>
     </table>
+    @endif
 
     <!-- ══════════ TABLEAU 3 : FINANCIER ══════════ -->
     <table class="finance-table">

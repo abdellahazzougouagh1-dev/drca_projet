@@ -14,7 +14,21 @@ class ConsultationController extends Controller
 {
     public function index()
     {
-        return response()->json(Consultation::with(['fournisseur', 'budget', 'prestations', 'receptionCommission'])->get());
+        return response()->json(Consultation::with(['fournisseur', 'budget', 'prestations', 'receptionCommission', 'registreEngagement'])->get());
+    }
+
+    public function findByBonCommande(string $numeroBc)
+    {
+        $consultation = Consultation::with(['fournisseur', 'budget', 'prestations', 'engagement', 'registreEngagement'])
+            ->where('numero_bc', $numeroBc)
+            ->orWhere('numero_consultation', $numeroBc)
+            ->first();
+
+        if (!$consultation) {
+            return response()->json(['message' => 'Aucun bon de commande ne correspond à ce numéro.'], 404);
+        }
+
+        return response()->json($consultation);
     }
 
     public function store(Request $request)
@@ -33,6 +47,7 @@ class ConsultationController extends Controller
             'delai_execution' => 'required|integer|min:1',
             'statut_dossier' => 'required|string|max:255',
             'fournisseur_id' => 'nullable|exists:fournisseurs,id',
+            'numero_bc' => 'nullable|string|max:255|unique:consultations,numero_bc',
             // Infos Budgétaires
             'notification_ligne_id' => 'nullable|exists:notification_lignes,id',
             'montant_estimatif_ht' => 'required|numeric|min:0',
@@ -71,6 +86,7 @@ class ConsultationController extends Controller
                     'delai_execution' => $validated['delai_execution'],
                     'statut_dossier' => $validated['statut_dossier'],
                     'fournisseur_id' => $validated['fournisseur_id'] ?? null,
+                    'numero_bc' => $validated['numero_bc'] ?? null,
                     'notification_ligne_id' => $notifLigneId,
                     'date_limite_devis' => $request->date_limite_devis ?? date('Y-m-d', strtotime($validated['date_consultation'] . ' +2 days')),
                     'heure_limite_devis' => $request->heure_limite_devis ?? '10:00',
@@ -105,7 +121,7 @@ class ConsultationController extends Controller
 
     public function show(Consultation $consultation)
     {
-        return response()->json($consultation->load(['fournisseur', 'budget', 'prestations', 'engagement', 'offres', 'receptionCommission']));
+        return response()->json($consultation->load(['fournisseur', 'budget', 'prestations', 'engagement', 'registreEngagement', 'offres', 'receptionCommission']));
     }
 
     public function destroy(Consultation $consultation)
@@ -153,6 +169,20 @@ class ConsultationController extends Controller
             'cautionnement_provisoire' => 'nullable|numeric|min:0',
             'budget_previsionnel' => 'nullable|numeric|min:0',
             'notes_programmation' => 'nullable|string',
+            'numero_bc' => 'nullable|string|max:255|unique:consultations,numero_bc,' . $consultation->id,
+            'reference_2' => 'nullable|string|max:255',
+            's_lig' => 'nullable|string|max:255',
+            'numero_engagement' => 'nullable|string|max:255|unique:consultations,numero_engagement,' . $consultation->id,
+            'credit_ouvert_cp' => 'nullable|numeric|min:0',
+            'credit_ouvert_ce' => 'nullable|numeric|min:0',
+            'depenses_anterieures_ce' => 'nullable|numeric|min:0',
+            'depenses_anterieures_cp' => 'nullable|numeric|min:0',
+            'depenses_credits_engagement' => 'nullable|numeric|min:0',
+            'depenses_credits_consolides' => 'nullable|numeric|min:0',
+            'depenses_rap' => 'nullable|numeric|min:0',
+            'montant_depense_neuf' => 'nullable|numeric|min:0',
+            'interets_moratoires' => 'nullable|numeric|min:0',
+            'montant_engager_neuf' => 'nullable|numeric|min:0',
         ]);
 
         $consultation->update($validated);
@@ -181,7 +211,49 @@ class ConsultationController extends Controller
             }
         }
         
-        return response()->json($consultation->load('budget'));
+        if ($request->has('numero_engagement')) {
+            $consultation->load(['budget', 'fournisseur', 'engagement', 'notificationLigne']);
+            $registre = $consultation->registreEngagement;
+            $notificationLigne = $consultation->notificationLigne;
+            $creditConsolide = $notificationLigne
+                ? (float) ($notificationLigne->reports ?? 0) + (float) ($notificationLigne->credits_neufs ?? 0)
+                : null;
+            $consultation->registreEngagement()->updateOrCreate(
+                ['consultation_id' => $consultation->id],
+                [
+                    'numero_ordre' => $registre?->numero_ordre
+                        ?? ((int) \App\Models\RegistreEngagement::max('numero_ordre') + 1),
+                    'engagement_id' => $consultation->engagement?->id,
+                    'date_engagement' => $request->date_consultation,
+                    'numero_rubrique' => $consultation->numero_engagement,
+                    'mode_engagement' => $consultation->mode_engagement,
+                    'reference' => $consultation->numero_bc ?: $consultation->numero_consultation,
+                    'reference_2' => $consultation->reference_2,
+                    'budget' => $consultation->type_budget,
+                    'code' => $consultation->budget?->code_imputation,
+                    'art' => $consultation->budget?->art,
+                    'par' => $consultation->budget?->par,
+                    'lig' => $consultation->budget?->lig,
+                    's_lig' => $consultation->s_lig,
+                    'intitule' => $consultation->intitule,
+                    'credit_ouvert_cp' => $consultation->credit_ouvert_cp,
+                    'credit_ouvert_ce' => $consultation->credit_ouvert_ce,
+                    'credit_consolide' => $creditConsolide,
+                    'depenses_anterieures_ce' => $consultation->depenses_anterieures_ce,
+                    'depenses_anterieures_cp' => $consultation->depenses_anterieures_cp,
+                    'depenses_credits_engagement' => $consultation->depenses_credits_engagement,
+                    'depenses_credits_consolides' => $consultation->depenses_credits_consolides,
+                    'depenses_rap' => $consultation->depenses_rap,
+                    'montant_depense_neuf' => $consultation->montant_depense_neuf,
+                    'interets_moratoires' => $consultation->interets_moratoires,
+                    'montant_engager_neuf' => $consultation->montant_engager_neuf,
+                    'objet' => $consultation->objet_consultation,
+                    'beneficiaire' => $consultation->fournisseur?->raison_sociale,
+                ]
+            );
+        }
+
+        return response()->json($consultation->load(['budget', 'registreEngagement']));
     }
 
     public function syncPrestations(Request $request, Consultation $consultation)

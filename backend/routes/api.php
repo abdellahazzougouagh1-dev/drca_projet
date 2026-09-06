@@ -23,6 +23,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('fournisseurs', FournisseurController::class);
     Route::post('fournisseurs/bulk', [FournisseurController::class, 'bulkStore']);
     Route::apiResource('commission-membres', \App\Http\Controllers\Api\CommissionMembreController::class);
+    Route::get('consultations/by-bon-commande/{numeroBc}', [ConsultationController::class, 'findByBonCommande']);
     Route::apiResource('consultations', ConsultationController::class)->only(['index', 'store', 'show', 'destroy']);
     Route::put('consultations/{consultation}', [ConsultationController::class, 'update']);
     Route::post('consultations/{consultation}/prestations', [ConsultationController::class, 'syncPrestations']);

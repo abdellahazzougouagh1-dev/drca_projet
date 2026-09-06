@@ -32,12 +32,6 @@ import {
 // ---------------------------------------------------------------------------
 const phases = [
   {
-    id: 'Notification',
-    label: 'Notification',
-    icon: FileText,
-    description: 'Publication, décision de commission et ouverture des plis.',
-  },
-  {
     id: 'consultation',
     label: 'Consultation',
     icon: FileText,
@@ -195,18 +189,18 @@ const documentFieldGroups = {
   ],
 
   fiche_engagement: [
-    { name: 'numero_engagement', label: "N° Fiche d'Engagement", placeholder: '02/2024/FE/DRCA-RSK', required: true, fromDb: false },
+    { name: 'numero_engagement', label: "N° Fiche d'Engagement", placeholder: '02/2024/FE/DRCA-RSK', required: true },
     { name: 'date_document', label: "Date de visa / engagement", type: 'date', required: true },
-    { name: 'objet', label: 'Objet de la prestation', placeholder: 'Achat de matériel de valorisation des produits agricoles', required: true, fromDb: true },
-    { name: 'societe', label: 'Bénéficiaire (Société attributaire)', placeholder: 'COMPTOIR COMMERCIAL DE DISTRIBUTION', required: true, fromDb: true },
-    { name: 'montant_ttc', label: 'Montant de la dépense TTC (DH)', type: 'number', placeholder: '107820.00', required: true, fromDb: true },
-    { name: 'art', label: 'Article budgétaire (ART)', placeholder: '415', required: true, fromDb: true },
-    { name: 'par', label: 'Paragraphe (PAR)', placeholder: '10', required: true, fromDb: true },
-    { name: 'lig', label: 'Ligne (LIG)', placeholder: '33', required: true, fromDb: true },
-    { name: 'credit_budget_cp', label: 'Crédit budgétaire (CP)', type: 'number', placeholder: '387480.00', required: false },
-    { name: 'depenses_engagees_cp', label: 'Dépenses engagées (CP)', type: 'number', placeholder: '202680.00', required: false },
-    { name: 'engagement_propose_cp', label: 'Engagement proposé (CP)', type: 'number', placeholder: '107820.00', required: false },
-    { name: 'pieces_jointes', label: 'Pièces jointes', placeholder: 'Bon de commande N° 04/2024/DRCA-RSK', required: false, fromDb: true },
+    { name: 'credit_ouvert_cp', label: 'Crédit ouvert CP', type: 'number', required: false },
+    { name: 'credit_ouvert_ce', label: 'Crédit ouvert CE', type: 'number', required: false },
+    { name: 'depenses_anterieures_ce', label: 'Dépenses engagées antérieurement CE', type: 'number', required: false },
+    { name: 'depenses_anterieures_cp', label: 'Dépenses engagées antérieurement CP', type: 'number', required: false },
+    { name: 'depenses_credits_engagement', label: "Dépenses sur crédits d'engagements", type: 'number', required: false },
+    { name: 'depenses_credits_consolides', label: 'Dépenses sur crédits consolidés', type: 'number', required: false },
+    { name: 'depenses_rap', label: 'Dépenses sur reste à payer', type: 'number', required: false },
+    { name: 'montant_depense_neuf', label: 'Montant de la dépense neuf', type: 'number', required: false },
+    { name: 'interets_moratoires', label: 'Intérêts moratoires 1 %', type: 'number', required: false, readOnly: true },
+    { name: 'montant_engager_neuf', label: 'Montant à engager neuf', type: 'number', required: false, readOnly: true },
   ],
   ordre_commande: [
     {
@@ -358,6 +352,8 @@ const BonCommandePlateforme = () => {
     return searchParams.get('phase') || localStorage.getItem('drca_active_phase') || 'consultation';
   });
 
+  const [registreBudget, setRegistreBudget] = useState('Investissement');
+
   const [selectedDocumentId, setSelectedDocumentId] = useState(() => {
     const searchParams = new URLSearchParams(window.location.search);
     return searchParams.get('doc') || localStorage.getItem('drca_selected_doc_id') || null;
@@ -392,6 +388,7 @@ const BonCommandePlateforme = () => {
   const [documentForms, setDocumentForms] = useState({});
   const [formErrors, setFormErrors] = useState({});
   const [savedDocumentIds, setSavedDocumentIds] = useState(new Set()); // documents enregistrés en BD
+  const [searchingBonCommande, setSearchingBonCommande] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
@@ -895,13 +892,19 @@ const BonCommandePlateforme = () => {
       }
       else if (field.name === 'numero_engagement') {
         if (documentId === 'fiche_engagement') {
-          defaults.numero_engagement = savedConsultation?.numero_bc
-            ? `${savedConsultation.numero_bc}`
+          defaults.numero_engagement = savedConsultation?.numero_engagement || savedConsultation?.numero_bc
+            ? `${savedConsultation.numero_engagement || savedConsultation.numero_bc}`
             : `${savedConsultation?.annee || new Date().getFullYear()}/FE/DRCA-RSK`;
         } else {
           defaults.numero_engagement = `05/DR/${savedConsultation?.annee || new Date().getFullYear()}`;
         }
       }
+      else if (field.name === 'date_document' && documentId === 'fiche_engagement') defaults.date_document = savedConsultation?.date_consultation || '';
+      else if (field.name === 'reference_2') defaults.reference_2 = savedConsultation?.reference_2 || '';
+      else if (field.name === 'mode_engagement') defaults.mode_engagement = savedConsultation?.mode_engagement || 'BC';
+      else if (field.name === 'budget') defaults.budget = savedConsultation?.budget?.intitule_ligne || `${savedConsultation?.type_budget || ''} ${savedConsultation?.budget?.exercice_budgetaire || savedConsultation?.annee || ''}`.trim();
+      else if (field.name === 'code_imputation') defaults.code_imputation = savedConsultation?.budget?.code_imputation || '';
+      else if (field.name === 's_lig') defaults.s_lig = savedConsultation?.s_lig || '';
       else if (field.name === 'montant_ttc') {
         const srcPrestations = savedConsultation?.prestations?.length > 0 ? savedConsultation.prestations : prestations.filter(p => p.designation?.trim());
         const ttc = srcPrestations.reduce((sum, p) => {
@@ -910,6 +913,16 @@ const BonCommandePlateforme = () => {
         }, 0);
         defaults.montant_ttc = ttc > 0 ? ttc.toFixed(2) : (savedConsultation?.budget?.montant_ttc || '');
       }
+      else if (field.name === 'credit_ouvert_cp') defaults.credit_ouvert_cp = savedConsultation?.credit_ouvert_cp || '';
+      else if (field.name === 'credit_ouvert_ce') defaults.credit_ouvert_ce = savedConsultation?.credit_ouvert_ce || '';
+      else if (field.name === 'depenses_anterieures_ce') defaults.depenses_anterieures_ce = savedConsultation?.depenses_anterieures_ce || '';
+      else if (field.name === 'depenses_anterieures_cp') defaults.depenses_anterieures_cp = savedConsultation?.depenses_anterieures_cp || '';
+      else if (field.name === 'depenses_credits_engagement') defaults.depenses_credits_engagement = savedConsultation?.depenses_credits_engagement || '';
+      else if (field.name === 'depenses_credits_consolides') defaults.depenses_credits_consolides = savedConsultation?.depenses_credits_consolides || '';
+      else if (field.name === 'depenses_rap') defaults.depenses_rap = savedConsultation?.depenses_rap || '';
+      else if (field.name === 'montant_depense_neuf') defaults.montant_depense_neuf = savedConsultation?.montant_depense_neuf || savedConsultation?.budget?.montant_ttc || '';
+      else if (field.name === 'interets_moratoires') defaults.interets_moratoires = savedConsultation?.interets_moratoires || '';
+      else if (field.name === 'montant_engager_neuf') defaults.montant_engager_neuf = savedConsultation?.montant_engager_neuf || '';
       else if (field.name === 'credit_budget_cp') defaults.credit_budget_cp = '';
       else if (field.name === 'depenses_engagees_cp') defaults.depenses_engagees_cp = '';
       else if (field.name === 'engagement_propose_cp') {
@@ -976,7 +989,7 @@ const BonCommandePlateforme = () => {
           defaults.date_reunion = savedConsultation?.date_limite_devis || '';
         }
       }
-      else if (field.name === 'date_document' || field.name === 'date_decision' || field.name === 'date_os' || field.name === 'date_reception' || field.name === 'date_bon_payer') {
+      else if ((field.name === 'date_document' || field.name === 'date_decision' || field.name === 'date_os' || field.name === 'date_reception' || field.name === 'date_bon_payer') && documentId !== 'fiche_engagement') {
         if (documentId === 'decision_commission_reception' || documentId === 'pv_reception') {
           defaults[field.name] = savedConsultation?.reception_commission?.date_decision || documentForms.decision_commission_reception?.date_document || '';
         } else {
@@ -997,36 +1010,12 @@ const BonCommandePlateforme = () => {
           } else if (Array.isArray(documentForms.decision_commission_reception?.membres_commission) && documentForms.decision_commission_reception.membres_commission.length > 0) {
             defaults[field.name] = documentForms.decision_commission_reception.membres_commission;
           } else {
-            defaults[field.name] = membresCatalog.length > 0
-              ? membresCatalog.slice(0, 3).map((m, idx) => ({
-                id: m.id,
-                nom: m.nom_prenom,
-                nom_prenom: m.nom_prenom,
-                fonction: m.fonction,
-                qualite: idx === 0 ? 'Président' : 'Membre',
-              }))
-              : [
-                { id: 1, nom: 'AKABBABI ABDELLATIF', nom_prenom: 'AKABBABI ABDELLATIF', fonction: 'Technicien de 2eme grade / Responsable affaires juridiques', qualite: 'Président' },
-                { id: 2, nom: 'TAOULI Hasnaa', nom_prenom: 'TAOULI Hasnaa', fonction: 'Administrateur de 1er grade / SAF', qualite: 'Membre' },
-                { id: 3, nom: 'OULD ABBOU IBTISSAM', nom_prenom: 'OULD ABBOU IBTISSAM', fonction: 'Technicien de 2eme grade', qualite: 'Membre' },
-              ];
+            defaults[field.name] = [];
           }
         } else if (documentId === 'pv_ouverture_attribution' && Array.isArray(documentForms.decision_commission_ouverture?.membres_commission) && documentForms.decision_commission_ouverture.membres_commission.length > 0) {
           defaults[field.name] = documentForms.decision_commission_ouverture.membres_commission;
         } else {
-          defaults[field.name] = membresCatalog.length > 0
-            ? membresCatalog.slice(0, 3).map((m, idx) => ({
-              id: m.id,
-              nom: m.nom_prenom,
-              nom_prenom: m.nom_prenom,
-              fonction: m.fonction,
-              qualite: idx === 0 ? 'Président' : 'Membre',
-            }))
-            : [
-              { id: 1, nom: 'AKABBABI ABDELLATIF', nom_prenom: 'AKABBABI ABDELLATIF', fonction: 'Technicien de 2eme grade / Responsable affaires juridiques', qualite: 'Président' },
-              { id: 2, nom: 'TAOULI Hasnaa', nom_prenom: 'TAOULI Hasnaa', fonction: 'Administrateur de 1er grade / SAF', qualite: 'Membre' },
-              { id: 3, nom: 'OULD ABBOU IBTISSAM', nom_prenom: 'OULD ABBOU IBTISSAM', fonction: 'Technicien de 2eme grade', qualite: 'Membre' },
-            ];
+          defaults[field.name] = [];
         }
       }
       else if (field.name === 'specification') defaults.specification = prestations[0]?.designation || 'Soudeuse à pédale 30 cm';
@@ -1098,7 +1087,6 @@ const BonCommandePlateforme = () => {
           defaults.societes_refusees = [];
         }
       }
-      else if (field.name === 'budget') defaults.budget = `Fonctionnement ${formData.exercice_budgetaire || currentYear}`;
       else if (field.name === 'annee') defaults.annee = formData.exercice_budgetaire || currentYear;
       else if (field.name === 'observation') defaults.observation = 'Démarrage immédiat des prestations après notification';
       else if (field.name === 'constat_service_fait') defaults.constat_service_fait = 'Prestations exécutées conformément aux clauses du Bon de Commande';
@@ -1137,7 +1125,6 @@ const BonCommandePlateforme = () => {
         }, 0);
         defaults.montant_engagement = ttc > 0 ? Number(ttc).toFixed(2) : '';
       }
-      else if (field.name === 'mode_reglement') defaults.mode_reglement = 'Virement';
       else if (field.name === 'compte_debit') defaults.compte_debit = '310330100602470154760181';
       else if (field.name === 'libelle_debit') defaults.libelle_debit = 'T.P KENITRA';
       else if (field.name === 'compte_credit') {
@@ -1289,8 +1276,22 @@ const BonCommandePlateforme = () => {
 
   const buildDocumentData = (documentId) => {
     const values = documentForms[documentId] || {};
+    const montantDepenseNeuf = Number(values.montant_depense_neuf) || 0;
+    const interetsMoratoires = Number((montantDepenseNeuf * 0.01).toFixed(2));
+    const montantEngagerNeuf = Number((montantDepenseNeuf + interetsMoratoires).toFixed(2));
     const data = {
       ...values,
+      ...(documentId === 'fiche_engagement' ? {
+        montant_ttc: montantDepenseNeuf,
+        interets_moratoires: interetsMoratoires,
+        montant_engager_neuf: montantEngagerNeuf,
+        credit_budget_cp: values.credit_ouvert_cp,
+        credit_budget_ce: values.credit_ouvert_ce,
+        depenses_engagees_cp: values.depenses_anterieures_cp,
+        depenses_engagees_ce: values.depenses_anterieures_ce,
+        disponible_cp: (Number(values.credit_ouvert_cp) || 0) - (Number(values.depenses_anterieures_cp) || 0),
+        disponible_ce: (Number(values.credit_ouvert_ce) || 0) - (Number(values.depenses_anterieures_ce) || 0),
+      } : {}),
       objet: values.objet || formData.objet_consultation,
       numero_consultation: values.numero_consultation || savedConsultation?.numero_consultation,
       adresse_societe: values.adresse_societe || values.adresse_1 || documentForms['bon_commande']?.adresse_societe || savedConsultation?.fournisseur?.adresse || savedConsultation?.engagement?.fournisseur?.adresse || 'APP N 6 Immeuble 01 KHENIFRA',
@@ -1453,6 +1454,27 @@ const BonCommandePlateforme = () => {
     }
   };
 
+  const findBonCommande = async () => {
+    const numeroBc = String(documentForms.fiche_engagement?.numero_bc || '').trim();
+    if (!numeroBc) {
+      setError('Veuillez saisir le numéro du bon de commande.');
+      return;
+    }
+
+    setSearchingBonCommande(true);
+    setError('');
+    try {
+      const response = await api.get(`/consultations/by-bon-commande/${encodeURIComponent(numeroBc)}`);
+      setSavedConsultation(response.data);
+      setConsultationsList((prev) => [response.data, ...prev.filter((item) => item.id !== response.data.id)]);
+      setMessage('Bon de commande trouvé. Les informations générales ont été pré-remplies.');
+    } catch (err) {
+      setError(err.response?.data?.message || 'Bon de commande introuvable.');
+    } finally {
+      setSearchingBonCommande(false);
+    }
+  };
+
   const saveDocumentDataToDatabase = async (documentId, isExplicitSave = false) => {
     if (!savedConsultation?.id) return;
 
@@ -1482,6 +1504,25 @@ const BonCommandePlateforme = () => {
     if (values.delai_livraison !== undefined && values.delai_livraison !== null) {
       const parsedDelai = parseInt(values.delai_livraison, 10);
       if (!isNaN(parsedDelai) && parsedDelai > 0) updatePayload.delai_execution = parsedDelai;
+    }
+
+    if (documentId === 'fiche_engagement') {
+      const montantDepenseNeuf = Number(values.montant_depense_neuf) || 0;
+      const interetsMoratoires = Number((montantDepenseNeuf * 0.01).toFixed(2));
+      const montantEngagerNeuf = Number((montantDepenseNeuf + interetsMoratoires).toFixed(2));
+      const financialFields = [
+        'numero_engagement', 'reference_2', 's_lig', 'credit_ouvert_cp', 'credit_ouvert_ce',
+        'depenses_anterieures_ce', 'depenses_anterieures_cp', 'depenses_credits_engagement',
+        'depenses_credits_consolides', 'depenses_rap', 'montant_depense_neuf',
+        'interets_moratoires', 'montant_engager_neuf',
+      ];
+      financialFields.forEach((field) => {
+        if (values[field] !== undefined) updatePayload[field] = values[field] === '' ? null : values[field];
+      });
+      updatePayload.interets_moratoires = interetsMoratoires;
+      updatePayload.montant_engager_neuf = montantEngagerNeuf;
+      if (values.date_document) updatePayload.date_consultation = values.date_document;
+      if (values.s_lig !== undefined) updatePayload.s_lig = values.s_lig;
     }
 
     // Récupérer et associer l'entreprise retenue (attributaire / titulaire_nom) en BD
@@ -1756,16 +1797,6 @@ const BonCommandePlateforme = () => {
               );
             })}
 
-            <li key="commission-membres-link" className="pt-3 mt-3 border-t border-white/10">
-              <Link
-                to="/commission-membres"
-                target="_blank"
-                className="flex items-center gap-3 px-3 py-3 text-sm font-semibold text-slate-300 hover:bg-white/5 hover:text-white transition-all rounded-xl"
-              >
-                <Users size={18} />
-                <span>Membres commission</span>
-              </Link>
-            </li>
           </ul>
         </nav>
 
@@ -1775,8 +1806,8 @@ const BonCommandePlateforme = () => {
       </aside>
 
       {/* Main content */}
-      <main className="flex-1 p-8 overflow-y-auto">
-        <div className="max-w-6xl mx-auto space-y-5">
+      <main className="flex-1 w-full overflow-y-auto p-4 lg:p-6">
+        <div className="w-full space-y-5">
           {/* Header bar */}
           <div className="bg-white border border-slate-200/80 rounded-2xl px-6 py-4 flex items-center justify-between shadow-sm">
             <div className="flex items-center gap-3">
@@ -1794,7 +1825,9 @@ const BonCommandePlateforme = () => {
                   )}
                 </div>
                 <h1 className="text-xl font-black text-slate-900 tracking-tight leading-tight">
-                  Phase : {phases.find((p) => p.id === activePhase)?.label}
+                  {activePhase === 'registre'
+                    ? "Registre d'engagement"
+                    : `Phase : ${phases.find((p) => p.id === activePhase)?.label}`}
                 </h1>
               </div>
             </div>
@@ -1819,6 +1852,136 @@ const BonCommandePlateforme = () => {
           )}
 
 
+
+          {activePhase === 'registre' && !selectedDocument && (
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+              <div className="p-6 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <h2 className="text-xl font-extrabold text-slate-900 flex items-center gap-2">
+                    <FileSpreadsheet className="text-blue-700" /> Registre des engagements
+                  </h2>
+                  
+                </div>
+                <span className="px-3 py-1.5 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-xs font-bold whitespace-nowrap">
+                  {consultationsList.filter((consultation) => consultation.registre_engagement && consultation.type_budget === registreBudget).length} ligne(s)
+                </span>
+              </div>
+
+              <div className="px-6 py-4 border-b border-slate-200 bg-slate-50 flex flex-wrap gap-2">
+                {['Investissement', 'Fonctionnement'].map((budgetType) => (
+                  <button
+                    key={budgetType}
+                    type="button"
+                    onClick={() => setRegistreBudget(budgetType)}
+                    className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-colors ${registreBudget === budgetType
+                      ? 'bg-blue-700 text-white shadow-sm'
+                      : 'bg-white border border-slate-200 text-slate-600 hover:border-blue-300 hover:text-blue-700'
+                      }`}
+                  >
+                    Registre {budgetType}
+                  </button>
+                ))}
+              </div>
+
+              {consultationsLoading ? (
+                <div className="p-10 flex items-center justify-center gap-3 text-slate-500">
+                  <Loader2 size={20} className="animate-spin" /> Chargement du registre...
+                </div>
+              ) : consultationsList.filter((consultation) => consultation.registre_engagement && consultation.type_budget === registreBudget).length === 0 ? (
+                <div className="p-12 text-center text-slate-500">
+                  Aucune fiche d’engagement enregistrée dans le registre {registreBudget.toLowerCase()}.
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="min-w-[2450px] w-full text-left border-collapse text-xs">
+                    <thead>
+                      <tr className="bg-slate-100 border-b border-slate-200 text-slate-700 font-extrabold uppercase tracking-wide">
+                        <th className="px-4 py-3">N° ordre</th>
+                        <th className="px-4 py-3">N° rubrique / fiche d’engagement</th>
+                        <th className="px-4 py-3">Date</th>
+                        <th className="px-4 py-3">Mode</th>
+                        <th className="px-4 py-3">Référence</th>
+                        <th className="px-4 py-3">Référence 2</th>
+                        <th className="px-4 py-3">Budget</th>
+                        <th className="px-4 py-3">Code</th>
+                        <th className="px-3 py-3">ART</th>
+                        <th className="px-3 py-3">PAR</th>
+                        <th className="px-3 py-3">LIG</th>
+                        <th className="px-3 py-3">S/LIG</th>
+                        <th className="px-4 py-3">Intitulé</th>
+                        <th className="px-4 py-3">Crédit ouvert CP</th>
+                        <th className="px-4 py-3">Crédit ouvert CE</th>
+                        <th className="px-4 py-3">Crédit consolidé (CC)</th>
+                        <th className="px-4 py-3">Dépenses antérieures CE</th>
+                        <th className="px-4 py-3">Dépenses antérieures CP</th>
+                        <th className="px-4 py-3">Dépenses crédits d’engagement</th>
+                        <th className="px-4 py-3">Dépenses crédits consolidés</th>
+                        <th className="px-4 py-3">Dépenses reste à payer</th>
+                        <th className="px-4 py-3">Dépense neuf</th>
+                        <th className="px-4 py-3">Intérêts 1%</th>
+                        <th className="px-4 py-3">À engager neuf</th>
+                        <th className="px-4 py-3">Objet</th>
+                        <th className="px-4 py-3">Bénéficiaire</th>
+                        <th className="px-4 py-3 text-right">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {consultationsList.filter((consultation) => consultation.registre_engagement && consultation.type_budget === registreBudget).map((consultation) => {
+                        const row = consultation.registre_engagement;
+                        const formatDate = (value) => value ? new Date(value).toLocaleDateString('fr-FR') : '-';
+                        const formatMoney = (value) => value === null || value === undefined || value === ''
+                          ? '-'
+                          : Number(value).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                        return (
+                          <tr key={row.id} className="hover:bg-blue-50/40 transition-colors">
+                            <td className="px-4 py-3 whitespace-nowrap font-bold text-slate-700">{row.numero_ordre || '-'}</td>
+                            <td className="px-4 py-3 whitespace-nowrap font-bold text-blue-700">{row.numero_rubrique || '-'}</td>
+                            <td className="px-4 py-3 whitespace-nowrap">{formatDate(row.date_engagement)}</td>
+                            <td className="px-4 py-3 whitespace-nowrap font-semibold">{row.mode_engagement || '-'}</td>
+                            <td className="px-4 py-3 whitespace-nowrap font-bold text-blue-700">{row.reference || '-'}</td>
+                            <td className="px-4 py-3 whitespace-nowrap">{row.reference_2 || '-'}</td>
+                            <td className="px-4 py-3 whitespace-nowrap">{row.budget || '-'}</td>
+                            <td className="px-4 py-3 whitespace-nowrap">{row.code || '-'}</td>
+                            <td className="px-3 py-3">{row.art || '-'}</td>
+                            <td className="px-3 py-3">{row.par || '-'}</td>
+                            <td className="px-3 py-3">{row.lig || '-'}</td>
+                            <td className="px-3 py-3">{row.s_lig || '-'}</td>
+                            <td className="px-4 py-3 max-w-[220px] truncate" title={row.intitule || ''}>{row.intitule || '-'}</td>
+                            <td className="px-4 py-3 text-right whitespace-nowrap">{formatMoney(row.credit_ouvert_cp)}</td>
+                            <td className="px-4 py-3 text-right whitespace-nowrap">{formatMoney(row.credit_ouvert_ce)}</td>
+                            <td className="px-4 py-3 text-right whitespace-nowrap">{formatMoney(row.credit_consolide)}</td>
+                            <td className="px-4 py-3 text-right whitespace-nowrap">{formatMoney(row.depenses_anterieures_ce)}</td>
+                            <td className="px-4 py-3 text-right whitespace-nowrap">{formatMoney(row.depenses_anterieures_cp)}</td>
+                            <td className="px-4 py-3 text-right whitespace-nowrap">{formatMoney(row.depenses_credits_engagement)}</td>
+                            <td className="px-4 py-3 text-right whitespace-nowrap">{formatMoney(row.depenses_credits_consolides)}</td>
+                            <td className="px-4 py-3 text-right whitespace-nowrap">{formatMoney(row.depenses_rap)}</td>
+                            <td className="px-4 py-3 text-right whitespace-nowrap">{formatMoney(row.montant_depense_neuf)}</td>
+                            <td className="px-4 py-3 text-right whitespace-nowrap">{formatMoney(row.interets_moratoires)}</td>
+                            <td className="px-4 py-3 text-right whitespace-nowrap">{formatMoney(row.montant_engager_neuf)}</td>
+                            <td className="px-4 py-3 max-w-[240px] truncate" title={row.objet || ''}>{row.objet || '-'}</td>
+                            <td className="px-4 py-3 max-w-[180px] truncate" title={row.beneficiaire || ''}>{row.beneficiaire || '-'}</td>
+                            <td className="px-4 py-3 text-right whitespace-nowrap">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  selectConsultation(consultation);
+                                  setActivePhase('engagement');
+                                  setSelectedDocumentId('fiche_engagement');
+                                }}
+                                className="px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold inline-flex items-center gap-1.5"
+                              >
+                                <Eye size={14} /> Voir la fiche
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
 
           {activePhase === 'consultation' && !selectedDocument && (
             <div>
@@ -1996,7 +2159,7 @@ const BonCommandePlateforme = () => {
             </div>
           )}
 
-          {activePhase !== 'dashboard' && activePhase !== 'consultation' && !selectedDocument && (
+          {activePhase !== 'dashboard' && activePhase !== 'consultation' && activePhase !== 'registre' && !selectedDocument && (
             <div className="flex items-center justify-between mb-6">
               <button type="button" onClick={goPrev} className="inline-flex items-center gap-2 px-5 py-2.5 bg-white border border-slate-200 text-slate-700 font-semibold rounded-xl hover:bg-slate-50 shadow-sm transition-all">
                 <ArrowLeft size={18} /> Précédent
@@ -2007,7 +2170,7 @@ const BonCommandePlateforme = () => {
             </div>
           )}
 
-          {activePhase !== 'dashboard' && !selectedDocument && (
+          {activePhase !== 'dashboard' && activePhase !== 'registre' && !selectedDocument && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {(documentsByPhase[activePhase] || []).map((doc) => (
                 <div key={doc.id} className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-sm hover:shadow-md hover:border-blue-200 transition-all duration-200 flex flex-col">
@@ -2036,6 +2199,36 @@ const BonCommandePlateforme = () => {
                   </div>
                 </div>
               ))}
+              {activePhase === 'engagement' && (
+                <div className="bg-white rounded-2xl border border-blue-200/80 p-6 shadow-sm hover:shadow-md hover:border-blue-300 transition-all duration-200 flex flex-col">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <div className="text-xs font-extrabold text-blue-700 uppercase tracking-wide">
+                        07 - ENGAGEMENT
+                      </div>
+                      <h3 className="text-base font-extrabold text-slate-900 mt-1 flex items-center gap-2">
+                        <FileSpreadsheet size={18} className="text-blue-700" />
+                        Registre d'engagement
+                      </h3>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => goToPhase('registre')}
+                      className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shrink-0 shadow-sm transition-colors"
+                    >
+                      Ouvrir
+                    </button>
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <span className="px-2.5 py-1 rounded-md bg-blue-50 text-blue-700 text-xs font-semibold">
+                      Toutes les fiches enregistrées
+                    </span>
+                    <span className="px-2.5 py-1 rounded-md bg-blue-50 text-blue-700 text-xs font-semibold">
+                      Registre complet
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -2069,10 +2262,63 @@ const BonCommandePlateforme = () => {
                 <span className="text-red-600 font-extrabold text-sm">*</span> : Les champs obligatoires
               </div>
 
+              {selectedDocument.id === 'fiche_engagement' && (
+                <div className="mb-6 rounded-2xl border border-blue-200 bg-blue-50/60 p-5">
+                  <label className="block text-xs font-extrabold uppercase tracking-wide text-blue-900 mb-2">
+                    Numéro du bon de commande
+                  </label>
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <input
+                      type="text"
+                      value={documentForms.fiche_engagement?.numero_bc ?? savedConsultation?.numero_bc ?? ''}
+                      onChange={(event) => handleDocumentFieldChange('fiche_engagement', 'numero_bc', event.target.value)}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter') {
+                          event.preventDefault();
+                          findBonCommande();
+                        }
+                      }}
+                      placeholder="BC-2026-00125"
+                      className="flex-1 px-4 py-3 rounded-lg border border-blue-200 bg-white outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                    />
+                    <button
+                      type="button"
+                      onClick={findBonCommande}
+                      disabled={searchingBonCommande}
+                      className="px-5 py-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold inline-flex items-center justify-center gap-2 disabled:opacity-50"
+                    >
+                      {searchingBonCommande ? <Loader2 size={17} className="animate-spin" /> : <Search size={17} />}
+                      Rechercher
+                    </button>
+                  </div>
+                  {savedConsultation?.numero_bc && (
+                    <p className="mt-2 text-xs font-semibold text-emerald-700">Bon de commande trouvé et associé.</p>
+                  )}
+                </div>
+              )}
+
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
                 {selectedFields.map((field) => {
                   if (field.condition && !field.condition(documentForms[selectedDocument.id])) {
                     return null;
+                  }
+
+                  if (selectedDocument.id === 'fiche_engagement') {
+                    const budgetType = String(savedConsultation?.type_budget || '').toLowerCase();
+                    const fonctionnementHiddenFields = [
+                      'credit_ouvert_ce',
+                      'depenses_anterieures_ce',
+                      'depenses_credits_engagement',
+                      'depenses_credits_consolides',
+                    ];
+                    const investmentHiddenFields = ['depenses_credits_consolides'];
+
+                    if (budgetType === 'fonctionnement' && fonctionnementHiddenFields.includes(field.name)) {
+                      return null;
+                    }
+                    if (budgetType === 'investissement' && investmentHiddenFields.includes(field.name)) {
+                      return null;
+                    }
                   }
 
                   if (field.name === 'motif_ajournement') {
@@ -2979,10 +3225,10 @@ const BonCommandePlateforme = () => {
                                 onChange={(e) => setNouveauMembreForm({ ...nouveauMembreForm, qualite: e.target.value })}
                                 className="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-xl text-xs font-semibold text-slate-800 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                               >
-                                <option value="Président">Président</option>
-                                <option value="Rapporteur">Rapporteur</option>
-                                <option value="Membre">Membre</option>
-                                <option value="Observateur">Observateur</option>
+                                <option value="Président">Président(e)</option>
+                                <option value="Membre">Membre1</option>
+                                <option value="Membre">Membre2</option>
+
                               </select>
                             </div>
 
@@ -3048,7 +3294,12 @@ const BonCommandePlateforme = () => {
                     documentForms[selectedDocument.id]?.[field.name] !== null)
                     ? documentForms[selectedDocument.id][field.name]
                     : '';
-                  const currentLen = String(currentVal || '').length;
+                  const displayedVal = selectedDocument.id === 'fiche_engagement' && field.name === 'interets_moratoires'
+                    ? ((Number(documentForms.fiche_engagement?.montant_depense_neuf) || 0) * 0.01).toFixed(2)
+                    : selectedDocument.id === 'fiche_engagement' && field.name === 'montant_engager_neuf'
+                      ? ((Number(documentForms.fiche_engagement?.montant_depense_neuf) || 0) * 1.01).toFixed(2)
+                      : currentVal;
+                  const currentLen = String(displayedVal || '').length;
 
                   return (
                     <label key={`${selectedDocument.id}-${field.name}`} className="block">
@@ -3070,6 +3321,7 @@ const BonCommandePlateforme = () => {
                         <select
                           value={documentForms[selectedDocument.id]?.[field.name] || field.options?.[0] || ''}
                           onChange={(event) => handleDocumentFieldChange(selectedDocument.id, field.name, event.target.value)}
+                          disabled={field.readOnly}
                           className={fieldClass}
                         >
                           {(field.options || []).map((opt) => (
@@ -3083,7 +3335,8 @@ const BonCommandePlateforme = () => {
                           type={field.type || 'text'}
                           maxLength={maxLen || undefined}
                           inputMode={maxLen ? 'numeric' : undefined}
-                          value={currentVal}
+                          value={displayedVal}
+                          readOnly={field.readOnly}
                           onChange={(event) => {
                             let val = event.target.value;
                             if (maxLen) {
@@ -3092,7 +3345,7 @@ const BonCommandePlateforme = () => {
                             handleDocumentFieldChange(selectedDocument.id, field.name, val);
                           }}
                           placeholder={field.placeholder || ''}
-                          className={fieldClass}
+                          className={`${fieldClass} ${field.readOnly ? 'bg-slate-100 text-slate-600 cursor-not-allowed' : ''}`}
                         />
                       )}
                     </label>
@@ -3178,29 +3431,7 @@ const BonCommandePlateforme = () => {
             )}
 
             <form onSubmit={handleQuickMembreSubmit} className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Nom et Prénom</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="ex: M. AKABBABI ABDELLATIF"
-                  value={quickMembreData.nom_prenom}
-                  onChange={(e) => setQuickMembreData({ ...quickMembreData, nom_prenom: e.target.value })}
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Fonction</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="ex: Technicien 2eme grade / SAF"
-                  value={quickMembreData.fonction}
-                  onChange={(e) => setQuickMembreData({ ...quickMembreData, fonction: e.target.value })}
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
-                />
-              </div>
+ 
 
               <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
                 <button

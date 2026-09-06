@@ -38,10 +38,34 @@ class Consultation extends Model
         'objet_consultation_ar',
         'lieu_reunion_ar',
         'cautionnement_provisoire',
+        'numero_bc',
+        'reference_2',
+        's_lig',
+        'numero_engagement',
+        'credit_ouvert_cp',
+        'credit_ouvert_ce',
+        'depenses_anterieures_ce',
+        'depenses_anterieures_cp',
+        'depenses_credits_engagement',
+        'depenses_credits_consolides',
+        'depenses_rap',
+        'montant_depense_neuf',
+        'interets_moratoires',
+        'montant_engager_neuf',
     ];
 
     protected $casts = [
         'membres_commission' => 'array',
+        'credit_ouvert_cp' => 'decimal:2',
+        'credit_ouvert_ce' => 'decimal:2',
+        'depenses_anterieures_ce' => 'decimal:2',
+        'depenses_anterieures_cp' => 'decimal:2',
+        'depenses_credits_engagement' => 'decimal:2',
+        'depenses_credits_consolides' => 'decimal:2',
+        'depenses_rap' => 'decimal:2',
+        'montant_depense_neuf' => 'decimal:2',
+        'interets_moratoires' => 'decimal:2',
+        'montant_engager_neuf' => 'decimal:2',
     ];
 
     /**
@@ -79,6 +103,11 @@ class Consultation extends Model
     public function engagement()
     {
         return $this->hasOne(Engagement::class);
+    }
+
+    public function registreEngagement()
+    {
+        return $this->hasOne(RegistreEngagement::class);
     }
 
     public function suiviExecution()
