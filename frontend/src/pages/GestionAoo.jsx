@@ -1615,6 +1615,13 @@ const GestionAoo = () => {
     </div>
   );
 
+  const registreRows = [
+    ...(formData.registre_engagement ? [{ row: formData.registre_engagement, marche: null }] : []),
+    ...(formData.marches || [])
+      .filter((marche) => marche.registre_engagement)
+      .map((marche) => ({ row: marche.registre_engagement, marche })),
+  ];
+
   return (
     <div className="min-h-screen bg-slate-50/50 pb-24">
       <header className="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
@@ -1809,7 +1816,7 @@ const GestionAoo = () => {
                 <p className="mt-1 text-sm text-slate-500">Registre identique à celui des bons de commande, filtré sur cet appel d'offres.</p>
               </div>
             </div>
-            {(formData.marches || []).filter(marche => marche.registre_engagement).length === 0 ? (
+            {registreRows.length === 0 ? (
               <div className="rounded-2xl border border-slate-200 bg-slate-50 p-10 text-center text-slate-500">
                 Aucune ligne d'engagement enregistrée pour cet appel d'offres.
               </div>
@@ -1834,15 +1841,14 @@ const GestionAoo = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {(formData.marches || []).filter(marche => marche.registre_engagement).map(marche => {
-                      const row = marche.registre_engagement;
+                    {registreRows.map(({ row, marche }) => {
                       const money = value => value === null || value === undefined || value === '' ? '-' : Number(value).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
                       return (
                         <tr key={row.id} className="hover:bg-blue-50/40">
                           <td className="px-4 py-3">{row.numero_ordre || '-'}</td>
                           <td className="px-4 py-3 font-bold text-blue-700">{row.numero_rubrique || '-'}</td>
                           <td className="px-4 py-3">{row.date_engagement ? new Date(row.date_engagement).toLocaleDateString('fr-FR') : '-'}</td>
-                          <td className="px-4 py-3 font-bold">{row.reference || marche.num_marche || '-'}</td>
+                          <td className="px-4 py-3 font-bold">{row.reference || marche?.num_marche || '-'}</td>
                           <td className="px-4 py-3">{row.budget || '-'}</td>
                           <td className="px-4 py-3">{row.art || '-'}</td>
                           <td className="px-4 py-3">{row.par || '-'}</td>
@@ -1851,7 +1857,7 @@ const GestionAoo = () => {
                           <td className="px-4 py-3 text-right">{money(row.montant_depense_neuf)}</td>
                           <td className="px-4 py-3 text-right">{money(row.interets_moratoires)}</td>
                           <td className="px-4 py-3 text-right">{money(row.montant_engager_neuf)}</td>
-                          <td className="px-4 py-3">{row.beneficiaire || marche.titulaire || '-'}</td>
+                          <td className="px-4 py-3">{row.beneficiaire || marche?.titulaire || '-'}</td>
                         </tr>
                       );
                     })}

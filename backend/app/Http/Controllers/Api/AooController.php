@@ -8,6 +8,7 @@ use App\Models\ConcurrentLotDecision;
 use App\Models\Fournisseur;
 use App\Models\Lot;
 use App\Models\Marche;
+use App\Models\RegistreEngagement;
 use App\Services\FicheSuiviBuilder;
 use App\Services\LettreNotificationBuilder;
 use App\Services\LotEstimationBuilder;
@@ -239,7 +240,13 @@ class AooController extends Controller
                 ]);
             }
 
-            return $aoo->load(['concurrents.fournisseur', 'lots.items', 'lots.notificationLigne']);
+            // La fiche est saisie au niveau de l'AOO : elle doit donc alimenter
+            // le registre sans attendre la création d'un marché.
+            if ($aoo->numero_engagement) {
+                $this->syncRegistreEngagement($aoo);
+            }
+
+            return $aoo->load(['registreEngagement', 'concurrents.fournisseur', 'lots.items', 'lots.notificationLigne']);
         });
 
         return response()->json([
@@ -252,6 +259,7 @@ class AooController extends Controller
     {
         return response()->json(
             Aoo::with([
+                'registreEngagement',
                 'marches.fournisseur',
                 'marches.registreEngagement',
                 'marches.lot',
@@ -261,6 +269,46 @@ class AooController extends Controller
                 'lots.decisions.fournisseur',
                 'lots.notificationLigne',
             ])->findOrFail($id)
+        );
+    }
+
+    private function syncRegistreEngagement(Aoo $aoo): void
+    {
+        $creditConsolide = $aoo->notificationLigne
+            ? (float) ($aoo->notificationLigne->reports ?? 0) + (float) ($aoo->notificationLigne->credits_neufs ?? 0)
+            : null;
+
+        $aoo->registreEngagement()->updateOrCreate(
+            ['aoo_id' => $aoo->id],
+            [
+                'consultation_id' => null,
+                'marche_id' => null,
+                'numero_ordre' => (int) ($aoo->registreEngagement?->numero_ordre
+                    ?? (RegistreEngagement::max('numero_ordre') + 1)),
+                'date_engagement' => $aoo->date_engagement,
+                'numero_rubrique' => $aoo->numero_engagement,
+                'mode_engagement' => 'Appel d\'offres',
+                'reference' => $aoo->num_aoo,
+                'reference_2' => $aoo->reference,
+                'budget' => $aoo->budget,
+                'code' => $aoo->imputation,
+                'art' => $aoo->art,
+                'par' => $aoo->par,
+                'lig' => $aoo->lig,
+                'intitule' => $aoo->objet,
+                'credit_ouvert_cp' => $aoo->credit_ouvert_cp,
+                'credit_ouvert_ce' => $aoo->credit_ouvert_ce,
+                'credit_consolide' => $creditConsolide,
+                'depenses_anterieures_cp' => $aoo->depenses_anterieures_cp,
+                'depenses_anterieures_ce' => $aoo->depenses_anterieures_ce,
+                'depenses_credits_engagement' => $aoo->depenses_credits_engagement,
+                'depenses_credits_consolides' => $aoo->depenses_credits_consolides,
+                'depenses_rap' => $aoo->depenses_rap,
+                'montant_depense_neuf' => $aoo->montant_depense_neuf,
+                'interets_moratoires' => $aoo->interets_moratoires,
+                'montant_engager_neuf' => $aoo->montant_engager_neuf,
+                'objet' => $aoo->objet,
+            ]
         );
     }
 

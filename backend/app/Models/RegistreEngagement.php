@@ -10,6 +10,7 @@ class RegistreEngagement extends Model
 
     protected $fillable = [
         'consultation_id',
+        'aoo_id',
         'marche_id',
         'engagement_id',
         'numero_ordre',
@@ -58,6 +59,11 @@ class RegistreEngagement extends Model
     public function consultation()
     {
         return $this->belongsTo(Consultation::class);
+    }
+
+    public function aoo()
+    {
+        return $this->belongsTo(Aoo::class);
     }
 
     public function engagement()

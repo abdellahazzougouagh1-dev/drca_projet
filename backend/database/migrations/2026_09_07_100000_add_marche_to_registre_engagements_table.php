@@ -10,14 +10,19 @@ return new class extends Migration
     {
         Schema::table('registre_engagements', function (Blueprint $table) {
             $table->foreignId('consultation_id')->nullable()->change();
-            $table->foreignId('marche_id')->nullable()->after('consultation_id')->constrained('marches')->cascadeOnDelete();
+            if (!Schema::hasColumn('registre_engagements', 'marche_id')) {
+                $table->foreignId('marche_id')->nullable()->after('consultation_id')->constrained('marches')->cascadeOnDelete();
+            }
         });
 
-        Schema::table('registre_engagements', function (Blueprint $table) {
-            $table->dropUnique('registre_engagements_consultation_id_unique');
-            $table->unique('consultation_id');
-            $table->unique('marche_id');
-        });
+        $hasMarcheUniqueIndex = collect(Schema::getIndexes('registre_engagements'))
+            ->contains(fn (array $index) => $index['unique'] && $index['columns'] === ['marche_id']);
+
+        if (!$hasMarcheUniqueIndex) {
+            Schema::table('registre_engagements', function (Blueprint $table) {
+                $table->unique('marche_id');
+            });
+        }
     }
 
     public function down(): void
