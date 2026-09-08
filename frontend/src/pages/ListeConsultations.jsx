@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../api/axios';
-import { ArrowLeft, Loader2, Plus, AlertCircle, Eye, Trash2 } from 'lucide-react';
+import { ArrowLeft, Loader2, Plus, AlertCircle, Eye, Trash2, Edit3 } from 'lucide-react';
 
 const ListeConsultations = () => {
   const navigate = useNavigate();
@@ -118,9 +118,9 @@ const ListeConsultations = () => {
   }
 
   return (
-    <div className="p-8 bg-gray-50 dark:bg-gray-900 min-h-screen">
-      <div className="max-w-7xl mx-auto">
-        <header className="mb-8 flex items-center justify-between">
+    <div className="p-3 sm:p-6 lg:p-8 bg-gray-50 dark:bg-gray-900 min-h-screen">
+      <div className="w-full">
+        <header className="mb-6 sm:mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-3 mb-2">
               <button 
@@ -129,7 +129,7 @@ const ListeConsultations = () => {
               >
                 <ArrowLeft size={20} />
               </button>
-              <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">
                 Gestion des Consultations
               </h1>
             </div>
@@ -154,7 +154,7 @@ const ListeConsultations = () => {
                   <th className="px-6 py-5 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Réf. Consultation</th>
                   <th className="px-6 py-5 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Année</th>
                   <th className="px-6 py-5 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Objet</th>
-                  <th className="px-6 py-5 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Type / Mode</th>
+                  <th className="px-6 py-5 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Mode d'engagement</th>
                   <th className="px-6 py-5 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Budget TTC</th>
                   <th className="px-6 py-5 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Statut</th>
                   <th className="px-6 py-5 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider text-right">Actions</th>
@@ -184,9 +184,15 @@ const ListeConsultations = () => {
                         </p>
                       </td>
                       <td className="px-6 py-5 whitespace-nowrap">
-                        <span className="text-sm font-medium text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-lg inline-block">
-                          {consultation.global_type}
-                        </span>
+                        {consultation.global_type === 'AO' || consultation.global_type === "Appel d'offres" || consultation.global_type === "Appel d'Offres" ? (
+                          <span className="inline-block rounded-full bg-violet-100 px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-violet-800 dark:bg-violet-900/30 dark:text-violet-300">
+                            Appel d'offres
+                          </span>
+                        ) : (
+                          <span className="inline-block rounded-full bg-cyan-100 px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-cyan-800 dark:bg-cyan-900/30 dark:text-cyan-300">
+                            Bon de commande
+                          </span>
+                        )}
                       </td>
                       <td className="px-6 py-5 whitespace-nowrap font-mono font-bold text-slate-900 dark:text-slate-100">
                         {consultation.global_budget ? formatCurrency(consultation.global_budget) : 'N/A'}
@@ -203,6 +209,17 @@ const ListeConsultations = () => {
                           >
                             <Eye size={18} />
                           </Link>
+                          {!consultation.global_id.startsWith('aoo_') && (
+                            <button
+                              onClick={() => navigate(`/bons-commande?consultation_id=${consultation.id}&edit=1`, {
+                                state: { autoSelectId: consultation.id, autoEditId: consultation.id },
+                              })}
+                              className="inline-flex items-center justify-center h-9 w-9 rounded-lg bg-amber-50 text-amber-600 hover:bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400 dark:hover:bg-amber-900/50 transition-colors"
+                              title="Modifier la consultation"
+                            >
+                              <Edit3 size={18} />
+                            </button>
+                          )}
                           {!consultation.global_id.startsWith('aoo_') && (
                             <button
                               onClick={() => handleDelete(consultation)}

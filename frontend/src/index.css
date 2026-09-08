@@ -20,14 +20,46 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+html {
+  min-width: 320px;
+  min-height: 100%;
+  background: #f8fafc;
+}
+
 body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
+  overflow-x: hidden;
 }
 
 #root {
   width: 100%;
+  min-height: 100vh;
+  isolation: isolate;
+}
+
+/* Prevent long values and form controls from forcing a layout wider than the viewport. */
+img,
+svg,
+video,
+canvas {
+  max-width: 100%;
+}
+
+input,
+select,
+textarea,
+button {
+  max-width: 100%;
+}
+
+@media (max-width: 639px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
 }
 
 /* Custom sleek scrollbar */

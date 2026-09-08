@@ -123,6 +123,7 @@
         }
         .visa-box td { border: 1px solid #000; padding: 5px 8px; }
     </style>
+    @include('documents.partials.bc_typography')
 </head>
 <body>
 
@@ -136,6 +137,8 @@
         /* ── Données de base ── */
         $typeBudget = $consultation->type_budget ?? 'Fonctionnement';
         $exercice   = $consultation->annee ?? date('Y');
+        $formeEngagement = data_get($documentData, 'forme_engagement')
+            ?: ($doc['forme_engagement'] ?? 'Bon de commande');
 
         /* ── N° Engagement : depuis documentData en priorité ── */
         $numEngagement = data_get($documentData, 'numero_engagement')
@@ -193,7 +196,7 @@
 
         /* ── Pièces jointes ── */
         $piecesJointes = data_get($documentData, 'pieces_jointes')
-            ?: ($consultation->numero_bc ? 'Bon de commande N° '.$consultation->numero_bc : '');
+            ?: ($doc['pieces_jointes'] ?? ($consultation->numero_bc ? 'Bon de commande N° '.$consultation->numero_bc : ''));
     @endphp
 
     <!-- ══════════ HEADER LOGOS ══════════ -->
@@ -257,7 +260,7 @@
         </tr>
         <tr>
             <td class="label-col">Forme</td>
-            <td class="value-col">Bon de commande</td>
+            <td class="value-col">{{ $formeEngagement }}</td>
         </tr>
         <tr>
             <td class="label-col">Montant en dirhams</td>

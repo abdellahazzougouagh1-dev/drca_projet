@@ -14,7 +14,7 @@ class ConsultationController extends Controller
 {
     public function index()
     {
-        return response()->json(Consultation::with(['fournisseur', 'budget', 'prestations', 'receptionCommission', 'registreEngagement'])->get());
+        return response()->json(Consultation::with(['fournisseur', 'budget', 'notificationLigne', 'prestations', 'receptionCommission', 'registreEngagement'])->get());
     }
 
     public function findByBonCommande(string $numeroBc)

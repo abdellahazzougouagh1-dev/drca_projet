@@ -14,6 +14,7 @@ use App\Services\MarcheArchiveBuilder;
 use App\Services\MarcheWorkflowService;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException; 
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class MarcheController extends Controller
 {
@@ -236,6 +237,10 @@ class MarcheController extends Controller
             $this->syncBordereauItems($marche, $bordereauItems, (int) $data['lot_id']);
         }
 
+        if (!empty($data['num_engagement'])) {
+            $this->syncRegistreEngagement($marche);
+        }
+
         return response()->json([
             'message' => 'Dossier Marche enregistre avec succes',
             'data' => $marche->load(['aoo.notificationLigne', 'lot', 'fournisseur', 'bordereauItems.lotItem', 'notificationLigne']),
@@ -250,6 +255,56 @@ class MarcheController extends Controller
         return response()->json(array_merge($marche->toArray(), [
             'workflow' => $marche->workflow,
         ]));
+    }
+
+    public function generateRapportEngagement($id)
+    {
+        $marche = Marche::with(['aoo', 'fournisseur', 'registreEngagement'])->findOrFail($id);
+        $registre = $marche->registreEngagement;
+
+        if (!$registre) {
+            return response()->json(['message' => "La fiche d'engagement doit être enregistrée avant de générer le rapport."], 422);
+        }
+
+        return Pdf::loadView('pdf.rapport_engagement', compact('marche', 'registre'))
+            ->download('Rapport_Engagement_' . str_replace(['/', '\\'], '_', $marche->num_marche) . '.pdf');
+    }
+
+    private function syncRegistreEngagement(Marche $marche): void
+    {
+        $creditConsolide = $marche->notificationLigne
+            ? (float) ($marche->notificationLigne->reports ?? 0) + (float) ($marche->notificationLigne->credits_neufs ?? 0)
+            : null;
+
+        $marche->registreEngagement()->updateOrCreate(
+            ['marche_id' => $marche->id],
+            [
+                'consultation_id' => null,
+                'numero_ordre' => (int) ($marche->registreEngagement?->numero_ordre
+                    ?? (\App\Models\RegistreEngagement::max('numero_ordre') + 1)),
+                'date_engagement' => $marche->date_engagement,
+                'numero_rubrique' => $marche->num_engagement,
+                'mode_engagement' => $marche->forme_engagement ?: 'Marché',
+                'reference' => $marche->num_marche,
+                'reference_2' => $marche->aoo?->num_aoo,
+                'budget' => $marche->type_budget,
+                'code' => $marche->code_budget,
+                'art' => $marche->article_budget,
+                'par' => $marche->paragraphe_budget,
+                'lig' => $marche->ligne_budget,
+                'intitule' => $marche->intitule_budget ?: $marche->objet_marche,
+                'credit_ouvert_cp' => $marche->credit_budget_cp,
+                'credit_ouvert_ce' => $marche->credit_budget_ce,
+                'credit_consolide' => $creditConsolide,
+                'depenses_anterieures_cp' => $marche->depenses_engagees_cp,
+                'depenses_anterieures_ce' => $marche->depenses_engagees_ce,
+                'montant_depense_neuf' => $marche->montant,
+                'interets_moratoires' => $marche->interet_moratoire,
+                'montant_engager_neuf' => $marche->engagement_propose_cp ?: $marche->montant_total_engagement,
+                'objet' => $marche->objet_marche,
+                'beneficiaire' => $marche->fournisseur?->raison_sociale ?: $marche->titulaire,
+            ]
+        );
     }
 
     public function update(Request $request, $id)

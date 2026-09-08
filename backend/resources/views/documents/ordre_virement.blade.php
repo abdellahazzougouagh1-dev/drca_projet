@@ -50,6 +50,7 @@
         }
         .sig-table td { border: 1px solid #000; height: 80px; vertical-align: top; }
     </style>
+    @include('documents.partials.bc_typography')
 </head>
 <body>
 

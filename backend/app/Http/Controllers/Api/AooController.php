@@ -24,7 +24,11 @@ class AooController extends Controller
     public function index()
     {
         return response()->json(
+<<<<<<< HEAD
             Aoo::with(['concurrents.fournisseur', 'lots.items', 'lots.attributaire', 'lots.decisions.fournisseur', 'lots.notificationLigne'])
+=======
+            Aoo::with(['notificationLigne', 'concurrents.fournisseur', 'lots.items', 'lots.attributaire', 'lots.decisions.fournisseur'])
+>>>>>>> 1d0ea52a5d6fe5cef016a727d8466ed21044934d
                 ->orderBy('created_at', 'desc')
                 ->get()
         );
@@ -81,6 +85,20 @@ class AooController extends Controller
             'date_mise_en_ligne_portail' => 'nullable|date',
             'mode_passation' => 'nullable|string',
             'prix_reference' => 'nullable|numeric',
+            'numero_engagement' => 'nullable|string|max:255',
+            'date_engagement' => 'nullable|date',
+            'reference_engagement' => 'nullable|string|max:255',
+            'credit_ouvert_cp' => 'nullable|numeric',
+            'credit_ouvert_ce' => 'nullable|numeric',
+            'depenses_anterieures_cp' => 'nullable|numeric',
+            'depenses_anterieures_ce' => 'nullable|numeric',
+            'depenses_credits_engagement' => 'nullable|numeric',
+            'depenses_credits_consolides' => 'nullable|numeric',
+            'depenses_rap' => 'nullable|numeric',
+            'montant_depense_neuf' => 'nullable|numeric',
+            'interets_moratoires' => 'nullable|numeric',
+            'montant_engager_neuf' => 'nullable|numeric',
+            'pieces_jointes' => 'nullable|string',
             'date_ouverture' => 'required|date',
             'heure_ouverture' => 'required|string',
             'nombre_lots' => 'nullable|integer|min:1',
@@ -239,6 +257,7 @@ class AooController extends Controller
         return response()->json(
             Aoo::with([
                 'marches.fournisseur',
+                'marches.registreEngagement',
                 'marches.lot',
                 'concurrents.fournisseur',
                 'lots.items',

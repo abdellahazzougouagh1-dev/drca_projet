@@ -63,6 +63,7 @@
         }
         .box { margin: 10px 0 14px 0; }
     </style>
+    @include('documents.partials.bc_typography')
 </head>
 <body>
     @include('documents.partials.bc_header')

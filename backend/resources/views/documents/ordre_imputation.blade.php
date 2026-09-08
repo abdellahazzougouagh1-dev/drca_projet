@@ -49,6 +49,7 @@
         .visa-box th { background: #d9d9d9; font-weight: bold; text-align: center; padding: 5px; border: 1px solid #000; font-size: 11px; letter-spacing: 0.3px; }
         .visa-box td { height: 70px; border: 1px solid #000; }
     </style>
+    @include('documents.partials.bc_typography')
 </head>
 <body>
 

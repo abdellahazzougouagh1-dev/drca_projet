@@ -227,6 +227,10 @@ const TraitementEngagement = () => {
           next.montant = (ht * (1 + tva / 100)).toFixed(2);
           next.engagement_propose_cp = (Number(next.montant) * 1.01).toFixed(2);
         }
+      } else if (name === 'montant_depense_neuf') {
+        const montantDepense = parseFloat(value) || 0;
+        next.interets_moratoires = (montantDepense * 0.01).toFixed(2);
+        next.engagement_propose_cp = (montantDepense * 1.01).toFixed(2);
       }
 
       // Live budget disponible calculation
@@ -643,8 +647,8 @@ const TraitementEngagement = () => {
             </div>
           </div>
 
-          {/* Ligne 2 : Dépense, Intérêt moratoire 1%, Montant Total Engagé, Crédit Disponible */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 relative z-10">
+          {/* Ligne 2 : Dépense, Intérêt moratoire 1% et Montant Total Engagé */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 relative z-10">
             <div className="bg-white/10 rounded-xl p-3 border border-white/10 backdrop-blur-sm">
               <p className="text-[10px] font-bold text-blue-200 uppercase tracking-wider">Montant de la Dépense (DH)</p>
               <p className="text-base font-black text-white mt-1">{formatMoney(formData.montant)}</p>
@@ -659,12 +663,6 @@ const TraitementEngagement = () => {
               <p className="text-[10px] font-bold text-emerald-200 uppercase tracking-wider">Montant Total Engagement</p>
               <p className="text-lg font-black text-white mt-0.5 drop-shadow">
                 {formData.montant ? formatMoney(Number(formData.montant) * 1.01) : '-'}
-              </p>
-            </div>
-            <div className="bg-white/10 rounded-xl p-3 border border-white/10 backdrop-blur-sm">
-              <p className="text-[10px] font-bold text-cyan-300 uppercase tracking-wider">Crédit Disponible (CP)</p>
-              <p className="text-base font-black text-white mt-1">
-                {formData.disponible_cp ? formatMoney(formData.disponible_cp) : '-'}
               </p>
             </div>
           </div>
@@ -805,16 +803,74 @@ const TraitementEngagement = () => {
                     className={inputClass}
                   />
                 </div>
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-bold text-slate-700 mb-2">Pièces jointes mentionnées sur la fiche</label>
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">Type de budget</label>
+                  <select
+                    name="type_budget"
+                    value={formData.type_budget || 'Investissement'}
+                    onChange={handleChange}
+                    className={inputClass}
+                  >
+                    <option value="Investissement">Investissement</option>
+                    <option value="Fonctionnement">Fonctionnement</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">Référence de l'engagement</label>
                   <input
                     type="text"
-                    name="pieces_jointes"
-                    value={formData.pieces_jointes || ''}
+                    name="reference_engagement"
+                    value={formData.reference_engagement || ''}
                     onChange={handleChange}
                     placeholder="Ex: Marché N° M-29-2026-DRCA-RSK"
                     className={inputClass}
                   />
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">Crédit ouvert CP</label>
+                  <input type="number" step="0.01" name="credit_budget_cp" value={formData.credit_budget_cp || ''} onChange={handleChange} className={inputClass} />
+                </div>
+                {String(formData.type_budget || '').toLowerCase() !== 'fonctionnement' && (
+                  <div>
+                    <label className="block text-sm font-bold text-slate-700 mb-2">Crédit ouvert CE</label>
+                    <input type="number" step="0.01" name="credit_budget_ce" value={formData.credit_budget_ce || ''} onChange={handleChange} className={inputClass} />
+                  </div>
+                )}
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">Dépenses engagées antérieurement CP</label>
+                  <input type="number" step="0.01" name="depenses_engagees_cp" value={formData.depenses_engagees_cp || ''} onChange={handleChange} className={inputClass} />
+                </div>
+                {String(formData.type_budget || '').toLowerCase() !== 'fonctionnement' && (
+                  <>
+                    <div>
+                      <label className="block text-sm font-bold text-slate-700 mb-2">Dépenses engagées antérieurement CE</label>
+                      <input type="number" step="0.01" name="depenses_engagees_ce" value={formData.depenses_engagees_ce || ''} onChange={handleChange} className={inputClass} />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-bold text-slate-700 mb-2">Dépenses sur crédits d'engagement</label>
+                      <input type="number" step="0.01" name="depenses_credits_engagement" value={formData.depenses_credits_engagement || ''} onChange={handleChange} className={inputClass} />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-bold text-slate-700 mb-2">Dépenses sur crédits consolidés</label>
+                      <input type="number" step="0.01" name="depenses_credits_consolides" value={formData.depenses_credits_consolides || ''} onChange={handleChange} className={inputClass} />
+                    </div>
+                  </>
+                )}
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">Dépenses sur reste à payer</label>
+                  <input type="number" step="0.01" name="depenses_rap" value={formData.depenses_rap || ''} onChange={handleChange} className={inputClass} />
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">Montant de la dépense neuve</label>
+                  <input type="number" step="0.01" name="montant_depense_neuf" value={formData.montant_depense_neuf || ''} onChange={handleChange} className={inputClass} />
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">Intérêts moratoires (1 %)</label>
+                  <input type="number" step="0.01" name="interets_moratoires" value={formData.interets_moratoires || ''} readOnly className={`${inputClass} bg-slate-100`} />
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">Montant à engager neuf</label>
+                  <input type="number" step="0.01" name="engagement_propose_cp" value={formData.engagement_propose_cp || ''} readOnly className={`${inputClass} bg-slate-100`} />
                 </div>
               </div>
             </div>

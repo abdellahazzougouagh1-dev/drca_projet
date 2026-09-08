@@ -33,6 +33,7 @@
         .signature th { border: 1px solid #000; background: #f4f4f4; padding: 7px; }
         .signature td { border: 1px solid #000; text-align: center; }
     </style>
+    @include('documents.partials.bc_typography')
 </head>
 <body>
     @include('documents.partials.bc_header')

@@ -25,6 +25,7 @@ import {
   Check,
   Search,
   FileSpreadsheet,
+  Menu,
 } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
@@ -196,7 +197,6 @@ const documentFieldGroups = {
     { name: 'depenses_anterieures_ce', label: 'Dépenses engagées antérieurement CE', type: 'number', required: false },
     { name: 'depenses_anterieures_cp', label: 'Dépenses engagées antérieurement CP', type: 'number', required: false },
     { name: 'depenses_credits_engagement', label: "Dépenses sur crédits d'engagements", type: 'number', required: false },
-    { name: 'depenses_credits_consolides', label: 'Dépenses sur crédits consolidés', type: 'number', required: false },
     { name: 'depenses_rap', label: 'Dépenses sur reste à payer', type: 'number', required: false },
     { name: 'montant_depense_neuf', label: 'Montant de la dépense neuf', type: 'number', required: false },
     { name: 'interets_moratoires', label: 'Intérêts moratoires 1 %', type: 'number', required: false, readOnly: true },
@@ -459,6 +459,7 @@ const BonCommandePlateforme = () => {
   const [editingPrestations, setEditingPrestations] = useState([]);
   const [editingSaving, setEditingSaving] = useState(false);
   const [editingError, setEditingError] = useState('');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const fetchMembresCatalog = async () => {
     try {
@@ -482,6 +483,7 @@ const BonCommandePlateforme = () => {
         const searchParams = new URLSearchParams(location.search);
         const urlConsultationId = searchParams.get('consultation_id') || searchParams.get('consultationId');
         const targetId = location.state?.autoSelectId || urlConsultationId || localStorage.getItem('drca_selected_consultation_id');
+        const targetEditId = location.state?.autoEditId || (searchParams.get('edit') === '1' ? urlConsultationId : null);
 
         if (targetId) {
           const found = sorted.find((c) => String(c.id) === String(targetId));
@@ -489,10 +491,15 @@ const BonCommandePlateforme = () => {
             setSavedConsultation(found);
             localStorage.setItem('drca_selected_consultation_id', String(found.id));
             const retrievedIntitule = found.intitule || found.type_prestation || found.objet_consultation;
-            if (retrievedIntitule) {
-              handleDocumentFieldChange('bon_commande', 'intitule', retrievedIntitule);
-            }
+          if (retrievedIntitule) {
+            handleDocumentFieldChange('bon_commande', 'intitule', retrievedIntitule);
           }
+        }
+
+        if (targetEditId) {
+          const consultationToEdit = sorted.find((c) => String(c.id) === String(targetEditId));
+          if (consultationToEdit) openEditConsultationModal(consultationToEdit);
+        }
         }
       } catch (err) {
         setConsultationsError("Impossible de charger la liste des consultations.");
@@ -1741,6 +1748,7 @@ const BonCommandePlateforme = () => {
   const phaseIndex = phases.findIndex((p) => p.id === activePhase);
   const goToPhase = (phaseId) => {
     setActivePhase(phaseId);
+    setIsSidebarOpen(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
   const goNext = () => {
@@ -1764,9 +1772,17 @@ const BonCommandePlateforme = () => {
   ];
 
   return (
-    <div className="flex min-h-screen" style={{ backgroundColor: "#f1f5f9" }}>
+    <div className="relative min-h-screen lg:flex" style={{ backgroundColor: "#f1f5f9" }}>
+      {isSidebarOpen && (
+        <button
+          type="button"
+          aria-label="Fermer le menu"
+          onClick={() => setIsSidebarOpen(false)}
+          className="fixed inset-0 z-40 bg-slate-950/50 lg:hidden"
+        />
+      )}
       {/* Sidebar */}
-      <aside className="w-64 bg-[#0f172a] text-white flex flex-col h-screen sticky top-0 shadow-xl shrink-0">
+      <aside className={`fixed inset-y-0 left-0 z-50 flex h-dvh w-72 shrink-0 flex-col bg-[#0f172a] text-white shadow-xl transition-transform duration-300 lg:sticky lg:top-0 lg:h-screen lg:w-64 lg:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="px-5 py-5 border-b border-white/10">
           <Link to="/bons-commande" className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center font-black text-white text-xs shadow-md">ON</div>
@@ -1806,11 +1822,19 @@ const BonCommandePlateforme = () => {
       </aside>
 
       {/* Main content */}
-      <main className="flex-1 w-full overflow-y-auto p-4 lg:p-6">
+      <main className="min-w-0 flex-1 w-full p-3 sm:p-5 lg:p-6">
         <div className="w-full space-y-5">
           {/* Header bar */}
-          <div className="bg-white border border-slate-200/80 rounded-2xl px-6 py-4 flex items-center justify-between shadow-sm">
+          <div className="bg-white border border-slate-200/80 rounded-2xl px-3 py-3 sm:px-6 sm:py-4 flex items-start sm:items-center justify-between gap-3 shadow-sm">
             <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setIsSidebarOpen(true)}
+                className="lg:hidden p-2 -ml-1 rounded-lg text-slate-600 hover:bg-slate-100"
+                aria-label="Ouvrir le menu"
+              >
+                <Menu size={21} />
+              </button>
               <button onClick={() => navigate('/bons-commande')} className="p-2 rounded-lg text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition-colors" title="Retour">
                 <ArrowLeft size={18} />
               </button>
@@ -2042,6 +2066,7 @@ const BonCommandePlateforme = () => {
                           <th className="px-6 py-4">Réf. Consultation</th>
                           <th className="px-4 py-4">Année</th>
                           <th className="px-6 py-4">Objet de la Consultation</th>
+                          <th className="px-4 py-4">Mode d'engagement</th>
                           <th className="px-4 py-4">Statut</th>
                           <th className="px-6 py-4 text-right">Actions</th>
                         </tr>
@@ -2049,7 +2074,7 @@ const BonCommandePlateforme = () => {
                       <tbody className="divide-y divide-slate-100 text-sm">
                         {filteredConsultationsList.length === 0 ? (
                           <tr>
-                            <td colSpan="5" className="px-6 py-10 text-center text-slate-500">
+                            <td colSpan="6" className="px-6 py-10 text-center text-slate-500">
                               Aucune consultation ne correspond à votre recherche.
                             </td>
                           </tr>
@@ -2081,6 +2106,17 @@ const BonCommandePlateforme = () => {
                                   <p className="text-slate-900 font-semibold max-w-md line-clamp-2" title={consultation.objet_consultation}>
                                     {consultation.objet_consultation}
                                   </p>
+                                </td>
+                                <td className="px-4 py-4 whitespace-nowrap">
+                                  {consultation.mode_engagement === 'AO' || consultation.mode_engagement === "Appel d'offres" || consultation.mode_engagement === "Appel d'offre" ? (
+                                    <span className="inline-block rounded-full bg-violet-100 px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-violet-800">
+                                      Appel d'offres
+                                    </span>
+                                  ) : (
+                                    <span className="inline-block rounded-full bg-cyan-100 px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-cyan-800">
+                                      Bon de commande
+                                    </span>
+                                  )}
                                 </td>
                                 <td className="px-4 py-4 whitespace-nowrap">
                                   <span
@@ -2148,7 +2184,7 @@ const BonCommandePlateforme = () => {
                 </div>
               )}
 
-              <div className="mt-8 flex items-center justify-between">
+              <div className="mt-8 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-3">
                 <button type="button" onClick={goPrev} className="inline-flex items-center gap-2 px-5 py-2.5 bg-white border border-slate-200 text-slate-700 font-semibold rounded-xl hover:bg-slate-50 shadow-sm transition-all">
                   <ArrowLeft size={18} /> Précédent
                 </button>
@@ -2160,7 +2196,7 @@ const BonCommandePlateforme = () => {
           )}
 
           {activePhase !== 'dashboard' && activePhase !== 'consultation' && activePhase !== 'registre' && !selectedDocument && (
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-3 mb-6">
               <button type="button" onClick={goPrev} className="inline-flex items-center gap-2 px-5 py-2.5 bg-white border border-slate-200 text-slate-700 font-semibold rounded-xl hover:bg-slate-50 shadow-sm transition-all">
                 <ArrowLeft size={18} /> Précédent
               </button>
@@ -2233,7 +2269,7 @@ const BonCommandePlateforme = () => {
           )}
 
           {selectedDocument && (
-            <div className="bg-white rounded-3xl p-8 shadow-md border border-slate-100">
+            <div className="bg-white rounded-3xl p-4 sm:p-6 lg:p-8 shadow-md border border-slate-100">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 pb-6 border-b border-slate-100">
                 <div>
                   <div className="flex items-center gap-2">
@@ -2297,28 +2333,14 @@ const BonCommandePlateforme = () => {
                 </div>
               )}
 
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-                {selectedFields.map((field) => {
+              <div className="grid grid-cols-1 sm:grid-cols-2 2xl:grid-cols-3 gap-4 sm:gap-5">
+                {selectedFields.filter((field) => {
+                  if (selectedDocument.id !== 'fiche_engagement') return true;
+                  if (String(savedConsultation?.type_budget || '').toLowerCase() !== 'fonctionnement') return true;
+                  return !['credit_ouvert_ce', 'depenses_anterieures_ce', 'depenses_credits_engagement'].includes(field.name);
+                }).map((field) => {
                   if (field.condition && !field.condition(documentForms[selectedDocument.id])) {
                     return null;
-                  }
-
-                  if (selectedDocument.id === 'fiche_engagement') {
-                    const budgetType = String(savedConsultation?.type_budget || '').toLowerCase();
-                    const fonctionnementHiddenFields = [
-                      'credit_ouvert_ce',
-                      'depenses_anterieures_ce',
-                      'depenses_credits_engagement',
-                      'depenses_credits_consolides',
-                    ];
-                    const investmentHiddenFields = ['depenses_credits_consolides'];
-
-                    if (budgetType === 'fonctionnement' && fonctionnementHiddenFields.includes(field.name)) {
-                      return null;
-                    }
-                    if (budgetType === 'investissement' && investmentHiddenFields.includes(field.name)) {
-                      return null;
-                    }
                   }
 
                   if (field.name === 'motif_ajournement') {
@@ -2483,7 +2505,9 @@ const BonCommandePlateforme = () => {
 
                     const isAvisAchat = selectedDocument.id === 'avis_achat';
                     const showPrices = selectedDocument.id !== 'avis_achat';
-                    const gridCols = isAvisAchat ? 'grid-cols-2 md:grid-cols-4 lg:grid-cols-8' : 'grid-cols-2 md:grid-cols-4 lg:grid-cols-9';
+                    const gridCols = isAvisAchat
+                      ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-8'
+                      : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-9';
 
                     const isCellBlank = (v) => v === undefined || v === null || String(v).trim() === '';
                     const getCellInputCls = (v) => `w-full px-2 py-2 rounded-lg border ${hasError && isCellBlank(v)

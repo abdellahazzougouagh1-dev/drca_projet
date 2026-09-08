@@ -10,6 +10,7 @@ class RegistreEngagement extends Model
 
     protected $fillable = [
         'consultation_id',
+        'marche_id',
         'engagement_id',
         'numero_ordre',
         'date_engagement',
@@ -62,5 +63,10 @@ class RegistreEngagement extends Model
     public function engagement()
     {
         return $this->belongsTo(Engagement::class);
+    }
+
+    public function marche()
+    {
+        return $this->belongsTo(Marche::class);
     }
 }
