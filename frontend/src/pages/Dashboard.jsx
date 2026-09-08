@@ -10,20 +10,10 @@ import {
 } from 'lucide-react';
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
-<<<<<<< HEAD
-const workflowSteps = [
-  { number: '1', title: 'Notification', subtitle: 'Gestion des crédits budgétaires', to: '/notifications', icon: Landmark },
-  { number: '2', title: 'Consultation', subtitle: "Appel d'offres / Bons de commande / Conventions", to: '/consultations', icon: FileText },
-  { number: '3', title: 'Engagement', subtitle: 'Acte et crédits disponibles', to: '/engagements', icon: FileCheck2 },
-  { number: '4', title: 'Liquidation', subtitle: 'Exécution et décomptes', to: '/liquidations', icon: ReceiptText },
-  { number: '5', title: 'Ordonnancement', subtitle: 'Paiement et clôture', to: '/ordonnancements', icon: WalletCards },
-];
-=======
 const months = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc'];
 const money = (value) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'MAD', maximumFractionDigits: 0 }).format(Number(value) || 0).replace('MAD', 'DH');
 const date = (value) => value ? new Date(value).toLocaleDateString('fr-FR') : '—';
 const percentage = (part, total) => total ? Math.round((part / total) * 100) : 0;
->>>>>>> 1d0ea52a5d6fe5cef016a727d8466ed21044934d
 
 const phase = (item) => {
   const state = String(item.statut_dossier || item.statut || item.etat_avancement || '').toLowerCase();

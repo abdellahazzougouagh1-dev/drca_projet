@@ -24,11 +24,7 @@ class AooController extends Controller
     public function index()
     {
         return response()->json(
-<<<<<<< HEAD
-            Aoo::with(['concurrents.fournisseur', 'lots.items', 'lots.attributaire', 'lots.decisions.fournisseur', 'lots.notificationLigne'])
-=======
-            Aoo::with(['notificationLigne', 'concurrents.fournisseur', 'lots.items', 'lots.attributaire', 'lots.decisions.fournisseur'])
->>>>>>> 1d0ea52a5d6fe5cef016a727d8466ed21044934d
+            Aoo::with(['notificationLigne', 'concurrents.fournisseur', 'lots.items', 'lots.attributaire', 'lots.decisions.fournisseur', 'lots.notificationLigne'])
                 ->orderBy('created_at', 'desc')
                 ->get()
         );

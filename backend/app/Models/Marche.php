@@ -194,14 +194,13 @@ class Marche extends Model
         return $this->belongsTo(NotificationLigne::class);
     }
 
-<<<<<<< HEAD
     public function ordonnancements(): HasMany
     {
         return $this->hasMany(Ordonnancement::class);
-=======
+    }
+
     public function registreEngagement()
     {
         return $this->hasOne(RegistreEngagement::class);
->>>>>>> 1d0ea52a5d6fe5cef016a727d8466ed21044934d
     }
 }

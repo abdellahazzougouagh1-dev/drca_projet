@@ -86,12 +86,9 @@ const GestionAoo = () => {
 
   const wizardStepOrder = ['preparation', 'commission', 'engagement', 'registre'];
   const wizardNextLabels = {
-    preparation: 'Ouverture des plis et analyse'
-
-    preparation: 'Ouverture des plis',
+    preparation: 'Ouverture des plis et analyse',
     commission: 'Engagement',
     engagement: 'Registre',
-
   };
 
   const getNextStep = (current) => {
@@ -1649,38 +1646,36 @@ const GestionAoo = () => {
               )}
             </div>
           </div>
-          {/* TABS NAVIGATION - 2 PHASES : PRÉPARATION & OUVERTURE DES PLIS ET ANALYSE */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 pb-4">
-            {/* TABS NAVIGATION */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-2 sm:gap-4 pb-4">
-              <button onClick={() => setActiveTab('preparation')} className={`min-w-0 flex-1 px-6 py-5 rounded-2xl font-bold text-base transition-all flex items-center justify-center gap-3 ${activeTab === 'preparation'
-                ? 'bg-primary text-white shadow-lg'
-                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                }`}>
-                <FileText size={24} /> 1. Préparation
-              </button>
-              <button onClick={() => {
-                setActiveTab('commission');
-              }} className={`min-w-0 flex-1 px-6 py-5 rounded-2xl font-bold text-base transition-all flex items-center justify-center gap-3 ${activeTab === 'commission'
-                ? 'bg-primary text-white shadow-lg'
-                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                }`}>
-                <Users size={24} /> 2. Ouverture des plis et analyse
-              </button>
-              <button onClick={() => setActiveTab('engagement')} className={`min-w-0 flex-1 px-6 py-5 rounded-2xl font-bold text-base transition-all flex items-center justify-center gap-3 ${activeTab === 'engagement'
-                ? 'bg-primary text-white shadow-lg'
-                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                }`}>
-                <CheckSquare size={24} /> 3. Engagement
-              </button>
-              <button onClick={() => setActiveTab('registre')} className={`min-w-0 flex-1 px-6 py-5 rounded-2xl font-bold text-base transition-all flex items-center justify-center gap-3 ${activeTab === 'registre'
-                ? 'bg-primary text-white shadow-lg'
-                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                }`}>
-                <FileSpreadsheet size={24} /> 4. Registre d'engagement
-              </button>
-            </div>
+          {/* TABS NAVIGATION */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-2 sm:gap-4 pb-4">
+            <button onClick={() => setActiveTab('preparation')} className={`min-w-0 flex-1 px-6 py-5 rounded-2xl font-bold text-base transition-all flex items-center justify-center gap-3 ${activeTab === 'preparation'
+              ? 'bg-primary text-white shadow-lg'
+              : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+              }`}>
+              <FileText size={24} /> 1. Préparation
+            </button>
+            <button onClick={() => {
+              setActiveTab('commission');
+            }} className={`min-w-0 flex-1 px-6 py-5 rounded-2xl font-bold text-base transition-all flex items-center justify-center gap-3 ${activeTab === 'commission'
+              ? 'bg-primary text-white shadow-lg'
+              : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+              }`}>
+              <Users size={24} /> 2. Ouverture des plis et analyse
+            </button>
+            <button onClick={() => setActiveTab('engagement')} className={`min-w-0 flex-1 px-6 py-5 rounded-2xl font-bold text-base transition-all flex items-center justify-center gap-3 ${activeTab === 'engagement'
+              ? 'bg-primary text-white shadow-lg'
+              : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+              }`}>
+              <CheckSquare size={24} /> 3. Engagement
+            </button>
+            <button onClick={() => setActiveTab('registre')} className={`min-w-0 flex-1 px-6 py-5 rounded-2xl font-bold text-base transition-all flex items-center justify-center gap-3 ${activeTab === 'registre'
+              ? 'bg-primary text-white shadow-lg'
+              : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+              }`}>
+              <FileSpreadsheet size={24} /> 4. Registre d'engagement
+            </button>
           </div>
+        </div>
       </header>
 
       <main className="w-full px-3 sm:px-6 lg:px-8 mt-8 sm:mt-16">
