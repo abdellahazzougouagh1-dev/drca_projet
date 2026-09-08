@@ -117,6 +117,7 @@ const GestionAoo = () => {
   const [fournisseurs, setFournisseurs] = useState([]);
   const [lignesBudgetaires, setLignesBudgetaires] = useState([]);
   const [membresCommissionCatalog, setMembresCommissionCatalog] = useState([]);
+  const [registreBudget, setRegistreBudget] = useState('Investissement');
 
   const [formData, setFormData] = useState({
     num_aoo: '',
@@ -140,6 +141,7 @@ const GestionAoo = () => {
     heure_ouverture: '',
     nombre_lots: 1,
     budget: '',
+    type_budget: 'Investissement',
     art: '',
     par: '',
     lig: '',
@@ -1621,6 +1623,7 @@ const GestionAoo = () => {
       .filter((marche) => marche.registre_engagement)
       .map((marche) => ({ row: marche.registre_engagement, marche })),
   ];
+  const registreRowsFiltres = registreRows.filter(({ row }) => row.budget === registreBudget);
 
   return (
     <div className="min-h-screen bg-slate-50/50 pb-24">
@@ -1770,6 +1773,20 @@ const GestionAoo = () => {
               <h2 className="text-xl font-extrabold text-slate-800">Fiche d'Engagement Budgétaire</h2>
               <p className="mt-1 text-sm text-slate-500">Les champs sont enregistrés avec cet appel d'offres et seront disponibles lors de la création du marché.</p>
             </div>
+            <div className="mb-5 max-w-sm">
+              <label className="block text-xs font-bold text-slate-700">
+                Type de budget
+                <select
+                  name="type_budget"
+                  value={formData.type_budget || 'Investissement'}
+                  onChange={handleChange}
+                  className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-normal outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                >
+                  <option value="Investissement">Investissement</option>
+                  <option value="Fonctionnement">Fonctionnement</option>
+                </select>
+              </label>
+            </div>
             <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
               {[
                 ['numero_engagement', "N° Fiche d'Engagement", 'text'],
@@ -1816,9 +1833,24 @@ const GestionAoo = () => {
                 <p className="mt-1 text-sm text-slate-500">Registre identique à celui des bons de commande, filtré sur cet appel d'offres.</p>
               </div>
             </div>
-            {registreRows.length === 0 ? (
+            <div className="mb-5 flex flex-wrap gap-2">
+              {['Investissement', 'Fonctionnement'].map((budgetType) => (
+                <button
+                  key={budgetType}
+                  type="button"
+                  onClick={() => setRegistreBudget(budgetType)}
+                  className={`rounded-xl px-5 py-2.5 text-sm font-bold transition-colors ${registreBudget === budgetType
+                    ? 'bg-blue-700 text-white shadow-sm'
+                    : 'border border-slate-200 bg-white text-slate-600 hover:border-blue-300 hover:text-blue-700'
+                    }`}
+                >
+                  Registre {budgetType}
+                </button>
+              ))}
+            </div>
+            {registreRowsFiltres.length === 0 ? (
               <div className="rounded-2xl border border-slate-200 bg-slate-50 p-10 text-center text-slate-500">
-                Aucune ligne d'engagement enregistrée pour cet appel d'offres.
+                Aucune ligne d'engagement enregistrée dans le registre {registreBudget.toLowerCase()}.
               </div>
             ) : (
               <div className="overflow-x-auto rounded-2xl border border-slate-200">
@@ -1841,7 +1873,7 @@ const GestionAoo = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {registreRows.map(({ row, marche }) => {
+                    {registreRowsFiltres.map(({ row, marche }) => {
                       const money = value => value === null || value === undefined || value === '' ? '-' : Number(value).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
                       return (
                         <tr key={row.id} className="hover:bg-blue-50/40">

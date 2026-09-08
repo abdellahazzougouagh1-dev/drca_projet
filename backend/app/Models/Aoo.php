@@ -28,6 +28,7 @@ class Aoo extends Model
         'heure_ouverture',
         'nombre_lots',
         'budget',
+        'type_budget',
         'art',
         'par',
         'lig',
