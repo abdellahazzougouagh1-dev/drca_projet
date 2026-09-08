@@ -24,6 +24,7 @@ class AuthController extends Controller
             'email' => $validated['email'],
             'password' => $validated['password'],
             'is_admin' => $validated['is_admin'] ?? true,
+            'role' => 'gestionnaire',
         ]);
 
         $token = $user->createToken('api-token')->plainTextToken;
@@ -58,6 +59,7 @@ class AuthController extends Controller
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
+                'role' => $user->role ?? 'gestionnaire',
             ],
         ]);
     }

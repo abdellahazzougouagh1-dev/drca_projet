@@ -205,6 +205,22 @@ const GestionMarches = () => {
     agent_suivi: '',
     date_reception_finale: '',
     commission_reception: [],
+    num_engagement: '',
+    reference_engagement: '',
+    forme_engagement: 'Marché',
+    date_engagement: '',
+    article_budget: '',
+    paragraphe_budget: '',
+    ligne_budget: '',
+    credit_budget_cp: '',
+    credit_budget_ce: '',
+    depenses_engagees_cp: '',
+    depenses_engagees_ce: '',
+    disponible_cp: '',
+    disponible_ce: '',
+    engagement_propose_cp: '',
+    engagement_propose_ce: '',
+    pieces_jointes: '',
     fournisseur_data: null
   });
 
@@ -585,6 +601,19 @@ const GestionMarches = () => {
         const match = String(value).match(/\/(\d{4})\//);
         if (match) next.exercice = match[1];
       }
+      if (name === 'credit_budget_cp' || name === 'depenses_engagees_cp') {
+        const credit = parseNum(name === 'credit_budget_cp' ? value : next.credit_budget_cp);
+        const expenses = parseNum(name === 'depenses_engagees_cp' ? value : next.depenses_engagees_cp);
+        next.disponible_cp = (credit - expenses).toFixed(2);
+      }
+      if (name === 'credit_budget_ce' || name === 'depenses_engagees_ce') {
+        const credit = parseNum(name === 'credit_budget_ce' ? value : next.credit_budget_ce);
+        const expenses = parseNum(name === 'depenses_engagees_ce' ? value : next.depenses_engagees_ce);
+        next.disponible_ce = (credit - expenses).toFixed(2);
+      }
+      if (name === 'montant') {
+        next.engagement_propose_cp = (parseNum(value) * 1.01).toFixed(2);
+      }
       return next;
     });
   };
@@ -690,6 +719,22 @@ const GestionMarches = () => {
         agent_suivi: formData.agent_suivi || null,
         date_reception_finale: formData.date_reception_finale || null,
         commission_reception: Array.isArray(formData.commission_reception) ? formData.commission_reception : [],
+        num_engagement: formData.num_engagement || null,
+        reference_engagement: formData.reference_engagement || null,
+        forme_engagement: formData.forme_engagement || 'Marché',
+        date_engagement: formData.date_engagement || null,
+        article_budget: formData.article_budget || null,
+        paragraphe_budget: formData.paragraphe_budget || null,
+        ligne_budget: formData.ligne_budget || null,
+        credit_budget_cp: formData.credit_budget_cp === '' ? null : Number(formData.credit_budget_cp),
+        credit_budget_ce: formData.credit_budget_ce === '' ? null : Number(formData.credit_budget_ce),
+        depenses_engagees_cp: formData.depenses_engagees_cp === '' ? null : Number(formData.depenses_engagees_cp),
+        depenses_engagees_ce: formData.depenses_engagees_ce === '' ? null : Number(formData.depenses_engagees_ce),
+        disponible_cp: formData.disponible_cp === '' ? null : Number(formData.disponible_cp),
+        disponible_ce: formData.disponible_ce === '' ? null : Number(formData.disponible_ce),
+        engagement_propose_cp: formData.engagement_propose_cp === '' ? null : Number(formData.engagement_propose_cp),
+        engagement_propose_ce: formData.engagement_propose_ce === '' ? null : Number(formData.engagement_propose_ce),
+        pieces_jointes: formData.pieces_jointes || null,
         bordereau_items: bordereauItems.length > 0
           ? bordereauItems.map(item => {
             const { puHt } = computeBordereauLine(item);
@@ -730,7 +775,21 @@ const GestionMarches = () => {
   const downloadDocument = async (documentType) => {
     if (!id || id === 'nouveau') return;
 
-    if (documentType === 'acte-engagement' || documentType === 'decision-approbation' || documentType === 'os-commencement') {
+    if (documentType === 'rapport-engagement') {
+      try {
+        const response = await api.get(`/marches/${id}/generate/rapport-engagement`, { responseType: 'blob' });
+        const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `Rapport_Engagement_${formData.num_marche}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(url);
+      } catch (err) {
+        setErrorMessage("Enregistrez d'abord la fiche d'engagement avant de générer le rapport.");
+      }
+    } else if (documentType === 'acte-engagement' || documentType === 'decision-approbation' || documentType === 'os-commencement') {
       try {
         let endpoint = '';
         let filename = '';
@@ -922,13 +981,13 @@ const GestionMarches = () => {
     <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(14,165,233,0.10),_transparent_30%),linear-gradient(135deg,_#f8fafc_0%,_#eef6ff_100%)] pb-24">
       <header className="bg-white/95 border-b border-slate-200 sticky top-0 z-30 shadow-sm backdrop-blur">
         <div className="w-full px-4 sm:px-6 lg:px-8">
-          <div className="py-4 flex items-center justify-between">
-            <div className="flex items-center gap-4">
+          <div className="py-3 sm:py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex min-w-0 items-start sm:items-center gap-3 sm:gap-4">
               <button onClick={() => navigate('/dashboard')} className="p-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl transition-all">
                 <ArrowLeft size={20} />
               </button>
               <div>
-                <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-3">
+                <h1 className="text-xl sm:text-2xl font-bold text-slate-800 flex items-center gap-2 sm:gap-3">
                   <Briefcase className="text-[#1e3a8a]" />
                   {id && id !== 'nouveau' ? `Marché : ${formData.num_marche || 'En cours'}` : 'Nouveau Marché'}
                 </h1>
@@ -936,7 +995,7 @@ const GestionMarches = () => {
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex w-full sm:w-auto flex-wrap items-center gap-2 sm:justify-end">
               {id && id !== 'nouveau' && (
                 <button
                   type="button"
@@ -962,7 +1021,7 @@ const GestionMarches = () => {
           </div>
 
           <div className="mb-4 rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
-            <div className="flex items-center justify-between mb-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
               <div>
                 <p className="text-sm font-semibold text-slate-600">Avancement du marché</p>
                 <p className="text-xl font-bold text-slate-800">{workflow.progress_percent}%</p>
@@ -994,8 +1053,8 @@ const GestionMarches = () => {
         </div>
       </header>
 
-      <main className="w-full px-4 sm:px-6 lg:px-8 mt-16">
-        <form onSubmit={handleSubmit} className="bg-white rounded-3xl p-10 shadow-sm border border-slate-200">
+      <main className="w-full px-3 sm:px-6 lg:px-8 mt-8 sm:mt-16">
+        <form onSubmit={handleSubmit} className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-10 shadow-sm border border-slate-200">
 
           <div className={activeTab === 'consultation' ? 'block animate-fade-in' : 'hidden'}>
             <div className="mb-8 border-b border-slate-100 pb-4">
@@ -1305,6 +1364,52 @@ const GestionMarches = () => {
                 <span>Titulaire : <strong>{formData.titulaire || 'En attente d\'attribution'}</strong></span>
                 <span className="mx-1">•</span>
                 <span>TTC : <strong>{formatMoney(formData.montant)} dh</strong></span>
+              </div>
+            </div>
+
+            <div className="mb-8 rounded-3xl border border-blue-200 bg-blue-50/40 p-6 shadow-sm">
+              <div className="mb-5 flex items-center justify-between gap-3 border-b border-blue-100 pb-3">
+                <div>
+                  <h3 className="text-lg font-extrabold text-slate-900">Fiche d'Engagement Budgétaire</h3>
+                  <p className="mt-1 text-xs text-slate-500">Les données enregistrées alimentent automatiquement le registre des engagements.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => downloadDocument('rapport-engagement')}
+                  className="inline-flex items-center gap-2 rounded-xl bg-blue-700 px-4 py-2 text-xs font-bold text-white hover:bg-blue-800"
+                >
+                  <Download size={15} /> Rapport d'engagement
+                </button>
+              </div>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                {[
+                  ['num_engagement', "N° Fiche d'Engagement", 'text'],
+                  ['date_engagement', 'Date de visa / engagement', 'date'],
+                  ['reference_engagement', 'Référence du marché', 'text'],
+                  ['article_budget', 'Article (ART)', 'text'],
+                  ['paragraphe_budget', 'Paragraphe (PAR)', 'text'],
+                  ['ligne_budget', 'Ligne (LIG)', 'text'],
+                  ['credit_budget_cp', 'Crédit ouvert CP', 'number'],
+                  ['credit_budget_ce', 'Crédit ouvert CE', 'number'],
+                  ['depenses_engagees_cp', 'Dépenses antérieures CP', 'number'],
+                  ['depenses_engagees_ce', 'Dépenses antérieures CE', 'number'],
+                  ['disponible_cp', 'Disponible CP', 'number'],
+                  ['disponible_ce', 'Disponible CE', 'number'],
+                  ['engagement_propose_cp', 'Montant à engager neuf', 'number'],
+                  ['engagement_propose_ce', 'Montant à engager CE', 'number'],
+                ].map(([name, label, type]) => (
+                  <label key={name} className="text-xs font-bold text-slate-700">
+                    {label}
+                    <input
+                      name={name}
+                      type={type}
+                      value={formData[name] ?? ''}
+                      onChange={handleChange}
+                      readOnly={name.startsWith('disponible_') || name === 'engagement_propose_cp'}
+                      className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-normal outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 read-only:bg-slate-100"
+                    />
+                  </label>
+                ))}
               </div>
             </div>
 

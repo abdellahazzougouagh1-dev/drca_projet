@@ -137,6 +137,7 @@
             margin-top: 15px;
         }
     </style>
+    @include('documents.partials.bc_typography')
 </head>
 <body>
     @include('documents.partials.bc_header')

@@ -193,4 +193,9 @@ class Marche extends Model
     {
         return $this->belongsTo(NotificationLigne::class);
     }
+
+    public function registreEngagement()
+    {
+        return $this->hasOne(RegistreEngagement::class);
+    }
 }

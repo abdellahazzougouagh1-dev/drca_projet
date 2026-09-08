@@ -81,6 +81,7 @@
             text-transform: uppercase;
         }
     </style>
+    @include('documents.partials.bc_typography')
 </head>
 <body>
     @include('documents.partials.bc_header')

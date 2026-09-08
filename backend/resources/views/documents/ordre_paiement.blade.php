@@ -50,6 +50,7 @@
         .visa-row th { background: #d9d9d9; font-weight: bold; text-align: center; padding: 5px; border: 1px solid #000; font-size: 10px; letter-spacing: 0.3px; }
         .visa-row td { height: 55px; border: 1px solid #000; vertical-align: top; }
     </style>
+    @include('documents.partials.bc_typography')
 </head>
 <body>
 

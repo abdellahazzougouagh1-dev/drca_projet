@@ -19,12 +19,20 @@ import DossierLiquidation from './pages/DossierLiquidation';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import ProtectedRoute from './components/ProtectedRoute';
+import DirectorRoute from './components/DirectorRoute';
 import DossierCloture from './pages/DossierCloture';
 import ListeNotifications from './pages/ListeNotifications';
 import NouvelleNotification from './pages/NouvelleNotification';
 import DetailsNotification from './pages/DetailsNotification';
 function App() {
   const isAuthenticated = !!localStorage.getItem('token');
+  let storedUser = null;
+  try {
+    storedUser = JSON.parse(localStorage.getItem('user') || 'null');
+  } catch {
+    storedUser = null;
+  }
+  const homePath = storedUser?.role === 'directeur' ? '/directeur' : '/consultations';
 
   return (
     <Router>
@@ -36,8 +44,16 @@ function App() {
           path="/dashboard"
           element={
             <ProtectedRoute>
-              <Dashboard />
+              <Navigate to="/consultations" replace />
             </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/directeur"
+          element={
+            <DirectorRoute>
+              <Dashboard />
+            </DirectorRoute>
           }
         />
         <Route
@@ -209,7 +225,7 @@ function App() {
           }
         />
 
-        <Route path="/" element={<Navigate to={isAuthenticated ? '/dashboard' : '/login'} replace />} />
+        <Route path="/" element={<Navigate to={isAuthenticated ? homePath : '/login'} replace />} />
       </Routes>
     </Router>
   );

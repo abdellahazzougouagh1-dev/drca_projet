@@ -109,10 +109,12 @@ const NouvelleConsultation = () => {
       { name: 'objet_consultation', label: 'Objet de la consultation' },
       { name: 'intitule', label: 'Intitulé (Nature de la prestation)' },
       { name: 'delai_execution', label: "Délai d'exécution" },
-      { name: 'art', label: 'Article (ART)' },
-      { name: 'par', label: 'Paragraphe (PAR)' },
-      { name: 'lig', label: 'Ligne (LIG)' },
-      { name: 'exercice_budgetaire', label: 'Exercice budgétaire' },
+      ...(formData.mode_engagement !== 'AO' ? [
+        { name: 'art', label: 'Article (ART)' },
+        { name: 'par', label: 'Paragraphe (PAR)' },
+        { name: 'lig', label: 'Ligne (LIG)' },
+        { name: 'exercice_budgetaire', label: 'Exercice budgétaire' },
+      ] : []),
     ];
 
     fieldsToValidate.forEach((field) => {
@@ -196,9 +198,9 @@ const NouvelleConsultation = () => {
     } focus:ring-2 focus:border-transparent outline-none transition-all dark:text-white`;
 
   return (
-    <div className="p-8 bg-gray-50 dark:bg-gray-900 min-h-screen">
-      <div className="max-w-5xl mx-auto">
-        <header className="mb-8 flex items-center justify-between">
+    <div className="p-3 sm:p-6 lg:p-8 bg-gray-50 dark:bg-gray-900 min-h-screen">
+      <div className="w-full">
+        <header className="mb-6 sm:mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-3 mb-2">
               <button
@@ -215,7 +217,7 @@ const NouvelleConsultation = () => {
               >
                 <ArrowLeft size={20} />
               </button>
-              <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">
                 Nouvelle Consultation
               </h1>
             </div>
@@ -243,7 +245,7 @@ const NouvelleConsultation = () => {
         <form onSubmit={handleSubmit} className="space-y-8" noValidate>
 
           {/* BLOC 1 : Informations Générales */}
-          <section className="bg-white dark:bg-gray-800 p-8 rounded-3xl shadow-lg border border-gray-100 dark:border-gray-700">
+          <section className="bg-white dark:bg-gray-800 p-4 sm:p-6 lg:p-8 rounded-2xl sm:rounded-3xl shadow-lg border border-gray-100 dark:border-gray-700">
             <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-100 dark:border-gray-700">
               <div className="p-2 bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 rounded-lg">
                 <FileText size={20} />
@@ -252,6 +254,16 @@ const NouvelleConsultation = () => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                  Mode d'engagement <span className="text-red-600 font-bold ml-0.5">*</span>
+                </label>
+                <select name="mode_engagement" value={formData.mode_engagement} onChange={handleChange} className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all dark:text-white font-semibold">
+                  <option value="BC">Bon de commande</option>
+                  <option value="AO">Appel d'offres</option>
+                </select>
+              </div>
+
               <div>
                 <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                   Numéro de consultation <span className="text-red-600 font-bold ml-0.5">*</span>
@@ -268,9 +280,17 @@ const NouvelleConsultation = () => {
 
               <div>
                 <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                  Numéro de bon de commande {formData.mode_engagement === 'BC' ? <span className="text-red-600 font-bold ml-0.5">*</span> : '(Optionnel)'}
+                  {formData.mode_engagement === 'AO' ? 'Numéro de marché' : 'Numéro de bon de commande'}{' '}
+                  {formData.mode_engagement === 'BC' && <span className="text-red-600 font-bold ml-0.5">*</span>}
                 </label>
-                <input type="text" name="numero_bc" value={formData.numero_bc} onChange={handleChange} placeholder="Ex: BC CONS-2026-0001" className={getInputClass('numero_bc')} />
+                <input
+                  type="text"
+                  name="numero_bc"
+                  value={formData.numero_bc}
+                  onChange={handleChange}
+                  placeholder={formData.mode_engagement === 'AO' ? 'Ex: M-05/2026/DRCA-RSK' : 'Ex: BC CONS-2026-0001'}
+                  className={getInputClass('numero_bc')}
+                />
               </div>
 
               <div>
@@ -317,16 +337,6 @@ const NouvelleConsultation = () => {
 
               <div>
                 <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                  Mode d'engagement <span className="text-red-600 font-bold ml-0.5">*</span>
-                </label>
-                <select name="mode_engagement" value={formData.mode_engagement} onChange={handleChange} className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all dark:text-white font-semibold">
-                  <option value="BC">Bon de commande</option>
-                  <option value="AO">Appel d'offres</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                   Catégorie <span className="text-red-600 font-bold ml-0.5">*</span>
                 </label>
                 <select name="categorie" value={formData.categorie} onChange={handleChange} className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all dark:text-white">
@@ -368,16 +378,17 @@ const NouvelleConsultation = () => {
             </div>
           </section>
 
-          {/* BLOC 2 : Informations Budgétaires */}
-          <section className="bg-white dark:bg-gray-800 p-8 rounded-3xl shadow-lg border border-gray-100 dark:border-gray-700">
-            <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-100 dark:border-gray-700">
-              <div className="p-2 bg-amber-100 dark:bg-amber-900/50 text-amber-600 dark:text-amber-400 rounded-lg">
-                <Calculator size={20} />
+          {/* L'imputation des AO est renseignée au niveau des lots. */}
+          {formData.mode_engagement !== 'AO' && (
+            <section className="bg-white dark:bg-gray-800 p-8 rounded-3xl shadow-lg border border-gray-100 dark:border-gray-700">
+              <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-100 dark:border-gray-700">
+                <div className="p-2 bg-amber-100 dark:bg-amber-900/50 text-amber-600 dark:text-amber-400 rounded-lg">
+                  <Calculator size={20} />
+                </div>
+                <h2 className="text-xl font-bold text-gray-800 dark:text-white">Imputation Budgétaires</h2>
               </div>
-              <h2 className="text-xl font-bold text-gray-800 dark:text-white">Imputation Budgétaires</h2>
-            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                   Article (ART) <span className="text-red-600 font-bold ml-0.5">*</span>
@@ -410,8 +421,9 @@ const NouvelleConsultation = () => {
                 </label>
                 <input type="number" name="exercice_budgetaire" min="2026" max="2099" onInput={(e) => { if (e.target.value.length > 4) e.target.value = e.target.value.slice(0, 4); }} value={formData.exercice_budgetaire} onChange={handleChange} className={getInputClass('exercice_budgetaire')} />
               </div>
-            </div>
-          </section>
+              </div>
+            </section>
+          )}
 
           <div className="flex items-center justify-end gap-4 pt-4">
             <button

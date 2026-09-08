@@ -15,8 +15,9 @@ export default function Login() {
     try {
       const response = await api.post('/login', { email, password });
       localStorage.setItem('token', response.data.token);
+      localStorage.setItem('user', JSON.stringify(response.data.user));
       api.defaults.headers.common.Authorization = `Bearer ${response.data.token}`;
-      navigate('/dashboard');
+      navigate(response.data.user?.role === 'directeur' ? '/directeur' : '/consultations');
     } catch (err) {
       setError(err.response?.data?.message || 'Email ou mot de passe incorrect');
     }

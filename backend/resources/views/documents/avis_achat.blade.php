@@ -116,6 +116,7 @@
         .totals-table { width: 360px; margin-left: auto; margin-bottom: 14px; border: 2px solid #000; }
         .date-box { border: 1px solid #000; padding: 6px 10px; width: 250px; font-weight: bold; margin-top: 28px; }
     </style>
+    @include('documents.partials.bc_typography')
 </head>
 <body>
     @include('documents.partials.bc_header')

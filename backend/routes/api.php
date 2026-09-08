@@ -113,6 +113,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('liquidations/marches/{marcheId}/{liquidationId}/documents/{type}', [\App\Http\Controllers\Api\LiquidationDocumentController::class, 'generate']);
 
     Route::apiResource('marches', \App\Http\Controllers\Api\MarcheController::class);
+    Route::get('marches/{id}/generate/rapport-engagement', [\App\Http\Controllers\Api\MarcheController::class, 'generateRapportEngagement']);
     Route::get('marches/{id}/workflow', [\App\Http\Controllers\Api\MarcheController::class, 'workflowState']);
     Route::post('marches/{id}/workflow/start', [\App\Http\Controllers\Api\MarcheController::class, 'startExecution']);
     
