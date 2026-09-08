@@ -24,7 +24,8 @@ import {
   MapPin,
   Mail,
   Phone,
-  ShieldCheck
+  ShieldCheck,
+  FileSpreadsheet
 } from 'lucide-react';
 
 const formatMoney = (amount) => {
@@ -49,6 +50,7 @@ const TraitementEngagement = () => {
   const [saving, setSaving] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
+  const [registreBudget, setRegistreBudget] = useState('Investissement');
 
   const [formData, setFormData] = useState({
     num_marche: '',

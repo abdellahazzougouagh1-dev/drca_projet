@@ -882,6 +882,33 @@ export default function DossierOrdonnancement() {
                   </div>
                 </div>
 
+                {/* 2. Ordre de Paiement (OP) */}
+                <div className="p-5 bg-slate-50 border border-slate-200 rounded-2xl flex flex-col justify-between space-y-4 hover:border-blue-300 transition">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 bg-blue-100 text-blue-700 rounded-xl">
+                      <FileCheck size={22} />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-slate-900 text-sm">Ordre de paiement (OP)</h4>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 pt-2 border-t border-slate-200">
+                    <button
+                      onClick={() => handleOpenPreview('op')}
+                      className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 text-xs font-semibold rounded-xl transition cursor-pointer"
+                    >
+                      <Eye size={14} className="text-blue-600" /> Aperçu
+                    </button>
+                    <button
+                      onClick={() => handleDownloadDoc('op')}
+                      className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-xl shadow transition cursor-pointer"
+                    >
+                      <Download size={14} /> Télécharger PDF
+                    </button>
+                  </div>
+                </div>
+
 
 
                 {/* 3. Ordre de Virement (OV) */}

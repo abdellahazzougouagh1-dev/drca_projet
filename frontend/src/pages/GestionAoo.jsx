@@ -84,11 +84,9 @@ const GestionAoo = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('preparation');
 
-  const wizardStepOrder = ['preparation', 'commission', 'engagement', 'registre'];
+  const wizardStepOrder = ['preparation', 'commission'];
   const wizardNextLabels = {
     preparation: 'Ouverture des plis et analyse',
-    commission: 'Engagement',
-    engagement: 'Registre',
   };
 
   const getNextStep = (current) => {
@@ -1657,7 +1655,7 @@ const GestionAoo = () => {
             </div>
           </div>
           {/* TABS NAVIGATION */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-2 sm:gap-4 pb-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4 pb-4">
             <button onClick={() => setActiveTab('preparation')} className={`min-w-0 flex-1 px-6 py-5 rounded-2xl font-bold text-base transition-all flex items-center justify-center gap-3 ${activeTab === 'preparation'
               ? 'bg-primary text-white shadow-lg'
               : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
@@ -1671,18 +1669,6 @@ const GestionAoo = () => {
               : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
               }`}>
               <Users size={24} /> 2. Ouverture des plis et analyse
-            </button>
-            <button onClick={() => setActiveTab('engagement')} className={`min-w-0 flex-1 px-6 py-5 rounded-2xl font-bold text-base transition-all flex items-center justify-center gap-3 ${activeTab === 'engagement'
-              ? 'bg-primary text-white shadow-lg'
-              : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-              }`}>
-              <CheckSquare size={24} /> 3. Engagement
-            </button>
-            <button onClick={() => setActiveTab('registre')} className={`min-w-0 flex-1 px-6 py-5 rounded-2xl font-bold text-base transition-all flex items-center justify-center gap-3 ${activeTab === 'registre'
-              ? 'bg-primary text-white shadow-lg'
-              : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-              }`}>
-              <FileSpreadsheet size={24} /> 4. Registre d'engagement
             </button>
           </div>
         </div>
@@ -1767,139 +1753,6 @@ const GestionAoo = () => {
               handlePasserAttribution={handlePasserAttribution}
             />
           </div>
-
-          <div className={activeTab === 'engagement' ? 'block animate-fade-in' : 'hidden'}>
-            <div className="mb-8 border-b border-slate-100 pb-4">
-              <h2 className="text-xl font-extrabold text-slate-800">Fiche d'Engagement Budgétaire</h2>
-              <p className="mt-1 text-sm text-slate-500">Les champs sont enregistrés avec cet appel d'offres et seront disponibles lors de la création du marché.</p>
-            </div>
-            <div className="mb-5 max-w-sm">
-              <label className="block text-xs font-bold text-slate-700">
-                Type de budget
-                <select
-                  name="type_budget"
-                  value={formData.type_budget || 'Investissement'}
-                  onChange={handleChange}
-                  className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-normal outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                >
-                  <option value="Investissement">Investissement</option>
-                  <option value="Fonctionnement">Fonctionnement</option>
-                </select>
-              </label>
-            </div>
-            <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
-              {[
-                ['numero_engagement', "N° Fiche d'Engagement", 'text'],
-                ['date_engagement', 'Date de visa / engagement', 'date'],
-                ['credit_ouvert_cp', 'Crédit ouvert CP', 'number'],
-                ['credit_ouvert_ce', 'Crédit ouvert CE', 'number'],
-                ['depenses_anterieures_cp', 'Dépenses antérieures CP', 'number'],
-                ['depenses_anterieures_ce', 'Dépenses antérieures CE', 'number'],
-                ['depenses_credits_engagement', "Dépenses sur crédits d'engagement", 'number'],
-                ['depenses_rap', 'Dépenses sur reste à payer', 'number'],
-                ['montant_depense_neuf', 'Montant de la dépense neuve', 'number'],
-                ['interets_moratoires', 'Intérêts moratoires 1 %', 'number'],
-                ['montant_engager_neuf', 'Montant à engager neuf', 'number'],
-              ].filter(([name]) => {
-                if (String(formData.type_budget || '').toLowerCase() !== 'fonctionnement') return true;
-                return !['credit_ouvert_ce', 'depenses_anterieures_ce', 'depenses_credits_engagement'].includes(name);
-              }).map(([name, label, type]) => (
-                <label key={name} className="block text-xs font-bold text-slate-700">
-                  {label}
-                  <input
-                    name={name}
-                    type={type}
-                    value={formData[name] ?? ''}
-                    onChange={handleChange}
-                    readOnly={name === 'interets_moratoires' || name === 'montant_engager_neuf'}
-                    className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-normal outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 read-only:bg-slate-100"
-                  />
-                </label>
-              ))}
-            </div>
-            <div className="mt-8 flex justify-end">
-              <button type="submit" disabled={saving} className="inline-flex items-center gap-2 rounded-xl bg-primary px-6 py-3 font-bold text-white shadow-md disabled:opacity-60">
-                {saving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />} Enregistrer la fiche
-              </button>
-            </div>
-          </div>
-
-          <div className={activeTab === 'registre' ? 'block animate-fade-in' : 'hidden'}>
-            <div className="mb-8 flex items-center justify-between border-b border-slate-100 pb-4">
-              <div>
-                <h2 className="flex items-center gap-2 text-xl font-extrabold text-slate-800">
-                  <FileSpreadsheet className="text-blue-700" /> Registre d'engagement
-                </h2>
-                <p className="mt-1 text-sm text-slate-500">Registre identique à celui des bons de commande, filtré sur cet appel d'offres.</p>
-              </div>
-            </div>
-            <div className="mb-5 flex flex-wrap gap-2">
-              {['Investissement', 'Fonctionnement'].map((budgetType) => (
-                <button
-                  key={budgetType}
-                  type="button"
-                  onClick={() => setRegistreBudget(budgetType)}
-                  className={`rounded-xl px-5 py-2.5 text-sm font-bold transition-colors ${registreBudget === budgetType
-                    ? 'bg-blue-700 text-white shadow-sm'
-                    : 'border border-slate-200 bg-white text-slate-600 hover:border-blue-300 hover:text-blue-700'
-                    }`}
-                >
-                  Registre {budgetType}
-                </button>
-              ))}
-            </div>
-            {registreRowsFiltres.length === 0 ? (
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-10 text-center text-slate-500">
-                Aucune ligne d'engagement enregistrée dans le registre {registreBudget.toLowerCase()}.
-              </div>
-            ) : (
-              <div className="overflow-x-auto rounded-2xl border border-slate-200">
-                <table className="min-w-[1500px] w-full border-collapse text-xs text-left">
-                  <thead className="bg-slate-100 font-extrabold text-slate-700">
-                    <tr>
-                      <th className="px-4 py-3">N° ordre</th>
-                      <th className="px-4 py-3">N° fiche</th>
-                      <th className="px-4 py-3">Date</th>
-                      <th className="px-4 py-3">Référence marché</th>
-                      <th className="px-4 py-3">Budget</th>
-                      <th className="px-4 py-3">ART</th>
-                      <th className="px-4 py-3">PAR</th>
-                      <th className="px-4 py-3">LIG</th>
-                      <th className="px-4 py-3">Crédit ouvert CP</th>
-                      <th className="px-4 py-3">Dépense neuve</th>
-                      <th className="px-4 py-3">Intérêts 1%</th>
-                      <th className="px-4 py-3">À engager neuf</th>
-                      <th className="px-4 py-3">Bénéficiaire</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {registreRowsFiltres.map(({ row, marche }) => {
-                      const money = value => value === null || value === undefined || value === '' ? '-' : Number(value).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-                      return (
-                        <tr key={row.id} className="hover:bg-blue-50/40">
-                          <td className="px-4 py-3">{row.numero_ordre || '-'}</td>
-                          <td className="px-4 py-3 font-bold text-blue-700">{row.numero_rubrique || '-'}</td>
-                          <td className="px-4 py-3">{row.date_engagement ? new Date(row.date_engagement).toLocaleDateString('fr-FR') : '-'}</td>
-                          <td className="px-4 py-3 font-bold">{row.reference || marche?.num_marche || '-'}</td>
-                          <td className="px-4 py-3">{row.budget || '-'}</td>
-                          <td className="px-4 py-3">{row.art || '-'}</td>
-                          <td className="px-4 py-3">{row.par || '-'}</td>
-                          <td className="px-4 py-3">{row.lig || '-'}</td>
-                          <td className="px-4 py-3 text-right">{money(row.credit_ouvert_cp)}</td>
-                          <td className="px-4 py-3 text-right">{money(row.montant_depense_neuf)}</td>
-                          <td className="px-4 py-3 text-right">{money(row.interets_moratoires)}</td>
-                          <td className="px-4 py-3 text-right">{money(row.montant_engager_neuf)}</td>
-                          <td className="px-4 py-3">{row.beneficiaire || marche?.titulaire || '-'}</td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-
-
 
         </form>
 

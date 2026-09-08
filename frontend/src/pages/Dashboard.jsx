@@ -1,152 +1,602 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { Link, useLocation } from 'react-router-dom';
 import api from '../api/axios';
 import {
-  BarChart3, Bell, Building2, CalendarDays, CheckCircle2, ChevronRight,
-  CircleDollarSign, ClipboardList, Download, Eye, FileCheck2, FileText,
-  Gauge, Landmark, Loader2, Search, SlidersHorizontal, TrendingUp,
-  WalletCards, X, ArrowUpRight, Clock3, LayoutDashboard, FolderKanban,
-  CreditCard, Settings, LogOut, Menu, ShieldCheck,
+  ArrowRight,
+  Building2,
+  Check,
+  ClipboardCheck,
+  FileCheck2,
+  FileText,
+  Landmark,
+  Loader2,
+  ReceiptText,
+  WalletCards,
+  BarChart3,
+  PieChart as PieChartIcon,
 } from 'lucide-react';
-import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 
-const months = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc'];
-const money = (value) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'MAD', maximumFractionDigits: 0 }).format(Number(value) || 0).replace('MAD', 'DH');
-const date = (value) => value ? new Date(value).toLocaleDateString('fr-FR') : '—';
-const percentage = (part, total) => total ? Math.round((part / total) * 100) : 0;
+const workflowSteps = [
+  { number: '1', title: 'Notification', subtitle: 'Gestion des crédits budgétaires', to: '/notifications', icon: Landmark },
+  { number: '2', title: 'Consultation', subtitle: "Appel d'offres / Bons de commande / Conventions", to: '/consultations', icon: FileText },
+  { number: '3', title: 'Engagement', subtitle: 'Acte et crédits disponibles', to: '/engagements', icon: FileCheck2 },
+  { number: '4', title: 'Liquidation', subtitle: 'Exécution et décomptes', to: '/liquidations', icon: ReceiptText },
+  { number: '5', title: 'Ordonnancement', subtitle: 'Paiement et clôture', to: '/ordonnancements', icon: WalletCards },
+];
 
-const phase = (item) => {
-  const state = String(item.statut_dossier || item.statut || item.etat_avancement || '').toLowerCase();
-  if (state.includes('clôtur') || state.includes('termin')) return ['Terminée', 100];
-  if (state.includes('attrib') || state.includes('valid')) return ['Attribution', 78];
-  if (state.includes('analyse')) return ['Analyse des offres', 62];
-  if (state.includes('lanc') || state.includes('cours')) return ['Réception des offres', 45];
-  if (state.includes('prépar')) return ['Préparation', 22];
-  return ['Programmation', 10];
-};
+const aooModes = [
+  { title: 'Appel d’Offres Ouvert National', description: 'Procédure ouverte nationale', mode: 'national' },
+  { title: 'Appel d’Offres Ouvert International', description: 'Procédure ouverte internationale', mode: 'international' },
+  { title: 'Appel d’Offres Simplifié', description: 'Procédure adaptée simplifiée', mode: 'simplifie' },
+];
 
-const engagementMode = (item) => {
-  if (item.type === 'Appel d’offres') return 'Appel d’offres';
-  const mode = String(item.mode_engagement || item.categorie || item.type_consultation || '').toLowerCase();
-  if (mode.includes('appel') || mode.includes('aoo')) return 'Appel d’offres';
-  if (mode.includes('bon') || mode.includes('bc')) return 'Bon de commande';
-  return 'Bon de commande';
-};
-
-const budgetLine = (item) => {
-  const line = item.notification_ligne || item.notificationLigne;
-  if (line) return `${line.article || '—'} / ${line.paragraphe || '—'} / ${line.ligne_budgetaire || '—'}`;
-  const budget = item.budget;
-  if (budget?.art || budget?.par || budget?.lig) return `${budget.art || '—'} / ${budget.par || '—'} / ${budget.lig || '—'}`;
-  return 'Non rattachée';
-};
-
-function Progress({ value, color = 'bg-blue-600' }) {
-  return <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100"><div className={`h-full rounded-full ${color}`} style={{ width: `${Math.min(100, value)}%` }} /></div>;
-}
-
-function Kpi({ label, value, icon: Icon, tone = 'blue', detail }) {
-  const tones = { blue: 'bg-blue-50 text-blue-600', emerald: 'bg-emerald-50 text-emerald-600', violet: 'bg-violet-50 text-violet-600', amber: 'bg-amber-50 text-amber-600', rose: 'bg-rose-50 text-rose-600' };
-  return <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"><div className="flex justify-between gap-2"><div><p className="text-xs font-semibold uppercase tracking-wider text-slate-500">{label}</p><p className="mt-2 text-2xl font-bold tracking-tight text-slate-900">{value}</p></div><span className={`grid h-10 w-10 place-items-center rounded-xl ${tones[tone]}`}><Icon size={20} /></span></div><p className="mt-4 flex items-center gap-1 text-xs text-slate-400"><ArrowUpRight size={14} className="text-emerald-600" /><span className="font-bold text-emerald-600">À jour</span> · {detail}</p></article>;
-}
+const formatMoney = (value) => new Intl.NumberFormat('fr-FR', {
+  style: 'currency',
+  currency: 'MAD',
+  maximumFractionDigits: 0,
+}).format(value || 0).replace('MAD', 'DH');
 
 export default function Dashboard() {
-  const navigate = useNavigate();
-  const currentYear = new Date().getFullYear();
-  const [year, setYear] = useState(String(currentYear));
-  const [month, setMonth] = useState('');
-  const [tab, setTab] = useState('overview');
+  const location = useLocation();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [search, setSearch] = useState('');
-  const [selected, setSelected] = useState(null);
-  const [store, setStore] = useState({ consultations: [], aoos: [], notifications: [], lines: [], budget: {} });
-  const [mobileNavOpen, setMobileNavOpen] = useState(false);
-
-  const logout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    navigate('/login');
-  };
+  const [stats, setStats] = useState({ fournisseurs: 0, consultations: 0, budget: 0 });
+  const [budgetStats, setBudgetStats] = useState({
+    total_notifie: 0, total_engage: 0, total_disponible: 0,
+    total_liquide: 0, total_ordonnance: 0, taux_consommation: 0
+  });
+  const [lignesBudgetaires, setLignesBudgetaires] = useState([]);
+  const [activeDossier, setActiveDossier] = useState(null);
+  const [members, setMembers] = useState([]);
+  const [showAooModes, setShowAooModes] = useState(false);
+  const [selectedYear, setSelectedYear] = useState('');
+  const [selectedLigneDetails, setSelectedLigneDetails] = useState(null);
 
   useEffect(() => {
     let active = true;
-    async function load() {
-      setLoading(true); setError('');
-      const query = `?exercice=${year}`;
-      const responses = await Promise.allSettled([
-        api.get('/consultations'), api.get('/aoos'), api.get('/notifications'),
-        api.get(`/notification-lignes${query}`), api.get(`/dashboard/budget${query}`),
-      ]);
-      if (!active) return;
-      const result = (index, fallback) => responses[index].status === 'fulfilled' ? responses[index].value.data : fallback;
-      setStore({ consultations: result(0, []), aoos: result(1, []), notifications: result(2, []), lines: result(3, []), budget: result(4, {}) });
-      if (responses.some((item) => item.status === 'rejected')) setError('Certaines sources n’ont pas pu être chargées. Les données disponibles restent affichées.');
-      setLoading(false);
-    }
-    load();
+
+    const loadDashboard = async () => {
+      try {
+        const queryParams = selectedYear ? `?exercice=${selectedYear}` : '';
+        const [fournisseursRes, consultationsRes, budgetsRes, marchesRes, membersRes, dashboardBudgetRes, lignesRes] = await Promise.all([
+          api.get('/fournisseurs'),
+          api.get('/consultations'),
+          api.get('/budgets'),
+          api.get('/marches'),
+          api.get('/commission-membres'),
+          api.get(`/dashboard/budget${queryParams}`),
+          api.get(`/notification-lignes${queryParams}`),
+        ]);
+
+        if (!active) return;
+
+        setStats({
+          fournisseurs: fournisseursRes.data.length,
+          consultations: consultationsRes.data.length,
+          budget: budgetsRes.data.reduce((total, budget) => total + Number(budget.montant_ttc || 0), 0),
+        });
+        setBudgetStats(dashboardBudgetRes.data);
+        setActiveDossier(marchesRes.data[0] || consultationsRes.data[0] || null);
+        setMembers(membersRes.data.slice(0, 5));
+        setLignesBudgetaires(lignesRes.data || []);
+      } catch (requestError) {
+        console.error('Erreur de chargement du tableau de bord :', requestError);
+        if (active) setError('Certaines données du tableau de bord ne sont pas disponibles.');
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+
+    loadDashboard();
     return () => { active = false; };
-  }, [year]);
+  }, [selectedYear]);
 
-  const dashboard = useMemo(() => {
-    const dossiers = [
-      ...store.consultations.map((item) => ({ ...item, type: 'Consultation', ref: item.numero_consultation, title: item.objet_consultation, route: `/consultations/${item.id}` })),
-      ...store.aoos.map((item) => ({ ...item, type: 'Appel d’offres', ref: item.num_aoo, title: item.objet, route: `/aoos/${item.id}` })),
-    ];
-    const filtered = month ? dossiers.filter((item) => new Date(item.created_at || item.date_consultation || item.date_preparation).getMonth() + 1 === Number(month)) : dossiers;
-    const notified = Number(store.budget.total_notifie || store.lines.reduce((sum, line) => sum + Number(line.total_credits || 0), 0));
-    const engaged = Number(store.budget.total_engage || store.lines.reduce((sum, line) => sum + Number(line.credits_engages || 0), 0));
-    const ordered = Number(store.budget.total_ordonnance || 0);
-    const paid = Number(store.budget.total_paiement || 0);
-    const count = (keywords) => filtered.filter((item) => keywords.some((word) => String(item.statut_dossier || item.statut || '').toLowerCase().includes(word))).length;
-    const trends = months.map((name, index) => {
-      const notifications = store.notifications.filter((item) => new Date(item.date_notification || item.created_at).getMonth() === index);
-      return { name, Nombre: notifications.length, Montant: notifications.reduce((sum, item) => sum + Number(item.montant || item.montant_total || 0), 0) };
-    });
-    return { dossiers: filtered, notified, engaged, ordered, paid, available: Number(store.budget.total_disponible ?? notified - engaged), engagement: percentage(engaged, notified), ordering: percentage(ordered, engaged), payment: percentage(paid, ordered), completed: count(['termin', 'clôtur', 'valid']), active: count(['cours', 'lanc', 'analyse']), planned: count(['programm', 'prépar']), trends };
-  }, [store, month]);
+  const dossierNumber = activeDossier?.num_marche || activeDossier?.numero_consultation || 'Aucun dossier sélectionné';
+  const dossierSubject = activeDossier?.objet_marche || activeDossier?.objet_consultation || 'Créez ou ouvrez un dossier pour commencer son traitement.';
 
-  const shownDossiers = dashboard.dossiers.filter((item) => `${item.ref || ''} ${item.title || ''} ${item.type}`.toLowerCase().includes(search.toLowerCase()));
-  const exportReport = () => {
-    const rows = [['Référence', 'Type', 'Objet', 'Statut', 'Phase', 'Avancement'], ...dashboard.dossiers.map((item) => { const [label, progress] = phase(item); return [item.ref || '', item.type, item.title || '', item.statut_dossier || item.statut || '', label, `${progress}%`]; })];
-    const csv = rows.map((row) => row.map((cell) => `"${String(cell).replaceAll('"', '""')}"`).join(';')).join('\n');
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' }); const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob); link.download = `rapport-directeur-${year}.csv`; link.click(); URL.revokeObjectURL(link.href);
-  };
+  return (
+    <div
+      className="min-h-screen text-slate-900 lg:flex bg-cover bg-center bg-fixed"
+      style={{ backgroundImage: "url('/bg.jpg')" }}
+    >
+      <aside className="w-full bg-[#1e3a8a]/60 backdrop-blur-lg border-r border-white/10 text-white lg:sticky lg:top-0 lg:h-screen lg:w-[380px] lg:flex-none lg:overflow-y-auto shadow-2xl z-20">
+        <div className="px-8 pb-6 pt-12 lg:px-8">
+          <Link to="/dashboard" className="flex items-center gap-4 group">
+            <div className="grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg shadow-blue-500/30 font-serif text-xl font-bold text-white text-center leading-tight transition-transform group-hover:scale-105">
+              <span>DR<br /><span className="text-[10px] text-blue-100 font-sans tracking-widest">RSK</span></span>
+            </div>
+            <div>
+              <p className="font-sans text-2xl font-extrabold tracking-tight text-white">DRCA - RSK</p>
+              <p className="text-xs font-semibold tracking-widest text-blue-300 uppercase mt-0.5">Marchés Publics</p>
+            </div>
+          </Link>
+        </div>
 
-  if (loading) return <div className="grid min-h-screen place-items-center bg-slate-50 text-slate-600"><span className="flex items-center gap-3"><Loader2 className="animate-spin text-blue-700" /> Chargement du tableau de pilotage…</span></div>;
+        <nav className="px-5 pb-8 lg:pb-8 mt-4">
+          <Link to="/dashboard" className={`mb-8 flex items-center gap-4 rounded-2xl px-5 py-4 transition-all duration-300 shadow-xl border ${location.pathname === '/dashboard' ? 'bg-white/15 border-white/20 shadow-black/20 backdrop-blur-md' : 'border-transparent hover:bg-white/5'}`}>
+            <span className="grid h-12 w-12 place-items-center rounded-xl bg-gradient-to-br from-cyan-400 to-blue-500 text-white shadow-lg shadow-cyan-500/30"><Landmark size={22} /></span>
+            <span>
+              <span className="block font-sans text-lg font-bold text-white">Tableau de bord</span>
+              <span className="text-xs font-medium text-blue-200/80">Vue d'ensemble du dossier</span>
+            </span>
+          </Link>
 
-  const navigation = [
-    { label: 'Vue d’ensemble', icon: LayoutDashboard, action: () => setTab('overview') },
-    { label: 'Notifications', icon: Bell, action: () => setTab('notifications') },
-    { label: 'Consultations & AOO', icon: FolderKanban, action: () => setTab('dossiers') },
-    { label: 'Analyse budgétaire', icon: CreditCard, action: () => setTab('budget') },
-  ];
+          <div className="relative space-y-3 before:absolute before:bottom-8 before:left-[41px] before:top-8 before:w-0.5 before:bg-gradient-to-b before:from-white/20 before:to-transparent">
+            {workflowSteps.map(({ number, title, subtitle, to, icon: Icon }) => {
+              const selected = false; // On Dashboard, workflow steps are never active
+              return (
+                <Link key={title} to={to} className={`relative z-10 flex items-center gap-4 rounded-2xl px-4 py-3 transition-all duration-300 group hover:bg-white/10`}>
+                  <span className={`grid h-11 w-11 place-items-center rounded-xl border text-base font-bold transition-all duration-300 shadow-md ${selected ? 'border-cyan-300 bg-cyan-300 text-[#0f172a]' : 'border-white/10 bg-white/5 text-blue-100 group-hover:border-white/30 group-hover:bg-white/20'}`}>
+                    {number}
+                  </span>
+                  <span>
+                    <span className="block font-sans text-base font-bold text-white/90 group-hover:text-white transition-colors">{title}</span>
+                    <span className="text-[11px] font-medium text-blue-200/60 group-hover:text-blue-200 transition-colors">{subtitle}</span>
+                  </span>
+                  <Icon className="ml-auto text-white/30 group-hover:text-white/70 transition-colors" size={18} />
+                </Link>
+              );
+            })}
+          </div>
+        </nav>
+      </aside>
 
-  return <div className="min-h-screen bg-[#f6f8fc] text-slate-900">
-    <aside className="fixed inset-y-0 left-0 z-40 hidden w-72 flex-col border-r border-slate-800 bg-[#101b33] p-5 text-slate-300 lg:flex">
-      <Link to="/directeur" className="flex items-center gap-3 border-b border-slate-700/80 pb-6"><span className="grid h-11 w-11 place-items-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-500 text-sm font-black text-white shadow-lg shadow-blue-900">DR</span><span><b className="block text-sm text-white">DRCA · RSK</b><small className="text-xs text-slate-400">Espace de direction</small></span></Link>
-      <p className="mt-7 px-3 text-[10px] font-bold uppercase tracking-[.16em] text-slate-500">Pilotage</p>
-      <nav className="mt-3 space-y-1">{navigation.map(({ label, icon: Icon, action }) => <button key={label} onClick={action} className={`flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold transition ${((tab === 'overview' && label === 'Vue d’ensemble') || (tab === 'dossiers' && label === 'Consultations & AOO') || (tab === 'budget' && label === 'Analyse budgétaire') || (tab === 'reports' && label === 'Rapports')) ? 'bg-blue-600 text-white shadow-lg shadow-blue-950/30' : 'text-slate-300 hover:bg-slate-800 hover:text-white'}`}><Icon size={18} />{label}</button>)}</nav>
-      <div className="mt-auto rounded-2xl border border-slate-700 bg-slate-800/60 p-3"><div className="flex items-center gap-3"><span className="grid h-9 w-9 place-items-center rounded-full bg-blue-500 text-xs font-bold text-white">DR</span><span className="min-w-0"><b className="block truncate text-sm text-white">Directeur Régional</b><small className="block truncate text-xs text-slate-400">Accès décisionnel</small></span></div><button onClick={logout} className="mt-3 flex w-full items-center gap-2 rounded-lg px-2 py-2 text-xs font-semibold text-slate-400 hover:bg-slate-700 hover:text-white"><LogOut size={15} /> Se déconnecter</button></div>
-    </aside>
-    <div className="lg:pl-72">
-    <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur"><div className="mx-auto flex max-w-[1600px] items-center justify-between px-4 py-4 sm:px-7"><Link to="/directeur" className="flex items-center gap-3 lg:hidden"><span className="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-blue-700 to-indigo-700 text-sm font-black text-white">DR</span><span><b className="block text-sm">DRCA · RSK</b><small className="text-xs text-slate-500">Plateforme Directeur</small></span></Link><div className="hidden lg:block"><p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Plateforme sécurisée</p><p className="mt-1 flex items-center gap-2 text-sm font-bold text-slate-700"><ShieldCheck size={16} className="text-emerald-600" /> Espace décisionnel Directeur</p></div><div className="flex items-center gap-3"><button onClick={() => setMobileNavOpen(!mobileNavOpen)} className="grid h-9 w-9 place-items-center rounded-lg border border-slate-200 text-slate-600 lg:hidden"><Menu size={18} /></button><button onClick={exportReport} className="hidden items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50 sm:inline-flex"><Download size={16} /> Exporter</button><span className="grid h-9 w-9 place-items-center rounded-full bg-slate-100 text-slate-600"><Bell size={17} /></span></div></div></header>
-    {mobileNavOpen && <div className="fixed inset-x-4 top-16 z-50 rounded-2xl border border-slate-200 bg-white p-3 shadow-xl lg:hidden"><div className="space-y-1">{navigation.map(({ label, icon: Icon, action }) => <button key={label} onClick={() => { action(); setMobileNavOpen(false); }} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-slate-700 hover:bg-blue-50 hover:text-blue-700"><Icon size={18} />{label}</button>)}</div><button onClick={logout} className="mt-2 flex w-full items-center gap-3 rounded-xl border-t border-slate-100 px-3 py-3 text-left text-sm font-semibold text-rose-600"><LogOut size={18} /> Se déconnecter</button></div>}
-    <main className="mx-auto max-w-[1600px] px-4 py-7 sm:px-7"><div className="flex flex-col justify-between gap-5 xl:flex-row xl:items-end"><div><p className="text-sm font-semibold text-blue-700">DIRECTION RÉGIONALE</p><h1 className="mt-1 text-3xl font-bold tracking-tight">Tableau de bord Directeur</h1><p className="mt-2 text-sm text-slate-500">Vue consolidée des activités, procédures et indicateurs budgétaires.</p></div><div className="flex flex-wrap gap-2"><label className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600"><CalendarDays size={16} /><select value={year} onChange={(event) => setYear(event.target.value)} className="bg-transparent font-semibold outline-none"><option value={currentYear}>{currentYear}</option><option value={currentYear - 1}>{currentYear - 1}</option><option value={currentYear - 2}>{currentYear - 2}</option></select></label><select value={month} onChange={(event) => setMonth(event.target.value)} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-600 outline-none"><option value="">Tous les mois</option>{months.map((name, index) => <option key={name} value={index + 1}>{name}</option>)}</select><button className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-600"><SlidersHorizontal size={16} /> Filtres</button></div></div>
-      {error && <p className="mt-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">{error}</p>}
-      {tab === 'overview' && <><section className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-5"><Kpi label="Consultations" value={dashboard.dossiers.length} icon={ClipboardList} detail={`${dashboard.completed} terminées`} /><Kpi label="Appels d’offres" value={store.aoos.length} icon={FileText} tone="violet" detail={`${dashboard.active} en cours`} /><Kpi label="Notifications" value={store.notifications.length} icon={Bell} tone="amber" detail={money(dashboard.notified)} /><Kpi label="Engagements" value={money(dashboard.engaged)} icon={FileCheck2} tone="emerald" detail={`${dashboard.engagement}% du notifié`} /><Kpi label="Disponible" value={money(dashboard.available)} icon={WalletCards} tone="rose" detail="Crédits restant à engager" /></section>
-        <section className="mt-6 max-w-xl"><div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><div className="flex justify-between"><div><h2 className="font-bold">Taux d’engagement</h2><p className="mt-1 text-sm text-slate-500">Engagé / notifié</p></div><Gauge className="text-emerald-600" size={20} /></div><div className="relative mt-4 h-56"><ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={[{ value: dashboard.engagement }, { value: 100 - dashboard.engagement }]} dataKey="value" innerRadius={68} outerRadius={88} startAngle={90} endAngle={-270} stroke="none"><Cell fill="#10b981" /><Cell fill="#e2e8f0" /></Pie></PieChart></ResponsiveContainer><div className="absolute inset-0 grid place-items-center"><b className="text-3xl">{dashboard.engagement}%</b></div></div><p className="rounded-xl bg-emerald-50 px-3 py-2 text-center text-sm font-semibold text-emerald-700">{money(dashboard.engaged)} engagés</p></div></section>
-        <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><div className="flex flex-wrap items-center justify-between gap-2"><div><h2 className="font-bold">Cycle d’exécution budgétaire</h2><p className="mt-1 text-sm text-slate-500">Montants et taux de passage à chaque étape.</p></div><Link to="/notifications" className="text-sm font-semibold text-blue-700">Voir les notifications <ChevronRight className="inline" size={15} /></Link></div><div className="mt-6 grid gap-3 md:grid-cols-4">{[['Notification', dashboard.notified, 100, Landmark, 'bg-blue-600'], ['Engagement', dashboard.engaged, dashboard.engagement, FileCheck2, 'bg-emerald-500'], ['Ordonnancement', dashboard.ordered, dashboard.ordering, FileText, 'bg-violet-500'], ['Paiement', dashboard.paid, dashboard.payment, CircleDollarSign, 'bg-amber-500']].map(([label, value, rate, Icon, color]) => <div key={label} className="rounded-xl border border-slate-100 bg-slate-50 p-4"><Icon className="text-slate-500" size={19} /><p className="mt-3 text-xs font-semibold uppercase text-slate-500">{label}</p><b className="mt-1 block text-lg">{money(value)}</b><div className="mt-3 flex items-center gap-3"><Progress value={rate} color={color} /><span className="text-xs font-bold">{rate}%</span></div></div>)}</div></section></>}
+      <main className="min-w-0 flex-1 relative">
+        <div className="absolute inset-0 bg-blue-100/50 backdrop-blur-sm z-0"></div>
+        <div className="relative z-10 px-5 py-10 sm:px-10 lg:px-14 lg:py-14 mx-auto max-w-7xl">
+          {error && <p className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-amber-800">{error}</p>}
 
-      {tab === 'notifications' && <section className="mt-6"><div className="grid gap-4 md:grid-cols-3"><Kpi label="Notifications de l’exercice" value={store.notifications.length} icon={Bell} tone="amber" detail={`Exercice ${year}`} /><Kpi label="Montant total notifié" value={money(dashboard.notified)} icon={Landmark} detail="Crédits budgétaires notifiés" /><Kpi label="Lignes budgétaires" value={store.lines.length} icon={ClipboardList} tone="violet" detail="Lignes suivies" /></div><div className="mt-6 grid gap-6 xl:grid-cols-[1.5fr_1fr]"><div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"><div className="flex items-center justify-between border-b border-slate-100 p-5"><div><h2 className="font-bold">Liste des notifications</h2><p className="mt-1 text-sm text-slate-500">Consultez les informations sans quitter la plateforme Directeur.</p></div><Bell className="text-amber-500" size={20} /></div><div className="overflow-x-auto"><table className="w-full min-w-[630px] text-left text-sm"><thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500"><tr><th className="px-5 py-3">Référence</th><th className="px-5 py-3">Date</th><th className="px-5 py-3">Exercice</th><th className="px-5 py-3 text-right">Montant</th></tr></thead><tbody className="divide-y divide-slate-100">{store.notifications.map((notification) => <tr key={notification.id} className="hover:bg-slate-50"><td className="px-5 py-4 font-mono text-xs font-semibold text-blue-700">{notification.numero || notification.reference || `Notification #${notification.id}`}</td><td className="px-5 py-4 text-slate-600">{date(notification.date_notification || notification.created_at)}</td><td className="px-5 py-4 text-slate-600">{notification.exercice || year}</td><td className="px-5 py-4 text-right font-semibold">{money(notification.montant || notification.montant_total)}</td></tr>)}{!store.notifications.length && <tr><td colSpan="4" className="px-5 py-12 text-center text-slate-500">Aucune notification pour cet exercice.</td></tr>}</tbody></table></div></div><div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><div className="flex items-center justify-between"><div><h2 className="font-bold">Évolution des notifications</h2><p className="mt-1 text-sm text-slate-500">Nombre de notifications par mois.</p></div><TrendingUp className="text-blue-600" size={20} /></div><div className="mt-5 h-72"><ResponsiveContainer width="100%" height="100%"><AreaChart data={dashboard.trends}><defs><linearGradient id="notificationFill" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stopColor="#2563eb" stopOpacity=".28" /><stop offset="100%" stopColor="#2563eb" stopOpacity="0" /></linearGradient></defs><CartesianGrid vertical={false} stroke="#e2e8f0" /><XAxis dataKey="name" axisLine={false} tickLine={false} fontSize={11} /><YAxis allowDecimals={false} axisLine={false} tickLine={false} fontSize={11} /><Tooltip contentStyle={{ borderRadius: 12, border: '1px solid #e2e8f0' }} /><Area type="monotone" dataKey="Nombre" stroke="#2563eb" strokeWidth={3} fill="url(#notificationFill)" /></AreaChart></ResponsiveContainer></div></div></div></section>}
+          <section className="mt-8 mb-10">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
+              <h2 className="font-serif text-3xl font-bold text-[#1e3a8a] flex items-center gap-2">
+                <BarChart3 className="text-blue-500" /> Situation budgétaire globale
+              </h2>
+              <div className="flex items-center gap-2 bg-white/70 backdrop-blur-md px-4 py-2 rounded-xl border border-slate-200 shadow-sm transition-all hover:shadow-md">
+                <span className="text-sm font-semibold text-slate-600">Exercice :</span>
+                <select
+                  className="bg-transparent text-[#1e3a8a] font-bold outline-none cursor-pointer"
+                  value={selectedYear}
+                  onChange={(e) => setSelectedYear(e.target.value)}
+                >
+                  <option value="">Tous les exercices</option>
+                  <option value="2026">2026</option>
+                  <option value="2025">2025</option>
+                  <option value="2024">2024</option>
+                  <option value="2023">2023</option>
+                </select>
+              </div>
+            </div>
 
-      {tab === 'dossiers' && <section className="mt-6"><div className="grid gap-4 sm:grid-cols-3"><Kpi label="Terminées" value={dashboard.completed} icon={CheckCircle2} tone="emerald" detail="Dossiers clôturés / validés" /><Kpi label="En cours" value={dashboard.active} icon={Clock3} tone="amber" detail="À suivre activement" /><Kpi label="Programmées" value={dashboard.planned} icon={CalendarDays} detail="À préparer" /></div><div className="mt-6 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"><div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 p-5"><div><h2 className="font-bold">Suivi des procédures</h2><p className="mt-1 text-sm text-slate-500">Cliquez sur un dossier pour visualiser sa timeline.</p></div><label className="flex items-center gap-2 rounded-xl bg-slate-100 px-3 py-2 text-slate-500"><Search size={16} /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Rechercher…" className="w-40 bg-transparent text-sm outline-none" /></label></div><div className="overflow-x-auto"><table className="w-full min-w-[1240px] text-left text-sm"><thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500"><tr><th className="px-5 py-3">Référence</th><th className="px-5 py-3">Mode d’engagement</th><th className="px-5 py-3">Ligne budgétaire</th><th className="px-5 py-3">Objet</th><th className="px-5 py-3">Lancement</th><th className="px-5 py-3">Statut</th><th className="px-5 py-3">Phase & avancement</th><th className="px-5 py-3"></th></tr></thead><tbody className="divide-y divide-slate-100">{shownDossiers.map((item) => { const [label, progress] = phase(item); const mode = engagementMode(item); return <tr key={`${item.type}-${item.id}`} className="hover:bg-slate-50"><td className="px-5 py-4"><b className="font-mono text-blue-700">{item.ref || '—'}</b><small className="mt-1 block text-slate-400">{item.type}</small></td><td className="px-5 py-4"><span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-bold ${mode === 'Appel d’offres' ? 'bg-violet-50 text-violet-700' : 'bg-cyan-50 text-cyan-700'}`}>{mode}</span></td><td className="px-5 py-4"><span className="whitespace-nowrap font-mono text-xs font-semibold text-slate-600">{budgetLine(item)}</span></td><td className="max-w-sm px-5 py-4"><p className="truncate font-medium">{item.title || 'Sans objet'}</p><small className="text-slate-500">{item.service || item.structure_acheteuse || 'DRCA RSK'}</small></td><td className="px-5 py-4 text-slate-600">{date(item.date_lancement || item.date_consultation || item.created_at)}</td><td className="px-5 py-4"><span className="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-bold text-blue-700">{item.statut_dossier || item.statut || 'Programmée'}</span></td><td className="w-48 px-5 py-4"><div className="mb-1 flex justify-between text-xs"><span>{label}</span><b>{progress}%</b></div><Progress value={progress} /></td><td className="px-5 py-4"><button onClick={() => setSelected(item)} className="inline-flex items-center gap-1 font-semibold text-blue-700 hover:underline"><Eye size={16} /> Détail</button></td></tr>; })}{!shownDossiers.length && <tr><td colSpan="8" className="px-5 py-12 text-center text-slate-500">Aucun dossier ne correspond aux filtres.</td></tr>}</tbody></table></div></div></section>}
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5 mb-6">
+              {[
+                { label: 'Notifiés', value: budgetStats.total_notifie, color: 'from-indigo-500 to-blue-600', shadow: 'shadow-blue-500/20', bg: 'bg-blue-50/50' },
+                { label: 'Engagés', value: budgetStats.total_engage, color: 'from-emerald-400 to-teal-500', shadow: 'shadow-teal-500/20', bg: 'bg-teal-50/50' },
+                { label: 'Liquidés', value: budgetStats.total_liquide, color: 'from-amber-400 to-orange-500', shadow: 'shadow-orange-500/20', bg: 'bg-orange-50/50' },
+                { label: 'Ordonnancés', value: budgetStats.total_ordonnance, color: 'from-rose-400 to-red-500', shadow: 'shadow-red-500/20', bg: 'bg-red-50/50' },
+                { label: 'Disponibles', value: budgetStats.total_disponible, color: 'from-cyan-400 to-blue-500', shadow: 'shadow-cyan-500/20', bg: 'bg-cyan-50/50' },
+              ].map((item, index) => {
+                const percentage = budgetStats.total_notifie > 0
+                  ? Math.round((item.value / budgetStats.total_notifie) * 100)
+                  : 0;
 
-      {tab === 'budget' && <section className="mt-6"><div className="grid gap-4 md:grid-cols-3"><Kpi label="Taux d’engagement" value={`${dashboard.engagement}%`} icon={Gauge} tone="emerald" detail="Engagé / notifié" /><Kpi label="Taux d’ordonnancement" value={`${dashboard.ordering}%`} icon={FileText} tone="violet" detail="Ordonnancé / engagé" /><Kpi label="Taux de paiement" value={`${dashboard.payment}%`} icon={CircleDollarSign} tone="amber" detail="Payé / ordonnancé" /></div><div className="mt-6 grid gap-6 xl:grid-cols-2"><div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><h2 className="font-bold">Notifications par ligne budgétaire</h2><p className="mt-1 text-sm text-slate-500">Comparaison des crédits notifiés et engagés.</p><div className="mt-5 h-80"><ResponsiveContainer width="100%" height="100%"><BarChart data={store.lines.slice(0, 7).map((line) => ({ name: `${line.article}/${line.paragraphe}/${line.ligne_budgetaire}`, Notifié: Number(line.total_credits || 0), Engagé: Number(line.credits_engages || 0) }))}><CartesianGrid vertical={false} stroke="#e2e8f0" /><XAxis dataKey="name" fontSize={10} axisLine={false} tickLine={false} /><YAxis tickFormatter={(value) => `${Math.round(value / 1000)}k`} fontSize={11} axisLine={false} tickLine={false} /><Tooltip formatter={(value) => money(value)} /><Bar dataKey="Notifié" fill="#2563eb" radius={[4, 4, 0, 0]} /><Bar dataKey="Engagé" fill="#10b981" radius={[4, 4, 0, 0]} /></BarChart></ResponsiveContainer></div></div><div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><h2 className="font-bold">Comparaison financière</h2><p className="mt-1 text-sm text-slate-500">Suivi de la consommation budgétaire.</p><div className="mt-7 space-y-6">{[['Notifiés', dashboard.notified, 100, 'bg-blue-600'], ['Engagés', dashboard.engaged, dashboard.engagement, 'bg-emerald-500'], ['Ordonnancés', dashboard.ordered, dashboard.ordering, 'bg-violet-500'], ['Payés', dashboard.paid, dashboard.payment, 'bg-amber-500']].map(([label, value, rate, color]) => <div key={label}><div className="mb-2 flex justify-between text-sm"><span className="font-semibold">{label}</span><b>{money(value)}</b></div><Progress value={rate} color={color} /></div>)}</div></div></div><div className="mt-6 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"><div className="border-b border-slate-100 p-5"><h2 className="font-bold">Détail par ligne budgétaire</h2></div><div className="overflow-x-auto"><table className="w-full min-w-[800px] text-left text-sm"><thead className="bg-slate-50 text-xs uppercase text-slate-500"><tr><th className="px-5 py-3">Ligne</th><th className="px-5 py-3">Libellé</th><th className="px-5 py-3 text-right">Notifié</th><th className="px-5 py-3 text-right">Engagé</th><th className="px-5 py-3 text-right">Disponible</th></tr></thead><tbody className="divide-y divide-slate-100">{store.lines.map((line) => <tr key={line.id}><td className="px-5 py-4 font-mono text-xs font-semibold">{line.article}/{line.paragraphe}/{line.ligne_budgetaire}</td><td className="px-5 py-4 text-slate-600">{line.libelle || '—'}</td><td className="px-5 py-4 text-right font-semibold">{money(line.total_credits)}</td><td className="px-5 py-4 text-right font-semibold text-emerald-700">{money(line.credits_engages)}</td><td className="px-5 py-4 text-right font-semibold text-blue-700">{money(line.credits_disponibles)}</td></tr>)}{!store.lines.length && <tr><td colSpan="5" className="px-5 py-12 text-center text-slate-500">Aucune ligne budgétaire pour cet exercice.</td></tr>}</tbody></table></div></div></section>}
+                return (
+                  <div
+                    key={index}
+                    className={`relative overflow-hidden rounded-3xl backdrop-blur-md border border-white/40 p-6 transition-all duration-500 hover:-translate-y-1 hover:shadow-xl ${item.shadow} ${item.bg}`}
+                  >
+                    <div className={`absolute top-0 right-0 w-24 h-24 bg-gradient-to-br ${item.color} rounded-full opacity-20 blur-2xl -mr-8 -mt-8 pointer-events-none`}></div>
 
-      {tab === 'reports' && <section className="mt-6 grid gap-6 lg:grid-cols-[1.4fr_1fr]"><div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"><div className="flex items-center gap-3"><span className="grid h-11 w-11 place-items-center rounded-xl bg-blue-50 text-blue-600"><BarChart3 /></span><div><h2 className="font-bold">Rapport d’activité Directeur</h2><p className="text-sm text-slate-500">Synthèse selon les filtres sélectionnés.</p></div></div><div className="mt-6 grid gap-3 sm:grid-cols-2">{[['Exercice', year], ['Période', month ? months[Number(month) - 1] : 'Année complète'], ['Dossiers', dashboard.dossiers.length], ['Lignes budgétaires', store.lines.length]].map(([label, value]) => <div key={label} className="rounded-xl bg-slate-50 p-4"><p className="text-xs font-semibold uppercase text-slate-500">{label}</p><p className="mt-1 font-bold">{value}</p></div>)}</div><div className="mt-6 flex flex-wrap gap-3"><button onClick={exportReport} className="inline-flex items-center gap-2 rounded-xl bg-blue-700 px-4 py-2.5 text-sm font-bold text-white hover:bg-blue-800"><Download size={17} /> Exporter Excel / CSV</button><button onClick={() => window.print()} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50"><FileText size={17} /> Imprimer / PDF</button></div></div><div className="rounded-2xl bg-gradient-to-br from-blue-700 to-indigo-800 p-6 text-white shadow-sm"><Building2 className="text-blue-200" /><h2 className="mt-6 text-xl font-bold">Point d’attention</h2><p className="mt-2 text-sm leading-6 text-blue-100">{dashboard.active} dossier(s) nécessitent un suivi actif. Ouvrez leur timeline pour anticiper les prochaines validations.</p><button onClick={() => setTab('dossiers')} className="mt-6 inline-flex items-center gap-2 text-sm font-bold hover:underline">Ouvrir le suivi <ChevronRight size={16} /></button></div></section>}
-    </main>
-    {selected && <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/35 p-4 backdrop-blur-sm"><div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white shadow-2xl"><div className="flex items-start justify-between border-b border-slate-100 p-6"><div><p className="text-xs font-bold uppercase tracking-wider text-blue-700">{selected.type}</p><h2 className="mt-1 text-xl font-bold">{selected.ref}</h2><p className="mt-2 text-sm text-slate-500">{selected.title}</p></div><button onClick={() => setSelected(null)} className="rounded-lg p-2 text-slate-400 hover:bg-slate-100"><X size={19} /></button></div><div className="p-6"><h3 className="font-bold">Timeline du processus</h3><div className="mt-5">{['Programmation', 'Préparation', 'Lancement', 'Réception des offres', 'Ouverture', 'Évaluation', 'Attribution', 'Validation', 'Terminée'].map((step, index) => { const [, progress] = phase(selected); const done = index * 12.5 < progress; const current = !done && (index - 1) * 12.5 < progress; return <div key={step} className="flex gap-4 pb-5 last:pb-0"><div className="flex flex-col items-center"><span className={`grid h-7 w-7 place-items-center rounded-full text-xs ${done ? 'bg-emerald-500 text-white' : current ? 'bg-blue-600 text-white ring-4 ring-blue-100' : 'bg-slate-100 text-slate-400'}`}>{done ? <CheckCircle2 size={15} /> : index + 1}</span>{index < 8 && <span className={`h-6 w-px ${done ? 'bg-emerald-300' : 'bg-slate-200'}`} />}</div><div><p className={`text-sm font-semibold ${current ? 'text-blue-700' : ''}`}>{step}{current && <span className="ml-2 text-xs font-normal">Étape actuelle</span>}</p><p className="text-xs text-slate-400">{done ? `Validée · ${date(selected.updated_at || selected.created_at)}` : current ? 'En traitement' : 'À venir'}</p></div></div>; })}</div><div className="mt-6 flex justify-end gap-3"><button onClick={() => setSelected(null)} className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold">Fermer</button><button onClick={() => navigate(selected.route)} className="rounded-xl bg-blue-700 px-4 py-2 text-sm font-semibold text-white">Voir le dossier</button></div></div></div></div>}
-  </div></div>;
+                    <p className="text-xs uppercase tracking-wider font-bold text-slate-500 mb-2">{item.label}</p>
+                    <p
+                      className="text-lg xl:text-xl 2xl:text-2xl font-black text-slate-800 tracking-tight mb-4 truncate"
+                      title={formatMoney(item.value)}
+                    >
+                      {formatMoney(item.value)}
+                    </p>
+
+                    {index > 0 && (
+                      <div className="mt-auto">
+                        <div className="flex justify-between text-[10px] font-bold text-slate-400 mb-1">
+                          <span>Progression</span>
+                          <span>{percentage}%</span>
+                        </div>
+                        <div className="h-1.5 w-full bg-slate-200/50 rounded-full overflow-hidden">
+                          <div
+                            className={`h-full bg-gradient-to-r ${item.color} rounded-full transition-all duration-1000 ease-out`}
+                            style={{ width: `${percentage}%` }}
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Charts Section */}
+            <div className="grid gap-6 lg:grid-cols-2 mt-8 mb-8">
+              {/* Pie Chart: Répartition du Budget */}
+              <div className="bg-white/70 backdrop-blur-xl rounded-3xl border border-white/50 shadow-sm p-6 hover:shadow-lg transition-shadow duration-300">
+                <h3 className="font-serif text-xl font-bold text-[#1e3a8a] mb-6 flex items-center gap-2">
+                  <PieChartIcon className="text-blue-500" size={20} /> Répartition Globale
+                </h3>
+                <div className="w-full min-h-[300px]">
+                  <ResponsiveContainer width="100%" height={300}>
+                    <PieChart>
+                      <Pie
+                        data={[
+                          { name: 'Disponibles', value: budgetStats.total_disponible },
+                          { name: 'Engagés', value: budgetStats.total_engage },
+                          { name: 'Liquidés', value: budgetStats.total_liquide },
+                        ]}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={80}
+                        outerRadius={110}
+                        paddingAngle={5}
+                        dataKey="value"
+                        stroke="none"
+                      >
+                        <Cell fill="#3b82f6" /> {/* Blue for Disponibles */}
+                        <Cell fill="#14b8a6" /> {/* Teal for Engagés */}
+                        <Cell fill="#f59e0b" /> {/* Amber for Liquidés */}
+                      </Pie>
+                      <Tooltip
+                        formatter={(value) => formatMoney(value)}
+                        contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)' }}
+                      />
+                      <Legend verticalAlign="bottom" height={36} iconType="circle" />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* Bar Chart: Consommation par Ligne */}
+              <div className="bg-white/70 backdrop-blur-xl rounded-3xl border border-white/50 shadow-sm p-6 hover:shadow-lg transition-shadow duration-300">
+                <h3 className="font-serif text-xl font-bold text-[#1e3a8a] mb-6 flex items-center gap-2">
+                  <BarChart3 className="text-blue-500" size={20} /> Consommation (Top 5 Lignes)
+                </h3>
+                <div className="w-full min-h-[300px]">
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart
+                      data={lignesBudgetaires.slice(0, 5).map(l => ({
+                        name: `${l.article}/${l.paragraphe}/${l.ligne_budgetaire}`,
+                        Notifié: Number(l.total_credits || 0),
+                        Engagé: Number(l.credits_engages || 0),
+                      }))}
+                      margin={{ top: 10, right: 10, left: -20, bottom: 5 }}
+                    >
+                      <XAxis dataKey="name" tick={{ fontSize: 12, fill: '#64748b' }} axisLine={false} tickLine={false} />
+                      <YAxis tickFormatter={(val) => val >= 1000 ? `${(val / 1000).toFixed(0)}k` : val} tick={{ fontSize: 12, fill: '#64748b' }} axisLine={false} tickLine={false} />
+                      <Tooltip
+                        formatter={(value) => formatMoney(value)}
+                        cursor={{ fill: 'rgba(0,0,0,0.05)' }}
+                        contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                      />
+                      <Legend iconType="circle" />
+                      <Bar dataKey="Notifié" fill="#6366f1" radius={[4, 4, 0, 0]} maxBarSize={40} />
+                      <Bar dataKey="Engagé" fill="#14b8a6" radius={[4, 4, 0, 0]} maxBarSize={40} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            </div>
+
+
+            {/* Table for individual budget lines tracking */}
+            <div className="bg-white/70 backdrop-blur-xl rounded-3xl border border-white/50 shadow-sm overflow-hidden mt-8">
+              <div className="p-6 border-b border-slate-200/60 bg-white/40">
+                <h3 className="font-serif text-xl font-bold text-[#1e3a8a] flex items-center gap-2">
+                  <FileText className="text-blue-500" size={20} /> Suivi détaillé par ligne budgétaire
+                </h3>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm">
+                  <thead className="bg-slate-50/80 text-slate-500 font-medium border-b border-slate-200/60">
+                    <tr>
+                      <th className="px-6 py-4">Ligne (Art / Par / Lig)</th>
+                      <th className="px-6 py-4">Libellé</th>
+                      <th className="px-6 py-4 text-right">Crédits Notifiés</th>
+                      <th className="px-6 py-4 text-right">Engagés</th>
+                      <th className="px-6 py-4 text-right">Disponibles</th>
+                      <th className="px-6 py-4 text-center">Progression</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100/60">
+                    {lignesBudgetaires.length > 0 ? (
+                      lignesBudgetaires.map((ligne) => {
+                        const notifie = Number(ligne.total_credits || 0);
+                        const engage = Number(ligne.credits_engages || 0);
+                        const dispo = Number(ligne.credits_disponibles || 0);
+                        const percent = notifie > 0 ? Math.round((engage / notifie) * 100) : 0;
+
+                        return (
+                          <tr
+                            key={ligne.id}
+                            className="border-b border-slate-100 transition-colors hover:bg-white/60 cursor-pointer"
+                            onClick={() => setSelectedLigneDetails(ligne)}
+                          >
+                            <td className="px-6 py-4 font-mono text-xs font-semibold text-slate-700">
+                              {ligne.article} / {ligne.paragraphe} / {ligne.ligne_budgetaire}
+                            </td>
+                            <td className="px-6 py-4 text-slate-700 font-medium">
+                              {ligne.libelle}
+                            </td>
+                            <td className="px-6 py-4 text-right text-indigo-700 font-bold font-mono">
+                              {formatMoney(notifie)}
+                            </td>
+                            <td className="px-6 py-4 text-right text-teal-700 font-bold font-mono">
+                              {formatMoney(engage)}
+                            </td>
+                            <td className="px-6 py-4 text-right text-blue-700 font-bold font-mono">
+                              {formatMoney(dispo)}
+                            </td>
+                            <td className="px-6 py-4">
+                              <div className="flex items-center justify-center gap-3">
+                                <div className="h-1.5 w-16 bg-slate-200 rounded-full overflow-hidden">
+                                  <div
+                                    className="h-full bg-gradient-to-r from-teal-400 to-teal-500 rounded-full"
+                                    style={{ width: `${percent}%` }}
+                                  />
+                                </div>
+                                <span className="text-[10px] font-bold text-slate-500 w-6">{percent}%</span>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    ) : (
+                      <tr>
+                        <td colSpan="6" className="px-6 py-8 text-center text-slate-500 italic">
+                          Aucune ligne budgétaire trouvée.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+
+          <section className="pt-2 border-t border-slate-200">
+            <h2 className="font-serif text-3xl font-bold text-[#1e3a8a]">Type de consultation</h2>
+            <p className="mt-2 text-lg text-slate-600">Choisissez la catégorie de consultation à gérer :</p>
+
+            <div className="mt-8 grid gap-6 md:grid-cols-3">
+              {/* 1. Appel d'offres */}
+              <div className="rounded-3xl border-2 border-[#1e40af] bg-white p-7 shadow-sm transition hover:shadow-md flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-xl font-bold text-[#1e3a8a]">Appel d’offres</h3>
+                    <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800">Opérationnel</span>
+                  </div>
+                  <p className="mt-3 text-sm text-slate-600">Procédure ouverte, formalisée et documentée (Préparation, Commission, Attribution).</p>
+                </div>
+                {!showAooModes ? (
+                  <button type="button" onClick={() => setShowAooModes(true)} className="mt-6 w-full py-3 bg-[#1e40af] hover:bg-[#1e3a8a] text-white font-bold rounded-xl transition-all text-sm text-center">
+                    Choisir la procédure AOO
+                  </button>
+                ) : (
+                  <div className="mt-4 space-y-2">
+                    {aooModes.map((mode) => (
+                      <Link key={mode.mode} to={`/aoos/nouveau?mode=${mode.mode}`} className="block p-3 rounded-xl border border-slate-200 bg-slate-50 hover:bg-blue-50 hover:border-blue-300 transition-all text-xs font-bold text-[#1e3a8a]">
+                        {mode.title}
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* 2. Bon de Commande */}
+              <Link to="/bons-commande" className="rounded-3xl border border-slate-200 bg-white p-7 shadow-sm transition hover:-translate-y-0.5 hover:border-blue-400 hover:shadow-md flex flex-col justify-between group">
+                <div>
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-xl font-bold text-[#1e3a8a]">Bon de Commande</h3>
+                    <span className="px-3 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-800">Prochainement</span>
+                  </div>
+                  <p className="mt-3 text-sm text-slate-600">Achats sur bons de commande simplifiés selon seuils réglementaires.</p>
+                </div>
+                <span className="mt-6 inline-flex items-center gap-2 text-sm font-bold text-blue-700 group-hover:underline">
+                  Voir le module <ArrowRight size={16} />
+                </span>
+              </Link>
+
+              {/* 3. Convention */}
+              <Link to="/conventions" className="rounded-3xl border border-slate-200 bg-white p-7 shadow-sm transition hover:-translate-y-0.5 hover:border-blue-400 hover:shadow-md flex flex-col justify-between group">
+                <div>
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-xl font-bold text-[#1e3a8a]">Convention</h3>
+                    <span className="px-3 py-1 rounded-full text-xs font-bold bg-indigo-100 text-indigo-800">Prochainement</span>
+                  </div>
+                  <p className="mt-3 text-sm text-slate-600">Conventions partenariales, institutionnelles et accords-cadres.</p>
+                </div>
+                <span className="mt-6 inline-flex items-center gap-2 text-sm font-bold text-indigo-700 group-hover:underline">
+                  Voir le module <ArrowRight size={16} />
+                </span>
+              </Link>
+            </div>
+          </section>
+
+          <section className="mt-8 border-b border-[#ded8c8]">
+            <div className="flex flex-wrap gap-8">
+              {['Préparation', 'Commission', 'Analyse'].map((step, index) => (
+                <div key={step} className={`flex items-center gap-3 border-b-2 px-2 pb-4 text-lg ${index === 1 ? 'border-[#d8ad20] font-semibold text-[#102c24]' : 'border-transparent text-[#65766d]'}`}>
+                  <span className={`grid h-7 w-7 place-items-center rounded-full text-sm ${index === 1 ? 'bg-[#173d30] text-white' : 'bg-[#e4e0d2] text-[#56655d]'}`}>{index + 1}</span>
+                  {step}
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <section className="mt-8 rounded-2xl border border-[#ded8c8] bg-white p-6 shadow-sm sm:p-10">
+            <div className="flex items-center justify-between gap-4">
+              <h2 className="font-serif text-3xl font-bold text-[#102c24]">Membres de la commission</h2>
+              <Link to="/commission-membres" className="text-sm font-semibold text-[#315f4d] hover:underline">Gérer les membres</Link>
+            </div>
+
+            {loading ? (
+              <div className="flex h-40 items-center justify-center gap-3 text-[#596b62]"><Loader2 className="animate-spin" /> Chargement…</div>
+            ) : members.length > 0 ? (
+              <div className="mt-7 overflow-x-auto">
+                <table className="w-full min-w-[650px] text-left">
+                  <thead className="border-b border-[#ded8c8] text-sm uppercase tracking-wide text-[#596b62]">
+                    <tr><th className="pb-4 font-medium">Nom</th><th className="pb-4 font-medium">Fonction</th><th className="pb-4 font-medium">Qualité</th><th className="pb-4 font-medium">Administration</th></tr>
+                  </thead>
+                  <tbody>
+                    {members.map((member) => (
+                      <tr key={member.id} className="border-b border-[#eee9dc] last:border-0">
+                        <td className="py-5 text-lg font-medium text-[#102c24]">{member.nom_prenom}</td>
+                        <td className="py-5 text-lg text-[#314a40]">{member.fonction || '—'}</td>
+                        <td className="py-5"><span className="rounded-full bg-[#f4e7b8] px-3 py-1.5 text-sm font-semibold text-[#795b08]">{member.qualite || 'Membre'}</span></td>
+                        <td className="py-5 text-lg text-[#314a40]">{member.administration || '—'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="mt-7 rounded-xl bg-[#f7f5ef] p-6 text-[#596b62]">Aucun membre de commission n'est encore enregistré.</div>
+            )}
+          </section>
+          <div className="mt-10 flex justify-end">
+            <Link to="/engagements" className="inline-flex items-center gap-2 text-sm font-semibold text-[#315f4d] hover:underline"><Check size={16} /> Suivre les dossiers d'engagement</Link>
+          </div>
+
+          {/* Modal Détails Ligne Budgétaire */}
+          {selectedLigneDetails && (() => {
+            const relatedAoos = [...(selectedLigneDetails.aoos || [])];
+            (selectedLigneDetails.marches || []).forEach(m => {
+              if (m.aoo && !relatedAoos.find(a => a.id === m.aoo.id)) {
+                relatedAoos.push(m.aoo);
+              }
+            });
+
+            return createPortal(
+              <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
+                <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl flex flex-col overflow-hidden max-h-[90vh]">
+                  <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+                    <h3 className="text-xl font-bold text-[#1e3a8a] flex items-center gap-2">
+                      <FileText className="w-5 h-5" />
+                      Détails de la ligne : {selectedLigneDetails.article} / {selectedLigneDetails.paragraphe} / {selectedLigneDetails.ligne_budgetaire}
+                    </h3>
+                    <button
+                      onClick={() => setSelectedLigneDetails(null)}
+                      className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-200 rounded-full transition-colors"
+                    >
+                      X
+                    </button>
+                  </div>
+
+                  <div className="p-6 overflow-y-auto">
+                    <div className="mb-6 grid grid-cols-3 gap-4">
+                      <div className="p-4 bg-blue-50 rounded-xl border border-blue-100">
+                        <p className="text-sm font-semibold text-blue-600 mb-1">Notifiés</p>
+                        <p className="text-xl font-bold text-[#1e3a8a]">{formatMoney(selectedLigneDetails.total_credits)}</p>
+                      </div>
+                      <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-100">
+                        <p className="text-sm font-semibold text-emerald-600 mb-1">Engagés</p>
+                        <p className="text-xl font-bold text-emerald-700">{formatMoney(selectedLigneDetails.credits_engages)}</p>
+                      </div>
+                      <div className="p-4 bg-indigo-50 rounded-xl border border-indigo-100">
+                        <p className="text-sm font-semibold text-indigo-600 mb-1">Disponibles</p>
+                        <p className="text-xl font-bold text-indigo-700">{formatMoney(selectedLigneDetails.credits_disponibles)}</p>
+                      </div>
+                    </div>
+
+                    {/* Origine du crédit */}
+                    <div className="mb-6 text-sm text-slate-600 bg-slate-50 px-4 py-3 rounded-xl border border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                      <span className="font-semibold text-slate-800">Origine du crédit</span>
+                      <span className="font-medium">
+                        Reporté : <span className="font-bold text-slate-700">{formatMoney(selectedLigneDetails.reports || 0)}</span> <span className="mx-2 text-slate-300">·</span>
+                        Crédit neuf : <span className="font-bold text-slate-700">{formatMoney(selectedLigneDetails.credits_neufs || 0)}</span>
+                      </span>
+                    </div>
+
+                    <h4 className="text-lg font-bold text-slate-800 mb-4 border-b pb-2">Marchés rattachés</h4>
+                    {selectedLigneDetails.marches && selectedLigneDetails.marches.length > 0 ? (
+                      <div className="overflow-x-auto mb-8 border rounded-xl">
+                        <table className="w-full text-left text-sm">
+                          <thead className="bg-slate-50 text-slate-600 border-b">
+                            <tr>
+                              <th className="px-4 py-3 font-semibold">N° Marché</th>
+                              <th className="px-4 py-3 font-semibold">Objet</th>
+                              <th className="px-4 py-3 font-semibold">Montant</th>
+                              <th className="px-4 py-3 font-semibold">Statut Engagement</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y">
+                            {selectedLigneDetails.marches.map(marche => (
+                              <tr key={marche.id} className="hover:bg-slate-50">
+                                <td className="px-4 py-3 font-medium text-slate-800">{marche.num_marche}</td>
+                                <td className="px-4 py-3 text-slate-600">{(marche.objet_marche || '').replace(/equipements/ig, 'équipements')}</td>
+                                <td className="px-4 py-3 font-bold text-[#1e3a8a]">{formatMoney(marche.montant)}</td>
+                                <td className="px-4 py-3">
+                                  <span className={`px-2 py-1 text-xs font-semibold rounded-full ${marche.statut_acte_engagement === 'Annulé' ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-700'}`}>
+                                    {marche.statut_acte_engagement === 'Engage' ? 'Engagé' : (marche.statut_acte_engagement || 'N/A')}
+                                  </span>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : (
+                      <p className="text-slate-500 italic mb-8 bg-slate-50 p-4 rounded-xl border border-dashed">Aucun marché rattaché à cette ligne.</p>
+                    )}
+
+                    <h4 className="text-lg font-bold text-slate-800 mb-4 border-b pb-2">Consultations rattachées (AOO, BC)</h4>
+                    {(selectedLigneDetails.consultations?.length > 0 || relatedAoos.length > 0) ? (
+                      <div className="overflow-x-auto border rounded-xl">
+                        <table className="w-full text-left text-sm">
+                          <thead className="bg-slate-50 text-slate-600 border-b">
+                            <tr>
+                              <th className="px-4 py-3 font-semibold">N° Consultation</th>
+                              <th className="px-4 py-3 font-semibold">Objet</th>
+                              <th className="px-4 py-3 font-semibold">Catégorie</th>
+                              <th className="px-4 py-3 font-semibold">Engagement Estimé / Global</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y">
+                            {selectedLigneDetails.consultations?.map(cons => (
+                              <tr key={cons.id} className="hover:bg-slate-50">
+                                <td className="px-4 py-3 font-medium text-slate-800">{cons.numero_consultation}</td>
+                                <td className="px-4 py-3 text-slate-600">{(cons.objet_consultation || '').replace(/equipements/ig, 'équipements')}</td>
+                                <td className="px-4 py-3">
+                                  <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-semibold">{cons.categorie}</span>
+                                </td>
+                                <td className="px-4 py-3 font-bold text-[#1e3a8a]">
+                                  {cons.engagement ? formatMoney(cons.engagement.montant_global) : (cons.estimation_budgetaire ? formatMoney(cons.estimation_budgetaire) + ' · Estimé' : 'N/A')}
+                                </td>
+                              </tr>
+                            ))}
+                            {relatedAoos.map(aoo => (
+                              <tr key={`aoo-${aoo.id}`} className="hover:bg-slate-50">
+                                <td className="px-4 py-3 font-medium text-slate-800">{aoo.num_aoo}</td>
+                                <td className="px-4 py-3 text-slate-600">{(aoo.objet || '').replace(/equipements/ig, 'équipements')}</td>
+                                <td className="px-4 py-3">
+                                  <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded-full text-xs font-semibold">AOO</span>
+                                </td>
+                                <td className="px-4 py-3 font-bold text-[#1e3a8a]">
+                                  {aoo.budget ? formatMoney(aoo.budget) + ' · Estimé' : 'N/A'}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : (
+                      <p className="text-slate-500 italic bg-slate-50 p-4 rounded-xl border border-dashed">Aucune consultation rattachée à cette ligne.</p>
+                    )}
+                  </div>
+                </div>
+              </div>,
+              document.body
+            )
+          })()}
+        </div>
+      </main>
+    </div>
+  );
 }
