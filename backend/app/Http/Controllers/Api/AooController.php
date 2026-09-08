@@ -24,7 +24,7 @@ class AooController extends Controller
     public function index()
     {
         return response()->json(
-            Aoo::with(['concurrents.fournisseur', 'lots.items', 'lots.attributaire', 'lots.decisions.fournisseur'])
+            Aoo::with(['concurrents.fournisseur', 'lots.items', 'lots.attributaire', 'lots.decisions.fournisseur', 'lots.notificationLigne'])
                 ->orderBy('created_at', 'desc')
                 ->get()
         );
@@ -89,6 +89,7 @@ class AooController extends Controller
             'art' => 'nullable|string',
             'par' => 'nullable|string',
             'lig' => 'nullable|string',
+            'imputation' => 'nullable|string',
             'statut' => 'nullable|string',
             'president_commission' => 'nullable|string',
             'rapporteur_commission' => 'nullable|string',
@@ -109,6 +110,11 @@ class AooController extends Controller
             'lots_details.*.objet_lot_ar' => 'nullable|string',
             'lots_details.*.estimation' => 'nullable|numeric',
             'lots_details.*.cautionnement_provisoire' => 'nullable|numeric',
+            'lots_details.*.notification_ligne_id' => 'nullable|exists:notification_lignes,id',
+            'lots_details.*.art' => 'nullable|string',
+            'lots_details.*.par' => 'nullable|string',
+            'lots_details.*.lig' => 'nullable|string',
+            'lots_details.*.imputation' => 'nullable|string',
             'lots_details.*.items' => 'nullable|array',
             'lots_details.*.items.*.id' => 'nullable|exists:lot_items,id',
             'lots_details.*.items.*.designation' => 'nullable|string|max:500',
@@ -144,6 +150,15 @@ class AooController extends Controller
                     $items = $lotData['items'] ?? [];
                     unset($lotData['items']);
 
+                    if (!empty($lotData['notification_ligne_id'])) {
+                        $nl = \App\Models\NotificationLigne::find($lotData['notification_ligne_id']);
+                        if ($nl) {
+                            $lotData['art'] = $nl->article;
+                            $lotData['par'] = $nl->paragraphe;
+                            $lotData['lig'] = $nl->ligne_budgetaire;
+                        }
+                    }
+
                     $lot = $aoo->lots()->updateOrCreate(
                         ['id' => $lotData['id'] ?? null],
                         [
@@ -152,9 +167,25 @@ class AooController extends Controller
                             'objet_lot_ar' => $lotData['objet_lot_ar'] ?? null,
                             'estimation' => $lotData['estimation'] ?? null,
                             'cautionnement_provisoire' => $lotData['cautionnement_provisoire'] ?? null,
+                            'notification_ligne_id' => $lotData['notification_ligne_id'] ?? null,
+                            'art' => $lotData['art'] ?? null,
+                            'par' => $lotData['par'] ?? null,
+                            'lig' => $lotData['lig'] ?? null,
+                            'imputation' => $lotData['imputation'] ?? null,
                         ]
                     );
                     $receivedIds[] = $lot->id;
+
+                    // Synchroniser l'imputation du 1er lot avec l'AOO global si non renseignée
+                    if ($index === 0 && (empty($aoo->art) || empty($aoo->par) || empty($aoo->lig))) {
+                        $aoo->update([
+                            'art' => $lot->art,
+                            'par' => $lot->par,
+                            'lig' => $lot->lig,
+                            'imputation' => $lot->imputation,
+                            'notification_ligne_id' => $lot->notification_ligne_id,
+                        ]);
+                    }
 
                     $receivedItemIds = [];
                     foreach ($items as $itemIndex => $itemData) {
@@ -186,10 +217,15 @@ class AooController extends Controller
                     'num_lot' => 'LOT 1',
                     'objet_lot' => $aoo->objet,
                     'estimation' => $aoo->budget,
+                    'art' => $aoo->art,
+                    'par' => $aoo->par,
+                    'lig' => $aoo->lig,
+                    'imputation' => $aoo->imputation,
+                    'notification_ligne_id' => $aoo->notification_ligne_id,
                 ]);
             }
 
-            return $aoo->load(['concurrents.fournisseur', 'lots.items']);
+            return $aoo->load(['concurrents.fournisseur', 'lots.items', 'lots.notificationLigne']);
         });
 
         return response()->json([
@@ -208,6 +244,7 @@ class AooController extends Controller
                 'lots.items',
                 'lots.attributaire',
                 'lots.decisions.fournisseur',
+                'lots.notificationLigne',
             ])->findOrFail($id)
         );
     }
@@ -1996,6 +2033,8 @@ class AooController extends Controller
                     'montant_rectifie' => isset($c['montant_rectifie']) && $c['montant_rectifie'] !== '' && $c['montant_rectifie'] !== '-' ? floatval($c['montant_rectifie']) : (isset($c['montant_ht']) && $c['montant_ht'] !== '' && $c['montant_ht'] !== '-' ? floatval($c['montant_ht']) : null),
                     'verif_statut' => $c['verifStatut'] ?? ($c['verif_statut'] ?? 'Admis sans réserve'),
                     'verif_motif' => $c['verif_motif'] ?? '-',
+                    'classement' => isset($c['calculatedRank']) && $c['calculatedRank'] < 900 ? $c['calculatedRank'] : ($c['classement'] ?? null),
+                    'classementDisplay' => $c['classementDisplay'] ?? null,
                 ];
             }
         } else {
@@ -2021,7 +2060,32 @@ class AooController extends Controller
                     'montant_rectifie' => $isTechRejected ? null : ($c->montant_ht ?: $c->montant_engagement),
                     'verif_statut' => $verifStatut,
                     'verif_motif' => '-',
+                    'classement' => $c->classement ?: null,
+                    'classementDisplay' => null,
                 ];
+            }
+        }
+
+        // Calcul dynamique des classements pour les concurrents admis
+        $admisMap = [];
+        foreach ($concurrentsList as $idx => $item) {
+            $isAdmis = ($item['admin_statut'] === 'Admis sans réserve' || $item['admin_statut'] === 'Admis avec réserve') &&
+                       ($item['tech_statut'] === 'Admis sans réserve' || $item['tech_statut'] === 'Admis avec réserve') &&
+                       ($item['fin_statut'] === 'Admis sans réserve' || $item['fin_statut'] === 'Admis avec réserve') &&
+                       ($item['verif_statut'] === 'Admis sans réserve' || $item['verif_statut'] === 'Admis avec réserve');
+            if ($isAdmis && !empty($item['montant_rectifie']) && $item['montant_rectifie'] > 0) {
+                $admisMap[$idx] = floatval($item['montant_rectifie']);
+            }
+        }
+        asort($admisMap);
+        $rankNum = 1;
+        $calculatedRanks = [];
+        foreach ($admisMap as $idx => $mVal) {
+            $calculatedRanks[$idx] = $rankNum++;
+        }
+        foreach ($concurrentsList as $idx => &$item) {
+            if (empty($item['classement']) && isset($calculatedRanks[$idx])) {
+                $item['classement'] = $calculatedRanks[$idx];
             }
         }
 

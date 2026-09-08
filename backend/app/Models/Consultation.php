@@ -134,4 +134,9 @@ class Consultation extends Model
     {
         return $this->belongsTo(NotificationLigne::class);
     }
+
+    public function ordonnancements()
+    {
+        return $this->hasMany(Ordonnancement::class);
+    }
 }

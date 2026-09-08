@@ -136,7 +136,17 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('marches/{id}/generate/contrat-marche', [\App\Http\Controllers\DocumentController::class, 'generateContrat']);
     Route::get('marches/{id}/generate/designation-agent', [\App\Http\Controllers\DocumentController::class, 'generateDesignationAgent']);
     
+    // Phase Ordonnancement
+    Route::get('ordonnancements/liquidations-disponibles', [\App\Http\Controllers\Api\OrdonnancementController::class, 'liquidationsDisponibles']);
+    Route::apiResource('ordonnancements', \App\Http\Controllers\Api\OrdonnancementController::class);
+    Route::post('ordonnancements/{id}/ordres', [\App\Http\Controllers\Api\OrdonnancementController::class, 'addOrdre']);
+    Route::put('ordonnancements/{id}/ordres/{ordreId}', [\App\Http\Controllers\Api\OrdonnancementController::class, 'updateOrdre']);
+    Route::delete('ordonnancements/{id}/ordres/{ordreId}', [\App\Http\Controllers\Api\OrdonnancementController::class, 'deleteOrdre']);
+    Route::patch('ordonnancements/{id}/statut', [\App\Http\Controllers\Api\OrdonnancementController::class, 'updateStatut']);
+    Route::get('ordonnancements/{id}/documents/{type}/{ordreId?}', [\App\Http\Controllers\Api\OrdonnancementDocumentController::class, 'generate']);
+
     // Upload CPS pour le marché
     Route::post('marches/{id}/upload-cps', [\App\Http\Controllers\Api\MarcheController::class, 'uploadCps']);
 });
+
 

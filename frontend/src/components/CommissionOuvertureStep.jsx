@@ -29,7 +29,8 @@ import {
   FileSpreadsheet,
   FileSignature,
   Eye,
-  Download
+  Download,
+  RefreshCw
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import api from '../api/axios';
@@ -201,12 +202,20 @@ export default function CommissionOuvertureStep({
       // 4. Après Vérif
       const verifStatut = isFinRejected ? 'Non examiné' : (company.verif_statut || 'Admis sans réserve');
 
-      // Globalement admis si aucune étape n'est rejetée
-      const isGloballyAdmis = !isAdminRejected && !isTechRejected && !isFinRejected && verifStatut !== 'Rejeté' && verifStatut !== 'Non examiné';
+      // Statut global précis
+      const isGloballyRejete = isAdminRejected || isTechRejected || isFinRejected || verifStatut === 'Rejeté';
+      const isGloballyAdmisAvecReserve = !isGloballyRejete && (
+        adminStatut === 'Admis avec réserve' ||
+        techStatut === 'Admis avec réserve' ||
+        finStatut === 'Admis avec réserve' ||
+        verifStatut === 'Admis avec réserve'
+      );
+      const isGloballyAdmisSansReserve = !isGloballyRejete && !isGloballyAdmisAvecReserve;
+      const isGloballyAdmis = !isGloballyRejete;
 
       let computedStatut = 'Rejeté';
-      if (isGloballyAdmis) {
-        computedStatut = 'Admis';
+      if (!isGloballyRejete) {
+        computedStatut = isGloballyAdmisAvecReserve ? 'Admis avec réserve' : 'Admis sans réserve';
       }
 
       return {
@@ -223,6 +232,9 @@ export default function CommissionOuvertureStep({
         isFinRejected,
         verifStatut,
         isGloballyAdmis,
+        isGloballyAdmisSansReserve,
+        isGloballyAdmisAvecReserve,
+        isGloballyRejete,
       };
     });
 
@@ -268,8 +280,10 @@ export default function CommissionOuvertureStep({
 
       if (!matchesSearch) return false;
 
+      if (filterStatus === 'sans_reserve') return c.computedStatut === 'Admis sans réserve';
+      if (filterStatus === 'avec_reserve') return c.computedStatut === 'Admis avec réserve';
       if (filterStatus === 'admis') return c.isGloballyAdmis;
-      if (filterStatus === 'rejetes') return !c.isGloballyAdmis;
+      if (filterStatus === 'rejetes') return c.computedStatut === 'Rejeté';
       if (filterStatus === 'retenus') return c.calculatedRank === 1;
       return true;
     });
@@ -459,42 +473,80 @@ export default function CommissionOuvertureStep({
           return;
         }
 
-        // Détection de la ligne de démarrage des données
-        let dataStartRow = 0;
-        for (let i = 0; i < Math.min(rows.length, 12); i++) {
-          const rowText = rows[i].join(' ').toLowerCase();
-          if (rowText.includes('dépositaire') || rowText.includes('dossier administratif') || rowText.includes('offre technique') || rowText.includes('offre financière')) {
-            if (i + 1 < rows.length && (rows[i + 1].join(' ').toLowerCase().includes('statut') || rows[i + 1].join(' ').toLowerCase().includes('motif'))) {
-              dataStartRow = i + 2;
-            } else {
-              dataStartRow = i + 1;
-            }
-            break;
-          }
-        }
-
         const parseMoney = (val) => {
           if (typeof val === 'number') return val;
           if (!val) return 0;
-          const clean = String(val).replace(/\s+/g, '').replace(/,/g, '.').replace(/[^\d.-]/g, '');
+          const clean = String(val)
+            .replace(/[\s\u00a0\u202f]/g, '')
+            .replace(/dh|mad|dhs/gi, '')
+            .replace(/,/g, '.')
+            .replace(/[^\d.-]/g, '');
           const parsed = parseFloat(clean);
           return isNaN(parsed) ? 0 : parsed;
         };
 
         const normalizeStatus = (rawVal) => {
-          if (!rawVal) return 'Admis sans réserve';
+          if (rawVal === undefined || rawVal === null) return 'Admis sans réserve';
           const s = String(rawVal).trim().toLowerCase();
-          if (s.includes('avec réserve') || s.includes('avec reserve')) {
+          if (!s || s === '-' || s === 'ok' || s === 'oui' || s === 'conforme' || s === 'admis' || s === 'accepté' || s === 'acceptée' || s === 'valide' || s === 'validé' || s === 'retenu' || s === '1' || s === 'vrai' || s === 'true') {
+            return 'Admis sans réserve';
+          }
+          if (s.includes('avec réserve') || s.includes('avec reserve') || s.includes('reserve') || s.includes('réserve')) {
             return 'Admis avec réserve';
           }
-          if (s.includes('rejet') || s.includes('non conforme') || s.includes('écart') || s === '0' || s === 'faux' || s === 'false') {
+          if (s.includes('rejet') || s.includes('non conforme') || s.includes('écart') || s.includes('ecarte') || s.includes('élimin') || s.includes('elimi') || s === '0' || s === 'faux' || s === 'false' || s === 'non') {
             return 'Rejeté';
           }
-          if (s.includes('non examiné') || s.includes('non examine')) {
+          if (s.includes('non examiné') || s.includes('non examine') || s === 'n/a' || s === 'sans objet') {
             return 'Non examiné';
           }
           return 'Admis sans réserve';
         };
+
+        // Détection de la structure des en-têtes et de la première ligne de données
+        let dataStartRow = -1;
+        let isCol9Classement = false;
+
+        for (let i = 0; i < Math.min(rows.length, 20); i++) {
+          const rowArr = rows[i].map(c => String(c || '').trim().toLowerCase());
+          const rowText = rowArr.join(' ');
+
+          if (rowText.includes('dépositaire') || rowText.includes('depositaire') || rowText.includes('soumissionnaire') || rowText.includes('dossier administratif') || rowText.includes('offre technique') || rowText.includes('offre financière')) {
+            // Vérifier si la ligne suivante contient les sous-titres (Statut, Motif, Montant, Classement...)
+            if (i + 1 < rows.length) {
+              const nextRowArr = rows[i + 1].map(c => String(c || '').trim().toLowerCase());
+              const nextRowText = nextRowArr.join(' ');
+              if (nextRowText.includes('statut') || nextRowText.includes('motif') || nextRowText.includes('montant')) {
+                dataStartRow = i + 2;
+                if (nextRowArr.some((c, idx) => idx >= 8 && c.includes('classement'))) {
+                  isCol9Classement = true;
+                }
+                break;
+              }
+            }
+            dataStartRow = i + 1;
+            break;
+          } else if (rowText.includes('statut') && rowText.includes('motif') && (rowText.includes('montant') || rowText.includes('classement'))) {
+            dataStartRow = i + 1;
+            if (rowArr.some((c, idx) => idx >= 8 && c.includes('classement'))) {
+              isCol9Classement = true;
+            }
+            break;
+          }
+        }
+
+        // Fallback si pas de détection formelle
+        if (dataStartRow === -1) {
+          for (let i = 0; i < rows.length; i++) {
+            const val0 = String(rows[i][0] || '').trim().toLowerCase();
+            if (val0 && !val0.includes('direction') && !val0.includes('royaume') && !val0.includes('introduire') && !val0.includes('tableau') && !val0.includes('nom du') && !val0.includes('statut')) {
+              dataStartRow = i;
+              break;
+            }
+          }
+        }
+
+        if (dataStartRow === -1) dataStartRow = 0;
 
         const parsedCompanies = [];
         for (let i = dataStartRow; i < rows.length; i++) {
@@ -503,35 +555,59 @@ export default function CommissionOuvertureStep({
 
           // Colonne 0 : Nom du dépositaire de l'offre
           const nom = String(row[0] || '').trim();
-          if (!nom || nom.toLowerCase().includes('total') || nom.toLowerCase().includes('direction régionale') || nom.toLowerCase().includes('nom du dépositaire')) {
+          if (!nom || 
+              nom.toLowerCase().includes('total') || 
+              nom.toLowerCase().includes('direction') || 
+              nom.toLowerCase().includes('royaume') || 
+              nom.toLowerCase().includes('introduire') || 
+              nom.toLowerCase().includes('nom du dépositaire') ||
+              nom.toLowerCase().includes('nom du depositaire') ||
+              nom.toLowerCase().includes('dossier administratif') ||
+              nom.toLowerCase().includes('statut')
+          ) {
             continue;
           }
 
-          // Step 1: Dossier Admin
+          // Step 1: Dossier Administratif & Technique (Col B: Statut, Col C: Motif)
           const adminStatut = normalizeStatus(row[1]);
           let adminMotif = String(row[2] || '').trim();
           if (adminStatut === 'Admis sans réserve' && (!adminMotif || adminMotif === '')) adminMotif = '-';
           const isAdminRejected = adminStatut === 'Rejeté';
 
-          // Step 2: Offre Tech
+          // Step 2: Offre Technique (Col D: Statut, Col E: Motif)
           const techStatut = isAdminRejected ? 'Non examiné' : normalizeStatus(row[3]);
           let techMotif = isAdminRejected ? '-' : String(row[4] || '').trim();
           if (techStatut === 'Admis sans réserve' && (!techMotif || techMotif === '')) techMotif = '-';
           const isTechRejected = isAdminRejected || techStatut === 'Rejeté';
 
-          // Step 3: Offre Fin
+          // Step 3: Offre Financière (Col F: Montant, Col G: Statut, Col H: Motif)
+          const montantHt = isTechRejected ? 0 : (parseMoney(row[5]) || 0);
           const finStatut = isTechRejected ? 'Non examiné' : normalizeStatus(row[6]);
           let finMotif = isTechRejected ? '-' : String(row[7] || '').trim();
           if (finStatut === 'Admis sans réserve' && (!finMotif || finMotif === '')) finMotif = '-';
           const isFinRejected = isTechRejected || finStatut === 'Rejeté';
 
-          // Step 4: Après Vérif
-          const verifStatut = isFinRejected ? 'Non examiné' : normalizeStatus(row[9]);
-          let verifMotif = isFinRejected ? '-' : String(row[10] || '').trim();
-          if (verifStatut === 'Admis sans réserve' && (!verifMotif || verifMotif === '')) verifMotif = '-';
+          // Step 4: Après Vérification
+          // Vérifier si Col 9 (J) est le classement ou le statut
+          let montantRectifie = isFinRejected ? 0 : (parseMoney(row[8]) > 0 ? parseMoney(row[8]) : montantHt);
+          let verifStatut = 'Admis sans réserve';
+          let verifMotif = '-';
 
-          const montantHt = isTechRejected ? 0 : (parseMoney(row[5]) || 0);
-          const montantRectifie = isFinRejected ? 0 : (parseMoney(row[8]) > 0 ? parseMoney(row[8]) : montantHt);
+          const col9Val = String(row[9] ?? '').trim();
+          const col10Val = String(row[10] ?? '').trim();
+          const isCol9Rank = isCol9Classement || (!isNaN(parseInt(col9Val, 10)) && col9Val.length <= 3 && col10Val !== '');
+
+          if (isCol9Rank) {
+            // Format 12 colonnes : [8]=Montant, [9]=Classement, [10]=Statut, [11]=Motif
+            verifStatut = isFinRejected ? 'Non examiné' : normalizeStatus(row[10]);
+            verifMotif = isFinRejected ? '-' : (String(row[11] || '').trim() || '-');
+          } else {
+            // Format 11 colonnes : [8]=Montant, [9]=Statut, [10]=Motif
+            verifStatut = isFinRejected ? 'Non examiné' : normalizeStatus(row[9]);
+            verifMotif = isFinRejected ? '-' : (String(row[10] || '').trim() || '-');
+          }
+
+          if (verifStatut === 'Admis sans réserve' && (!verifMotif || verifMotif === '')) verifMotif = '-';
 
           const existingF = (fournisseurs || []).find(f => (f.raison_sociale || '').toLowerCase().trim() === nom.toLowerCase());
 
@@ -539,6 +615,7 @@ export default function CommissionOuvertureStep({
             id: existingF ? existingF.id : `import_${Date.now()}_${i}`,
             fournisseur_id: existingF ? existingF.id : null,
             raison_sociale: nom,
+            nom_soumissionnaire: nom,
             ice: existingF ? (existingF.ice || '') : '',
             adresse: existingF ? (existingF.adresse || '') : '',
             ville: existingF ? (existingF.ville || '') : '',
@@ -551,6 +628,7 @@ export default function CommissionOuvertureStep({
             tech_motif: techMotif,
             tech_motif_rejet: techStatut === 'Rejeté' ? techMotif : '',
             montant_ht: montantHt,
+            montant_propose: montantHt,
             tva_rate: 20,
             montant_ttc: Math.round(montantHt * 1.2 * 100) / 100,
             fin_statut: finStatut,
@@ -558,6 +636,7 @@ export default function CommissionOuvertureStep({
             montant_rectifie: montantRectifie,
             verif_statut: verifStatut,
             verif_motif: verifMotif,
+            statut_analyse: verifStatut === 'Rejeté' ? 'ecarte' : (verifStatut === 'Admis sans réserve' || verifStatut === 'Admis avec réserve' ? 'retenu' : null),
             observations: [adminMotif, techMotif, finMotif, verifMotif].filter(m => m && m !== '-').join(' | '),
           });
         }
@@ -583,19 +662,35 @@ export default function CommissionOuvertureStep({
   };
 
   const handleDownloadExcelTemplate = () => {
+    const resumeHeader = [
+      '',
+      '',
+      'Introduire le résumé',
+      '',
+      '',
+      '',
+      '',
+      '',
+      '',
+      '',
+      ''
+    ];
+
     const headerRow1 = [
       'Nom du dépositaire de l\'offre',
       'Dossier administratif et technique',
       '',
       'Offre technique',
       '',
-      'Offre financière',
+      'Offre financière (Avant vérification)',
       '',
       '',
       'Après vérification',
       '',
+      '',
       ''
     ];
+
     const headerRow2 = [
       '',
       'Statut',
@@ -606,35 +701,36 @@ export default function CommissionOuvertureStep({
       'Statut',
       'Motif',
       'Montant',
+      'Classement',
       'Statut',
       'Motif'
     ];
+
     const sampleRows = [
-      ['Société ABC SARL', 'Conforme', '-', 'Acceptée', '-', 12232435, 'Admis', '-', 12232435, 'Admis', '-'],
-      ['Société XYZ SARL', 'Conforme', '-', 'Acceptée', '-', 13500000, 'Admis', '-', 13500000, 'Admis', '-'],
-      ['Société DEF SARL', 'Non conforme', 'Pièce manquante', '-', '-', 0, 'Rejeté', '-', 0, 'Rejeté', '-'],
+      ['Société XYZ SARL', 'Conforme', '-', 'Acceptée', '-', 1500000, 'Admis', '-', 1500000, 1, 'Admis', '-'],
+      ['Société DEF SARL', 'Conforme', '-', 'Acceptée', '-', 1850000, 'Admis', '-', 1850000, 2, 'Admis', '-'],
+      ['Société GHI SARL', 'Non conforme', 'Dossier incomplet', '-', '-', 0, 'Rejeté', '-', 0, '-', 'Rejeté', '-'],
     ];
 
     const ws = XLSX.utils.aoa_to_sheet([
-      ['Direction Régionale de l\'Office National du Conseil Agricole Rabat-Salé-Kénitra'],
-      [],
+      resumeHeader,
       headerRow1,
       headerRow2,
       ...sampleRows
     ]);
 
     ws['!merges'] = [
-      { s: { r: 0, c: 0 }, e: { r: 0, c: 10 } },
-      { s: { r: 2, c: 0 }, e: { r: 3, c: 0 } },
-      { s: { r: 2, c: 1 }, e: { r: 2, c: 2 } },
-      { s: { r: 2, c: 3 }, e: { r: 2, c: 4 } },
-      { s: { r: 2, c: 5 }, e: { r: 2, c: 7 } },
-      { s: { r: 2, c: 8 }, e: { r: 2, c: 10 } },
+      { s: { r: 0, c: 2 }, e: { r: 0, c: 7 } }, // Introduire le résumé
+      { s: { r: 1, c: 0 }, e: { r: 2, c: 0 } }, // Nom du dépositaire
+      { s: { r: 1, c: 1 }, e: { r: 1, c: 2 } }, // Dossier admin
+      { s: { r: 1, c: 3 }, e: { r: 1, c: 4 } }, // Offre tech
+      { s: { r: 1, c: 5 }, e: { r: 1, c: 7 } }, // Offre fin (avant vérif)
+      { s: { r: 1, c: 8 }, e: { r: 1, c: 11 } }, // Après vérif
     ];
 
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Examen des offres');
-    XLSX.writeFile(wb, 'Modele_Examen_Offres_DRCA_RSK.xlsx');
+    XLSX.writeFile(wb, 'Tableau_Examen_Offres_Commission.xlsx');
     addToast('info', 'Modèle Excel téléchargé avec succès.');
   };
 
@@ -1041,7 +1137,7 @@ export default function CommissionOuvertureStep({
             </div>
 
             {/* Filter Tabs */}
-            <div className="flex items-center rounded-xl bg-slate-100 p-1 text-xs font-bold">
+            <div className="flex flex-wrap items-center rounded-xl bg-slate-100 p-1 text-xs font-bold gap-1">
               <button
                 type="button"
                 onClick={() => setFilterStatus('all')}
@@ -1051,24 +1147,31 @@ export default function CommissionOuvertureStep({
               </button>
               <button
                 type="button"
-                onClick={() => setFilterStatus('admis')}
-                className={`px-3 py-1.5 rounded-lg transition-all ${filterStatus === 'admis' ? 'bg-white text-emerald-800 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
+                onClick={() => setFilterStatus('sans_reserve')}
+                className={`px-3 py-1.5 rounded-lg transition-all ${filterStatus === 'sans_reserve' ? 'bg-white text-emerald-800 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
               >
-                Admis
+                Admis sans réserve ({analyzedCompanies.filter(c => c.computedStatut === 'Admis sans réserve').length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setFilterStatus('avec_reserve')}
+                className={`px-3 py-1.5 rounded-lg transition-all ${filterStatus === 'avec_reserve' ? 'bg-white text-amber-800 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
+              >
+                Admis avec réserve ({analyzedCompanies.filter(c => c.computedStatut === 'Admis avec réserve').length})
               </button>
               <button
                 type="button"
                 onClick={() => setFilterStatus('rejetes')}
                 className={`px-3 py-1.5 rounded-lg transition-all ${filterStatus === 'rejetes' ? 'bg-white text-red-800 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
               >
-                Rejetés
+                Rejetés ({analyzedCompanies.filter(c => c.computedStatut === 'Rejeté').length})
               </button>
               <button
                 type="button"
                 onClick={() => setFilterStatus('retenus')}
                 className={`px-3 py-1.5 rounded-lg transition-all ${filterStatus === 'retenus' ? 'bg-white text-blue-800 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
               >
-                Retenus
+                Retenus ({analyzedCompanies.filter(c => c.calculatedRank === 1).length})
               </button>
             </div>
 
@@ -1080,7 +1183,8 @@ export default function CommissionOuvertureStep({
                   className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl cursor-pointer shadow-xs transition-all flex items-center gap-2"
                   title="Importer le tableau d'examen des offres"
                 >
-                  <Upload size={15} /> Importer Excel
+                  <Upload size={15} />
+                  <span>Importer Excel</span>
                 </label>
                 <input
                   type="file"
@@ -1095,43 +1199,43 @@ export default function CommissionOuvertureStep({
         </div>
 
         {/* Main Table conforme au modèle Excel */}
-        <div className="overflow-x-auto rounded-xl border border-slate-400 shadow-xs bg-white">
+        <div className="overflow-x-auto rounded-xl border border-slate-300 shadow-xs bg-white">
           <table className="w-full text-xs text-left border-collapse">
             <thead>
               {/* Ligne d'en-tête 1 */}
-              <tr className="bg-[#ede8db] text-slate-900 font-bold border-b border-slate-400 text-center">
-                <th rowSpan="2" className="border border-slate-400 px-3 py-2.5 text-center align-middle font-bold text-slate-900 min-w-[200px]">
+              <tr className="bg-[#e2efda] text-emerald-950 font-bold border-b border-emerald-300 text-center">
+                <th rowSpan="2" className="border border-slate-300 px-3 py-2.5 text-center align-middle font-bold text-emerald-950 min-w-[200px]">
                   Nom du dépositaire de l'offre
                 </th>
-                <th colSpan="2" className="border border-slate-400 px-3 py-2 text-center font-bold text-slate-900 min-w-[180px]">
+                <th colSpan="2" className="border border-slate-300 px-3 py-2 text-center font-bold text-emerald-950 min-w-[180px]">
                   Dossier administratif et technique
                 </th>
-                <th colSpan="2" className="border border-slate-400 px-3 py-2 text-center font-bold text-slate-900 min-w-[180px]">
+                <th colSpan="2" className="border border-slate-300 px-3 py-2 text-center font-bold text-emerald-950 min-w-[180px]">
                   Offre technique
                 </th>
-                <th colSpan="3" className="border border-slate-400 px-3 py-2 text-center font-bold text-slate-900 min-w-[270px]">
+                <th colSpan="3" className="border border-slate-300 px-3 py-2 text-center font-bold text-emerald-950 min-w-[270px]">
                   Offre financière
                 </th>
-                <th colSpan="3" className="border border-slate-400 px-3 py-2 text-center font-bold text-slate-900 min-w-[270px]">
+                <th colSpan="3" className="border border-slate-300 px-3 py-2 text-center font-bold text-emerald-950 min-w-[270px]">
                   Après vérification
                 </th>
               </tr>
               {/* Ligne d'en-tête 2 */}
-              <tr className="bg-[#ede8db] text-slate-900 font-bold border-b border-slate-400 text-center text-[11px]">
+              <tr className="bg-[#e2efda] text-emerald-950 font-bold border-b border-slate-300 text-center text-[11px]">
                 {/* Dossier admin */}
-                <th className="border border-slate-400 px-2 py-1.5 text-center text-emerald-800 font-extrabold w-24">Statut</th>
-                <th className="border border-slate-400 px-2 py-1.5 text-center text-slate-800 font-extrabold w-28">Motif</th>
+                <th className="border border-slate-300 px-2 py-1.5 text-center text-emerald-900 font-extrabold w-24">Statut</th>
+                <th className="border border-slate-300 px-2 py-1.5 text-center text-slate-800 font-extrabold w-28">Motif</th>
                 {/* Offre tech */}
-                <th className="border border-slate-400 px-2 py-1.5 text-center text-emerald-800 font-extrabold w-24">Statut</th>
-                <th className="border border-slate-400 px-2 py-1.5 text-center text-slate-800 font-extrabold w-28">Motif</th>
+                <th className="border border-slate-300 px-2 py-1.5 text-center text-emerald-900 font-extrabold w-24">Statut</th>
+                <th className="border border-slate-300 px-2 py-1.5 text-center text-slate-800 font-extrabold w-28">Motif</th>
                 {/* Offre fin */}
-                <th className="border border-slate-400 px-2 py-1.5 text-center text-emerald-800 font-extrabold w-28">Montant</th>
-                <th className="border border-slate-400 px-2 py-1.5 text-center text-emerald-800 font-extrabold w-24">Statut</th>
-                <th className="border border-slate-400 px-2 py-1.5 text-center text-slate-800 font-extrabold w-28">Motif</th>
+                <th className="border border-slate-300 px-2 py-1.5 text-center text-emerald-900 font-extrabold w-28">Montant</th>
+                <th className="border border-slate-300 px-2 py-1.5 text-center text-emerald-900 font-extrabold w-24">Statut</th>
+                <th className="border border-slate-300 px-2 py-1.5 text-center text-slate-800 font-extrabold w-28">Motif</th>
                 {/* Après vérif */}
-                <th className="border border-slate-400 px-2 py-1.5 text-center text-emerald-800 font-extrabold w-28">Montant</th>
-                <th className="border border-slate-400 px-2 py-1.5 text-center text-emerald-800 font-extrabold w-24">Statut</th>
-                <th className="border border-slate-400 px-2 py-1.5 text-center text-slate-800 font-extrabold w-28">Motif</th>
+                <th className="border border-slate-300 px-2 py-1.5 text-center text-emerald-900 font-extrabold w-28">Montant</th>
+                <th className="border border-slate-300 px-2 py-1.5 text-center text-emerald-900 font-extrabold w-28">Classement</th>
+                <th className="border border-slate-300 px-2 py-1.5 text-center text-slate-800 font-extrabold w-28">Motif</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-300">
@@ -1345,23 +1449,20 @@ export default function CommissionOuvertureStep({
                         )}
                       </td>
 
-                      {/* 10. Après Vérification : Statut */}
+                      {/* 10. Après Vérification : Classement */}
                       <td className="border border-slate-300 px-1.5 py-1 text-center">
-                        {company.verifStatut === 'Non examiné' ? (
-                          <div className="w-full px-2 py-1 text-xs text-slate-400 font-semibold italic bg-slate-50 rounded-lg">
-                            Non examiné
-                          </div>
+                        {company.verifStatut === 'Non examiné' || company.isGloballyRejete || !company.isGloballyAdmis ? (
+                          <div className="text-xs text-slate-400 font-mono py-1">-</div>
                         ) : (
-                          <select
-                            value={company.verifStatut}
-                            onChange={(e) => updateStepStatus(idx, 'verif', e.target.value)}
-                            disabled={isLocked}
-                            className={`w-full px-2 py-1 rounded-lg border text-xs outline-none cursor-pointer transition-all ${getSelectClass(company.verifStatut)}`}
-                          >
-                            <option value="Admis sans réserve">🟢 Admis sans réserve</option>
-                            <option value="Admis avec réserve">🟡 Admis avec réserve</option>
-                            <option value="Rejeté">🔴 Rejeté</option>
-                          </select>
+                          <span className={`inline-flex items-center justify-center px-2 py-1 rounded-lg text-xs font-bold ${
+                            company.calculatedRank === 1
+                              ? 'bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-2xs'
+                              : 'bg-slate-100 text-slate-700 border border-slate-200'
+                          }`}>
+                            {company.classementDisplay && company.classementDisplay !== '-'
+                              ? company.classementDisplay
+                              : (company.calculatedRank && company.calculatedRank < 900 ? `${company.calculatedRank}ème` : '-')}
+                          </span>
                         )}
                       </td>
 

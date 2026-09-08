@@ -23,7 +23,7 @@ const workflowSteps = [
   { number: '2', title: 'Consultation', subtitle: "Appel d'offres / Bons de commande / Conventions", to: '/consultations', icon: FileText },
   { number: '3', title: 'Engagement', subtitle: 'Acte et crédits disponibles', to: '/engagements', icon: FileCheck2 },
   { number: '4', title: 'Liquidation', subtitle: 'Exécution et décomptes', to: '/liquidations', icon: ReceiptText },
-  { number: '5', title: 'Ordonnancement', subtitle: 'Paiement et clôture', to: '/marches', icon: WalletCards },
+  { number: '5', title: 'Ordonnancement', subtitle: 'Paiement et clôture', to: '/ordonnancements', icon: WalletCards },
 ];
 
 const aooModes = [

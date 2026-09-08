@@ -16,6 +16,11 @@ class Lot extends Model
         'estimation',
         'tva_taux',
         'cautionnement_provisoire',
+        'notification_ligne_id',
+        'art',
+        'par',
+        'lig',
+        'imputation',
         'attributaire_fournisseur_id',
         'montant_attribue_ht',
         'tva_taux_attribue',
@@ -35,6 +40,11 @@ class Lot extends Model
     public function aoo(): BelongsTo
     {
         return $this->belongsTo(Aoo::class);
+    }
+
+    public function notificationLigne(): BelongsTo
+    {
+        return $this->belongsTo(NotificationLigne::class, 'notification_ligne_id');
     }
 
     public function decisions(): HasMany

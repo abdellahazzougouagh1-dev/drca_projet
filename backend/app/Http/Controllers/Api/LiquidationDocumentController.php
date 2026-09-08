@@ -95,7 +95,13 @@ class LiquidationDocumentController extends Controller
 
     public function generate(Request $request, $marcheId, $liquidationId, $type)
     {
-        $liquidation = Liquidation::with(['marche.fournisseur', 'marche.aoo', 'lignes'])->where('marche_id', $marcheId)->findOrFail($liquidationId);
+        $liquidation = Liquidation::with([
+            'marche.fournisseur', 
+            'marche.aoo.notificationLigne', 
+            'marche.lot', 
+            'marche.notificationLigne', 
+            'lignes'
+        ])->where('marche_id', $marcheId)->findOrFail($liquidationId);
         $marche = $liquidation->marche;
 
         $data = [
@@ -132,7 +138,41 @@ class LiquidationDocumentController extends Controller
                     : $pdf->download($this->safeFileName('Certificat_Service_Fait', $marche->num_marche));
 
             case 'etat_liquidation':
-                $pdf = Pdf::loadView('pdf.liquidation.etat_liquidation', $data);
+                $montantTtc = (float) ($liquidation->montant_brut_ttc ?: $liquidation->montant_ttc ?: 0);
+                $montantHt = (float) ($liquidation->montant_brut_ht ?: $liquidation->montant_ht ?: ($montantTtc / 1.20));
+                $montantTva = (float) ($liquidation->montant_tva ?: ($montantTtc - $montantHt));
+                $montantRas = (float) ($liquidation->autres_deductions ?: ($liquidation->montant_brut_ttc ? ($liquidation->montant_brut_ttc - $liquidation->net_a_payer) : 0));
+                $tauxRas = ($montantTva > 0 && $montantRas > 0) ? round(($montantRas / $montantTva) * 100) . '%' : ($montantRas > 0 ? '75%' : '0%');
+                $netAVerser = (float) ($liquidation->net_a_payer ?: ($montantTtc - $montantRas));
+
+                $factureRef = null;
+                if ($liquidation->num_facture) {
+                    $factureRef = "Facture N°" . $liquidation->num_facture . ($liquidation->date_facture ? " du " . \Carbon\Carbon::parse($liquidation->date_facture)->format('d/m/Y') : "");
+                } elseif ($liquidation->num_decompte) {
+                    $factureRef = "Décompte N°" . $liquidation->num_decompte . ($liquidation->date_decompte ? " du " . \Carbon\Carbon::parse($liquidation->date_decompte)->format('d/m/Y') : "");
+                } else {
+                    $factureRef = "Facture N°" . ($liquidation->num_liquidation ?? '010/' . ($liquidation->exercice_budgetaire ?? date('Y'))) . " du " . \Carbon\Carbon::parse($liquidation->date_service_fait ?? now())->format('d/m/Y');
+                }
+
+                $liqData = [
+                    'numMarche' => $marche->num_marche,
+                    'objet' => $liquidation->objet_liquidation ?: $marche->objet_marche,
+                    'factureRef' => $factureRef,
+                    'beneficiaire' => $marche->fournisseur->raison_sociale ?? $marche->titulaire ?? 'Fournisseur',
+                    'montantTtc' => $montantTtc,
+                    'montantEnLettres' => \App\Support\MontantEnLettres::convert($montantTtc),
+                    'montantHt' => $montantHt,
+                    'montantTva' => $montantTva,
+                    'tauxRas' => $tauxRas,
+                    'montantRas' => $montantRas,
+                    'netAVerser' => $netAVerser,
+                    'dateLiquidation' => $liquidation->date_decompte ? \Carbon\Carbon::parse($liquidation->date_decompte)->format('d/m/Y') : ($liquidation->date_service_fait ? \Carbon\Carbon::parse($liquidation->date_service_fait)->format('d/m/Y') : date('d/m/Y')),
+                    'budget' => $marche->type_budget ?? 'Investissement',
+                    'exercice' => $liquidation->exercice_budgetaire ?? date('Y'),
+                    'numLiquidation' => $liquidation->num_liquidation
+                ];
+
+                $pdf = Pdf::loadView('pdf.liquidation.etat_liquidation', $liqData);
                 return $isPreview 
                     ? $pdf->stream($this->safeFileName('Etat_Liquidation', $marche->num_marche))
                     : $pdf->download($this->safeFileName('Etat_Liquidation', $marche->num_marche));

@@ -26,4 +26,9 @@ class Liquidation extends Model
     {
         return $this->hasMany(LiquidationLigne::class);
     }
+
+    public function ordonnancements()
+    {
+        return $this->hasMany(Ordonnancement::class);
+    }
 }

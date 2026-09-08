@@ -82,7 +82,7 @@
     $lig              = data_get($documentData, 'lig') ?: ($consultation->budget->lig ?? ($doc['lig'] ?? ''));
     $intituleRubrique = data_get($documentData, 'intitule_rubrique') ?: ($consultation->intitule ?? $consultation->objet_consultation ?? '');
 
-    $suffixe = '/INV/DRCA-RSK/' . $exercice;
+    $suffixe = '/DRCA-RSK/' . $exercice;
 @endphp
 
 <!-- HEADER -->

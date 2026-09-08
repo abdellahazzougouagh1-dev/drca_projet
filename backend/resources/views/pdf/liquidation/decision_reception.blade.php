@@ -5,100 +5,102 @@
     <title>Décision de Nomination de la Commission de Réception - {{ $marche->num_marche }}</title>
     <style>
         @page {
-            margin: 25px 35px 25px 35px;
+            margin: 20px 32px 20px 32px;
         }
         body {
             font-family: Arial, Helvetica, sans-serif;
-            font-size: 10.5px;
+            font-size: 12.5px;
             color: #000;
-            line-height: 1.35;
+            line-height: 1.5;
             margin: 0;
             padding: 0;
         }
         .header-table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 4px;
+            margin-bottom: 8px;
         }
         .header-table td {
             vertical-align: middle;
         }
         .header-center {
             text-align: center;
-            font-size: 11.5px;
+            font-size: 15px;
             font-weight: bold;
+            line-height: 1.4;
         }
         .header-logo {
-            height: 48px;
+            height: 78px;
             width: auto;
         }
         .divider {
-            border-bottom: 1.5px solid #000;
-            margin-bottom: 8px;
+            border-bottom: 2px solid #000;
+            margin-bottom: 12px;
         }
         .ref-table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 12px;
-            font-size: 11px;
+            margin-bottom: 14px;
+            font-size: 13px;
             font-weight: bold;
         }
         .title-block {
             text-align: center;
-            margin-bottom: 12px;
+            margin-bottom: 16px;
         }
         .title-main {
-            font-size: 13px;
+            font-size: 17px;
             font-weight: bold;
-            margin-bottom: 3px;
+            margin-bottom: 5px;
+            letter-spacing: 0.5px;
         }
         .title-sub {
-            font-size: 12px;
+            font-size: 15px;
             font-weight: bold;
-            margin-bottom: 3px;
+            margin-bottom: 5px;
         }
         .title-marche {
-            font-size: 11px;
+            font-size: 13.5px;
             font-weight: bold;
         }
         .visas-list {
             list-style-type: none;
             padding-left: 0;
-            margin: 0 0 10px 0;
-            font-size: 10px;
-            line-height: 1.4;
+            margin: 0 0 14px 0;
+            font-size: 12px;
+            line-height: 1.5;
         }
         .visas-list li {
-            margin-bottom: 3.5px;
+            margin-bottom: 5px;
             text-align: justify;
         }
         .decide-title {
             text-align: center;
             font-weight: bold;
-            font-size: 12px;
-            margin: 8px 0 8px 0;
-            letter-spacing: 1px;
+            font-size: 16px;
+            margin: 12px 0 12px 0;
+            letter-spacing: 3px;
         }
         .article-title {
             font-weight: bold;
-            font-size: 11px;
-            margin-top: 6px;
-            margin-bottom: 3px;
+            font-size: 13.5px;
+            margin-top: 10px;
+            margin-bottom: 5px;
         }
         .members-table {
             width: 100%;
             border-collapse: collapse;
-            border: 1px solid #000;
-            margin: 6px 0 10px 0;
-            font-size: 10px;
+            border: 1.5px solid #000;
+            margin: 10px 0 14px 0;
+            font-size: 12px;
         }
         .members-table th, .members-table td {
             border: 1px solid #000;
-            padding: 4px 6px;
+            padding: 6px 10px;
             vertical-align: middle;
         }
         .members-table th {
-            background-color: #f9f9f9;
+            background-color: #f2f2f2;
             font-weight: bold;
             text-align: center;
         }
@@ -169,11 +171,23 @@
     <div class="decide-title">DECIDE</div>
 
     <!-- ARTICLE 1 -->
+    @php
+        $rawObjetDecision = $marche->objet_marche 
+            ?: ($marche->aoo->objet 
+            ?: ($marche->aoo->objet_marche 
+            ?: ($marche->lot->objet_lot 
+            ?: ($marche->notificationLigne->intitule 
+            ?: ($marche->aoo->notificationLigne->intitule 
+            ?: '')))));
+        
+        $fullObjetDecision = !empty($rawObjetDecision) ? $rawObjetDecision : 'Prestations liées au marché';
+    @endphp
+
     <div class="article-title">Article Premier :</div>
     <div class="text-justify" style="margin-bottom: 8px;">
         Une commission est instituée à la Direction Régionale du Conseil Agricole du Rabat-Salé-Kénitra pour la réception des prestations liées au Marché numéro: <strong>{{ $marche->num_marche }}</strong> &nbsp;&nbsp;&nbsp;&nbsp; Ayant pour objet:
         <div class="bold" style="margin-top: 4px;">
-            {{ $marche->objet_marche }}{{ $marche->lot ? (', ' . (is_object($marche->lot) ? ($marche->lot->num_lot . ' - ' . $marche->lot->objet_lot) : $marche->lot)) : ', en lot unique.' }}
+            {{ $fullObjetDecision }}
         </div>
     </div>
 

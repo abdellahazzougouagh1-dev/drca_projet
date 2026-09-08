@@ -141,7 +141,7 @@ export default function IdentificationConsultationCard({ formData }) {
   return (
     <div className="bg-white rounded-2xl border-2 border-slate-300 shadow-md overflow-hidden mb-8 print:shadow-none print:border-slate-800 print:mb-4">
       {/* En-tête administratif DRCA RSK */}
-      <div className="bg-slate-900 text-white px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b-2 border-slate-800 print:bg-slate-800">
+      <div className="bg-gradient-to-r from-blue-900 via-indigo-900 to-blue-950 text-white px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b-2 border-blue-950 print:bg-blue-900">
         <div>
           <div className="flex items-center gap-2">
             <Building2 className="text-amber-400" size={20} />
@@ -155,7 +155,7 @@ export default function IdentificationConsultationCard({ formData }) {
         </div>
 
         <div className="flex items-center gap-2 self-start sm:self-center">
-          <span className="inline-flex items-center gap-1.5 bg-slate-800 text-slate-200 text-xs font-bold px-3 py-1.5 rounded-full border border-slate-700 shadow-inner">
+          <span className="inline-flex items-center gap-1.5 bg-blue-950/70 text-blue-100 text-xs font-bold px-3 py-1.5 rounded-full border border-blue-700/60 shadow-inner">
             <Lock size={13} className="text-amber-400" />
             Informations issues de la préparation (Lecture seule)
           </span>

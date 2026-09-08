@@ -142,6 +142,13 @@ export default function CommissionMembersCard({
         {/* AJOUT MEMBRE : FORMULAIRE OU PANNEAU INTERACTIF */}
         {!isReadOnly && showAddForm && (
           <div className="mb-6 bg-white p-5 rounded-2xl shadow-md border border-blue-100 transition-all animate-fade-in">
+            <datalist id="qualites-list">
+              <option value="Président" />
+              <option value="Membre" />
+              <option value="Rapporteur" />
+              <option value="Membre avec voix consultative" />
+            </datalist>
+
             <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-100">
               <div className="flex items-center gap-2">
                 <span className="flex items-center justify-center w-7 h-7 bg-blue-100 text-blue-600 rounded-lg">
@@ -195,15 +202,15 @@ export default function CommissionMembersCard({
                 </div>
 
                 <div className="md:col-span-4">
-                  <label className="block text-xs font-bold text-slate-600 mb-1">Qualité dans la commission</label>
-                  <select
-                    value={nouveauMembre.qualite || 'Membre'}
+                  <label className="block text-xs font-bold text-slate-600 mb-1">Qualité dans la commission (saisie libre)</label>
+                  <input
+                    type="text"
+                    list="qualites-list"
+                    value={nouveauMembre.qualite || ''}
                     onChange={(e) => setNouveauMembre(prev => ({ ...prev, qualite: e.target.value }))}
+                    placeholder="Ex: Président, Membre, Rapporteur..."
                     className="w-full px-4 py-2.5 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 outline-none transition-all font-bold text-slate-700 text-sm"
-                  >
-                    <option value="Président">👑 Président de commission</option>
-                    <option value="Membre">👤 Membre de commission</option>
-                  </select>
+                  />
                 </div>
 
                 <div className="md:col-span-2 flex items-end">
@@ -245,15 +252,15 @@ export default function CommissionMembersCard({
                 </div>
 
                 <div className="md:col-span-2">
-                  <label className="block text-xs font-bold text-slate-600 mb-1">Qualité</label>
-                  <select
-                    value={customForm.qualite}
+                  <label className="block text-xs font-bold text-slate-600 mb-1">Qualité (saisie libre)</label>
+                  <input
+                    type="text"
+                    list="qualites-list"
+                    value={customForm.qualite || ''}
                     onChange={(e) => setCustomForm(prev => ({ ...prev, qualite: e.target.value }))}
+                    placeholder="Ex: Président, Membre..."
                     className="w-full px-3 py-2.5 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 outline-none transition-all font-bold text-slate-700 text-sm"
-                  >
-                    <option value="Président">👑 Président</option>
-                    <option value="Membre">👤 Membre</option>
-                  </select>
+                  />
                 </div>
 
                 <div className="md:col-span-2 flex items-end">
@@ -274,20 +281,26 @@ export default function CommissionMembersCard({
 
         {/* Tableau des membres */}
         <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+          <datalist id="qualites-list-table">
+            <option value="Président" />
+            <option value="Membre" />
+            <option value="Rapporteur" />
+            <option value="Membre avec voix consultative" />
+          </datalist>
+
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-100 text-slate-700 text-xs uppercase font-black border-b border-slate-200">
                 <th className="px-4 py-3.5">Nom et prénom</th>
                 <th className="px-4 py-3.5">Fonction</th>
                 <th className="px-4 py-3.5">Qualité dans la commission</th>
-                <th className="px-4 py-3.5 text-center">Statut</th>
                 {!isReadOnly && <th className="px-4 py-3.5 text-center">Action</th>}
               </tr>
             </thead>
             <tbody>
               {!formData.membres_commission || formData.membres_commission.length === 0 ? (
                 <tr>
-                  <td colSpan={isReadOnly ? 4 : 5} className="px-4 py-10 text-center text-slate-500 font-medium bg-white">
+                  <td colSpan={isReadOnly ? 3 : 4} className="px-4 py-10 text-center text-slate-500 font-medium bg-white">
                     <User className="mx-auto text-slate-300 mb-2" size={32} />
                     Aucun membre n'a été ajouté à la commission de cet appel d'offres.
                     {!isReadOnly && (
@@ -307,7 +320,7 @@ export default function CommissionMembersCard({
                 formData.membres_commission.map((membre, index) => {
                   const displayName = getMemberDisplayName(membre);
                   const displayRole = getMemberDisplayRole(membre);
-                  const isPresident = membre.qualite === 'Président';
+                  const isPresident = String(membre.qualite || '').toLowerCase().includes('président') || String(membre.qualite || '').toLowerCase().includes('president');
 
                   return (
                     <tr key={index} className="border-b border-slate-100 hover:bg-slate-50/70 transition-colors">
@@ -327,18 +340,17 @@ export default function CommissionMembersCard({
                       </td>
                       <td className="px-4 py-4">
                         {!isReadOnly && typeof handleUpdateMembreQualite === 'function' ? (
-                          <select
-                            value={membre.qualite || 'Membre'}
+                          <input
+                            type="text"
+                            list="qualites-list-table"
+                            value={membre.qualite || ''}
                             onChange={(e) => handleUpdateMembreQualite(index, e.target.value)}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-black border outline-none cursor-pointer transition-all ${isPresident
-                              ? 'bg-amber-50 text-amber-800 border-amber-300'
-                              : 'bg-slate-100 text-slate-700 border-slate-200'
+                            placeholder="Qualité..."
+                            className={`px-3 py-1.5 rounded-lg text-xs font-bold border outline-none transition-all w-full max-w-[220px] ${isPresident
+                              ? 'bg-amber-50 text-amber-800 border-amber-300 focus:bg-white focus:border-amber-500'
+                              : 'bg-slate-50 text-slate-700 border-slate-200 focus:bg-white focus:border-blue-500'
                               }`}
-                          >
-                            <option value="Président">👑 Président</option>
-                            <option value="Membre">👤 Membre</option>
-                            <option value="Rapporteur">📝 Rapporteur</option>
-                          </select>
+                          />
                         ) : (
                           <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-black border ${isPresident
                             ? 'bg-amber-50 text-amber-800 border-amber-200 shadow-sm'
@@ -348,11 +360,6 @@ export default function CommissionMembersCard({
                             {membre.qualite || 'Membre'}
                           </span>
                         )}
-                      </td>
-                      <td className="px-4 py-4 text-center">
-                        <span className="inline-flex items-center gap-1 text-emerald-600 text-xs font-bold bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
-                          <CheckCircle size={14} /> Validé
-                        </span>
                       </td>
                       {!isReadOnly && (
                         <td className="px-4 py-4 text-center">

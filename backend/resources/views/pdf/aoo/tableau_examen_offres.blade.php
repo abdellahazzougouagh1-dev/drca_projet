@@ -43,11 +43,11 @@
 
         /* SECTION TITLES */
         .section-header {
-            background-color: #0f172a;
+            background-color: #1e3a8a;
             color: #ffffff;
             font-size: 8pt;
             font-weight: bold;
-            padding: 3px 6px;
+            padding: 3.5px 7px;
             margin-top: 4px;
             margin-bottom: 3px;
             text-transform: uppercase;
@@ -70,7 +70,7 @@
         .ident-lbl {
             background-color: #f1f5f9;
             font-weight: bold;
-            color: #334155;
+            color: #1e3a8a;
             width: 17%;
         }
         .ident-val {
@@ -82,23 +82,24 @@
         .grid-table {
             width: 100%;
             border-collapse: collapse;
-            border: 1.5px solid #334155;
+            border: 1.5px solid #064e3b;
             margin-top: 2px;
         }
         .grid-table th {
             border: 1px solid #475569;
-            background-color: #ede8db;
-            color: #0f172a;
+            background-color: #e2efda;
+            color: #064e3b;
             font-size: 7.5pt;
             font-weight: bold;
             text-align: center;
-            padding: 3px 2px;
+            padding: 3.5px 2px;
             vertical-align: middle;
         }
         .grid-table th.sub-th {
             font-size: 7pt;
-            background-color: #e5dfcf;
-            padding: 2px 2px;
+            background-color: #d1e7c4;
+            color: #064e3b;
+            padding: 2.5px 2px;
         }
         .grid-table td {
             border: 1px solid #94a3b8;
@@ -243,7 +244,7 @@
                 <th class="sub-th" style="width: 7%;">Motif</th>
                 <!-- Après Vérif -->
                 <th class="sub-th" style="width: 9%;">Montant</th>
-                <th class="sub-th" style="width: 7%;">Statut</th>
+                <th class="sub-th" style="width: 7%;">Classement</th>
                 <th class="sub-th" style="width: 8%;">Motif</th>
             </tr>
         </thead>
@@ -351,18 +352,18 @@
                         @endif
                     </td>
 
-                    <!-- Après Vérif Statut -->
-                    <td style="text-align: center;">
-                        @if($c['verif_statut'] === 'Admis sans réserve')
-                            <span class="statut-admis">Admis sans réserve</span>
-                        @elseif($c['verif_statut'] === 'Admis avec réserve')
-                            <span class="statut-reserve">Admis avec réserve</span>
-                        @elseif($c['verif_statut'] === 'Rejeté' || $c['verif_statut'] === 'Rejetée')
-                            <span class="statut-rejet">Rejeté</span>
-                        @elseif($c['verif_statut'] === 'Non examiné')
-                            <span class="statut-non-examine">Non examiné</span>
+                    <!-- Après Vérif Classement -->
+                    <td style="text-align: center; font-weight: bold;">
+                        @if(!empty($c['classement']) && $c['classement'] > 0)
+                            @if($c['classement'] == 1)
+                                <span style="color: #047857; font-weight: bold;">1er (Moins-disant)</span>
+                            @else
+                                <span style="color: #0f172a;">{{ $c['classement'] }}<sup>ème</sup></span>
+                            @endif
+                        @elseif(!empty($c['classementDisplay']) && $c['classementDisplay'] !== '-')
+                            <span style="color: #047857;">{{ $c['classementDisplay'] }}</span>
                         @else
-                            <span class="statut-admis">{{ $c['verif_statut'] }}</span>
+                            <span style="color: #94a3b8; font-weight: normal;">-</span>
                         @endif
                     </td>
 

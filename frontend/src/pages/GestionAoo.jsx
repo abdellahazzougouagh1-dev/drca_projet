@@ -36,6 +36,11 @@ const createEmptyLot = (index) => ({
   objet_lot: '',
   estimation: '',
   cautionnement_provisoire: '',
+  art: '',
+  par: '',
+  lig: '',
+  imputation: '',
+  notification_ligne_id: null,
   items: [],
 });
 
@@ -81,7 +86,7 @@ const GestionAoo = () => {
 
   const wizardStepOrder = ['preparation', 'commission'];
   const wizardNextLabels = {
-    preparation: 'Ouverture des plis'
+    preparation: 'Ouverture des plis et analyse'
   };
 
   const getNextStep = (current) => {
@@ -407,12 +412,17 @@ const GestionAoo = () => {
       sanitizedData.lots = Array.isArray(sanitizedData.lots) ? sanitizedData.lots : [];
       sanitizedData.lots_details = Array.isArray(sanitizedData.lots_details) ? sanitizedData.lots_details : [];
       if (sanitizedData.lots.length > 0) {
-        sanitizedData.lots_details = sanitizedData.lots.map(lot => ({
+        sanitizedData.lots_details = sanitizedData.lots.map((lot, index) => ({
           id: lot.id,
           num_lot: lot.num_lot,
           objet_lot: lot.objet_lot || '',
           estimation: lot.estimation || '',
           cautionnement_provisoire: lot.cautionnement_provisoire ?? '',
+          art: lot.art || (index === 0 ? sanitizedData.art : '') || '',
+          par: lot.par || (index === 0 ? sanitizedData.par : '') || '',
+          lig: lot.lig || (index === 0 ? sanitizedData.lig : '') || '',
+          imputation: lot.imputation || (index === 0 ? sanitizedData.imputation : '') || '',
+          notification_ligne_id: lot.notification_ligne_id || (index === 0 ? sanitizedData.notification_ligne_id : '') || null,
           items: mapLotItemsFromApi(lot.items),
         }));
         if (sanitizedData.lots.length > 1) {
@@ -423,7 +433,14 @@ const GestionAoo = () => {
         }
       } else {
         const nbLots = Math.max(1, parseInt(sanitizedData.nombre_lots, 10) || 1);
-        sanitizedData.lots_details = Array.from({ length: nbLots }, (_, index) => createEmptyLot(index));
+        sanitizedData.lots_details = Array.from({ length: nbLots }, (_, index) => ({
+          ...createEmptyLot(index),
+          art: index === 0 ? (sanitizedData.art || '') : '',
+          par: index === 0 ? (sanitizedData.par || '') : '',
+          lig: index === 0 ? (sanitizedData.lig || '') : '',
+          imputation: index === 0 ? (sanitizedData.imputation || '') : '',
+          notification_ligne_id: index === 0 ? (sanitizedData.notification_ligne_id || null) : null,
+        }));
       }
       let rawJournaux = sanitizedData.publications_journaux;
       if (typeof rawJournaux === 'string') {
@@ -861,9 +878,19 @@ const GestionAoo = () => {
       }
     }
 
-    // Etape 3
-    if (!formData.notification_ligne_id && (!formData.art || !formData.par || !formData.lig) && !formData.imputation) {
-      errors.push('Imputation budgétaire incomplète (Article, Paragraphe et Ligne requis)');
+    // Etape 3 (Imputation par lot)
+    const lotsForValidation = formData.lots_details || [];
+    if (lotsForValidation.length === 0) {
+      if (!formData.notification_ligne_id && (!formData.art || !formData.par || !formData.lig) && !formData.imputation) {
+        errors.push("Imputation budgétaire incomplète (Article, Paragraphe et Ligne requis)");
+      }
+    } else {
+      lotsForValidation.forEach((l, idx) => {
+        const isComplete = (l.art && l.par && l.lig) || l.imputation || l.notification_ligne_id;
+        if (!isComplete) {
+          errors.push(`Imputation budgétaire incomplète pour le ${l.num_lot || `Lot ${idx + 1}`} (Article, Paragraphe et Ligne requis)`);
+        }
+      });
     }
 
     // Etape 4
@@ -943,7 +970,7 @@ const GestionAoo = () => {
       await api.post(`/aoos/${id}/passer-commission`);
       setFormData(prev => ({ ...prev, statut: 'Commission_Ouverture' }));
       setShowTransitionModal(false);
-      setSuccessMessage('Préparation complète. Passage à l\'Ouverture des plis réussi.');
+      setSuccessMessage('Préparation complète. Passage à l\'Ouverture des plis et analyse réussi.');
       setActiveTab('commission');
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err) {
@@ -951,7 +978,7 @@ const GestionAoo = () => {
         setTransitionErrors(err.response.data.errors);
         setShowTransitionModal(true);
       } else {
-        setErrorMessage(err.response?.data?.error || err.response?.data?.message || 'Impossible de passer à l\'Ouverture des plis.');
+        setErrorMessage(err.response?.data?.error || err.response?.data?.message || 'Impossible de passer à l\'Ouverture des plis et analyse.');
       }
     } finally {
       setSaving(false);
@@ -1062,11 +1089,24 @@ const GestionAoo = () => {
         return;
       }
 
-      // Validation Etape 3 (Imputation)
-      if (!formData.notification_ligne_id && (!formData.art || !formData.par || !formData.lig) && !formData.imputation) {
-        setErrorMessage("Veuillez renseigner l'imputation budgétaire (Article, Paragraphe, Ligne).");
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-        return;
+      // Validation Etape 3 (Imputation par lot)
+      const lotsForSubmit = formData.lots_details || [];
+      if (lotsForSubmit.length === 0) {
+        if (!formData.notification_ligne_id && (!formData.art || !formData.par || !formData.lig) && !formData.imputation) {
+          setErrorMessage("Veuillez renseigner l'imputation budgétaire (Article, Paragraphe, Ligne).");
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+          return;
+        }
+      } else {
+        for (let i = 0; i < lotsForSubmit.length; i++) {
+          const l = lotsForSubmit[i];
+          const isComplete = (l.art && l.par && l.lig) || l.imputation || l.notification_ligne_id;
+          if (!isComplete) {
+            setErrorMessage(`Veuillez renseigner l'imputation budgétaire pour le ${l.num_lot || `Lot ${i + 1}`} (Article, Paragraphe, Ligne).`);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            return;
+          }
+        }
       }
 
       // Validation Etape 2 (Lignes budgétaires)
@@ -1584,7 +1624,7 @@ const GestionAoo = () => {
             </div>
           </div>
 
-          {/* TABS NAVIGATION - 2 PHASES : PRÉPARATION & OUVERTURE DES PLIS */}
+          {/* TABS NAVIGATION - 2 PHASES : PRÉPARATION & OUVERTURE DES PLIS ET ANALYSE */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 pb-4">
             <button onClick={() => setActiveTab('preparation')} className={`min-w-0 flex-1 px-6 py-5 rounded-2xl font-bold text-base transition-all flex items-center justify-center gap-3 ${activeTab === 'preparation'
               ? 'bg-primary text-white shadow-lg'
@@ -1598,7 +1638,7 @@ const GestionAoo = () => {
               ? 'bg-primary text-white shadow-lg'
               : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
               }`}>
-              <Users size={24} /> 2. Ouverture des plis
+              <Users size={24} /> 2. Ouverture des plis et analyse
             </button>
           </div>
         </div>
@@ -1618,7 +1658,7 @@ const GestionAoo = () => {
               removeLotItem={handleRemoveLotItem}
               addLot={() => {
                 const lotsDetails = formData.lots_details ? [...formData.lots_details] : [];
-                lotsDetails.push({ num_lot: `${lotsDetails.length + 1}`, objet_lot: '', estimation: 0, items: [] });
+                lotsDetails.push(createEmptyLot(lotsDetails.length));
                 setFormData({ ...formData, lots_details: lotsDetails, nombre_lots: lotsDetails.length });
               }}
               removeLot={(index) => {
@@ -1647,6 +1687,8 @@ const GestionAoo = () => {
               saving={saving}
               id={id}
               generatingDoc={generatingDoc}
+              lignesBudgetaires={lignesBudgetaires}
+              setFormData={setFormData}
             />
           </div>
 
@@ -1706,7 +1748,7 @@ const GestionAoo = () => {
 
                 {transitionErrors.length > 0 && (
                   <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 text-red-700 rounded-r-xl">
-                    <div className="font-bold flex items-center gap-2 mb-2"><AlertTriangle size={18} /> Impossible de passer à l'Ouverture des plis</div>
+                    <div className="font-bold flex items-center gap-2 mb-2"><AlertTriangle size={18} /> Impossible de passer à l'Ouverture des plis et analyse</div>
                     <ul className="list-disc ml-5 space-y-1 text-sm font-medium">
                       {transitionErrors.map((err, i) => (
                         <li key={i}>{err}</li>
@@ -1716,7 +1758,7 @@ const GestionAoo = () => {
                 )}
 
                 <p className="text-center font-bold text-slate-800 text-lg">
-                  Voulez-vous passer à l'Ouverture des plis ?
+                  Voulez-vous passer à l'Ouverture des plis et analyse ?
                 </p>
               </div>
 

@@ -23,6 +23,8 @@ import DossierCloture from './pages/DossierCloture';
 import ListeNotifications from './pages/ListeNotifications';
 import NouvelleNotification from './pages/NouvelleNotification';
 import DetailsNotification from './pages/DetailsNotification';
+import RegistreOrdonnancements from './pages/RegistreOrdonnancements';
+import DossierOrdonnancement from './pages/DossierOrdonnancement';
 function App() {
   const isAuthenticated = !!localStorage.getItem('token');
 
@@ -189,6 +191,22 @@ function App() {
           element={
             <ProtectedRoute>
               <DossierLiquidation />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/ordonnancements"
+          element={
+            <ProtectedRoute>
+              <RegistreOrdonnancements />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/ordonnancements/:id"
+          element={
+            <ProtectedRoute>
+              <DossierOrdonnancement />
             </ProtectedRoute>
           }
         />

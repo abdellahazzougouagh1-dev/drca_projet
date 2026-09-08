@@ -73,9 +73,25 @@ class MarcheController extends Controller
                 : $request->input('lot'),
         ]);
 
-        if ($request->filled('aoo_id')) {
+        if ($request->filled('lot_id')) {
+            $lot = \App\Models\Lot::find($request->input('lot_id'));
+            if ($lot) {
+                if ($lot->notification_ligne_id && !$request->filled('notification_ligne_id')) {
+                    $request->merge(['notification_ligne_id' => $lot->notification_ligne_id]);
+                }
+                if ($lot->art && !$request->filled('article_budget')) {
+                    $request->merge(['article_budget' => $lot->art]);
+                }
+                if ($lot->par && !$request->filled('paragraphe_budget')) {
+                    $request->merge(['paragraphe_budget' => $lot->par]);
+                }
+                if ($lot->lig && !$request->filled('ligne_budget')) {
+                    $request->merge(['ligne_budget' => $lot->lig]);
+                }
+            }
+        } elseif ($request->filled('aoo_id')) {
             $aoo = \App\Models\Aoo::find($request->input('aoo_id'));
-            if ($aoo && $aoo->notification_ligne_id) {
+            if ($aoo && $aoo->notification_ligne_id && !$request->filled('notification_ligne_id')) {
                 $request->merge([
                     'notification_ligne_id' => $aoo->notification_ligne_id
                 ]);

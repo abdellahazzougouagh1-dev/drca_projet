@@ -90,7 +90,7 @@ export default function PreparationSummary({
                 <span className="flex items-center justify-center w-8 h-8 bg-white/20 rounded-full group-hover:scale-110 transition-transform">
                   {saving ? <Loader2 size={20} className="animate-spin" /> : <CheckCircle size={20} />}
                 </span>
-                {saving ? 'Passage en cours...' : 'PASSER À L\'OUVERTURE DES PLIS'}
+                {saving ? 'Passage en cours...' : 'PASSER À L\'OUVERTURE DES PLIS ET ANALYSE'}
                 {!saving && <ChevronRight size={24} className="group-hover:translate-x-1 transition-transform" />}
               </button>
             </div>
@@ -105,7 +105,7 @@ export default function PreparationSummary({
                 disabled
                 className="px-10 py-5 bg-slate-200 text-slate-400 font-black text-lg rounded-2xl flex items-center gap-3 cursor-not-allowed mx-auto"
               >
-                PASSER À L'OUVERTURE DES PLIS
+                PASSER À L'OUVERTURE DES PLIS ET ANALYSE
                 <ChevronRight size={24} />
               </button>
             </div>

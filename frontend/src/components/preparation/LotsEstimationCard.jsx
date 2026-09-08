@@ -95,6 +95,11 @@ export default function LotsEstimationCard({
                   <div className="w-36 text-right">
                     <span className="block text-xs font-bold text-slate-400">Total TTC</span>
                     <span className="font-bold text-slate-800">{lotTtc.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} MAD</span>
+                    {lot.art && lot.par && lot.lig && (
+                      <span className="block text-[11px] font-mono text-indigo-600 font-semibold mt-0.5">
+                        {lot.art}/{lot.par}/{lot.lig}
+                      </span>
+                    )}
                   </div>
 
                   <div className="flex items-center gap-2 ml-auto">

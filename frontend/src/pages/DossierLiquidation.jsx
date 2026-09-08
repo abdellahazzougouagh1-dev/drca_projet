@@ -3,7 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, FileText, CheckCircle2, FileSignature, 
   Banknote, Calendar, Upload, Plus, AlertCircle, Save, Send,
-  FileDown, Trash2, Edit, Eye, ReceiptText
+  FileDown, Trash2, Edit, Eye, ReceiptText,
+  Shield, Crown, User, UserPlus, X
 } from 'lucide-react';
 import api from '../api/axios';
 
@@ -16,6 +17,18 @@ const DossierLiquidation = () => {
   const [activeTab, setActiveTab] = useState('historique'); // historique, saisie, documents
   const [editMode, setEditMode] = useState(false);
   const [currentLiqId, setCurrentLiqId] = useState(null);
+
+  // States pour les membres de commission
+  const [showAddMemberForm, setShowAddMemberForm] = useState(false);
+  const [memberFormMode, setMemberFormMode] = useState('catalog'); // 'catalog' | 'custom'
+  const [membresCatalog, setMembresCatalog] = useState([]);
+  const [selectedCatalogMemberId, setSelectedCatalogMemberId] = useState('');
+  const [catalogMemberQualite, setCatalogMemberQualite] = useState('Membre');
+  const [newMemberForm, setNewMemberForm] = useState({
+    nom_prenom: '',
+    fonction: '',
+    qualite: 'Membre'
+  });
 
   // Form states for new/edit Liquidation
   const [formData, setFormData] = useState(getInitialFormData());
@@ -82,7 +95,19 @@ const DossierLiquidation = () => {
 
   useEffect(() => {
     fetchDossier();
+    fetchCommissionCatalog();
   }, [id]);
+
+  const fetchCommissionCatalog = async () => {
+    try {
+      const res = await api.get('/commission-membres');
+      if (res.data) {
+        setMembresCatalog(res.data);
+      }
+    } catch (err) {
+      console.error('Erreur chargement catalogue membres:', err);
+    }
+  };
 
   const fetchDossier = async () => {
     try {
@@ -183,17 +208,66 @@ const DossierLiquidation = () => {
     setFormData(newFormData);
   };
 
-  const addCommissionMember = () => {
+  const addCatalogMember = (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    if (!selectedCatalogMemberId) return;
+
+    const chosen = (membresCatalog || []).find(m => String(m.id) === String(selectedCatalogMemberId));
+    if (!chosen) return;
+
+    const currentMembers = formData.commission_reception || [];
+    const displayName = chosen.nom_prenom || `${chosen.nom || ''} ${chosen.prenom || ''}`.trim();
+    const newMember = {
+      nom_prenom: displayName,
+      nom: displayName,
+      fonction: chosen.fonction || chosen.role || chosen.departement || '',
+      qualite: catalogMemberQualite || 'Membre',
+      membre_commission_id: chosen.id
+    };
+
     setFormData({
       ...formData,
-      commission_reception: [...(formData.commission_reception || []), { nom: '', fonction: '', qualite: 'Membre' }]
+      commission_reception: [...currentMembers, newMember]
     });
+
+    setSelectedCatalogMemberId('');
+    setCatalogMemberQualite('Membre');
+    setShowAddMemberForm(false);
+  };
+
+  const addCommissionMember = (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    if (!newMemberForm.nom_prenom.trim()) return;
+
+    const currentMembers = formData.commission_reception || [];
+    const newMember = {
+      nom_prenom: newMemberForm.nom_prenom.trim(),
+      nom: newMemberForm.nom_prenom.trim(),
+      fonction: newMemberForm.fonction.trim(),
+      qualite: newMemberForm.qualite || 'Membre'
+    };
+
+    setFormData({
+      ...formData,
+      commission_reception: [...currentMembers, newMember]
+    });
+
+    setNewMemberForm({ nom_prenom: '', fonction: '', qualite: 'Membre' });
+    setShowAddMemberForm(false);
   };
 
   const removeCommissionMember = (idx) => {
     const newComm = [...(formData.commission_reception || [])];
     newComm.splice(idx, 1);
     setFormData({ ...formData, commission_reception: newComm });
+  };
+
+  const handleUpdateMembreQualite = (idx, value) => {
+    const newComm = [...(formData.commission_reception || [])];
+    if (newComm[idx]) {
+      newComm[idx].qualite = value;
+      setFormData({ ...formData, commission_reception: newComm });
+    }
   };
 
   const handleCommissionChange = (idx, field, value) => {
@@ -495,8 +569,6 @@ const DossierLiquidation = () => {
                      <div>
                        <h3 className="text-xl font-black text-slate-800">Liquidation #{idx+1} <span className="text-sm font-semibold text-slate-500 ml-2">({liq.type_execution.toUpperCase()})</span></h3>
                        <p className="text-sm text-slate-500 flex gap-4 mt-1">
-                         <span>Facture: <strong>{liq.num_facture || 'N/A'}</strong></span>
-                         <span>Service Fait: <strong>{liq.reference_service_fait || 'N/A'}</strong></span>
                          <span>Décompte: <strong>{liq.num_decompte || 'N/A'}</strong></span>
                        </p>
                      </div>
@@ -673,26 +745,13 @@ const DossierLiquidation = () => {
                 </div>
               </section>
 
-              {/* Section 3: Service Fait */}
+              {/* Section 3: Réception des Prestations */}
               <section>
-                <h3 className="text-lg font-bold text-slate-800 mb-4 border-b border-slate-100 pb-2">3. Service Fait & Réception</h3>
+                <h3 className="text-lg font-bold text-slate-800 mb-4 border-b border-slate-100 pb-2">3. Réception des Prestations</h3>
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-                  <div><label className="block text-xs font-bold text-slate-700 mb-1">Réf. Service Fait</label><input type="text" name="reference_service_fait" value={formData.reference_service_fait} onChange={handleInputChange} className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" /></div>
-                  <div><label className="block text-xs font-bold text-slate-700 mb-1">Date Service Fait</label><input type="date" name="date_service_fait" value={formData.date_service_fait} onChange={handleInputChange} className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" /></div>
                   <div><label className="block text-xs font-bold text-slate-700 mb-1">Début Prestations</label><input type="date" name="date_debut_prestations" value={formData.date_debut_prestations} onChange={handleInputChange} className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" /></div>
                   <div><label className="block text-xs font-bold text-slate-700 mb-1">Fin Prestations</label><input type="date" name="date_fin_prestations" value={formData.date_fin_prestations} onChange={handleInputChange} className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" /></div>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  <div><label className="block text-xs font-bold text-slate-700 mb-1">Réf. PV Réception</label><input type="text" name="reference_pv_reception" value={formData.reference_pv_reception} onChange={handleInputChange} className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" /></div>
                   <div><label className="block text-xs font-bold text-slate-700 mb-1">Date Réception</label><input type="date" name="date_reception" value={formData.date_reception} onChange={handleInputChange} className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" /></div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">Résultat Réception</label>
-                    <select name="resultat_reception" value={formData.resultat_reception} onChange={handleInputChange} className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white">
-                      <option value="">Sélectionner...</option>
-                      <option value="Accepte">Accepté</option>
-                      <option value="Avec reserves">Avec réserves</option>
-                    </select>
-                  </div>
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-1">Type de Réception</label>
                     <select name="type_reception" value={formData.type_reception} onChange={handleInputChange} className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white">
@@ -703,47 +762,274 @@ const DossierLiquidation = () => {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                   <div><label className="block text-xs font-bold text-slate-700 mb-1">Date Réunion Commission</label><input type="date" name="date_reunion_commission" value={formData.date_reunion_commission} onChange={handleInputChange} className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" /></div>
                   <div><label className="block text-xs font-bold text-slate-700 mb-1">Heure Réunion (ex: 10:00)</label><input type="time" name="heure_reunion_commission" value={formData.heure_reunion_commission} onChange={handleInputChange} className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" /></div>
                   <div><label className="block text-xs font-bold text-slate-700 mb-1">N° Décision Commission</label><input type="text" name="num_decision" value={formData.num_decision} onChange={handleInputChange} className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" /></div>
                   <div><label className="block text-xs font-bold text-slate-700 mb-1">Date Décision</label><input type="date" name="date_decision" value={formData.date_decision} onChange={handleInputChange} className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" /></div>
                 </div>
                 
-                <div className="mt-6 border-t border-slate-100 pt-4">
-                  <h4 className="text-sm font-bold text-slate-800 mb-3 flex items-center justify-between">
-                    Membres de la Commission (Optionnel : Remplacer ceux du marché)
-                    <button type="button" onClick={addCommissionMember} className="text-xs px-3 py-1 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded-lg flex items-center gap-1 font-bold">
-                      <Plus size={14}/> Ajouter
-                    </button>
-                  </h4>
-                  {formData.commission_reception && formData.commission_reception.length > 0 ? (
-                    <div className="space-y-2">
-                      {formData.commission_reception.map((membre, idx) => (
-                        <div key={idx} className="flex gap-2 items-center bg-slate-50 p-2 rounded-lg border border-slate-200">
-                          <input type="text" placeholder="Nom et Prénom" value={membre.nom} onChange={(e) => handleCommissionChange(idx, 'nom', e.target.value)} className="flex-1 px-3 py-1.5 text-sm border border-slate-300 rounded-md" />
-                          <input type="text" placeholder="Fonction" value={membre.fonction} onChange={(e) => handleCommissionChange(idx, 'fonction', e.target.value)} className="flex-1 px-3 py-1.5 text-sm border border-slate-300 rounded-md" />
-                          <select value={membre.qualite} onChange={(e) => handleCommissionChange(idx, 'qualite', e.target.value)} className="w-32 px-3 py-1.5 text-sm border border-slate-300 rounded-md bg-white">
-                            <option value="Présidente">Présidente</option>
-                            <option value="Président">Président</option>
-                            <option value="Membre">Membre</option>
-                          </select>
-                          <button type="button" onClick={() => removeCommissionMember(idx)} className="p-1.5 text-red-500 hover:bg-red-50 rounded-md"><Trash2 size={16}/></button>
-                        </div>
-                      ))}
+                {/* Composition de la commission de réception */}
+                <div className="mt-6 border-t border-slate-200 pt-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+                    <div>
+                      <h4 className="font-extrabold text-slate-800 flex items-center gap-2 text-base">
+                        <Shield className="text-indigo-600" size={20} /> Membres de la commission de réception
+                      </h4>
+                      <p className="text-slate-500 text-xs mt-0.5">
+                        Désignez la Présidence et les Membres de la commission pour la réception des prestations
+                      </p>
                     </div>
-                  ) : (
-                     <div className="text-sm text-slate-500 italic p-3 bg-slate-50 rounded-lg text-center">Aucun membre spécifié. Les membres définis lors de l'engagement du marché ou de l'ouverture des plis (AOO) seront utilisés par défaut.</div>
+
+                    <div className="flex items-center gap-3">
+                      <span className="bg-indigo-100 text-indigo-800 text-xs font-black px-3.5 py-1.5 rounded-full border border-indigo-200 shadow-xs">
+                        {formData.commission_reception?.length || 0} membre(s) enregistré(s)
+                      </span>
+
+                      {!showAddMemberForm && (
+                        <button
+                          type="button"
+                          onClick={() => setShowAddMemberForm(true)}
+                          className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white font-bold text-sm rounded-xl hover:bg-indigo-700 transition-all shadow-xs hover:shadow-indigo-500/20"
+                        >
+                          <Plus size={16} /> Ajouter un membre
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* FORMULAIRE D'AJOUT INTERACTIF */}
+                  {showAddMemberForm && (
+                    <div className="mb-6 bg-white p-5 rounded-2xl shadow-md border border-indigo-100 transition-all">
+                      <datalist id="qualites-reception-list">
+                        <option value="Présidente" />
+                        <option value="Président" />
+                        <option value="Membre" />
+                        <option value="Rapporteur" />
+                        <option value="Membre avec voix consultative" />
+                      </datalist>
+
+                      <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-100">
+                        <div className="flex items-center gap-2">
+                          <span className="flex items-center justify-center w-7 h-7 bg-indigo-100 text-indigo-600 rounded-lg">
+                            <UserPlus size={16} />
+                          </span>
+                          <span className="font-black text-slate-800 text-sm">Ajouter un membre à la commission</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="inline-flex p-1 bg-slate-100 rounded-xl text-xs font-bold text-slate-600">
+                            <button
+                              type="button"
+                              onClick={() => setMemberFormMode('catalog')}
+                              className={`px-3 py-1 rounded-lg transition-all ${memberFormMode === 'catalog' ? 'bg-white text-indigo-600 shadow-sm' : 'hover:text-slate-900'}`}
+                            >
+                              Depuis le catalogue
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setMemberFormMode('custom')}
+                              className={`px-3 py-1 rounded-lg transition-all ${memberFormMode === 'custom' ? 'bg-white text-indigo-600 shadow-sm' : 'hover:text-slate-900'}`}
+                            >
+                              Nouveau membre
+                            </button>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setShowAddMemberForm(false)}
+                            className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition-colors"
+                          >
+                            <X size={18} />
+                          </button>
+                        </div>
+                      </div>
+
+                      {memberFormMode === 'catalog' ? (
+                        <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
+                          <div className="md:col-span-6">
+                            <label className="block text-xs font-bold text-slate-600 mb-1">Sélectionner un membre existant</label>
+                            <select
+                              value={String(selectedCatalogMemberId || '')}
+                              onChange={(e) => setSelectedCatalogMemberId(e.target.value)}
+                              className="w-full px-4 py-2.5 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 outline-none transition-all font-medium text-slate-700 text-sm"
+                            >
+                              <option value="">-- Choisir dans la liste des membres --</option>
+                              {membresCatalog?.map(m => (
+                                <option key={m.id} value={String(m.id)}>
+                                  {m.nom_prenom || `${m.nom || ''} ${m.prenom || ''}`.trim()} {m.fonction ? `(${m.fonction})` : ''}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+
+                          <div className="md:col-span-4">
+                            <label className="block text-xs font-bold text-slate-600 mb-1">Qualité dans la commission (saisie libre)</label>
+                            <input
+                              type="text"
+                              list="qualites-reception-list"
+                              value={catalogMemberQualite || ''}
+                              onChange={(e) => setCatalogMemberQualite(e.target.value)}
+                              placeholder="Ex: Présidente, Membre..."
+                              className="w-full px-4 py-2.5 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 outline-none transition-all font-bold text-slate-700 text-sm"
+                            />
+                          </div>
+
+                          <div className="md:col-span-2 flex items-end">
+                            <button
+                              type="button"
+                              onClick={addCatalogMember}
+                              className="w-full bg-indigo-600 text-white font-bold px-4 py-2.5 rounded-xl hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2 text-sm shadow-xs"
+                            >
+                              <UserPlus size={16} /> Ajouter
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
+                          <div className="md:col-span-4">
+                            <label className="block text-xs font-bold text-slate-600 mb-1">Nom et Prénom *</label>
+                            <input
+                              type="text"
+                              required
+                              placeholder="Ex: Enneddam Wafaa"
+                              value={newMemberForm.nom_prenom}
+                              onChange={(e) => setNewMemberForm(prev => ({ ...prev, nom_prenom: e.target.value }))}
+                              className="w-full px-4 py-2.5 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 outline-none transition-all font-medium text-slate-700 text-sm"
+                            />
+                          </div>
+
+                          <div className="md:col-span-4">
+                            <label className="block text-xs font-bold text-slate-600 mb-1">Fonctionnalité / Rôle</label>
+                            <input
+                              type="text"
+                              placeholder="Ex: Chef de Service Programmation"
+                              value={newMemberForm.fonction}
+                              onChange={(e) => setNewMemberForm(prev => ({ ...prev, fonction: e.target.value }))}
+                              className="w-full px-4 py-2.5 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 outline-none transition-all font-medium text-slate-700 text-sm"
+                            />
+                          </div>
+
+                          <div className="md:col-span-2">
+                            <label className="block text-xs font-bold text-slate-600 mb-1">Qualité (saisie libre)</label>
+                            <input
+                              type="text"
+                              list="qualites-reception-list"
+                              value={newMemberForm.qualite || ''}
+                              onChange={(e) => setNewMemberForm(prev => ({ ...prev, qualite: e.target.value }))}
+                              placeholder="Ex: Présidente, Membre..."
+                              className="w-full px-3 py-2.5 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 outline-none transition-all font-bold text-slate-700 text-sm"
+                            />
+                          </div>
+
+                          <div className="md:col-span-2 flex items-end">
+                            <button
+                              type="button"
+                              onClick={addCommissionMember}
+                              className="w-full bg-indigo-600 text-white font-bold px-4 py-2.5 rounded-xl hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2 text-sm shadow-xs"
+                            >
+                              <UserPlus size={16} /> Enregistrer
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   )}
+
+                  {/* Tableau des membres */}
+                  <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xs">
+                    <datalist id="qualites-reception-list-table">
+                      <option value="Présidente" />
+                      <option value="Président" />
+                      <option value="Membre" />
+                      <option value="Rapporteur" />
+                      <option value="Membre avec voix consultative" />
+                    </datalist>
+
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="bg-slate-100 text-slate-700 text-xs uppercase font-black border-b border-slate-200">
+                          <th className="px-4 py-3.5">Nom et prénom</th>
+                          <th className="px-4 py-3.5">Fonction</th>
+                          <th className="px-4 py-3.5">Qualité dans la commission</th>
+                          <th className="px-4 py-3.5 text-center">Action</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {!formData.commission_reception || formData.commission_reception.length === 0 ? (
+                          <tr>
+                            <td colSpan={4} className="px-4 py-10 text-center text-slate-500 font-medium bg-white">
+                              <User className="mx-auto text-slate-300 mb-2" size={32} />
+                              Aucun membre spécifique configuré pour la réception.
+                              <p className="text-xs text-slate-400 mt-1">Les membres par défaut définis lors du marché seront automatiquement utilisés.</p>
+                              <div className="mt-3">
+                                <button
+                                  type="button"
+                                  onClick={() => setShowAddMemberForm(true)}
+                                  className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-600 font-bold text-xs rounded-xl hover:bg-indigo-100 border border-indigo-200 transition-colors"
+                                >
+                                  <Plus size={14} /> Ajouter un membre
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ) : (
+                          formData.commission_reception.map((membre, index) => {
+                            const displayName = membre.nom_prenom || membre.nom || 'Membre';
+                            const displayRole = membre.fonction || '-';
+                            const isPresident = String(membre.qualite || '').toLowerCase().includes('président') || String(membre.qualite || '').toLowerCase().includes('president');
+
+                            return (
+                              <tr key={index} className="border-b border-slate-100 hover:bg-slate-50/70 transition-colors">
+                                <td className="px-4 py-4">
+                                  <div className="flex items-center gap-3">
+                                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-xs ${isPresident ? 'bg-amber-100 text-amber-800 border border-amber-200' : 'bg-slate-100 text-slate-700 border border-slate-200'}`}>
+                                      {isPresident ? <Crown size={18} className="text-amber-600" /> : <User size={18} />}
+                                    </div>
+                                    <div>
+                                      <div className="font-bold text-slate-800 text-sm">{displayName}</div>
+                                    </div>
+                                  </div>
+                                </td>
+                                <td className="px-4 py-4 text-sm font-medium text-slate-600">
+                                  {displayRole}
+                                </td>
+                                <td className="px-4 py-4">
+                                  <input
+                                    type="text"
+                                    list="qualites-reception-list-table"
+                                    value={membre.qualite || ''}
+                                    onChange={(e) => handleUpdateMembreQualite(index, e.target.value)}
+                                    placeholder="Qualité..."
+                                    className={`px-3 py-1.5 rounded-lg text-xs font-bold border outline-none transition-all w-full max-w-[220px] ${isPresident
+                                      ? 'bg-amber-50 text-amber-800 border-amber-300 focus:bg-white focus:border-amber-500'
+                                      : 'bg-slate-50 text-slate-700 border-slate-200 focus:bg-white focus:border-indigo-500'
+                                    }`}
+                                  />
+                                </td>
+                                <td className="px-4 py-4 text-center">
+                                  <button
+                                    type="button"
+                                    onClick={() => removeCommissionMember(index)}
+                                    className="text-red-400 hover:text-red-600 p-2 hover:bg-red-50 rounded-xl transition-colors"
+                                    title="Retirer de la commission"
+                                  >
+                                    <Trash2 size={18} />
+                                  </button>
+                                </td>
+                              </tr>
+                            );
+                          })
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               </section>
 
-              {/* Section 4: Facture & Décompte */}
+              {/* Section 4: Décompte */}
               <section>
-                <h3 className="text-lg font-bold text-slate-800 mb-4 border-b border-slate-100 pb-2">4. Facture & Décompte</h3>
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-                  <div><label className="block text-xs font-bold text-slate-700 mb-1">N° Facture</label><input type="text" name="num_facture" value={formData.num_facture} onChange={handleInputChange} className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" /></div>
-                  <div><label className="block text-xs font-bold text-slate-700 mb-1">Date Facture</label><input type="date" name="date_facture" value={formData.date_facture} onChange={handleInputChange} className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" /></div>
+                <h3 className="text-lg font-bold text-slate-800 mb-4 border-b border-slate-100 pb-2">4. Décompte</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                  <div><label className="block text-xs font-bold text-slate-700 mb-1">Date Décompte / Facture</label><input type="date" name="date_facture" value={formData.date_facture} onChange={handleInputChange} className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" /></div>
                   <div><label className="block text-xs font-bold text-slate-700 mb-1">N° Décompte</label><input type="text" name="num_decompte" value={formData.num_decompte} onChange={handleInputChange} className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" /></div>
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-1">Type Décompte</label>

@@ -58,7 +58,7 @@
     $sceauMarocSrc = file_exists(public_path('images/sceau-maroc.png')) ? 'data:image/png;base64,'.base64_encode(file_get_contents(public_path('images/sceau-maroc.png'))) : '';
 
     $exercice    = $consultation->annee ?? date('Y');
-    $suffixe     = '/INV/DRCA-RSK/' . $exercice;
+    $suffixe     = '/DRCA-RSK/' . $exercice;
 
     $numOV       = data_get($documentData, 'numero_ov', '');
     $numOP       = data_get($documentData, 'numero_op') ?: '';

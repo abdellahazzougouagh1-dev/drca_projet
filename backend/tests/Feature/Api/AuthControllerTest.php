@@ -4,7 +4,7 @@ namespace Tests\Feature\Api;
 
 use Tests\TestCase;
 
-class AuthenticationExceptionTest extends TestCase
+class AuthControllerTest extends TestCase
 {
     public function test_unauthenticated_api_requests_return_json_401(): void
     {

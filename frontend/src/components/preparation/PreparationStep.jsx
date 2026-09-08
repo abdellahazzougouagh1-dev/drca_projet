@@ -40,7 +40,9 @@ export default function PreparationStep({
   handlePasserCommission,
   saving,
   id,
-  generatingDoc
+  generatingDoc,
+  lignesBudgetaires = [],
+  setFormData
 }) {
   const isReadOnly = ['Preparation_Validee', 'Commission_Ouverture', 'attribue'].includes(formData.statut);
 
@@ -51,8 +53,19 @@ export default function PreparationStep({
         return (formData.num_aoo && formData.objet && formData.objet_ar && formData.nombre_lots) ? 'complet' : (formData.num_aoo || formData.objet ? 'incomplet' : 'non_renseigne');
       case 'lots':
         return (formData.lots_details?.length > 0 && formData.budget) ? 'complet' : 'incomplet';
-      case 'budget':
-        return (formData.art && formData.par && formData.lig) ? 'complet' : (formData.art || formData.par ? 'incomplet' : 'non_renseigne');
+      case 'budget': {
+        const lots = formData.lots_details || [];
+        if (lots.length === 0) {
+          return (formData.art && formData.par && formData.lig) ? 'complet' : (formData.art || formData.par ? 'incomplet' : 'non_renseigne');
+        }
+        const allComplete = lots.every(l => Boolean(
+          (l.art && String(l.art).trim() !== '' && l.par && String(l.par).trim() !== '' && l.lig && String(l.lig).trim() !== '') ||
+          (l.imputation && String(l.imputation).trim() !== '') ||
+          l.notification_ligne_id
+        ));
+        const someEntered = lots.some(l => Boolean(l.art || l.par || l.lig || l.imputation || l.notification_ligne_id));
+        return allComplete ? 'complet' : (someEntered ? 'incomplet' : 'non_renseigne');
+      }
       case 'commission':
         return formData.membres_commission?.length > 0 ? 'complet' : 'non_renseigne';
       case 'seance':
@@ -119,9 +132,11 @@ export default function PreparationStep({
 
         <BudgetCard
           formData={formData}
-          handleChange={handleChange}
+          handleLotsDetailsChange={handleLotsDetailsChange}
+          lignesBudgetaires={lignesBudgetaires}
           isReadOnly={isReadOnly}
           status={getSectionStatus('budget')}
+          setFormData={setFormData}
         />
 
         <CommissionMembersCard

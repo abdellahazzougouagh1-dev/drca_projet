@@ -63,7 +63,7 @@
     $exerciceOrig  = data_get($documentData, 'exercice_origine', $exercice - 1);
 
     $numOP         = data_get($documentData, 'numero_op', '');
-    $suffixe       = '/INV/DRCA-RSK/' . $exercice;
+    $suffixe       = '/DRCA-RSK/' . $exercice;
     $dateDoc       = data_get($documentData, 'date_document')
                      ? \Carbon\Carbon::parse(data_get($documentData, 'date_document'))->format('d/m/Y')
                      : '';
