@@ -26,6 +26,7 @@ import NouvelleNotification from './pages/NouvelleNotification';
 import DetailsNotification from './pages/DetailsNotification';
 import RegistreOrdonnancements from './pages/RegistreOrdonnancements';
 import DossierOrdonnancement from './pages/DossierOrdonnancement';
+import SuiviBudgetDirecteur from './pages/SuiviBudgetDirecteur';
 function App() {
   const isAuthenticated = !!localStorage.getItem('token');
   let storedUser = null;
@@ -46,7 +47,7 @@ function App() {
           path="/dashboard"
           element={
             <ProtectedRoute>
-              <Navigate to="/consultations" replace />
+              <Dashboard mode="aoo" />
             </ProtectedRoute>
           }
         />
@@ -54,7 +55,15 @@ function App() {
           path="/directeur"
           element={
             <DirectorRoute>
-              <Dashboard />
+              <Dashboard mode="directeur" />
+            </DirectorRoute>
+          }
+        />
+        <Route
+          path="/directeur/suivi-budget"
+          element={
+            <DirectorRoute>
+              <SuiviBudgetDirecteur />
             </DirectorRoute>
           }
         />

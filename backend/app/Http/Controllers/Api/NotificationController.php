@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Notification;
 use App\Models\NotificationLigne;
 use App\Models\NotificationMouvement;
+use App\Models\Ordonnancement;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -586,18 +587,88 @@ class NotificationController extends Controller
             'total_disponibles' => 0,
         ];
 
-        $totalNotifie = $totaux['total_credits'];
-        $totalEngage = $totaux['total_engages'];
-        $totalDisponible = $totaux['total_disponibles'];
+        $lignes = $recap['lignes'] ?? [];
+        $lignesParId = NotificationLigne::whereHas('notification', function ($q) use ($exercice) {
+            $q->where('exercice', $exercice);
+        })->with('notification')->get()->mapWithKeys(function ($ligne) {
+            $domaine = strtoupper($ligne->domaine ?: ($ligne->notification?->domaine ?: 'INVESTISSEMENT'));
+            return [$ligne->id => $domaine . '_' . $ligne->article . '/' . $ligne->paragraphe . '/' . $ligne->ligne_budgetaire];
+        });
+
+        foreach ($lignes as &$ligne) {
+            foreach (['ordonnance_reports', 'ordonnance_credits_consolides', 'ordonnance_credits_neufs', 'ordonnance_ras', 'ordonnance_rap', 'total_ordonnance', 'paiement_reports', 'paiement_credits_consolides', 'paiement_credits_neufs', 'paiement_ras', 'paiement_rap', 'total_paiements'] as $champ) {
+                $ligne[$champ] = 0;
+            }
+        }
+        unset($ligne);
+
+        $indexParImputation = [];
+        foreach ($lignes as $index => $ligne) {
+            $indexParImputation[$ligne['domaine'] . '_' . $ligne['imputation']] = $index;
+        }
+
+        $classerMouvement = function ($ordre): string {
+            $texte = mb_strtolower(($ordre->creance ?? '') . ' ' . ($ordre->type_mouvement ?? ''));
+            if (str_contains($texte, 'report')) return 'reports';
+            if (str_contains($texte, 'consolid')) return 'credits_consolides';
+            if (str_contains($texte, 'neuf')) return 'credits_neufs';
+            if (str_contains($texte, 'retenue') || str_contains($texte, 'tva') || str_contains($texte, 'ias')) return 'ras';
+            return 'rap';
+        };
+
+        $ordonnancements = Ordonnancement::with('ordres')
+            ->where('exercice', $exercice)
+            ->whereNotNull('notification_ligne_id')
+            ->get();
+
+        foreach ($ordonnancements as $ordonnancement) {
+            $cle = $lignesParId[$ordonnancement->notification_ligne_id] ?? null;
+            $index = $cle !== null ? ($indexParImputation[$cle] ?? null) : null;
+            if ($index === null) continue;
+
+            $montantOrdonnance = (float) $ordonnancement->montant_brut;
+            $lignes[$index]['total_ordonnance'] += $montantOrdonnance;
+            $estPaye = $ordonnancement->statut === 'Payé';
+            if ($estPaye) $lignes[$index]['total_paiements'] += $montantOrdonnance;
+
+            $mouvements = $ordonnancement->ordres->isNotEmpty()
+                ? $ordonnancement->ordres
+                : collect([(object) ['montant' => $montantOrdonnance, 'creance' => $ordonnancement->creance, 'type_mouvement' => '']]);
+            foreach ($mouvements as $mouvement) {
+                $type = $classerMouvement($mouvement);
+                $montant = (float) $mouvement->montant;
+                $lignes[$index]['ordonnance_' . $type] += $montant;
+                if ($estPaye) $lignes[$index]['paiement_' . $type] += $montant;
+            }
+        }
+
+        foreach ($lignes as &$ligne) {
+            $ligne['taux_engagement'] = $ligne['total_credits'] > 0 ? round(($ligne['credits_engages'] / $ligne['total_credits']) * 100, 2) : 0;
+            $ligne['taux_ordonnancement'] = $ligne['credits_engages'] > 0 ? round(($ligne['total_ordonnance'] / $ligne['credits_engages']) * 100, 2) : 0;
+            $ligne['taux_paiement_ordonnancement'] = $ligne['total_ordonnance'] > 0 ? round(($ligne['total_paiements'] / $ligne['total_ordonnance']) * 100, 2) : 0;
+            $ligne['taux_paiement_engagement'] = $ligne['credits_engages'] > 0 ? round(($ligne['total_paiements'] / $ligne['credits_engages']) * 100, 2) : 0;
+        }
+        unset($ligne);
+
+        $totalNotifie = array_sum(array_column($lignes, 'total_credits'));
+        $totalEngage = array_sum(array_column($lignes, 'credits_engages'));
+        $totalDisponible = array_sum(array_column($lignes, 'credits_disponibles'));
+        $totalOrdonnance = array_sum(array_column($lignes, 'total_ordonnance'));
+        $totalPaiement = array_sum(array_column($lignes, 'total_paiements'));
         $tauxConsommation = $totalNotifie > 0 ? round(($totalEngage / $totalNotifie) * 100, 2) : 0;
 
         return response()->json([
             'total_notifie' => $totalNotifie,
             'total_engage' => $totalEngage,
             'total_disponible' => $totalDisponible,
-            'total_liquide' => 0,
-            'total_ordonnance' => 0,
+            'total_liquide' => $totalOrdonnance,
+            'total_ordonnance' => $totalOrdonnance,
+            'total_paiement' => $totalPaiement,
             'taux_consommation' => $tauxConsommation,
+            'taux_ordonnancement' => $totalEngage > 0 ? round(($totalOrdonnance / $totalEngage) * 100, 2) : 0,
+            'taux_paiement_ordonnancement' => $totalOrdonnance > 0 ? round(($totalPaiement / $totalOrdonnance) * 100, 2) : 0,
+            'taux_paiement_engagement' => $totalEngage > 0 ? round(($totalPaiement / $totalEngage) * 100, 2) : 0,
+            'lignes' => $lignes,
         ]);
     }
 }

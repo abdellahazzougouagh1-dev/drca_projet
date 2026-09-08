@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Consultation;
 use App\Models\Liquidation;
+use App\Models\LiquidationFinanciere;
 use App\Models\Marche;
 use App\Models\Ordonnancement;
 use App\Models\OrdonnancementHistorique;
@@ -166,6 +167,81 @@ class OrdonnancementController extends Controller
             ];
         }
 
+        // Les bons de commande ne créent pas de `Liquidation` de marché : leur
+        // liquidation est stockée dans `liquidation_financieres`. Les exposer
+        // ici permet de les envoyer dans le même registre d'ordonnancement,
+        // sans modifier le parcours des marchés issus d'AOO.
+        $consultationsBc = Consultation::with([
+            'fournisseur',
+            'budget',
+            'notificationLigne',
+            'liquidation',
+            'registreEngagement',
+            'ordonnancements.ordres',
+        ])
+            ->whereIn('mode_engagement', ['BC', 'Bon de commande'])
+            ->whereHas('liquidation')
+            ->orderByDesc('id')
+            ->get();
+
+        foreach ($consultationsBc as $consultation) {
+            $liq = $consultation->liquidation;
+            $montantLiquidation = (float) ($liq->montant_a_payer ?? 0);
+            if ($montantLiquidation <= 0) {
+                continue;
+            }
+
+            $dejaOrdonnance = $consultation->ordonnancements->sum(function ($ord) {
+                return (float) ($ord->ordres->sum('montant') ?: $ord->montant_brut ?: 0);
+            });
+            $resteDisponible = round(max(0, $montantLiquidation - $dejaOrdonnance), 2);
+            if ($resteDisponible <= 0.01) {
+                continue;
+            }
+
+            $budget = $consultation->budget;
+            $notificationLigne = $consultation->notificationLigne;
+            $registre = $consultation->registreEngagement;
+            $tauxTva = (float) ($budget?->tva ?? 20);
+            $montantHt = $tauxTva > 0
+                ? round($montantLiquidation / (1 + ($tauxTva / 100)), 2)
+                : $montantLiquidation;
+
+            $disponibles[] = [
+                'type_source' => 'consultation_liquidation',
+                'liquidation_id' => null,
+                'liquidation_financiere_id' => $liq->id,
+                'marche_id' => null,
+                'consultation_id' => $consultation->id,
+                'fournisseur_id' => $consultation->fournisseur_id,
+                'notification_ligne_id' => $consultation->notification_ligne_id,
+                'num_liquidation' => 'LIQ-BC-' . ($consultation->annee ?: date('Y')) . '-' . str_pad((string) $consultation->id, 3, '0', STR_PAD_LEFT),
+                'date_liquidation' => $liq->date_facture ?: $liq->created_at?->format('Y-m-d'),
+                'reference' => $consultation->numero_bc ?: $consultation->numero_consultation,
+                'type_procedure' => 'Bon de commande',
+                'beneficiaire' => $consultation->fournisseur?->raison_sociale ?? 'Fournisseur non spécifié',
+                'rib' => $consultation->fournisseur?->rib ?? '',
+                'banque' => $consultation->fournisseur?->banque ?? '',
+                'budget_type' => $consultation->type_budget ?: ($notificationLigne?->type_budget ?? 'Investissement'),
+                'creance' => 'Reste à payer',
+                'code_imputation' => $budget?->code_imputation ?: ($registre?->code ?: ''),
+                'article' => $budget?->art ?: ($registre?->art ?: ''),
+                'paragraphe' => $budget?->par ?: ($registre?->par ?: ''),
+                'ligne' => $budget?->lig ?: ($registre?->lig ?: ''),
+                'sous_ligne' => $consultation->s_lig ?: ($registre?->s_lig ?: '0'),
+                'intitule_depense' => $consultation->intitule ?: $consultation->objet_consultation,
+                'montant_brut' => $resteDisponible,
+                'montant_ht' => $montantHt,
+                'deja_ordonnance' => $dejaOrdonnance,
+                'reste_disponible' => $resteDisponible,
+                'suggested_tva' => round($montantLiquidation - $montantHt, 2),
+                'suggested_ias' => 0,
+                'credit_consolide' => (float) ($consultation->depenses_credits_consolides ?? $registre?->credit_consolide ?? 0),
+                'credit_neuf' => (float) ($consultation->montant_engager_neuf ?? $registre?->montant_engager_neuf ?? 0),
+                'statut_liquidation' => 'VALIDÉE',
+            ];
+        }
+
         // Filter to only include valid liquidations with reste_disponible > 0
         $disponibles = array_values(array_filter($disponibles, function($item) {
             return ($item['reste_disponible'] ?? 0) > 0;
@@ -244,6 +320,22 @@ class OrdonnancementController extends Controller
                     if ($totalOrdres > ($resteDisponible + 0.05)) {
                         throw ValidationException::withMessages([
                             'ordres' => ["Le montant total des ordres (" . number_format($totalOrdres, 2, ',', ' ') . " DH) dépasse le montant disponible de la liquidation (" . number_format($resteDisponible, 2, ',', ' ') . " DH)."]
+                        ]);
+                    }
+                }
+            } elseif (!empty($validated['consultation_id'])) {
+                $liqBc = LiquidationFinanciere::where('consultation_id', $validated['consultation_id'])->first();
+                if ($liqBc) {
+                    $montantLiquidation = (float) $liqBc->montant_a_payer;
+                    $dejaOrdonnance = Ordonnancement::with('ordres')
+                        ->where('consultation_id', $validated['consultation_id'])
+                        ->get()
+                        ->sum(fn ($ord) => (float) ($ord->ordres->sum('montant') ?: $ord->montant_brut ?: 0));
+                    $resteDisponible = round(max(0, $montantLiquidation - $dejaOrdonnance), 2);
+
+                    if ($totalOrdres > ($resteDisponible + 0.05)) {
+                        throw ValidationException::withMessages([
+                            'ordres' => ["Le montant total des ordres dépasse le montant disponible de la liquidation du bon de commande (" . number_format($resteDisponible, 2, ',', ' ') . " DH)."]
                         ]);
                     }
                 }
@@ -337,8 +429,10 @@ class OrdonnancementController extends Controller
             'marche.aoo',
             'marche.lot',
             'marche.bordereauItems',
-            'consultation'
+            'consultation.liquidation'
         ])->findOrFail($id);
+
+        $this->attachBonCommandeLiquidation($ordonnancement);
 
         return response()->json([
             'data' => $ordonnancement
@@ -416,6 +510,8 @@ class OrdonnancementController extends Controller
                     'montant' => ["Le montant total des ordres dépasse le montant disponible de la liquidation (" . number_format($resteDisponible, 2, ',', ' ') . " DH)."]
                 ]);
             }
+        } elseif ($ordonnancement->consultation_id) {
+            $this->validateBonCommandeOrderCapacity($ordonnancement, $montantNouveau);
         }
 
         // Auto generate sequential order number OP-001, OP-002...
@@ -434,6 +530,8 @@ class OrdonnancementController extends Controller
         if ($ordonnancement->liquidation) {
             $montantLiq = (float) ($ordonnancement->liquidation->montant_brut_ttc ?: $ordonnancement->liquidation->montant_ttc ?: $totalOrdres);
             $ordonnancement->statut = ($totalOrdres >= ($montantLiq - 0.05)) ? 'Totalement ordonnancée' : 'Partiellement ordonnancée';
+        } elseif ($montantLiqBc = $this->bonCommandeLiquidationAmount($ordonnancement)) {
+            $ordonnancement->statut = ($totalOrdres >= ($montantLiqBc - 0.05)) ? 'Totalement ordonnancée' : 'Partiellement ordonnancée';
         }
         $ordonnancement->save();
 
@@ -494,6 +592,8 @@ class OrdonnancementController extends Controller
                     'montant' => ["Le montant total des ordres dépasse le montant disponible de la liquidation (" . number_format($resteDisponible, 2, ',', ' ') . " DH)."]
                 ]);
             }
+        } elseif ($ordonnancement->consultation_id) {
+            $this->validateBonCommandeOrderCapacity($ordonnancement, $montantNouveau, $ancienMontant);
         }
 
         $ordre->update($validated);
@@ -506,6 +606,8 @@ class OrdonnancementController extends Controller
         if ($ordonnancement->liquidation) {
             $montantLiq = (float) ($ordonnancement->liquidation->montant_brut_ttc ?: $ordonnancement->liquidation->montant_ttc ?: $totalOrdres);
             $ordonnancement->statut = ($totalOrdres >= ($montantLiq - 0.05)) ? 'Totalement ordonnancée' : 'Partiellement ordonnancée';
+        } elseif ($montantLiqBc = $this->bonCommandeLiquidationAmount($ordonnancement)) {
+            $ordonnancement->statut = ($totalOrdres >= ($montantLiqBc - 0.05)) ? 'Totalement ordonnancée' : 'Partiellement ordonnancée';
         }
         $ordonnancement->save();
 
@@ -535,6 +637,8 @@ class OrdonnancementController extends Controller
         if ($ordonnancement->liquidation) {
             $montantLiq = (float) ($ordonnancement->liquidation->montant_brut_ttc ?: $ordonnancement->liquidation->montant_ttc ?: $totalOrdres);
             $ordonnancement->statut = ($totalOrdres >= ($montantLiq - 0.05)) ? 'Totalement ordonnancée' : ($totalOrdres > 0 ? 'Partiellement ordonnancée' : 'Non ordonnancée');
+        } elseif ($montantLiqBc = $this->bonCommandeLiquidationAmount($ordonnancement)) {
+            $ordonnancement->statut = ($totalOrdres >= ($montantLiqBc - 0.05)) ? 'Totalement ordonnancée' : ($totalOrdres > 0 ? 'Partiellement ordonnancée' : 'Non ordonnancée');
         }
         $ordonnancement->save();
 
@@ -626,5 +730,53 @@ class OrdonnancementController extends Controller
         return response()->json([
             'message' => 'Ordonnancement supprimé avec succès'
         ]);
+    }
+
+    private function validateBonCommandeOrderCapacity(Ordonnancement $ordonnancement, float $montant, float $montantDejaInclus = 0): void
+    {
+        $liq = LiquidationFinanciere::where('consultation_id', $ordonnancement->consultation_id)->first();
+        if (!$liq) {
+            return;
+        }
+
+        $dejaOrdonnance = Ordonnancement::with('ordres')
+            ->where('consultation_id', $ordonnancement->consultation_id)
+            ->get()
+            ->sum(fn ($ord) => (float) ($ord->ordres->sum('montant') ?: $ord->montant_brut ?: 0));
+        $resteDisponible = round(max(0, (float) $liq->montant_a_payer - ($dejaOrdonnance - $montantDejaInclus)), 2);
+
+        if ($montant > ($resteDisponible + 0.05)) {
+            throw ValidationException::withMessages([
+                'montant' => ["Le montant total des ordres dépasse le montant disponible de la liquidation du bon de commande (" . number_format($resteDisponible, 2, ',', ' ') . " DH)."]
+            ]);
+        }
+    }
+
+    private function bonCommandeLiquidationAmount(Ordonnancement $ordonnancement): ?float
+    {
+        if (!$ordonnancement->consultation_id) {
+            return null;
+        }
+
+        $montant = LiquidationFinanciere::where('consultation_id', $ordonnancement->consultation_id)
+            ->value('montant_a_payer');
+
+        return $montant === null ? null : (float) $montant;
+    }
+
+    private function attachBonCommandeLiquidation(Ordonnancement $ordonnancement): void
+    {
+        if ($ordonnancement->liquidation || !$ordonnancement->consultation?->liquidation) {
+            return;
+        }
+
+        $liq = $ordonnancement->consultation->liquidation;
+        $liq->setAttribute('num_liquidation', 'LIQ-BC-' . ($ordonnancement->consultation->annee ?: $ordonnancement->exercice) . '-' . str_pad((string) $ordonnancement->consultation_id, 3, '0', STR_PAD_LEFT));
+        $liq->setAttribute('montant_brut_ttc', $liq->montant_a_payer);
+        $liq->setAttribute('date_decompte', $liq->date_facture);
+        $liq->setAttribute('num_facture', $liq->reference_facture);
+        $liq->setAttribute('objet_liquidation', $ordonnancement->consultation->objet_consultation);
+        $liq->setAttribute('statut', 'ORDONNANCÉE');
+        $ordonnancement->setRelation('liquidation', $liq);
     }
 }

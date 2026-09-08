@@ -1849,27 +1849,38 @@ const GestionAoo = () => {
               ))}
             </div>
             {registreRowsFiltres.length === 0 ? (
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-10 text-center text-slate-500">
-                Aucune ligne d'engagement enregistrée dans le registre {registreBudget.toLowerCase()}.
+              <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                <div className="grid min-h-72 place-items-center px-6 text-center">
+                  <div>
+                    <FileSpreadsheet size={36} className="mx-auto text-slate-300" />
+                    <p className="mt-3 text-sm font-bold italic text-slate-600">Aucun engagement dans cette vue</p>
+                    <p className="mt-1 text-xs text-slate-400">Aucune ligne d’engagement enregistrée dans le registre {registreBudget.toLowerCase()}.</p>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between border-t border-slate-200 bg-slate-50 px-5 py-3 text-xs text-slate-500">
+                  <span>Affichage de 0 ligne d’engagement</span>
+                  <span className="rounded-lg bg-white px-3 py-1 font-semibold text-blue-600 shadow-sm">1</span>
+                </div>
               </div>
             ) : (
-              <div className="overflow-x-auto rounded-2xl border border-slate-200">
+              <div className="overflow-hidden rounded-2xl border border-slate-200 shadow-sm">
+                <div className="overflow-x-auto">
                 <table className="min-w-[1500px] w-full border-collapse text-xs text-left">
-                  <thead className="bg-slate-100 font-extrabold text-slate-700">
+                  <thead className="bg-emerald-700 text-[11px] font-extrabold uppercase tracking-wide text-white">
                     <tr>
-                      <th className="px-4 py-3">N° ordre</th>
-                      <th className="px-4 py-3">N° fiche</th>
-                      <th className="px-4 py-3">Date</th>
-                      <th className="px-4 py-3">Référence marché</th>
-                      <th className="px-4 py-3">Budget</th>
-                      <th className="px-4 py-3">ART</th>
-                      <th className="px-4 py-3">PAR</th>
-                      <th className="px-4 py-3">LIG</th>
-                      <th className="px-4 py-3">Crédit ouvert CP</th>
-                      <th className="px-4 py-3">Dépense neuve</th>
-                      <th className="px-4 py-3">Intérêts 1%</th>
-                      <th className="px-4 py-3">À engager neuf</th>
-                      <th className="px-4 py-3">Bénéficiaire</th>
+                      <th className="border-r border-emerald-600 px-4 py-4">N° ordre</th>
+                      <th className="border-r border-emerald-600 px-4 py-4">N° fiche</th>
+                      <th className="border-r border-emerald-600 px-4 py-4">Date</th>
+                      <th className="border-r border-emerald-600 px-4 py-4">Référence marché</th>
+                      <th className="border-r border-emerald-600 px-4 py-4">Budget</th>
+                      <th className="border-r border-emerald-600 px-4 py-4">ART</th>
+                      <th className="border-r border-emerald-600 px-4 py-4">PAR</th>
+                      <th className="border-r border-emerald-600 px-4 py-4">LIG</th>
+                      <th className="border-r border-emerald-600 px-4 py-4">Crédit ouvert CP</th>
+                      <th className="border-r border-emerald-600 px-4 py-4">Dépense neuve</th>
+                      <th className="border-r border-emerald-600 px-4 py-4">Intérêts 1%</th>
+                      <th className="border-r border-emerald-600 px-4 py-4">À engager neuf</th>
+                      <th className="px-4 py-4">Bénéficiaire</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
@@ -1895,6 +1906,11 @@ const GestionAoo = () => {
                     })}
                   </tbody>
                 </table>
+                </div>
+                <div className="flex items-center justify-between border-t border-slate-200 bg-slate-50 px-5 py-3 text-xs text-slate-500">
+                  <span>Affichage de {registreRowsFiltres.length} ligne(s) d’engagement</span>
+                  <span className="rounded-lg bg-white px-3 py-1 font-semibold text-slate-400 shadow-sm">1</span>
+                </div>
               </div>
             )}
           </div>

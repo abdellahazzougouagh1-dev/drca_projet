@@ -349,7 +349,10 @@ const BonCommandePlateforme = () => {
 
   const [activePhase, setActivePhase] = useState(() => {
     const searchParams = new URLSearchParams(window.location.search);
-    return searchParams.get('phase') || localStorage.getItem('drca_active_phase') || 'consultation';
+    const savedPhase = searchParams.get('phase') || localStorage.getItem('drca_active_phase') || 'consultation';
+    // Ancienne valeur conservée avant que l'ordonnancement devienne un module
+    // partagé : ouvrir le BC sur sa dernière phase interne, sans redirection.
+    return savedPhase === 'Ordonnancement' ? 'liquidation' : savedPhase;
   });
 
   const [registreBudget, setRegistreBudget] = useState('Investissement');
@@ -1747,6 +1750,11 @@ const BonCommandePlateforme = () => {
 
   const phaseIndex = phases.findIndex((p) => p.id === activePhase);
   const goToPhase = (phaseId) => {
+    if (phaseId === 'Ordonnancement') {
+      navigate('/ordonnancements');
+      return;
+    }
+
     setActivePhase(phaseId);
     setIsSidebarOpen(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1912,41 +1920,52 @@ const BonCommandePlateforme = () => {
                   <Loader2 size={20} className="animate-spin" /> Chargement du registre...
                 </div>
               ) : consultationsList.filter((consultation) => consultation.registre_engagement && consultation.type_budget === registreBudget).length === 0 ? (
-                <div className="p-12 text-center text-slate-500">
-                  Aucune fiche d’engagement enregistrée dans le registre {registreBudget.toLowerCase()}.
+                <div className="m-5 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                  <div className="grid min-h-72 place-items-center px-6 text-center">
+                    <div>
+                      <FileSpreadsheet size={36} className="mx-auto text-slate-300" />
+                      <p className="mt-3 text-sm font-bold italic text-slate-600">Aucun engagement dans cette vue</p>
+                      <p className="mt-1 text-xs text-slate-400">Aucune fiche d’engagement enregistrée dans le registre {registreBudget.toLowerCase()}.</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between border-t border-slate-200 bg-slate-50 px-5 py-3 text-xs text-slate-500">
+                    <span>Affichage de 0 ligne d’engagement</span>
+                    <span className="rounded-lg bg-white px-3 py-1 font-semibold text-blue-600 shadow-sm">1</span>
+                  </div>
                 </div>
               ) : (
-                <div className="overflow-x-auto">
+                <div className="overflow-hidden rounded-b-2xl border-t border-slate-200">
+                  <div className="overflow-x-auto">
                   <table className="min-w-[2450px] w-full text-left border-collapse text-xs">
                     <thead>
-                      <tr className="bg-slate-100 border-b border-slate-200 text-slate-700 font-extrabold uppercase tracking-wide">
-                        <th className="px-4 py-3">N° ordre</th>
-                        <th className="px-4 py-3">N° rubrique / fiche d’engagement</th>
-                        <th className="px-4 py-3">Date</th>
-                        <th className="px-4 py-3">Mode</th>
-                        <th className="px-4 py-3">Référence</th>
-                        <th className="px-4 py-3">Référence 2</th>
-                        <th className="px-4 py-3">Budget</th>
-                        <th className="px-4 py-3">Code</th>
-                        <th className="px-3 py-3">ART</th>
-                        <th className="px-3 py-3">PAR</th>
-                        <th className="px-3 py-3">LIG</th>
-                        <th className="px-3 py-3">S/LIG</th>
-                        <th className="px-4 py-3">Intitulé</th>
-                        <th className="px-4 py-3">Crédit ouvert CP</th>
-                        <th className="px-4 py-3">Crédit ouvert CE</th>
-                        <th className="px-4 py-3">Crédit consolidé (CC)</th>
-                        <th className="px-4 py-3">Dépenses antérieures CE</th>
-                        <th className="px-4 py-3">Dépenses antérieures CP</th>
-                        <th className="px-4 py-3">Dépenses crédits d’engagement</th>
-                        <th className="px-4 py-3">Dépenses crédits consolidés</th>
-                        <th className="px-4 py-3">Dépenses reste à payer</th>
-                        <th className="px-4 py-3">Dépense neuf</th>
-                        <th className="px-4 py-3">Intérêts 1%</th>
-                        <th className="px-4 py-3">À engager neuf</th>
-                        <th className="px-4 py-3">Objet</th>
-                        <th className="px-4 py-3">Bénéficiaire</th>
-                        <th className="px-4 py-3 text-right">Action</th>
+                      <tr className="border-b border-emerald-700 bg-emerald-700 text-[11px] font-extrabold uppercase tracking-wide text-white">
+                        <th className="border-r border-emerald-600 px-4 py-4">N° ordre</th>
+                        <th className="border-r border-emerald-600 px-4 py-4">N° rubrique / fiche d’engagement</th>
+                        <th className="border-r border-emerald-600 px-4 py-4">Date</th>
+                        <th className="border-r border-emerald-600 px-4 py-4">Mode</th>
+                        <th className="border-r border-emerald-600 px-4 py-4">Référence</th>
+                        <th className="border-r border-emerald-600 px-4 py-4">Référence 2</th>
+                        <th className="border-r border-emerald-600 px-4 py-4">Budget</th>
+                        <th className="border-r border-emerald-600 px-4 py-4">Code</th>
+                        <th className="border-r border-emerald-600 px-3 py-4">ART</th>
+                        <th className="border-r border-emerald-600 px-3 py-4">PAR</th>
+                        <th className="border-r border-emerald-600 px-3 py-4">LIG</th>
+                        <th className="border-r border-emerald-600 px-3 py-4">S/LIG</th>
+                        <th className="border-r border-emerald-600 px-4 py-4">Intitulé</th>
+                        <th className="border-r border-emerald-600 px-4 py-4">Crédit ouvert CP</th>
+                        <th className="border-r border-emerald-600 px-4 py-4">Crédit ouvert CE</th>
+                        <th className="border-r border-emerald-600 px-4 py-4">Crédit consolidé (CC)</th>
+                        <th className="border-r border-emerald-600 px-4 py-4">Dépenses antérieures CE</th>
+                        <th className="border-r border-emerald-600 px-4 py-4">Dépenses antérieures CP</th>
+                        <th className="border-r border-emerald-600 px-4 py-4">Dépenses crédits d’engagement</th>
+                        <th className="border-r border-emerald-600 px-4 py-4">Dépenses crédits consolidés</th>
+                        <th className="border-r border-emerald-600 px-4 py-4">Dépenses reste à payer</th>
+                        <th className="border-r border-emerald-600 px-4 py-4">Dépense neuf</th>
+                        <th className="border-r border-emerald-600 px-4 py-4">Intérêts 1%</th>
+                        <th className="border-r border-emerald-600 px-4 py-4">À engager neuf</th>
+                        <th className="border-r border-emerald-600 px-4 py-4">Objet</th>
+                        <th className="border-r border-emerald-600 px-4 py-4">Bénéficiaire</th>
+                        <th className="px-4 py-4 text-right">Action</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
@@ -2002,6 +2021,11 @@ const BonCommandePlateforme = () => {
                       })}
                     </tbody>
                   </table>
+                  </div>
+                  <div className="flex items-center justify-between border-t border-slate-200 bg-slate-50 px-5 py-3 text-xs text-slate-500">
+                    <span>Affichage de {consultationsList.filter((consultation) => consultation.registre_engagement && consultation.type_budget === registreBudget).length} ligne(s) d’engagement</span>
+                    <span className="rounded-lg bg-white px-3 py-1 font-semibold text-slate-400 shadow-sm">1</span>
+                  </div>
                 </div>
               )}
             </div>
@@ -2206,7 +2230,7 @@ const BonCommandePlateforme = () => {
             </div>
           )}
 
-          {activePhase !== 'dashboard' && activePhase !== 'registre' && !selectedDocument && (
+          {activePhase !== 'dashboard' && activePhase !== 'registre' && activePhase !== 'Ordonnancement' && !selectedDocument && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {(documentsByPhase[activePhase] || []).map((doc) => (
                 <div key={doc.id} className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-sm hover:shadow-md hover:border-blue-200 transition-all duration-200 flex flex-col">

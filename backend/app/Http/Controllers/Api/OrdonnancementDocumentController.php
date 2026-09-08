@@ -30,8 +30,22 @@ class OrdonnancementDocumentController extends Controller
             'liquidation.lignes',
             'marche.aoo',
             'marche.lot',
-            'consultation'
+            'consultation.liquidation',
+            'consultation.budget'
         ])->findOrFail($id);
+
+        // Un BC est liquidé via liquidation_financieres (et non via la table
+        // liquidations des marchés). On normalise la relation uniquement pour
+        // la génération des pièces d'ordonnancement.
+        if (!$ordonnancement->liquidation && $ordonnancement->consultation?->liquidation) {
+            $liqBc = $ordonnancement->consultation->liquidation;
+            $liqBc->setAttribute('num_liquidation', 'LIQ-BC-' . ($ordonnancement->consultation->annee ?: $ordonnancement->exercice) . '-' . str_pad((string) $ordonnancement->consultation_id, 3, '0', STR_PAD_LEFT));
+            $liqBc->setAttribute('montant_brut_ttc', $liqBc->montant_a_payer);
+            $liqBc->setAttribute('date_decompte', $liqBc->date_facture);
+            $liqBc->setAttribute('num_facture', $liqBc->reference_facture);
+            $liqBc->setAttribute('objet_liquidation', $ordonnancement->consultation->objet_consultation);
+            $ordonnancement->setRelation('liquidation', $liqBc);
+        }
 
         $ordre = null;
         if ($ordreId) {
@@ -55,8 +69,8 @@ class OrdonnancementDocumentController extends Controller
         }
 
         $montant = $ordre ? (float)$ordre->montant : (float)$ordonnancement->net_a_payer;
-        $beneficiaire = $ordre ? $ordre->beneficiaire : ($ordonnancement->beneficiaire_nom ?: $ordonnancement->fournisseur->raison_sociale ?? '');
-        $rib = $ordre ? $ordre->rib_compte : ($ordonnancement->fournisseur->rib ?? '');
+        $beneficiaire = $ordre ? $ordre->beneficiaire : ($ordonnancement->beneficiaire_nom ?: $ordonnancement->fournisseur?->raison_sociale ?? '');
+        $rib = $ordre ? $ordre->rib_compte : ($ordonnancement->fournisseur?->rib ?? '');
         $modePaiement = $ordre ? $ordre->mode_paiement : 'Virement';
 
         // Conversion en lettres françaises
@@ -135,7 +149,8 @@ class OrdonnancementDocumentController extends Controller
             case 'etat_liquidation':
                 $liq = $ordonnancement->liquidation;
                 $montantTtc = (float) ($liq?->montant_brut_ttc ?: $liq?->montant_ttc ?: $ordonnancement->montant_brut ?: 0);
-                $montantHt = (float) ($liq?->montant_brut_ht ?: $liq?->montant_ht ?: ($montantTtc / 1.20));
+                $tauxTva = (float) ($ordonnancement->consultation?->budget?->tva ?? 20);
+                $montantHt = (float) ($liq?->montant_brut_ht ?: $liq?->montant_ht ?: ($tauxTva > 0 ? $montantTtc / (1 + ($tauxTva / 100)) : $montantTtc));
                 $montantTva = (float) ($liq?->montant_tva ?: ($montantTtc - $montantHt));
                 $montantRas = (float) ($ordonnancement->retenue_tva ?: $ordonnancement->ras_total ?: 0);
                 $tauxRas = ($montantTva > 0 && $montantRas > 0) ? round(($montantRas / $montantTva) * 100) . '%' : ($montantRas > 0 ? '75%' : '0%');
