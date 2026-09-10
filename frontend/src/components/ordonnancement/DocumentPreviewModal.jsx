@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { X, Printer, Download, Eye, FileText, CheckCircle2, Building, ShieldCheck } from 'lucide-react';
 import api from '../../api/axios';
 import { numberToFrenchWords } from '../../utils/numberToWords';
+import { resolveOrdreDocument } from '../../utils/ordonnancementDocs';
 
 export default function DocumentPreviewModal({ isOpen, onClose, ordonnancement, ordre, docType = 'op' }) {
   if (!isOpen || !ordonnancement) return null;
@@ -15,18 +16,19 @@ export default function DocumentPreviewModal({ isOpen, onClose, ordonnancement, 
         ? ordonnancement.ordres?.find(o => o.type_mouvement?.toLowerCase().includes('ias') || o.type_mouvement?.toLowerCase().includes('is') || o.creance?.toLowerCase().includes('ias')) || ordonnancement.ordres?.[0]
         : docType === 'op_ras'
           ? ordonnancement.ordres?.find(o => o.type_mouvement?.toLowerCase().includes('ias') || o.type_mouvement?.toLowerCase().includes('tva') || o.type_mouvement?.toLowerCase().includes('retenue')) || ordonnancement.ordres?.[0]
-          : docType === 'op' 
+          : docType === 'op'
             ? ordonnancement.ordres?.find(o => o.type_mouvement?.toLowerCase().includes('fournisseur')) || ordonnancement.ordres?.[0]
             : docType === 'ov'
               ? ordonnancement.ordres?.find(o => o.type_mouvement?.toLowerCase().includes('tva')) || ordonnancement.ordres?.[1] || ordonnancement.ordres?.[0]
               : ordonnancement.ordres?.find(o => o.type_mouvement?.toLowerCase().includes('ias')) || ordonnancement.ordres?.[2] || ordonnancement.ordres?.[0]
   );
 
+  const docInfo = resolveOrdreDocument(currentOrdre);
   const montant = currentOrdre ? Number(currentOrdre.montant || 0) : Number(ordonnancement.net_a_payer || 0);
-  const beneficiaire = isRas 
-    ? 'Receveur de l’administration fiscale' 
+  const beneficiaire = isRas
+    ? 'Receveur de l’administration fiscale'
     : (currentOrdre?.beneficiaire || ordonnancement.beneficiaire_nom || ordonnancement.fournisseur?.raison_sociale || 'Bénéficiaire');
-  
+
   const rib = currentOrdre?.rib_compte || ordonnancement.fournisseur?.rib || '310 810 100 002 470 105 200 152';
   const modePaiement = isRas ? (currentOrdre?.mode_paiement || 'TELEPAIEMENT') : (currentOrdre?.mode_paiement || 'VIREMENT');
 
@@ -42,7 +44,7 @@ export default function DocumentPreviewModal({ isOpen, onClose, ordonnancement, 
       const link = document.createElement('a');
       link.href = fileUrl;
       const docLabel = docType === 'etat_liquidation' ? 'Etat_Liquidation' : (docType === 'op_ras_is' ? 'OP_RAS_IS' : (docType === 'op_ras_tva' ? 'OP_RAS_TVA' : (docType === 'op_ras' ? 'OP_RAS' : docType.toUpperCase())));
-      const safeNum = (ordonnancement.num_ordonnancement || ordonnancement.id).replace(/[^a-zA-Z0-9_\-]/g, '_');
+      const safeNum = (currentOrdre?.num_ordre || ordonnancement.num_ordonnancement || ordonnancement.id).replace(/[^a-zA-Z0-9_\-]/g, '_');
       link.setAttribute('download', `${docLabel}_${safeNum}.pdf`);
       document.body.appendChild(link);
       link.click();
@@ -68,7 +70,7 @@ export default function DocumentPreviewModal({ isOpen, onClose, ordonnancement, 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 backdrop-blur-md p-2 md:p-4 overflow-y-auto">
       <div className="bg-white w-full max-w-6xl rounded-3xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col h-[94vh] animate-in fade-in zoom-in duration-200">
-        
+
         {/* Modal Header */}
         <div className="px-6 py-4 bg-gradient-to-r from-blue-900 via-blue-800 to-indigo-900 text-white flex items-center justify-between shadow-md shrink-0">
           <div className="flex items-center gap-3">
@@ -76,18 +78,17 @@ export default function DocumentPreviewModal({ isOpen, onClose, ordonnancement, 
               <FileText className="w-5 h-5 text-cyan-300" />
             </div>
             <div>
-              <h2 className="text-base font-extrabold tracking-tight">
-                {docType === 'op_ras_is' && 'ORDRE DE PAIEMENT - RETENUE À LA SOURCE (RAS / IS) - APERÇU'}
-                {docType === 'op_ras_tva' && 'ORDRE DE PAIEMENT - RETENUE À LA SOURCE (RAS / TVA) - APERÇU'}
-                {docType === 'op_ras' && 'ORDRE DE PAIEMENT - RETENUE À LA SOURCE (RAS) - APERÇU'}
-                {docType === 'op' && !isRas && 'ORDRE DE PAIEMENT (OP) - APERÇU'}
-                {docType === 'op' && isRas && 'ORDRE DE PAIEMENT - RETENUE À LA SOURCE (RAS) - APERÇU'}
-                {docType === 'ov' && 'ORDRE DE VIREMENT (OV) - APERÇU'}
-                {docType === 'oi' && 'ORDRE D\'IMPUTATION (OI) - APERÇU'}
-                {docType === 'etat_liquidation' && 'ÉTAT DE LIQUIDATION - APERÇU'}
+              <h2 className="text-base font-extrabold tracking-tight uppercase">
+                {docType === 'etat_liquidation' 
+                  ? 'ÉTAT DE LIQUIDATION - APERÇU' 
+                  : docType === 'ov' 
+                    ? 'ORDRE DE VIREMENT (OV) - APERÇU' 
+                    : docType === 'oi' 
+                      ? 'ORDRE D\'IMPUTATION (OI) - APERÇU' 
+                      : `${docInfo.title} - APERÇU`}
               </h2>
               <p className="text-xs text-cyan-100 font-mono">
-                {ordonnancement.num_ordonnancement} • {ordonnancement.reference}
+                {currentOrdre?.num_ordre ? `${currentOrdre.num_ordre} • ` : ''}{ordonnancement.num_ordonnancement} • {ordonnancement.reference}
               </p>
             </div>
           </div>
@@ -121,13 +122,13 @@ export default function DocumentPreviewModal({ isOpen, onClose, ordonnancement, 
         {/* Modal Body - Official Document Rendering Full Width */}
         <div className="p-6 md:p-10 overflow-y-auto bg-white flex-1 text-slate-900 font-sans text-sm">
           <div className="w-full max-w-5xl mx-auto">
-            
+
             {/* Top Org Header with Official Enlarged Logos */}
             <div className="flex justify-between items-center border-b-2 border-black pb-4 mb-6">
               <div className="flex items-center gap-3">
-                <img 
-                  src="/images/logo-onca.png" 
-                  alt="Logo ONCA" 
+                <img
+                  src="/images/logo-onca.png"
+                  alt="Logo ONCA"
                   className="h-16 md:h-20 w-auto object-contain"
                   onError={(e) => { e.currentTarget.style.display = 'none'; }}
                 />
@@ -141,9 +142,9 @@ export default function DocumentPreviewModal({ isOpen, onClose, ordonnancement, 
                 </div>
               </div>
               <div className="flex items-center gap-3 justify-end">
-                <img 
-                  src="/images/sceau-maroc.png" 
-                  alt="Royaume du Maroc" 
+                <img
+                  src="/images/sceau-maroc.png"
+                  alt="Royaume du Maroc"
                   className="h-16 md:h-20 w-auto object-contain"
                   onError={(e) => { e.currentTarget.style.display = 'none'; }}
                 />
@@ -160,15 +161,15 @@ export default function DocumentPreviewModal({ isOpen, onClose, ordonnancement, 
               const montantRas = Number(montant || (isTva ? (ordonnancement.retenue_tva || 2730) : (ordonnancement.retenue_ias || 4420)));
               const montantTtc = Number(ordonnancement.liquidation?.montant_brut_ttc || ordonnancement.montant_brut || (montantRas * 5));
               const montantHt = Number(ordonnancement.liquidation?.montant_brut_ht || (montantTtc / 1.2));
-              const dateOpStr = ordonnancement.date_ordonnancement 
+              const dateOpStr = ordonnancement.date_ordonnancement
                 ? new Date(ordonnancement.date_ordonnancement).toLocaleDateString('fr-FR')
                 : '23/12/2024';
               const numOpClean = (currentOrdre?.num_ordre || ordonnancement.num_op || (isTva ? '49' : '40')).replace(/[^0-9]/g, '') || (isTva ? '49' : '40');
               const suffixeOp = `/DRCA-RSK/${ordonnancement.exercice || '2024'}`;
               const numMarche = ordonnancement.reference || (isTva ? 'Marché N°06/2024/DRCA-RSK' : 'Marché N°08/2024/DRCA-RSK');
               const objetDepense = ordonnancement.intitule_depense || ordonnancement.liquidation?.objet_liquidation || (isTva ? 'l’organisation de voyages d’agriculteurs et de techniciens, en lot unique' : 'L\'organisation de journées de sensibilisation des agriculteurs');
-              const factureRef = ordonnancement.liquidation?.num_facture 
-                ? `Facture N° ${ordonnancement.liquidation.num_facture} du ${dateOpStr}` 
+              const factureRef = ordonnancement.liquidation?.num_facture
+                ? `Facture N° ${ordonnancement.liquidation.num_facture} du ${dateOpStr}`
                 : (isTva ? 'Facture N° 04-2024 du 23-12-2024' : 'Facture N° 04/2024-II-S du 12/12/2024');
               const oiRef = isTva ? `OI N°39/${ordonnancement.exercice || '2024'}/DRCA-RSK` : `OI N°26/${ordonnancement.exercice || '2024'}/DRCA-RSK`;
 
@@ -399,21 +400,21 @@ export default function DocumentPreviewModal({ isOpen, onClose, ordonnancement, 
               const exerciceStr = ordonnancement.exercice || '2024';
               const exerciceOrigine = ordonnancement.marche?.exercice || exerciceStr;
               const suffixeOp = `/DRCA-RSK/${exerciceStr}`;
-              const dateOpStr = ordonnancement.date_ordonnancement 
+              const dateOpStr = ordonnancement.date_ordonnancement
                 ? new Date(ordonnancement.date_ordonnancement).toLocaleDateString('fr-FR')
                 : '03/12/2024';
               const montantPaiement = Number(montant || ordonnancement.net_a_payer || ordonnancement.montant_brut || 61892.50);
               const montantEngagement = Number(ordonnancement.engagement_montant || ordonnancement.montant_brut || montantPaiement);
               const refMarche = ordonnancement.reference || ordonnancement.marche?.num_marche || `BC N°01/INV/${exerciceStr}/DRCA-RSK`;
               const objetDepense = ordonnancement.intitule_depense || ordonnancement.liquidation?.objet_liquidation || ordonnancement.marche?.objet_marche || 'Acquisition des semences et engrais pour les Ecoles aux champs de la Région de Rabat-Salé-Kénitra';
-              const feRef = ordonnancement.marche?.num_engagement 
+              const feRef = ordonnancement.marche?.num_engagement
                 ? `Fiche d'engagement N°${ordonnancement.marche.num_engagement} Du ${ordonnancement.marche.date_engagement ? new Date(ordonnancement.marche.date_engagement).toLocaleDateString('fr-FR') : dateOpStr}`
                 : `Fiche d'engagement N°12/${exerciceStr}/FE/DRCA-RSK Du ${dateOpStr}`;
               const docRefMarche = refMarche ? `${refMarche} du ${dateOpStr}` : `Bon de commande N°01/INV/${exerciceStr}/DRCA-RSK du ${dateOpStr}`;
-              const dateReception = ordonnancement.liquidation?.date_reception 
-                ? new Date(ordonnancement.liquidation.date_reception).toLocaleDateString('fr-FR') 
+              const dateReception = ordonnancement.liquidation?.date_reception
+                ? new Date(ordonnancement.liquidation.date_reception).toLocaleDateString('fr-FR')
                 : dateOpStr;
-              const factureRef = ordonnancement.liquidation?.num_facture 
+              const factureRef = ordonnancement.liquidation?.num_facture
                 ? `Facture N°${ordonnancement.liquidation.num_facture} du ${ordonnancement.liquidation.date_facture ? new Date(ordonnancement.liquidation.date_facture).toLocaleDateString('fr-FR') : dateOpStr}`
                 : (ordonnancement.liquidation?.num_decompte ? `Décompte N°${ordonnancement.liquidation.num_decompte}` : `Facture N°12/CADG/${exerciceStr} du ${dateOpStr}`);
               const oiRef = ordonnancement.num_oi ? `OI N°${ordonnancement.num_oi}/DRCA-RSK/${exerciceStr}` : `OI N°28/DRCA-RSK/${exerciceStr}`;
@@ -434,7 +435,7 @@ export default function DocumentPreviewModal({ isOpen, onClose, ordonnancement, 
                         </tr>
                         <tr className="border-b border-black">
                           <td className="p-1 border-r border-black bg-white">Crédit</td>
-                          <td className="p-1">{ordonnancement.type_credit || 'C.Neufs'}</td>
+                          <td className="p-1">{currentOrdre?.creance || ordonnancement.type_credit || 'C.Neufs'}</td>
                         </tr>
                         <tr className="border-b border-black">
                           <td className="p-1 border-r border-black bg-white">Exercice</td>
@@ -451,7 +452,7 @@ export default function DocumentPreviewModal({ isOpen, onClose, ordonnancement, 
                   {/* Document Title */}
                   <div className="text-center my-2">
                     <h1 className="text-base font-black text-black tracking-wide uppercase underline decoration-2 underline-offset-4">
-                      ORDRE DE PAIEMENT (OP)
+                      {docInfo.title.toUpperCase()}
                     </h1>
                   </div>
 
@@ -774,7 +775,7 @@ export default function DocumentPreviewModal({ isOpen, onClose, ordonnancement, 
               const montantOi = Number(montant || ordonnancement.retenue_tva || ordonnancement.retenue_ias || 3666);
               const refMarche = ordonnancement.reference || 'Convention N°04/2024/DRCA-RSK';
               const objetDepense = ordonnancement.intitule_depense || ordonnancement.liquidation?.objet_liquidation || 'Prestation de transport des agriculteurs pratiquant le semis direct pour assurer leurs participation aux ateliers provinciaux organisés par la DRCA de RSK';
-              
+
               let formeEngagement = 'Convention';
               if (refMarche.toLowerCase().includes('marché')) formeEngagement = 'Marché';
               else if (refMarche.toLowerCase().includes('bc') || refMarche.toLowerCase().includes('bon')) formeEngagement = 'Bon de commande';

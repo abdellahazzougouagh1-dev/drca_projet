@@ -432,9 +432,9 @@ export default function RegistreOrdonnancements() {
                   <th className="px-3.5 py-3.5 border-r border-emerald-600/70 text-right min-w-[150px]">Paiement Retenue à la source</th>
                   <th className="px-3.5 py-3.5 border-r border-emerald-600/70 text-right min-w-[145px]">Paiement Reste à payer</th>
                   <th className="px-3.5 py-3.5 border-r border-emerald-600/70 min-w-[125px]">Payé/Rejet</th>
-                    <th className="px-3 py-3.5 w-20">Actions</th>
-                  </tr>
-                </thead>
+                  <th className="px-4 py-3.5 min-w-[130px] text-center">Actions</th>
+                </tr>
+              </thead>
 
               {/* Body */}
               <tbody className="divide-y divide-slate-200 text-slate-800 text-xs md:text-sm">
@@ -526,30 +526,30 @@ export default function RegistreOrdonnancements() {
 
                     {/* Actions */}
                     <td className="px-3 py-3.5 text-center">
-                      <div className="flex items-center justify-center gap-1.5">
+                      <div className="flex items-center justify-center gap-2">
                         <Link
                           to={`/ordonnancements/${row.id}`}
-                          className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition"
+                          className="p-2 text-blue-600 bg-blue-50/80 hover:bg-blue-600 hover:text-white rounded-xl shadow-xs transition border border-blue-200/60 cursor-pointer"
                           title="Consulter le dossier d'ordonnancement"
                         >
-                          <Eye size={16} />
+                          <Eye size={17} />
                         </Link>
                         <button
                           onClick={() => {
                             setSelectedOrdonnancement(row.raw);
                             setPreviewOpen(true);
                           }}
-                          className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition cursor-pointer"
+                          className="p-2 text-slate-700 bg-slate-100 hover:bg-slate-700 hover:text-white rounded-xl shadow-xs transition border border-slate-200 cursor-pointer"
                           title="Aperçu / Impression"
                         >
-                          <Printer size={16} />
+                          <Printer size={17} />
                         </button>
                         <button
                           onClick={() => handleDelete(row.id, row.num_op)}
-                          className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition cursor-pointer"
+                          className="p-2 text-rose-600 bg-rose-50/80 hover:bg-rose-600 hover:text-white rounded-xl shadow-xs transition border border-rose-200/60 cursor-pointer"
                           title="Supprimer"
                         >
-                          <Trash2 size={16} />
+                          <Trash2 size={17} />
                         </button>
                       </div>
                     </td>

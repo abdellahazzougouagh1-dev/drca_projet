@@ -222,7 +222,7 @@
     $budgetType = $ordonnancement->budget_type ?: ($ordonnancement->marche?->type_budget ?: 'Investissement');
     $exercice   = $ordonnancement->exercice ?: date('Y');
     $exerciceOrigine = $ordonnancement->marche?->exercice ?: $exercice;
-    $typeCredit = $ordonnancement->type_credit ?: 'C.Neufs';
+    $typeCredit = $ordre?->creance ?: ($ordonnancement->type_credit ?: 'C.Neufs');
 
     $numOpClean = $ordre?->num_ordre ?: ($ordonnancement->num_op ?: '38');
     $numOpVal   = preg_replace('/[^0-9]/', '', $numOpClean) ?: $numOpClean;
