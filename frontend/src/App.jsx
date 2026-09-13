@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Dashboard from './pages/Dashboard';
+import DashboardDirecteur from './pages/DashboardDirecteur';
 import NouvelleConsultation from './pages/NouvelleConsultation';
 import ListeConsultations from './pages/ListeConsultations';
 import DetailsConsultation from './pages/DetailsConsultation';
@@ -35,7 +36,7 @@ function App() {
   } catch {
     storedUser = null;
   }
-  const homePath = storedUser?.role === 'directeur' ? '/directeur' : '/consultations';
+  const homePath = storedUser?.role === 'directeur' ? '/directeur' : '/dashboard';
 
   return (
     <Router>
@@ -47,7 +48,15 @@ function App() {
           path="/dashboard"
           element={
             <ProtectedRoute>
-              <Dashboard mode="aoo" />
+              <Dashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashbord"
+          element={
+            <ProtectedRoute>
+              <Dashboard />
             </ProtectedRoute>
           }
         />
@@ -55,7 +64,7 @@ function App() {
           path="/directeur"
           element={
             <DirectorRoute>
-              <Dashboard mode="directeur" />
+              <DashboardDirecteur />
             </DirectorRoute>
           }
         />
@@ -253,6 +262,7 @@ function App() {
         />
 
         <Route path="/" element={<Navigate to={isAuthenticated ? homePath : '/login'} replace />} />
+        <Route path="*" element={<Navigate to={isAuthenticated ? '/dashboard' : '/login'} replace />} />
       </Routes>
     </Router>
   );

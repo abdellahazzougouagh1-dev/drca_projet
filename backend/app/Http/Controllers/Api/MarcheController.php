@@ -21,7 +21,7 @@ class MarcheController extends Controller
     public function index()
     {
         return response()->json(
-            Marche::with(['aoo', 'lot', 'fournisseur'])
+            Marche::with(['aoo', 'lot', 'fournisseur', 'registreEngagement'])
                 ->orderBy('created_at', 'desc')
                 ->get()
         );

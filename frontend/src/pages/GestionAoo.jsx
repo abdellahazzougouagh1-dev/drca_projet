@@ -84,11 +84,9 @@ const GestionAoo = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('preparation');
 
-  const wizardStepOrder = ['preparation', 'commission', 'engagement', 'registre'];
+  const wizardStepOrder = ['preparation', 'commission'];
   const wizardNextLabels = {
     preparation: 'Ouverture des plis et analyse',
-    commission: 'Engagement',
-    engagement: 'Registre',
   };
 
   const getNextStep = (current) => {
@@ -1657,7 +1655,7 @@ const GestionAoo = () => {
             </div>
           </div>
           {/* TABS NAVIGATION */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-2 sm:gap-4 pb-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4 pb-4">
             <button onClick={() => setActiveTab('preparation')} className={`min-w-0 flex-1 px-6 py-5 rounded-2xl font-bold text-base transition-all flex items-center justify-center gap-3 ${activeTab === 'preparation'
               ? 'bg-primary text-white shadow-lg'
               : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
@@ -1671,18 +1669,6 @@ const GestionAoo = () => {
               : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
               }`}>
               <Users size={24} /> 2. Ouverture des plis et analyse
-            </button>
-            <button onClick={() => setActiveTab('engagement')} className={`min-w-0 flex-1 px-6 py-5 rounded-2xl font-bold text-base transition-all flex items-center justify-center gap-3 ${activeTab === 'engagement'
-              ? 'bg-primary text-white shadow-lg'
-              : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-              }`}>
-              <CheckSquare size={24} /> 3. Engagement
-            </button>
-            <button onClick={() => setActiveTab('registre')} className={`min-w-0 flex-1 px-6 py-5 rounded-2xl font-bold text-base transition-all flex items-center justify-center gap-3 ${activeTab === 'registre'
-              ? 'bg-primary text-white shadow-lg'
-              : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-              }`}>
-              <FileSpreadsheet size={24} /> 4. Registre d'engagement
             </button>
           </div>
         </div>
