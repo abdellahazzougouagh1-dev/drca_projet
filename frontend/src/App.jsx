@@ -1,6 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Dashboard from './pages/Dashboard';
-import DashboardDirecteur from './pages/DashboardDirecteur';
 import NouvelleConsultation from './pages/NouvelleConsultation';
 import ListeConsultations from './pages/ListeConsultations';
 import DetailsConsultation from './pages/DetailsConsultation';
@@ -36,7 +35,7 @@ function App() {
   } catch {
     storedUser = null;
   }
-  const homePath = storedUser?.role === 'directeur' ? '/directeur' : '/dashboard';
+  const homePath = storedUser?.role === 'directeur' ? '/directeur' : '/consultations';
 
   return (
     <Router>
@@ -48,7 +47,7 @@ function App() {
           path="/dashboard"
           element={
             <ProtectedRoute>
-              <Dashboard />
+              <Dashboard mode="aoo" />
             </ProtectedRoute>
           }
         />
@@ -56,7 +55,7 @@ function App() {
           path="/dashbord"
           element={
             <ProtectedRoute>
-              <Dashboard />
+              <Dashboard mode="aoo" />
             </ProtectedRoute>
           }
         />
@@ -64,7 +63,7 @@ function App() {
           path="/directeur"
           element={
             <DirectorRoute>
-              <DashboardDirecteur />
+              <Dashboard mode="directeur" />
             </DirectorRoute>
           }
         />
