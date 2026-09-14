@@ -165,6 +165,14 @@ function App() {
           }
         />
         <Route
+          path="/bon-de-commande"
+          element={
+            <ProtectedRoute>
+              <BonCommandePlateforme />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/bons-de-commande"
           element={
             <ProtectedRoute>

@@ -6,7 +6,7 @@ import {
   CircleDollarSign, ClipboardList, Download, Eye, FileCheck2, FileText,
   Gauge, Landmark, Loader2, Search, SlidersHorizontal, TrendingUp,
   WalletCards, X, ArrowUpRight, Clock3, LayoutDashboard, FolderKanban,
-  CreditCard, Settings, LogOut, Menu, ShieldCheck, ArrowLeft,
+  CreditCard, Settings, LogOut, Menu, ShieldCheck, ArrowLeft, Receipt, Plus,
 } from 'lucide-react';
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
@@ -130,24 +130,69 @@ function summaryOf(rows) {
   };
 }
 
-function PhaseCard({ step, label, value, rateValue, secondaryRate, Icon, tone, detail }) {
+function CircularProgress({ percentage = 0, color = '#2563eb', trackColor = '#f1f5f9', size = 80, strokeWidth = 7 }) {
+  const radius = (size - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const numericVal = Math.max(0, Math.min(100, Number(percentage) || 0));
+  const strokeDashoffset = circumference - (numericVal / 100) * circumference;
+
   return (
-    <article className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-      <span className={`absolute inset-y-0 left-0 w-1 ${tone}`} />
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-[10px] font-black uppercase tracking-[.16em] text-slate-400">Taux {step}</p>
-          <p className="mt-1 text-sm font-bold text-slate-700">{label}</p>
-          <p className="mt-2 text-2xl font-black text-slate-950">{money(value)}</p>
-          <div className="mt-2 space-y-0.5">
-            <p className="text-xs font-bold text-emerald-700">{rateValue}</p>
-            {secondaryRate && <p className="text-xs font-semibold text-slate-600">{secondaryRate}</p>}
+    <div className="relative flex items-center justify-center shrink-0" style={{ width: size, height: size }}>
+      <svg width={size} height={size} className="transform -rotate-90">
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          stroke={trackColor}
+          strokeWidth={strokeWidth}
+          fill="transparent"
+        />
+        {numericVal > 0 && (
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            stroke={color}
+            strokeWidth={strokeWidth}
+            strokeDasharray={circumference}
+            strokeDashoffset={strokeDashoffset}
+            strokeLinecap="round"
+            fill="transparent"
+            className="transition-all duration-700 ease-out"
+          />
+        )}
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+        <span className="text-sm font-black text-slate-900 leading-none">{Math.round(numericVal)}%</span>
+      </div>
+    </div>
+  );
+}
+
+function PhaseCard({ step, label, value, percentage = 0, rateValue, secondaryRate, Icon, color = '#2563eb', detail }) {
+  return (
+    <article className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md hover:-translate-y-0.5">
+      <span className="absolute inset-y-0 left-0 w-1" style={{ backgroundColor: color }} />
+      <div className="flex items-center justify-between gap-4">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-black uppercase tracking-[.16em] text-slate-400">Taux {step}</span>
+            {Icon && (
+              <span className="grid h-6 w-6 place-items-center rounded-lg bg-slate-100 text-slate-600">
+                <Icon size={13} style={{ color }} />
+              </span>
+            )}
           </div>
-          {detail && <p className="mt-1.5 text-xs text-slate-400">{detail}</p>}
+          <p className="mt-1 text-sm font-bold text-slate-800 truncate" title={label}>{label}</p>
+          <p className="mt-1.5 text-xl font-black text-slate-950">{money(value)}</p>
+          <div className="mt-2 space-y-0.5">
+            {rateValue && <p className="text-xs font-bold text-slate-700">{rateValue}</p>}
+            {secondaryRate && <p className="text-[11px] font-semibold text-slate-500">{secondaryRate}</p>}
+          </div>
+          {detail && <p className="mt-1.5 text-[11px] text-slate-400">{detail}</p>}
         </div>
-        <span className="grid h-10 w-10 place-items-center rounded-xl bg-slate-100 text-slate-600">
-          <Icon size={20} />
-        </span>
+
+        <CircularProgress percentage={percentage} color={color} size={84} strokeWidth={7} />
       </div>
     </article>
   );
@@ -204,12 +249,29 @@ export default function DashboardDirecteur() {
     return 'INVESTISSEMENT';
   };
 
+  const [customYears, setCustomYears] = useState([]);
+
+  const handleAddYear = () => {
+    const nextSuggested = availableYears.length > 0 ? Math.max(...availableYears) + 1 : currentYear + 1;
+    const input = window.prompt(`Ajouter une nouvelle année d'exercice (ex: ${nextSuggested}) :`, String(nextSuggested));
+    if (input) {
+      const parsed = parseInt(input.trim(), 10);
+      if (!isNaN(parsed) && parsed >= 2000 && parsed <= 2099) {
+        setCustomYears((prev) => Array.from(new Set([...prev, parsed])));
+        setYear(String(parsed));
+      } else {
+        alert("Veuillez saisir une année valide (ex: 2029).");
+      }
+    }
+  };
+
   const availableYears = useMemo(() => {
     const current = new Date().getFullYear();
     const yearSet = new Set();
-    for (let y = current + 2; y >= 2018; y--) {
+    for (let y = current + 5; y >= 2018; y--) {
       yearSet.add(y);
     }
+    customYears.forEach((y) => yearSet.add(Number(y)));
     store.notifications?.forEach((n) => {
       if (n.exercice) yearSet.add(Number(n.exercice));
       if (n.date_notification) yearSet.add(new Date(n.date_notification).getFullYear());
@@ -222,8 +284,8 @@ export default function DashboardDirecteur() {
       if (a.annee || a.exercice) yearSet.add(Number(a.annee || a.exercice));
       if (a.date_lancement || a.created_at) yearSet.add(new Date(a.date_lancement || a.created_at).getFullYear());
     });
-    return Array.from(yearSet).filter((y) => y >= 2010 && y <= 2050).sort((a, b) => b - a);
-  }, [store]);
+    return Array.from(yearSet).filter((y) => y >= 2000 && y <= 2099).sort((a, b) => b - a);
+  }, [store, customYears]);
 
   useEffect(() => {
     let active = true;
@@ -238,11 +300,11 @@ export default function DashboardDirecteur() {
       if (!active) return;
       const result = (index, fallback) => responses[index].status === 'fulfilled' ? responses[index].value.data : fallback;
       const ordData = result(5, { data: [] });
-      setStore({ 
-        consultations: result(0, []), 
-        aoos: result(1, []), 
-        notifications: result(2, []), 
-        lines: result(3, []), 
+      setStore({
+        consultations: result(0, []),
+        aoos: result(1, []),
+        notifications: result(2, []),
+        lines: result(3, []),
         budget: result(4, {}),
         ordonnancements: Array.isArray(ordData) ? ordData : (ordData.data || [])
       });
@@ -288,11 +350,11 @@ export default function DashboardDirecteur() {
         const par = ord.paragraphe || ord.par || '';
         const lig = ord.ligne || ord.ligne_budgetaire || ord.lig || '';
         const imp = (art && par && lig) ? `${art} / ${par} / ${lig}` : null;
-        
+
         // Calcul de la somme des colonnes du registre d'ordonnancement
         let sumOrd = 0;
         let isPaye = ['payé', 'paye', 'clôturé', 'cloture'].includes(String(ord.statut || '').toLowerCase());
-        
+
         if (ord.ordres && Array.isArray(ord.ordres) && ord.ordres.length > 0) {
           sumOrd = ord.ordres.reduce((s, o) => s + Number(o.montant || 0), 0);
         } else {
@@ -527,11 +589,6 @@ export default function DashboardDirecteur() {
             </button>
           ))}
         </nav>
-        <div className="mt-6 pt-4 border-t border-slate-800">
-          <Link to="/dashboard" className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-xs font-semibold text-slate-400 hover:bg-slate-800 hover:text-white transition">
-            <ArrowLeft size={16} /> Retour au Dashboard
-          </Link>
-        </div>
         <div className="mt-auto rounded-2xl border border-slate-700 bg-slate-800/60 p-3">
           <div className="flex items-center gap-3">
             <span className="grid h-9 w-9 place-items-center rounded-full bg-blue-500 text-xs font-bold text-white">DR</span>
@@ -556,19 +613,26 @@ export default function DashboardDirecteur() {
                 <p className="mt-1 flex items-center gap-2 text-sm font-bold text-slate-700"><ShieldCheck size={16} className="text-emerald-600" /> Espace décisionnel Directeur</p>
               </div>
             </div>
-            <div className="flex items-center gap-3">
-              <Link to="/dashboard" className="hidden sm:inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50">
-                <ArrowLeft size={16} /> Tableau général
+            <div className="flex items-center gap-2.5">
+              <Link
+                to="/bons-commande"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs font-bold rounded-xl shadow-xs transition transform active:scale-98"
+                title="Accéder aux Bons de commande"
+              >
+                <Receipt size={15} />
+                <span>Bons de commande</span>
+              </Link>
+              <Link
+                to="/dashboard"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs font-bold rounded-xl shadow-xs transition transform active:scale-98"
+                title="Accéder aux Appels d'offres"
+              >
+                <FileText size={15} />
+                <span>Appels d'offres</span>
               </Link>
               <button onClick={() => setMobileNavOpen(!mobileNavOpen)} className="grid h-9 w-9 place-items-center rounded-lg border border-slate-200 text-slate-600 lg:hidden">
                 <Menu size={18} />
               </button>
-              <button onClick={exportReport} className="hidden items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50 sm:inline-flex">
-                <Download size={16} /> Exporter
-              </button>
-              <span className="grid h-9 w-9 place-items-center rounded-full bg-slate-100 text-slate-600">
-                <Bell size={17} />
-              </span>
             </div>
           </div>
         </header>
@@ -585,8 +649,11 @@ export default function DashboardDirecteur() {
                   <Icon size={18} />{label}
                 </button>
               ))}
-              <Link to="/dashboard" className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-slate-700 hover:bg-blue-50 hover:text-blue-700">
-                <ArrowLeft size={18} /> Tableau général
+              <Link to="/bons-commande" onClick={() => setMobileNavOpen(false)} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-slate-700 hover:bg-blue-50 hover:text-blue-700">
+                <Receipt size={18} /> Bons de commande
+              </Link>
+              <Link to="/dashboard" onClick={() => setMobileNavOpen(false)} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-slate-700 hover:bg-blue-50 hover:text-blue-700">
+                <FileText size={18} /> Appels d'offres
               </Link>
             </div>
             <button onClick={logout} className="mt-2 flex w-full items-center gap-3 rounded-xl border-t border-slate-100 px-3 py-3 text-left text-sm font-semibold text-rose-600">
@@ -603,21 +670,59 @@ export default function DashboardDirecteur() {
               <p className="mt-2 text-sm text-slate-500">Vue consolidée des activités, procédures et indicateurs budgétaires.</p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <label className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 hover:border-slate-300 transition-colors">
-                <CalendarDays size={16} className="text-blue-600" />
-                <select value={year} onChange={(event) => setYear(event.target.value)} className="bg-transparent font-semibold outline-none cursor-pointer">
+              <div className="inline-flex rounded-xl border border-slate-200 bg-white p-1 shadow-xs">
+                <button
+                  type="button"
+                  onClick={() => setDomaine('INVESTISSEMENT')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${domaine === 'INVESTISSEMENT'
+                      ? 'bg-indigo-600 text-white shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                    }`}
+                >
+                  Investissement
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDomaine('FONCTIONNEMENT')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${domaine === 'FONCTIONNEMENT'
+                      ? 'bg-blue-500 text-white shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                    }`}
+                >
+                  Fonctionnement
+                </button>
+              </div>
+              <div className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-600 hover:border-slate-300 transition-colors shadow-xs">
+                <CalendarDays size={16} className="text-blue-600 shrink-0" />
+                <select
+                  value={year}
+                  onChange={(event) => {
+                    if (event.target.value === '__ADD__') {
+                      handleAddYear();
+                    } else {
+                      setYear(event.target.value);
+                    }
+                  }}
+                  className="bg-transparent font-semibold outline-none cursor-pointer text-slate-800 pr-1"
+                >
                   {availableYears.map((y) => (
                     <option key={y} value={y}>{y}</option>
                   ))}
+                  <option value="__ADD__" className="text-blue-600 font-bold bg-blue-50">+ Autre année...</option>
                 </select>
-              </label>
+                <button
+                  type="button"
+                  onClick={handleAddYear}
+                  title="Ajouter une année"
+                  className="grid h-6 w-6 place-items-center rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 transition-colors cursor-pointer"
+                >
+                  <Plus size={13} className="stroke-[2.5]" />
+                </button>
+              </div>
               <select value={month} onChange={(event) => setMonth(event.target.value)} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-600 outline-none">
                 <option value="">Tous les mois</option>
                 {months.map((name, index) => <option key={name} value={index + 1}>{name}</option>)}
               </select>
-              <button className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-600">
-                <SlidersHorizontal size={16} /> Filtres
-              </button>
             </div>
           </div>
 
@@ -636,11 +741,10 @@ export default function DashboardDirecteur() {
                     <div>
                       <div className="flex items-center gap-2">
                         <h2 className="font-bold text-base text-slate-800">Liste des notifications</h2>
-                        <span className={`text-xs px-2.5 py-0.5 rounded-full font-bold ${
-                          domaine === 'FONCTIONNEMENT' ? 'bg-blue-100 text-blue-800 border border-blue-200' :
+                        <span className={`text-xs px-2.5 py-0.5 rounded-full font-bold ${domaine === 'FONCTIONNEMENT' ? 'bg-blue-100 text-blue-800 border border-blue-200' :
                           domaine === 'INVESTISSEMENT' ? 'bg-indigo-100 text-indigo-800 border border-indigo-200' :
-                          'bg-slate-100 text-slate-700'
-                        }`}>
+                            'bg-slate-100 text-slate-700'
+                          }`}>
                           {domaine === 'ALL' ? 'Tous les domaines' : domaine}
                         </span>
                       </div>
@@ -683,16 +787,14 @@ export default function DashboardDirecteur() {
                                 {notification.numero || notification.reference || `Notification #${notification.id}`}
                               </td>
                               <td className="px-5 py-4">
-                                <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold border ${
-                                  notifDom === 'FONCTIONNEMENT'
-                                    ? 'bg-blue-50 text-[#1e40af] border-blue-200'
-                                    : notifDom === 'INVESTISSEMENT'
+                                <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold border ${notifDom === 'FONCTIONNEMENT'
+                                  ? 'bg-blue-50 text-[#1e40af] border-blue-200'
+                                  : notifDom === 'INVESTISSEMENT'
                                     ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
                                     : 'bg-teal-50 text-teal-700 border-teal-200'
-                                }`}>
-                                  <span className={`w-1.5 h-1.5 rounded-full ${
-                                    notifDom === 'FONCTIONNEMENT' ? 'bg-blue-500' : notifDom === 'INVESTISSEMENT' ? 'bg-indigo-500' : 'bg-teal-500'
-                                  }`}></span>
+                                  }`}>
+                                  <span className={`w-1.5 h-1.5 rounded-full ${notifDom === 'FONCTIONNEMENT' ? 'bg-blue-500' : notifDom === 'INVESTISSEMENT' ? 'bg-indigo-500' : 'bg-teal-500'
+                                    }`}></span>
                                   {notifDom}
                                 </span>
                               </td>
@@ -831,11 +933,10 @@ export default function DashboardDirecteur() {
                   <div>
                     <div className="flex items-center gap-2">
                       <h2 className="font-bold text-base text-slate-800">Suivi des procédures & Consultations</h2>
-                      <span className={`text-xs px-2.5 py-0.5 rounded-full font-bold ${
-                        domaine === 'FONCTIONNEMENT' ? 'bg-blue-100 text-blue-800 border border-blue-200' :
+                      <span className={`text-xs px-2.5 py-0.5 rounded-full font-bold ${domaine === 'FONCTIONNEMENT' ? 'bg-blue-100 text-blue-800 border border-blue-200' :
                         domaine === 'INVESTISSEMENT' ? 'bg-indigo-100 text-indigo-800 border border-indigo-200' :
-                        'bg-slate-100 text-slate-700'
-                      }`}>
+                          'bg-slate-100 text-slate-700'
+                        }`}>
                         {domaine === 'ALL' ? 'Tous les domaines' : domaine}
                       </span>
                     </div>
@@ -872,11 +973,10 @@ export default function DashboardDirecteur() {
                               <small className="mt-1 block text-slate-400">{item.type}</small>
                             </td>
                             <td className="px-5 py-4">
-                              <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold border ${
-                                dossierDom === 'FONCTIONNEMENT'
-                                  ? 'bg-blue-50 text-[#1e40af] border-blue-200'
-                                  : 'bg-indigo-50 text-indigo-700 border-indigo-200'
-                              }`}>
+                              <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold border ${dossierDom === 'FONCTIONNEMENT'
+                                ? 'bg-blue-50 text-[#1e40af] border-blue-200'
+                                : 'bg-indigo-50 text-indigo-700 border-indigo-200'
+                                }`}>
                                 <span className={`w-1.5 h-1.5 rounded-full ${dossierDom === 'FONCTIONNEMENT' ? 'bg-blue-500' : 'bg-indigo-500'}`}></span>
                                 {dossierDom}
                               </span>
@@ -917,10 +1017,48 @@ export default function DashboardDirecteur() {
           {tab === 'paiements' && (
             <section className="mt-6 space-y-6">
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                <PhaseCard step="1" label={`Crédits notifiés (${domaine === 'ALL' ? 'Total' : domaine})`} value={budgetSummary?.total_notifie} rateValue="Taux : 100 %" detail="Base de calcul" Icon={BarChart3} tone="bg-blue-600" />
-                <PhaseCard step="2" label={`Engagement (${domaine === 'ALL' ? 'Total' : domaine})`} value={budgetSummary?.total_engage} rateValue={`Taux / notifié : ${rate(budgetSummary?.taux_consommation || pct(budgetSummary?.total_engage, budgetSummary?.total_notifie))}`} detail="Engagé / notifié" Icon={FileCheck2} tone="bg-emerald-600" />
-                <PhaseCard step="3" label={`Ordonnancement (${domaine === 'ALL' ? 'Total' : domaine})`} value={budgetSummary?.total_ordonnance} rateValue={`Taux / notifié : ${rate(budgetSummary?.taux_ordonnancement_notifie || pct(budgetSummary?.total_ordonnance, budgetSummary?.total_notifie))}`} secondaryRate={`Taux / engagé : ${rate(budgetSummary?.taux_ordonnancement || pct(budgetSummary?.total_ordonnance, budgetSummary?.total_engage))}`} detail="Ordonnancé / notifié & engagé" Icon={FileText} tone="bg-violet-600" />
-                <PhaseCard step="4" label={`Paiement (${domaine === 'ALL' ? 'Total' : domaine})`} value={budgetSummary?.total_paiement} rateValue={`Taux / notifié : ${rate(budgetSummary?.taux_paiement_notifie || pct(budgetSummary?.total_paiement, budgetSummary?.total_notifie))}`} secondaryRate={`Taux / ordonnancé : ${rate(budgetSummary?.taux_paiement_ordonnancement || pct(budgetSummary?.total_paiement, budgetSummary?.total_ordonnance))}`} detail={`Payé / notifié · ${rate(budgetSummary?.taux_paiement_engagement || pct(budgetSummary?.total_paiement, budgetSummary?.total_engage))} de l'engagé`} Icon={CircleDollarSign} tone="bg-amber-600" />
+                <PhaseCard
+                  step="1"
+                  label={`Crédits notifiés (${domaine === 'ALL' ? 'Total' : domaine})`}
+                  value={budgetSummary?.total_notifie}
+                  percentage={Number(budgetSummary?.total_notifie || 0) > 0 ? 100 : 0}
+                  rateValue={Number(budgetSummary?.total_notifie || 0) > 0 ? "Taux : 100 %" : "Taux : 0 %"}
+                  detail={Number(budgetSummary?.total_notifie || 0) > 0 ? "Base de calcul" : "Aucun crédit notifié"}
+                  Icon={BarChart3}
+                  color="#2563eb"
+                />
+                <PhaseCard
+                  step="2"
+                  label={`Engagement (${domaine === 'ALL' ? 'Total' : domaine})`}
+                  value={budgetSummary?.total_engage}
+                  percentage={budgetSummary?.taux_consommation ?? pct(budgetSummary?.total_engage, budgetSummary?.total_notifie)}
+                  rateValue={`Taux / notifié : ${rate(budgetSummary?.taux_consommation || pct(budgetSummary?.total_engage, budgetSummary?.total_notifie))}`}
+                  detail="Engagé / notifié"
+                  Icon={FileCheck2}
+                  color="#10b981"
+                />
+                <PhaseCard
+                  step="3"
+                  label={`Ordonnancement (${domaine === 'ALL' ? 'Total' : domaine})`}
+                  value={budgetSummary?.total_ordonnance}
+                  percentage={budgetSummary?.taux_ordonnancement ?? pct(budgetSummary?.total_ordonnance, budgetSummary?.total_engage)}
+                  rateValue={`Taux / notifié : ${rate(budgetSummary?.taux_ordonnancement_notifie || pct(budgetSummary?.total_ordonnance, budgetSummary?.total_notifie))}`}
+                  secondaryRate={`Taux / engagé : ${rate(budgetSummary?.taux_ordonnancement || pct(budgetSummary?.total_ordonnance, budgetSummary?.total_engage))}`}
+                  detail="Ordonnancé / notifié & engagé"
+                  Icon={FileText}
+                  color="#8b5cf6"
+                />
+                <PhaseCard
+                  step="4"
+                  label={`Paiement (${domaine === 'ALL' ? 'Total' : domaine})`}
+                  value={budgetSummary?.total_paiement}
+                  percentage={budgetSummary?.taux_paiement_ordonnancement ?? pct(budgetSummary?.total_paiement, budgetSummary?.total_ordonnance)}
+                  rateValue={`Taux / notifié : ${rate(budgetSummary?.taux_paiement_notifie || pct(budgetSummary?.total_paiement, budgetSummary?.total_notifie))}`}
+                  secondaryRate={`Taux / ordonnancé : ${rate(budgetSummary?.taux_paiement_ordonnancement || pct(budgetSummary?.total_paiement, budgetSummary?.total_ordonnance))}`}
+                  detail={`Payé / notifié · ${rate(budgetSummary?.taux_paiement_engagement || pct(budgetSummary?.total_paiement, budgetSummary?.total_engage))} de l'engagé`}
+                  Icon={CircleDollarSign}
+                  color="#f59e0b"
+                />
               </div>
 
               {/* Si Domaine === ALL, affichage comparatif synthétique INVESTISSEMENT vs FONCTIONNEMENT */}
@@ -996,11 +1134,10 @@ export default function DashboardDirecteur() {
                     <h2 className="font-black text-slate-900">Synthèse par ligne budgétaire</h2>
                     <p className="mt-1 text-xs text-slate-500">Montants totaux et taux de passage pour {domaine === 'ALL' ? 'Investissement et Fonctionnement' : `le domaine ${domaine}`}.</p>
                   </div>
-                  <span className={`text-xs px-3 py-1 rounded-full font-bold self-start sm:self-auto ${
-                    domaine === 'FONCTIONNEMENT' ? 'bg-blue-100 text-blue-800' :
+                  <span className={`text-xs px-3 py-1 rounded-full font-bold self-start sm:self-auto ${domaine === 'FONCTIONNEMENT' ? 'bg-blue-100 text-blue-800' :
                     domaine === 'INVESTISSEMENT' ? 'bg-indigo-100 text-indigo-800' :
-                    'bg-slate-100 text-slate-700'
-                  }`}>
+                      'bg-slate-100 text-slate-700'
+                    }`}>
                     {domaine === 'ALL' ? 'Tous les domaines' : domaine}
                   </span>
                 </div>
@@ -1017,11 +1154,10 @@ export default function DashboardDirecteur() {
                       {budgetRows.map((r, idx) => (
                         <tr key={`${r.domaine}-${r.imputation}-${idx}`} className="hover:bg-emerald-50/40">
                           <td className="px-4 py-3">
-                            <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${
-                              r.domaine === 'FONCTIONNEMENT'
-                                ? 'bg-blue-50 text-[#1e40af] border-blue-200'
-                                : 'bg-indigo-50 text-indigo-700 border-indigo-200'
-                            }`}>
+                            <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${r.domaine === 'FONCTIONNEMENT'
+                              ? 'bg-blue-50 text-[#1e40af] border-blue-200'
+                              : 'bg-indigo-50 text-indigo-700 border-indigo-200'
+                              }`}>
                               <span className={`w-1.5 h-1.5 rounded-full ${r.domaine === 'FONCTIONNEMENT' ? 'bg-blue-500' : 'bg-indigo-500'}`}></span>
                               {r.domaine}
                             </span>

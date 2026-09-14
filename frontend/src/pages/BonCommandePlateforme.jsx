@@ -26,6 +26,9 @@ import {
   Search,
   FileSpreadsheet,
   Menu,
+  FolderKanban,
+  LayoutDashboard,
+  ShieldCheck,
 } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
@@ -1863,12 +1866,30 @@ const BonCommandePlateforme = () => {
                 </h1>
               </div>
             </div>
-            {savedConsultation && (
-              <div className="hidden sm:flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2">
-                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="text-xs font-semibold text-slate-600 max-w-xs truncate">{savedConsultation.objet_consultation}</span>
-              </div>
-            )}
+            <div className="flex items-center gap-2">
+              <Link
+                to="/directeur"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white text-xs font-bold rounded-xl shadow-xs transition transform active:scale-98"
+                title="Accéder à l'Espace Directeur"
+              >
+                <ShieldCheck size={15} />
+                <span>Directeur</span>
+              </Link>
+              <Link
+                to="/dashboard"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs font-bold rounded-xl shadow-xs transition transform active:scale-98"
+                title="Accéder aux Appels d'offres"
+              >
+                <FileText size={15} />
+                <span>Appels d'offres</span>
+              </Link>
+              {savedConsultation && (
+                <div className="hidden sm:flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2">
+                  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="text-xs font-semibold text-slate-600 max-w-xs truncate">{savedConsultation.objet_consultation}</span>
+                </div>
+              )}
+            </div>
           </div>
 
           {message && (

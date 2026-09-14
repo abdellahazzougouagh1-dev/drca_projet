@@ -1021,13 +1021,13 @@ const TraitementEngagement = () => {
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-xs font-bold text-slate-400 bg-slate-100 px-3 py-1.5 rounded-xl">
-                  5 Documents Disponibles
+                  4 Documents Disponibles
                 </span>
               </div>
             </div>
 
-            {/* GRILLE HORIZONTALE DES 5 DOCUMENTS */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+            {/* GRILLE HORIZONTALE DES 4 DOCUMENTS */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
 
               {/* DOCUMENT 1 : FICHE D'ENGAGEMENT */}
               <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm hover:-translate-y-1 hover:shadow-lg hover:shadow-blue-900/5 transition-all duration-300 flex flex-col justify-between group">
@@ -1161,44 +1161,6 @@ const TraitementEngagement = () => {
                     className="py-2 px-2 bg-red-600 hover:bg-red-700 text-white font-bold text-xs rounded-lg shadow-sm transition-all flex items-center justify-center gap-1"
                   >
                     <Download size={13} /> PDF
-                  </button>
-                </div>
-              </div>
-
-              {/* DOCUMENT 5 : CPS / MARCHÉ DÉFINITIF */}
-              <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm hover:-translate-y-1 hover:shadow-lg hover:shadow-indigo-900/5 transition-all duration-300 flex flex-col justify-between group">
-                <div>
-                  <div className="flex items-center gap-2.5 mb-3 border-b border-slate-100 pb-2.5">
-                    <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg group-hover:bg-indigo-600 group-hover:text-white transition-colors">
-                      <FileSignature size={18} />
-                    </div>
-                    <div>
-                      <h4 className="font-extrabold text-slate-900 text-xs">Marché Définitif</h4>
-                      <p className="text-[10px] text-slate-400 font-mono">Contrat contractuel</p>
-                    </div>
-                  </div>
-                  <div className="mb-2">
-                    <label className={`w-full py-1.5 px-2 font-bold text-[10px] rounded-lg border transition-all flex items-center justify-center gap-1.5 cursor-pointer ${cpsUploaded ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'}`}>
-                      {isUploadingCps ? <Loader2 size={12} className="animate-spin" /> : cpsUploaded ? <CheckCircle size={12} className="text-emerald-500" /> : <Upload size={12} />}
-                      {isUploadingCps ? 'Import...' : cpsUploaded ? 'CPS Importé' : 'Importer CPS'}
-                      <input type="file" accept=".pdf,.doc,.docx" className="hidden" onChange={handleUploadCps} disabled={isUploadingCps} />
-                    </label>
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-1.5 pt-2 border-t border-slate-50">
-                  <button
-                    type="button"
-                    onClick={() => previewDocument('contrat-marche')}
-                    className="py-2 px-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-lg transition-all flex items-center justify-center gap-1"
-                  >
-                    <Eye size={13} className="text-indigo-600" /> Aperçu
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => downloadDocument('contrat-marche')}
-                    className="py-2 px-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-lg shadow-sm transition-all flex items-center justify-center gap-1"
-                  >
-                    <Download size={13} /> {formData.chemin_cps ? 'Word' : 'PDF'}
                   </button>
                 </div>
               </div>
