@@ -10,13 +10,20 @@ const ListeConsultations = () => {
   const [error, setError] = useState(null);
 
   const handleDelete = async (item) => {
-    if (!item.id || item.global_id.startsWith('aoo_')) return;
-    if (!window.confirm(`Êtes-vous sûr de vouloir supprimer la consultation "${item.global_numero}" ?`)) return;
+    if (!item.id) return;
+    const isAoo = item.global_id?.startsWith('aoo_');
+    const label = isAoo ? "l'appel d'offres" : "la consultation";
+    if (!window.confirm(`Êtes-vous sûr de vouloir supprimer ${label} "${item.global_numero || ''}" ?`)) return;
     try {
-      await api.delete(`/consultations/${item.id}`);
+      if (isAoo) {
+        await api.delete(`/aoos/${item.id}`);
+      } else {
+        await api.delete(`/consultations/${item.id}`);
+      }
       setConsultations(prev => prev.filter(c => c.global_id !== item.global_id));
     } catch (err) {
-      alert("Erreur lors de la suppression de la consultation.");
+      console.error(err);
+      alert(`Erreur lors de la suppression de ${label}.`);
     }
   };
 
@@ -220,15 +227,13 @@ const ListeConsultations = () => {
                               <Edit3 size={18} />
                             </button>
                           )}
-                          {!consultation.global_id.startsWith('aoo_') && (
-                            <button
-                              onClick={() => handleDelete(consultation)}
-                              className="inline-flex items-center justify-center h-9 w-9 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50 transition-colors"
-                              title="Supprimer la consultation"
-                            >
-                              <Trash2 size={18} />
-                            </button>
-                          )}
+                          <button
+                            onClick={() => handleDelete(consultation)}
+                            className="inline-flex items-center justify-center h-9 w-9 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50 transition-colors cursor-pointer"
+                            title="Supprimer"
+                          >
+                            <Trash2 size={18} />
+                          </button>
                         </div>
                       </td>
                     </tr>

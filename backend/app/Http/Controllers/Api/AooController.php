@@ -321,8 +321,20 @@ class AooController extends Controller
 
     public function destroy($id)
     {
-        Aoo::findOrFail($id)->delete();
-        return response()->json(['message' => 'Dossier supprime'], 200);
+        $aoo = Aoo::findOrFail($id);
+        DB::transaction(function () use ($aoo) {
+            $aoo->lots()->each(function ($lot) {
+                $lot->items()->delete();
+                $lot->decisions()->delete();
+                $lot->delete();
+            });
+            $aoo->concurrents()->delete();
+            $aoo->concurrentLotDecisions()->delete();
+            $aoo->registreEngagement()->delete();
+            $aoo->marches()->delete();
+            $aoo->delete();
+        });
+        return response()->json(['message' => 'Dossier supprime avec succes'], 200);
     }
 
 

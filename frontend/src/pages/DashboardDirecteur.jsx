@@ -603,45 +603,6 @@ export default function DashboardDirecteur() {
               <p className="mt-2 text-sm text-slate-500">Vue consolidée des activités, procédures et indicateurs budgétaires.</p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              {/* Sélecteur de Domaine (FONCTIONNEMENT vs INVESTISSEMENT) */}
-              <div className="flex bg-slate-200/80 p-1 rounded-xl text-xs font-bold items-center gap-1 border border-slate-300 shadow-2xs">
-                <button
-                  type="button"
-                  onClick={() => setDomaine('ALL')}
-                  className={`px-3 py-1.5 rounded-lg transition ${
-                    domaine === 'ALL'
-                      ? 'bg-white text-slate-900 shadow-xs'
-                      : 'text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  Tous les domaines
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setDomaine('FONCTIONNEMENT')}
-                  className={`px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 ${
-                    domaine === 'FONCTIONNEMENT'
-                      ? 'bg-[#1e40af] text-white shadow-xs'
-                      : 'text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  <span className={`w-2 h-2 rounded-full ${domaine === 'FONCTIONNEMENT' ? 'bg-white' : 'bg-blue-500'}`}></span>
-                  Fonctionnement
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setDomaine('INVESTISSEMENT')}
-                  className={`px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 ${
-                    domaine === 'INVESTISSEMENT'
-                      ? 'bg-indigo-700 text-white shadow-xs'
-                      : 'text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  <span className={`w-2 h-2 rounded-full ${domaine === 'INVESTISSEMENT' ? 'bg-white' : 'bg-indigo-400'}`}></span>
-                  Investissement
-                </button>
-              </div>
-
               <label className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 hover:border-slate-300 transition-colors">
                 <CalendarDays size={16} className="text-blue-600" />
                 <select value={year} onChange={(event) => setYear(event.target.value)} className="bg-transparent font-semibold outline-none cursor-pointer">
