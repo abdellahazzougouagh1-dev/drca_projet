@@ -231,13 +231,13 @@ export default function DocumentPreviewModal({ isOpen, onClose, ordonnancement, 
                     <table className="w-full border-collapse">
                       <tbody className="divide-y divide-black font-medium">
                         <tr>
-                          <td className="w-1/4 p-2 font-bold border-r border-black bg-white text-black">BENEFICIAIRE</td>
+                          <td className="w-1/4 p-2 font-bold border-r border-black bg-white text-black">BÉNÉFICIAIRE</td>
                           <td colSpan={3} className="p-2 font-bold text-black text-xs">Receveur de l’administration fiscale</td>
                         </tr>
                         {isTva ? (
                           <tr>
                             <td className="p-2 font-bold border-r border-black bg-white text-black leading-tight">
-                              OPERATEUR<br />CHARGE DE<br />TELEPAIEMENT
+                              OPÉRATEUR<br />CHARGÉ DE<br />TÉLÉPAIEMENT
                             </td>
                             <td className="w-2/5 p-2 font-bold text-black uppercase text-[11px] border-r border-black">
                               OFFICE NATIONAL DU CONSEIL AGRICOLE
@@ -481,7 +481,7 @@ export default function DocumentPreviewModal({ isOpen, onClose, ordonnancement, 
                     <table className="w-full border-collapse">
                       <tbody className="divide-y divide-black font-medium">
                         <tr>
-                          <td className="w-1/4 p-2 font-bold border-r border-black bg-white text-black">BENEFICIAIRE</td>
+                          <td className="w-1/4 p-2 font-bold border-r border-black bg-white text-black">BÉNÉFICIAIRE</td>
                           <td className="p-2">
                             <div className="font-bold text-black uppercase text-xs">{beneficiaire}</div>
                             {(ordonnancement.fournisseur?.adresse || ordonnancement.marche?.fournisseur?.adresse) && (

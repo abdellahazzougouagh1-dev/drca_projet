@@ -246,6 +246,34 @@ export default function LotsEstimationCard({
                         </tfoot>
                       </table>
                     </div>
+
+                    {/* BLOC ESTIMATION DU LOT (3 Cartes) */}
+                    <div className="mt-5 bg-blue-50/70 rounded-2xl p-5 border border-blue-100">
+                      <h4 className="font-extrabold text-blue-800 text-xs tracking-wider mb-3 text-center uppercase">
+                        ESTIMATION {lot.num_lot ? `DU ${lot.num_lot.toUpperCase()}` : `DU LOT ${index + 1}`}
+                        {lot.objet_lot ? ` — ${lot.objet_lot}` : ''}
+                      </h4>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="bg-white p-4 rounded-xl text-center shadow-sm border border-slate-100">
+                          <span className="block text-xs font-bold text-slate-500 mb-1">Montant HT ({lot.num_lot || `Lot ${index + 1}`})</span>
+                          <span className="text-xl font-black text-slate-800">
+                            {(parseFloat(lot.estimation) || 0).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} MAD
+                          </span>
+                        </div>
+                        <div className="bg-white p-4 rounded-xl text-center shadow-sm border border-slate-100">
+                          <span className="block text-xs font-bold text-slate-500 mb-1">TVA (20%)</span>
+                          <span className="text-xl font-black text-slate-800">
+                            {((parseFloat(lot.estimation) || 0) * 0.2).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} MAD
+                          </span>
+                        </div>
+                        <div className="bg-blue-600 p-4 rounded-xl text-center shadow-sm shadow-blue-500/20 text-white transform hover:scale-[1.02] transition-transform">
+                          <span className="block text-xs font-bold text-blue-100 mb-1">Montant TTC ({lot.num_lot || `Lot ${index + 1}`})</span>
+                          <span className="text-2xl font-black">
+                            {lotTtc.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} MAD
+                          </span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>

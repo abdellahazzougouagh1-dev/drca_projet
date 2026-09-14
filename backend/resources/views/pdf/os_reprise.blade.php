@@ -1,3 +1,30 @@
+@php
+    $logoOnca = \App\Support\AooDocumentHelper::embedImage('images/logo-onca.png');
+    $sceauMaroc = \App\Support\AooDocumentHelper::embedImage('images/sceau-maroc.png');
+    $footerBanner = \App\Support\AooDocumentHelper::embedImage('images/info_DRCA.png');
+
+    $cleanText = function($text) {
+        if (!$text) return '';
+        $text = str_ireplace(['f?s', 'f?S', 'F?S', 'F?s'], 'FES', $text);
+        $replacements = [
+            'è' => 'E', 'é' => 'E', 'ê' => 'E', 'ë' => 'E',
+            'È' => 'E', 'É' => 'E', 'Ê' => 'E', 'Ë' => 'E',
+            'à' => 'A', 'â' => 'A', 'ä' => 'A', 'À' => 'A', 'Â' => 'A', 'Ä' => 'A',
+            'î' => 'I', 'ï' => 'I', 'Î' => 'I', 'Ï' => 'I',
+            'ô' => 'O', 'ö' => 'O', 'Ô' => 'O', 'Ö' => 'O',
+            'ù' => 'U', 'û' => 'U', 'ü' => 'U', 'Ù' => 'U', 'Û' => 'U', 'Ü' => 'U',
+            'ç' => 'C', 'Ç' => 'C'
+        ];
+        $text = str_replace(array_keys($replacements), array_values($replacements), $text);
+        $text = str_replace('?', '', $text);
+        return strtoupper(trim($text));
+    };
+
+    $societe = $cleanText($marche->fournisseur->raison_sociale ?? $marche->titulaire);
+    $adresse = $cleanText($marche->fournisseur->adresse ?? '');
+    $ville = $cleanText($marche->fournisseur->ville ?? 'KENITRA');
+    $representant = $cleanText($marche->fournisseur->representant ?? $marche->representant ?? '........................................');
+@endphp
 <!DOCTYPE html>
 <html lang="fr" dir="ltr">
 <head>
@@ -9,40 +36,40 @@
         }
         body { 
             font-family: 'DejaVu Sans', sans-serif; 
-            font-size: 12px; 
-            line-height: 1.3; 
+            font-size: 11.5px; 
+            line-height: 1.25; 
             margin: 0; 
             padding: 0; 
         }
         .text-center { text-align: center; }
         .text-right { text-align: right; }
         .font-bold { font-weight: bold; }
-        .mb-2 { margin-bottom: 5px; }
-        .mb-4 { margin-bottom: 10px; }
+        .mb-2 { margin-bottom: 4px; }
+        .mb-4 { margin-bottom: 8px; }
         
-        .header-table { width: 100%; margin-bottom: 5px; }
+        .header-table { width: 100%; margin-bottom: 4px; }
         .header-table td { vertical-align: middle; border: none; padding: 0; }
-        .center-header { text-align: center; font-size: 11px; }
+        .center-header { text-align: center; font-size: 10.5px; font-weight: bold; }
 
         .table-borderless { width: 100%; border-collapse: collapse; }
         .table-borderless td { border: none; padding: 1px 3px; vertical-align: top; }
 
         .content-body {
             text-align: justify;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
         }
 
         .accuse-title {
             text-align: center;
-            font-size: 16px;
+            font-size: 15px;
             font-weight: bold;
-            margin-bottom: 15px;
+            margin-bottom: 10px;
         }
 
         /* Fixed Footer */
         .footer {
             position: fixed;
-            bottom: -10mm;
+            bottom: -13mm;
             left: 0;
             right: 0;
             width: 100%;
@@ -51,7 +78,7 @@
         .footer-banner {
             width: 100%;
             height: auto;
-            max-height: 45px;
+            max-height: 58px;
         }
     </style>
 </head>
@@ -59,38 +86,31 @@
 
     <!-- FOOTER -->
     <div class="footer">
-        @if(file_exists(public_path('images/info_DRCA.png')))
-            <img src="{{ public_path('images/info_DRCA.png') }}" class="footer-banner" alt="ONCA DRCA">
-        @else
-            <div style="text-align: center; color: #555; font-size: 7.5px; line-height: 1.25;">
-                المديرية الجهوية للاستشارة الفلاحية لجهة الرباط سلا القنيطرة، ملتقى زنقة سبتة، شارع محمد الخامس (قرب بنك المغرب) - القنيطرة<br>
-                الهاتف : 212537325599+ / الفاكس : 212537361320+ - الموقع الإلكتروني : www.onca.gov.ma<br>
-                Direction Régionale du Conseil Agricole de la Région de Rabat Salé Kénitra, Angle Rue Sebta - Bd Mohamed V (à côté de Bank Al-Maghreb) - Kénitra<br>
-                Tél. : +212 (0) 537 32 55 99 - Fax : +212 (0) 537 36 13 20 - Site web : www.onca.gov.ma
-            </div>
+        @if($footerBanner)
+            <img src="{{ $footerBanner }}" class="footer-banner" alt="ONCA DRCA">
         @endif
     </div>
 
     <!-- Header Logos & Direction -->
     <table class="header-table">
         <tr>
-            <td style="width: 30%; text-align: left;">
-                @if(file_exists(public_path('images/logo-onca.png')))
-                    <img src="{{ public_path('images/logo-onca.png') }}" style="height: 60px;" alt="ONCA">
+            <td style="width: 32%; text-align: left;">
+                @if($logoOnca)
+                    <img src="{{ $logoOnca }}" style="height: 65px;" alt="ONCA">
                 @endif
             </td>
-            <td class="center-header" style="width: 40%;">
-                Direction Régionale du Conseil Agricole Rabat-Salé-Kénitra
+            <td class="center-header" style="width: 36%;">
+                Direction Régionale du Conseil Agricole<br>Rabat-Salé-Kénitra
             </td>
-            <td style="width: 30%; text-align: right;">
-                @if(file_exists(public_path('images/sceau-maroc.png')))
-                    <img src="{{ public_path('images/sceau-maroc.png') }}" style="height: 60px;" alt="Royaume du Maroc">
+            <td style="width: 32%; text-align: right;">
+                @if($sceauMaroc)
+                    <img src="{{ $sceauMaroc }}" style="height: 65px;" alt="Royaume du Maroc">
                 @endif
             </td>
         </tr>
     </table>
     
-    <hr style="border: 1.5px solid #000; margin-top: 0px; margin-bottom: 15px;">
+    <hr style="border: 1.5px solid #000; margin-top: 0px; margin-bottom: 12px;">
 
     <table class="table-borderless" style="margin-bottom: 15px;">
         <tr>
@@ -104,12 +124,12 @@
     <div class="text-center font-bold mb-4" style="font-size: 13px; line-height: 1.4;">
         A<br>
         Monsieur le gérant de la société<br>
-        {{ strtoupper($marche->fournisseur->raison_sociale ?? '........................................') }}<br>
-        {{ strtoupper($marche->fournisseur->adresse ?? '........................................') }}
+        {{ $societe }}<br>
+        {{ $adresse }}
     </div>
     
     <div class="text-right font-bold mb-4" style="font-size: 13px; padding-right: 40px;">
-        {{ strtoupper($marche->fournisseur->ville ?? '........................') }}
+        {{ $ville }}
     </div>
 
     <table class="table-borderless mb-4" style="font-size: 13px;">
@@ -144,8 +164,8 @@
     </div>
 
     <div style="width: 100%; text-align: center; margin: 8px 0 10px 0;">
-        @if(file_exists(public_path('images/info_DRCA.png')))
-            <img src="{{ public_path('images/info_DRCA.png') }}" style="width: 100%; height: auto; max-height: 36px;" alt="ONCA Separator">
+        @if($footerBanner)
+            <img src="{{ $footerBanner }}" style="width: 100%; height: auto; max-height: 58px;" alt="ONCA Separator">
         @endif
         <hr style="border: 1.2px solid #000; margin-top: 3px;">
     </div>
@@ -153,9 +173,9 @@
     <div class="accuse-title">Accusé de reception</div>
 
     <div class="content-body" style="font-size: 13px; line-height: 1.5;">
-        Je sousigne, Monsieur &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<strong>{{ strtoupper($marche->fournisseur->representant ?? '........................................') }}</strong><br>
-        Gérant/ agissant au nom et pour le compte de la société : &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<strong>{{ strtoupper($marche->fournisseur->raison_sociale ?? '........................................') }}</strong><br>
-        Faisant élection de domicile à : &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<strong>{{ strtoupper($marche->fournisseur->adresse ?? '........................................') }} {{ strtoupper($marche->fournisseur->ville ?? '') }}</strong><br>
+        Je sousigne, Monsieur &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<strong>{{ $representant }}</strong><br>
+        Gérant/ agissant au nom et pour le compte de la société : &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<strong>{{ $societe }}</strong><br>
+        Faisant élection de domicile à : &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<strong>{{ $adresse }} {{ $ville }}</strong><br>
         Atteste avoir reçu du directeur régional du conseil agricole Rabat-Salé-Kénitra l'ordre de reprise de l'execution<br>
         du marché: &nbsp;&nbsp;<strong>{{ $marche->num_marche }}</strong><br>
         Ayant pour objet :<br>

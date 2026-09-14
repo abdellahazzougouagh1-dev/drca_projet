@@ -176,8 +176,8 @@ const MembresCommission = () => {
         </div>
       </aside>
 
-      <main className="flex-1 p-10 overflow-y-auto">
-        <div className="max-w-7xl mx-auto">
+      <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
+        <div className="w-full max-w-[1920px] mx-auto">
           <header className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
               <h1 className="text-4xl font-extrabold tracking-tight text-blue-900">Membres de la Commission</h1>

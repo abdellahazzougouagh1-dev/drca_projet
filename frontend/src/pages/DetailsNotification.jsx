@@ -118,10 +118,10 @@ export default function DetailsNotification() {
       : notification.lignes?.flatMap((l) => l.mouvements || []) || [];
 
   return (
-    <div className="min-h-screen bg-slate-50 py-10 px-4 sm:px-8 lg:px-12">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-slate-50 py-5 px-3 sm:px-5 w-full">
+      <div className="w-full">
         {/* Header */}
-        <header className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <header className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <button
               onClick={() => navigate('/notifications')}
@@ -229,88 +229,164 @@ export default function DetailsNotification() {
                     <Receipt className="text-emerald-600" size={22} /> Tableau Récapitulatif Budgétaire
                   </h2>
                   <p className="text-xs text-slate-500 mt-0.5">
-                    Ventilation comptable : Total = (1) Reports + (3) Crédits Neufs + (5) Crédits d&apos;Engagement
+                    {notification.domaine === 'FONCTIONNEMENT' ||
+                    (notification.lignes &&
+                      notification.lignes.length > 0 &&
+                      notification.lignes.every((l) => l.domaine === 'FONCTIONNEMENT'))
+                      ? `Budget de Fonctionnement : Total = (1) Reste à payer ${notification.exercice - 2}/${notification.exercice - 1} + (3) Crédits Neufs`
+                      : "Ventilation comptable : Total = (1) Reports + (3) Crédits Neufs + (5) Crédits d'Engagement"}
                   </p>
                 </div>
               </div>
 
-              <div className="overflow-x-auto border border-slate-200 rounded-xl">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="bg-[#1e3a8a] text-white text-xs font-bold">
-                      <th className="p-3.5 border-r border-blue-800">Imputation Budgétaire</th>
-                      <th className="p-3.5 border-r border-blue-800">Libellé</th>
-                      <th className="p-3.5 text-right border-r border-blue-800">
-                        Reports (1)
-                      </th>
-                      <th className="p-3.5 text-right border-r border-blue-800">
-                        Dim. report (2)
-                      </th>
-                      <th className="p-3.5 text-right border-r border-blue-800">
-                        Crédits neufs (3)
-                      </th>
-                      <th className="p-3.5 text-right border-r border-blue-800">
-                        Dim. crédit neuf (4)
-                      </th>
-                      <th className="p-3.5 text-right border-r border-blue-800">
-                        Crédits d&apos;eng. (5)
-                      </th>
-                      <th className="p-3.5 text-right border-r border-blue-800">
-                        Dim. eng. (6)
-                      </th>
-                      <th className="p-3.5 text-right bg-blue-950 font-black">
-                        Total crédits (1+3+5)
-                      </th>
-                      <th className="p-3.5 text-center">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-200 text-xs">
-                    {notification.lignes?.map((ligne) => (
-                      <tr key={ligne.id} className="hover:bg-slate-50 transition">
-                        <td className="p-3.5 font-mono font-bold text-[#1e3a8a] border-r border-slate-200 whitespace-nowrap">
-                          {ligne.article}/{ligne.paragraphe}/{ligne.ligne_budgetaire}
-                        </td>
-                        <td className="p-3.5 font-medium border-r border-slate-200 text-slate-700">
-                          {ligne.libelle}
-                        </td>
-                        <td className="p-3.5 text-right font-mono border-r border-slate-200 text-slate-800">
-                          {formatMoney(ligne.reports)}
-                        </td>
-                        <td className="p-3.5 text-right font-mono border-r border-slate-200 text-amber-700">
-                          {formatMoney(ligne.diminution_report)}
-                        </td>
-                        <td className="p-3.5 text-right font-mono border-r border-slate-200 text-slate-800 font-semibold">
-                          {formatMoney(ligne.credits_neufs)}
-                        </td>
-                        <td className="p-3.5 text-right font-mono border-r border-slate-200 text-amber-700">
-                          {formatMoney(ligne.diminution_credit_neuf)}
-                        </td>
-                        <td className="p-3.5 text-right font-mono border-r border-slate-200 text-slate-800 font-semibold">
-                          {formatMoney(ligne.credits_engagements)}
-                        </td>
-                        <td className="p-3.5 text-right font-mono border-r border-slate-200 text-amber-700">
-                          {formatMoney(ligne.diminution_credit_engagement)}
-                        </td>
-                        <td className="p-3.5 text-right font-mono font-black text-[#1e3a8a] bg-blue-50/50">
-                          {formatMoney(ligne.total_credits)}
-                        </td>
-                        <td className="p-3.5 text-center whitespace-nowrap">
-                          <button
-                            onClick={() =>
-                              navigate('/consultations/nouvelle', {
-                                state: { ligneBudgetaireId: ligne.id },
-                              })
-                            }
-                            className="px-3 py-1.5 bg-[#1e3a8a] text-white text-xs font-bold rounded-lg hover:bg-blue-800 transition shadow-xs"
-                          >
-                            Créer consultation
-                          </button>
-                        </td>
+              {notification.domaine === 'FONCTIONNEMENT' ||
+              (notification.lignes &&
+                notification.lignes.length > 0 &&
+                notification.lignes.every((l) => l.domaine === 'FONCTIONNEMENT')) ? (
+                <div className="overflow-x-auto border border-slate-200 rounded-xl shadow-2xs">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="bg-[#1e3a8a] text-white text-xs font-bold">
+                        <th className="p-3.5 border-r border-blue-800">Imputation Budgétaire</th>
+                        <th className="p-3.5 border-r border-blue-800">Libellé</th>
+                        <th className="p-3.5 text-right border-r border-blue-800 text-red-100">
+                          (1) Reste à payer {notification.exercice - 2}/{notification.exercice - 1}
+                        </th>
+                        <th className="p-3.5 text-right border-r border-blue-800 text-red-100">
+                          (2) Diminution / Reste à payer
+                        </th>
+                        <th className="p-3.5 text-right border-r border-blue-800 text-red-100">
+                          (3) Crédits Neufs
+                        </th>
+                        <th className="p-3.5 text-right border-r border-blue-800 text-red-100">
+                          (4) Diminution / Crédits Neufs
+                        </th>
+                        <th className="p-3.5 text-right bg-blue-950 font-black text-red-100">
+                          Total crédits LF {notification.exercice}
+                        </th>
+                        <th className="p-3.5 text-center">Actions</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody className="divide-y divide-slate-200 text-xs">
+                      {notification.lignes?.map((ligne) => (
+                        <tr key={ligne.id} className="hover:bg-slate-50 transition font-medium">
+                          <td className="p-3.5 font-mono font-bold text-[#1e3a8a] border-r border-slate-200 whitespace-nowrap">
+                            {ligne.article}/{ligne.paragraphe}/{ligne.ligne_budgetaire}
+                          </td>
+                          <td className="p-3.5 font-medium border-r border-slate-200 text-slate-700">
+                            {ligne.libelle}
+                          </td>
+                          <td className="p-3.5 text-right font-mono border-r border-slate-200 text-slate-800">
+                            {Number(ligne.reports) > 0 ? formatMoney(ligne.reports) : '-'}
+                          </td>
+                          <td className="p-3.5 text-right font-mono border-r border-slate-200 text-amber-700">
+                            {Number(ligne.diminution_report) > 0 ? formatMoney(ligne.diminution_report) : '-'}
+                          </td>
+                          <td className="p-3.5 text-right font-mono border-r border-slate-200 text-slate-800 font-semibold">
+                            {Number(ligne.credits_neufs) > 0 ? formatMoney(ligne.credits_neufs) : '-'}
+                          </td>
+                          <td className="p-3.5 text-right font-mono border-r border-slate-200 text-amber-700">
+                            {Number(ligne.diminution_credit_neuf) > 0 ? formatMoney(ligne.diminution_credit_neuf) : '-'}
+                          </td>
+                          <td className="p-3.5 text-right font-mono font-black text-[#1e3a8a] bg-blue-50/50">
+                            {formatMoney(Number(ligne.reports || 0) + Number(ligne.credits_neufs || 0))}
+                          </td>
+                          <td className="p-3.5 text-center whitespace-nowrap">
+                            <button
+                              onClick={() =>
+                                navigate('/consultations/nouvelle', {
+                                  state: { ligneBudgetaireId: ligne.id },
+                                })
+                              }
+                              className="px-3 py-1.5 bg-[#1e3a8a] text-white text-xs font-bold rounded-lg hover:bg-blue-800 transition shadow-xs"
+                            >
+                              Créer consultation
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="overflow-x-auto border border-slate-200 rounded-xl shadow-2xs">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="bg-[#1e3a8a] text-white text-xs font-bold">
+                        <th className="p-3.5 border-r border-blue-800">Imputation Budgétaire</th>
+                        <th className="p-3.5 border-r border-blue-800">Libellé</th>
+                        <th className="p-3.5 text-right border-r border-blue-800">
+                          Reports (1)
+                        </th>
+                        <th className="p-3.5 text-right border-r border-blue-800">
+                          Dim. report (2)
+                        </th>
+                        <th className="p-3.5 text-right border-r border-blue-800">
+                          Crédits neufs (3)
+                        </th>
+                        <th className="p-3.5 text-right border-r border-blue-800">
+                          Dim. crédit neuf (4)
+                        </th>
+                        <th className="p-3.5 text-right border-r border-blue-800">
+                          Crédits d&apos;eng. (5)
+                        </th>
+                        <th className="p-3.5 text-right border-r border-blue-800">
+                          Dim. eng. (6)
+                        </th>
+                        <th className="p-3.5 text-right bg-blue-950 font-black">
+                          Total crédits (1+3+5)
+                        </th>
+                        <th className="p-3.5 text-center">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-200 text-xs">
+                      {notification.lignes?.map((ligne) => (
+                        <tr key={ligne.id} className="hover:bg-slate-50 transition font-medium">
+                          <td className="p-3.5 font-mono font-bold text-[#1e3a8a] border-r border-slate-200 whitespace-nowrap">
+                            {ligne.article}/{ligne.paragraphe}/{ligne.ligne_budgetaire}
+                          </td>
+                          <td className="p-3.5 font-medium border-r border-slate-200 text-slate-700">
+                            {ligne.libelle}
+                          </td>
+                          <td className="p-3.5 text-right font-mono border-r border-slate-200 text-slate-800">
+                            {formatMoney(ligne.reports)}
+                          </td>
+                          <td className="p-3.5 text-right font-mono border-r border-slate-200 text-amber-700">
+                            {formatMoney(ligne.diminution_report)}
+                          </td>
+                          <td className="p-3.5 text-right font-mono border-r border-slate-200 text-slate-800 font-semibold">
+                            {formatMoney(ligne.credits_neufs)}
+                          </td>
+                          <td className="p-3.5 text-right font-mono border-r border-slate-200 text-amber-700">
+                            {formatMoney(ligne.diminution_credit_neuf)}
+                          </td>
+                          <td className="p-3.5 text-right font-mono border-r border-slate-200 text-slate-800 font-semibold">
+                            {formatMoney(ligne.credits_engagements)}
+                          </td>
+                          <td className="p-3.5 text-right font-mono border-r border-slate-200 text-amber-700">
+                            {formatMoney(ligne.diminution_credit_engagement)}
+                          </td>
+                          <td className="p-3.5 text-right font-mono font-black text-[#1e3a8a] bg-blue-50/50">
+                            {formatMoney(ligne.total_credits)}
+                          </td>
+                          <td className="p-3.5 text-center whitespace-nowrap">
+                            <button
+                              onClick={() =>
+                                navigate('/consultations/nouvelle', {
+                                  state: { ligneBudgetaireId: ligne.id },
+                                })
+                              }
+                              className="px-3 py-1.5 bg-[#1e3a8a] text-white text-xs font-bold rounded-lg hover:bg-blue-800 transition shadow-xs"
+                            >
+                              Créer consultation
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </section>
 
             {/* JOURNAL DES MOUVEMENTS */}
@@ -352,10 +428,10 @@ export default function DetailsNotification() {
                             {mvt.type_credit === 'NEUF_CC' && 'Crédit Consolidé (CC)'}
                             {mvt.type_credit === 'NEUF_CPN' && 'Crédit de Paiement Neuf (CPN)'}
                             {mvt.type_credit === 'ENGAGEMENT' && "Crédit d'engagement"}
-                            {mvt.type_credit === 'REPORT' && 'Report'}
-                            {mvt.type_credit === 'DIMINUTION_REPORT' && 'Diminution du report'}
+                            {mvt.type_credit === 'REPORT' && 'Report / Reste à payer'}
+                            {mvt.type_credit === 'DIMINUTION_REPORT' && 'Diminution du report / Reste à payer'}
                             {mvt.type_credit === 'DIMINUTION_ENGAGEMENT' && "Diminution de l'engagement"}
-                            {mvt.type_credit === 'DIMINUTION_PAIEMENT' && 'Diminution du paiement'}
+                            {mvt.type_credit === 'DIMINUTION_PAIEMENT' && 'Diminution du paiement / Crédit neuf'}
                             {!['NEUF_CC', 'NEUF_CPN', 'ENGAGEMENT', 'REPORT', 'DIMINUTION_REPORT', 'DIMINUTION_ENGAGEMENT', 'DIMINUTION_PAIEMENT'].includes(mvt.type_credit) && mvt.type_credit}
                           </td>
                           <td className="p-3 font-mono text-slate-600">
@@ -467,115 +543,194 @@ export default function DetailsNotification() {
             const totalsInvestissement = calculateSectionTotals(lignesInvestissement);
             const totalsFonctionnement = calculateSectionTotals(lignesFonctionnement);
 
-            const renderRecapSection = (title, domaineBadge, themeColor, rows, totals, totalsLabel) => (
-              <section className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-8 space-y-4">
-                <div className="flex justify-between items-center border-b pb-4">
-                  <div>
-                    <div className="flex items-center gap-2.5">
-                      <span
-                        className={`px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-wider ${themeColor === 'blue'
-                            ? 'bg-blue-100 text-blue-800 border border-blue-200'
-                            : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
-                          }`}
-                      >
-                        {domaineBadge}
-                      </span>
-                      <h2 className="text-xl font-black text-slate-800">{title}</h2>
+            const renderRecapSection = (title, domaineBadge, themeColor, rows, totals, totalsLabel) => {
+              const isFonct = domaineBadge === 'FONCTIONNEMENT';
+
+              return (
+                <section className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-8 space-y-4">
+                  <div className="flex justify-between items-center border-b pb-4">
+                    <div>
+                      <div className="flex items-center gap-2.5">
+                        <span
+                          className={`px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-wider ${themeColor === 'blue'
+                              ? 'bg-blue-100 text-blue-800 border border-blue-200'
+                              : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                            }`}
+                        >
+                          {domaineBadge}
+                        </span>
+                        <h2 className="text-xl font-black text-slate-800">{title}</h2>
+                      </div>
+                      <p className="text-xs text-slate-500 mt-1">
+                        Consolidation des notifications {domaineBadge.toLowerCase()} de l&apos;exercice {notification.exercice} ({rows.length} ligne{rows.length > 1 ? 's' : ''}).
+                      </p>
                     </div>
-                    <p className="text-xs text-slate-500 mt-1">
-                      Consolidation des notifications {domaineBadge.toLowerCase()} de l&apos;exercice {notification.exercice} ({rows.length} ligne{rows.length > 1 ? 's' : ''}).
-                    </p>
                   </div>
-                </div>
 
-                {rows.length === 0 ? (
-                  <p className="py-10 text-center text-slate-400 text-xs italic bg-slate-50 rounded-xl border border-slate-100">
-                    Aucune ligne budgétaire pour le budget {domaineBadge.toLowerCase()} sur l&apos;exercice {notification.exercice}.
-                  </p>
-                ) : (
-                  <div className="overflow-x-auto border border-slate-200 rounded-xl shadow-2xs">
-                    <table className="w-full text-left border-collapse text-xs">
-                      <thead>
-                        <tr className="bg-[#1e3a8a] text-white font-bold">
-                          <th className="p-3.5 border-r border-blue-800">Imputation Budgétaire</th>
-                          <th className="p-3.5 border-r border-blue-800">Libellé</th>
-                          <th className="p-3.5 text-right border-r border-blue-800">(1) Reports</th>
-                          <th className="p-3.5 text-right border-r border-blue-800">(2) Dim. report</th>
-                          <th className="p-3.5 text-right border-r border-blue-800">(3) Crédits neufs</th>
-                          <th className="p-3.5 text-right border-r border-blue-800">(4) Dim. crédit neuf</th>
-                          <th className="p-3.5 text-right border-r border-blue-800">(5) Crédits d&apos;eng.</th>
-                          <th className="p-3.5 text-right border-r border-blue-800">(6) Dim. eng.</th>
-                          <th className="p-3.5 text-right bg-blue-950 font-black">
-                            Total Crédits (1+3+5)
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-200">
-                        {/* Ligne 1 : TOTAL RÉCAPITULATIF */}
-                        <tr className="bg-slate-100 font-bold text-xs text-slate-900 border-b-2 border-slate-300">
-                          <td colSpan="2" className="p-3.5 border-r border-slate-300 uppercase font-black">
-                            {totalsLabel} {notification.exercice}
-                          </td>
-                          <td className="p-3.5 text-right font-mono border-r border-slate-300">
-                            {Number(totals.reports) > 0 ? formatMoney(totals.reports) : ''}
-                          </td>
-                          <td className="p-3.5 text-right font-mono border-r border-slate-300 text-amber-700">
-                            {formatMoney(totals.diminution_report)}
-                          </td>
-                          <td className="p-3.5 text-right font-mono border-r border-slate-300">
-                            {formatMoney(totals.credits_neufs)}
-                          </td>
-                          <td className="p-3.5 text-right font-mono border-r border-slate-300 text-amber-700">
-                            {formatMoney(totals.diminution_credit_neuf)}
-                          </td>
-                          <td className="p-3.5 text-right font-mono border-r border-slate-300">
-                            {formatMoney(totals.credits_engagements)}
-                          </td>
-                          <td className="p-3.5 text-right font-mono border-r border-slate-300 text-amber-700">
-                            {formatMoney(totals.diminution_credit_engagement)}
-                          </td>
-                          <td className="p-3.5 text-right font-mono font-black text-white bg-[#1e40af]">
-                            {formatMoney(totals.total_credits)}
-                          </td>
-                        </tr>
-
-                        {rows.map((row) => (
-                          <tr key={row.imputation} className="hover:bg-slate-50 transition font-medium">
-                            <td className="p-3.5 font-mono font-bold text-[#1e3a8a] border-r border-slate-200 whitespace-nowrap">
-                              {row.imputation}
+                  {rows.length === 0 ? (
+                    <p className="py-10 text-center text-slate-400 text-xs italic bg-slate-50 rounded-xl border border-slate-100">
+                      Aucune ligne budgétaire pour le budget {domaineBadge.toLowerCase()} sur l&apos;exercice {notification.exercice}.
+                    </p>
+                  ) : isFonct ? (
+                    <div className="overflow-x-auto border border-slate-200 rounded-xl shadow-2xs">
+                      <table className="w-full text-left border-collapse text-xs">
+                        <thead>
+                          <tr className="bg-[#1e3a8a] text-white font-bold">
+                            <th className="p-3.5 border-r border-blue-800">Imputation Budgétaire</th>
+                            <th className="p-3.5 border-r border-blue-800">Libellé</th>
+                            <th className="p-3.5 text-right border-r border-blue-800 text-red-100">
+                              (1) Reste à payer {notification.exercice - 2}/{notification.exercice - 1}
+                            </th>
+                            <th className="p-3.5 text-right border-r border-blue-800 text-red-100">
+                              (2) Dim. reste à payer
+                            </th>
+                            <th className="p-3.5 text-right border-r border-blue-800 text-red-100">
+                              (3) Crédits neufs
+                            </th>
+                            <th className="p-3.5 text-right border-r border-blue-800 text-red-100">
+                              (4) Dim. crédit neuf
+                            </th>
+                            <th className="p-3.5 text-right bg-blue-950 font-black text-red-100">
+                              Total Crédits LF {notification.exercice}
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-200">
+                          {/* Ligne 1 : TOTAL RÉCAPITULATIF */}
+                          <tr className="bg-slate-100 font-bold text-xs text-slate-900 border-b-2 border-slate-300">
+                            <td colSpan="2" className="p-3.5 border-r border-slate-300 uppercase font-black">
+                              {totalsLabel} {notification.exercice}
                             </td>
-                            <td className="p-3.5 border-r border-slate-200 text-slate-700">
-                              {row.libelle}
+                            <td className="p-3.5 text-right font-mono border-r border-slate-300">
+                              {Number(totals.reports) > 0 ? formatMoney(totals.reports) : ''}
                             </td>
-                            <td className="p-3.5 text-right font-mono border-r border-slate-200">
-                              {Number(row.reports) > 0 ? formatMoney(row.reports) : ''}
+                            <td className="p-3.5 text-right font-mono border-r border-slate-300 text-amber-700">
+                              {formatMoney(totals.diminution_report)}
                             </td>
-                            <td className="p-3.5 text-right font-mono border-r border-slate-200 text-amber-700">
-                              {formatMoney(row.diminution_report)}
+                            <td className="p-3.5 text-right font-mono border-r border-slate-300">
+                              {formatMoney(totals.credits_neufs)}
                             </td>
-                            <td className="p-3.5 text-right font-mono border-r border-slate-200 font-semibold">
-                              {formatMoney(row.credits_neufs)}
+                            <td className="p-3.5 text-right font-mono border-r border-slate-300 text-amber-700">
+                              {formatMoney(totals.diminution_credit_neuf)}
                             </td>
-                            <td className="p-3.5 text-right font-mono border-r border-slate-200 text-amber-700">
-                              {formatMoney(row.diminution_credit_neuf)}
-                            </td>
-                            <td className="p-3.5 text-right font-mono border-r border-slate-200 font-semibold">
-                              {formatMoney(row.credits_engagements)}
-                            </td>
-                            <td className="p-3.5 text-right font-mono border-r border-slate-200 text-amber-700">
-                              {formatMoney(row.diminution_credit_engagement)}
-                            </td>
-                            <td className="p-3.5 text-right font-mono font-black text-[#1e3a8a] bg-blue-50/50">
-                              {formatMoney(row.total_credits)}
+                            <td className="p-3.5 text-right font-mono font-black text-white bg-[#1e40af]">
+                              {formatMoney(totals.reports + totals.credits_neufs)}
                             </td>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </section>
-            );
+
+                          {rows.map((row) => (
+                            <tr key={row.imputation} className="hover:bg-slate-50 transition font-medium">
+                              <td className="p-3.5 font-mono font-bold text-[#1e3a8a] border-r border-slate-200 whitespace-nowrap">
+                                {row.imputation}
+                              </td>
+                              <td className="p-3.5 border-r border-slate-200 text-slate-700">
+                                {row.libelle}
+                              </td>
+                              <td className="p-3.5 text-right font-mono border-r border-slate-200">
+                                {Number(row.reports) > 0 ? formatMoney(row.reports) : ''}
+                              </td>
+                              <td className="p-3.5 text-right font-mono border-r border-slate-200 text-amber-700">
+                                {formatMoney(row.diminution_report)}
+                              </td>
+                              <td className="p-3.5 text-right font-mono border-r border-slate-200 font-semibold">
+                                {formatMoney(row.credits_neufs)}
+                              </td>
+                              <td className="p-3.5 text-right font-mono border-r border-slate-200 text-amber-700">
+                                {formatMoney(row.diminution_credit_neuf)}
+                              </td>
+                              <td className="p-3.5 text-right font-mono font-black text-[#1e3a8a] bg-blue-50/50">
+                                {formatMoney(Number(row.reports || 0) + Number(row.credits_neufs || 0))}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto border border-slate-200 rounded-xl shadow-2xs">
+                      <table className="w-full text-left border-collapse text-xs">
+                        <thead>
+                          <tr className="bg-[#1e3a8a] text-white font-bold">
+                            <th className="p-3.5 border-r border-blue-800">Imputation Budgétaire</th>
+                            <th className="p-3.5 border-r border-blue-800">Libellé</th>
+                            <th className="p-3.5 text-right border-r border-blue-800">(1) Reports</th>
+                            <th className="p-3.5 text-right border-r border-blue-800">(2) Dim. report</th>
+                            <th className="p-3.5 text-right border-r border-blue-800">(3) Crédits neufs</th>
+                            <th className="p-3.5 text-right border-r border-blue-800">(4) Dim. crédit neuf</th>
+                            <th className="p-3.5 text-right border-r border-blue-800">(5) Crédits d&apos;eng.</th>
+                            <th className="p-3.5 text-right border-r border-blue-800">(6) Dim. eng.</th>
+                            <th className="p-3.5 text-right bg-blue-950 font-black">
+                              Total Crédits (1+3+5)
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-200">
+                          {/* Ligne 1 : TOTAL RÉCAPITULATIF */}
+                          <tr className="bg-slate-100 font-bold text-xs text-slate-900 border-b-2 border-slate-300">
+                            <td colSpan="2" className="p-3.5 border-r border-slate-300 uppercase font-black">
+                              {totalsLabel} {notification.exercice}
+                            </td>
+                            <td className="p-3.5 text-right font-mono border-r border-slate-300">
+                              {Number(totals.reports) > 0 ? formatMoney(totals.reports) : ''}
+                            </td>
+                            <td className="p-3.5 text-right font-mono border-r border-slate-300 text-amber-700">
+                              {formatMoney(totals.diminution_report)}
+                            </td>
+                            <td className="p-3.5 text-right font-mono border-r border-slate-300">
+                              {formatMoney(totals.credits_neufs)}
+                            </td>
+                            <td className="p-3.5 text-right font-mono border-r border-slate-300 text-amber-700">
+                              {formatMoney(totals.diminution_credit_neuf)}
+                            </td>
+                            <td className="p-3.5 text-right font-mono border-r border-slate-300">
+                              {formatMoney(totals.credits_engagements)}
+                            </td>
+                            <td className="p-3.5 text-right font-mono border-r border-slate-300 text-amber-700">
+                              {formatMoney(totals.diminution_credit_engagement)}
+                            </td>
+                            <td className="p-3.5 text-right font-mono font-black text-white bg-[#1e40af]">
+                              {formatMoney(totals.total_credits)}
+                            </td>
+                          </tr>
+
+                          {rows.map((row) => (
+                            <tr key={row.imputation} className="hover:bg-slate-50 transition font-medium">
+                              <td className="p-3.5 font-mono font-bold text-[#1e3a8a] border-r border-slate-200 whitespace-nowrap">
+                                {row.imputation}
+                              </td>
+                              <td className="p-3.5 border-r border-slate-200 text-slate-700">
+                                {row.libelle}
+                              </td>
+                              <td className="p-3.5 text-right font-mono border-r border-slate-200">
+                                {Number(row.reports) > 0 ? formatMoney(row.reports) : ''}
+                              </td>
+                              <td className="p-3.5 text-right font-mono border-r border-slate-200 text-amber-700">
+                                {formatMoney(row.diminution_report)}
+                              </td>
+                              <td className="p-3.5 text-right font-mono border-r border-slate-200 font-semibold">
+                                {formatMoney(row.credits_neufs)}
+                              </td>
+                              <td className="p-3.5 text-right font-mono border-r border-slate-200 text-amber-700">
+                                {formatMoney(row.diminution_credit_neuf)}
+                              </td>
+                              <td className="p-3.5 text-right font-mono border-r border-slate-200 font-semibold">
+                                {formatMoney(row.credits_engagements)}
+                              </td>
+                              <td className="p-3.5 text-right font-mono border-r border-slate-200 text-amber-700">
+                                {formatMoney(row.diminution_credit_engagement)}
+                              </td>
+                              <td className="p-3.5 text-right font-mono font-black text-[#1e3a8a] bg-blue-50/50">
+                                {formatMoney(row.total_credits)}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </section>
+              );
+            };
 
             return (
               <>

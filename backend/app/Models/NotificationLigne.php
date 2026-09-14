@@ -77,22 +77,23 @@ class NotificationLigne extends Model
     public function getCreditsEngagesAttribute()
     {
         $engagementsConsultations = \App\Models\Engagement::whereIn('consultation_id', $this->consultations()->pluck('id'))->sum('montant_global');
-        
-        // Assuming Marches engagements are handled by the 'montant' field or a specific related field
-        // as the requirement stated 'Engagement consomme les crédits' 
-        // In the existing architecture, AOO uses Marche, and might have engagements there
         $engagementsMarches = $this->marches()->where('statut_acte_engagement', '!=', 'Annulé')->sum('montant') ?? 0;
-        
-        return round($engagementsConsultations + $engagementsMarches, 2);
+        $engageNeuf = floatval($engagementsConsultations + $engagementsMarches);
+
+        $report = floatval($this->reports ?? 0);
+        $engagement = floatval($this->credits_engagements ?? 0);
+        $creditsConsolides = floatval($this->credits_consolides ?? 0);
+
+        return round($report + $creditsConsolides + $engagement + $engageNeuf, 2);
     }
 
     public function getCreditsDisponiblesAttribute()
     {
-        $netReports = ($this->reports ?? 0) - ($this->diminution_report ?? 0);
-        $netCreditsNeufs = ($this->credits_neufs ?? 0) - ($this->diminution_credit_neuf ?? 0);
-        $netEngagement = ($this->credits_engagements ?? 0) - ($this->diminution_credit_engagement ?? 0);
-        $totalNet = $netReports + $netCreditsNeufs + $netEngagement;
+        $netCreditsNeufs = max(0, floatval($this->credits_neufs ?? 0) - floatval($this->diminution_credit_neuf ?? 0));
+        $engagementsConsultations = \App\Models\Engagement::whereIn('consultation_id', $this->consultations()->pluck('id'))->sum('montant_global');
+        $engagementsMarches = $this->marches()->where('statut_acte_engagement', '!=', 'Annulé')->sum('montant') ?? 0;
+        $engageNeuf = floatval($engagementsConsultations + $engagementsMarches);
 
-        return round($totalNet - $this->getCreditsEngagesAttribute(), 2);
+        return round(max(0, $netCreditsNeufs - $engageNeuf), 2);
     }
 }

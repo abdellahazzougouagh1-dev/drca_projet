@@ -553,7 +553,7 @@ const TraitementEngagement = () => {
 
       {/* HEADER */}
       <header className="bg-white/95 border-b border-slate-200 sticky top-0 z-30 shadow-sm backdrop-blur">
-        <div className="w-full px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+        <div className="w-full px-4 sm:px-6 lg:px-8 max-w-[1920px] mx-auto">
           <div className="py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="flex items-center gap-4">
               <button
@@ -584,7 +584,7 @@ const TraitementEngagement = () => {
         </div>
       </header>
 
-      <main className="w-full px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto py-8">
+      <main className="w-full px-4 sm:px-6 lg:px-8 max-w-[1920px] mx-auto py-8">
 
         {/* MESSAGES */}
         {errorMessage && (

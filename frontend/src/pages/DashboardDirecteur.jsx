@@ -15,14 +15,61 @@ const money = (value) => new Intl.NumberFormat('fr-FR', { style: 'currency', cur
 const date = (value) => value ? new Date(value).toLocaleDateString('fr-FR') : '—';
 const percentage = (part, total) => total ? Math.round((part / total) * 100) : 0;
 
+const getDossierPhase = (item) => {
+  const state = String(item.statut_dossier || item.statut || item.statut_marche || item.etat_avancement || '').toLowerCase().trim();
+
+  // 1. Paiement
+  if (state.includes('payé') || state.includes('paye') || state.includes('paiement') || state.includes('clôtur') || state.includes('clotur')) {
+    return {
+      label: 'Paiement',
+      badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+      dotClass: 'bg-emerald-500',
+      progress: 100,
+    };
+  }
+
+  // 2. Ordonnancement
+  if ((item.ordonnancements && item.ordonnancements.length > 0) || state.includes('ordonnan') || state.includes('mandat')) {
+    return {
+      label: 'Ordonnancement',
+      badgeClass: 'bg-amber-50 text-amber-800 border-amber-200',
+      dotClass: 'bg-amber-500',
+      progress: 80,
+    };
+  }
+
+  // 3. Liquidation
+  if (item.liquidation || state.includes('liquid') || state.includes('factur') || state.includes('decompte') || state.includes('service fait') || state.includes('reception')) {
+    return {
+      label: 'Liquidation',
+      badgeClass: 'bg-purple-50 text-purple-700 border-purple-200',
+      dotClass: 'bg-purple-500',
+      progress: 60,
+    };
+  }
+
+  // 4. Engagement
+  if (item.engagement || item.registreEngagement || item.numero_engagement || state.includes('engag') || state.includes('approb') || state.includes('visa') || state.includes('os')) {
+    return {
+      label: 'Engagement',
+      badgeClass: 'bg-blue-50 text-blue-700 border-blue-200',
+      dotClass: 'bg-blue-500',
+      progress: 40,
+    };
+  }
+
+  // 5. Consultation
+  return {
+    label: 'Consultation',
+    badgeClass: 'bg-cyan-50 text-cyan-800 border-cyan-200',
+    dotClass: 'bg-cyan-500',
+    progress: 20,
+  };
+};
+
 const phase = (item) => {
-  const state = String(item.statut_dossier || item.statut || item.etat_avancement || '').toLowerCase();
-  if (state.includes('clôtur') || state.includes('termin')) return ['Terminée', 100];
-  if (state.includes('attrib') || state.includes('valid')) return ['Attribution', 78];
-  if (state.includes('analyse')) return ['Analyse des offres', 62];
-  if (state.includes('lanc') || state.includes('cours')) return ['Réception des offres', 45];
-  if (state.includes('prépar')) return ['Préparation', 22];
-  return ['Programmation', 10];
+  const p = getDossierPhase(item);
+  return [p.label, p.progress];
 };
 
 const engagementMode = (item) => {
@@ -41,6 +88,71 @@ const budgetLine = (item) => {
   return 'Non rattachée';
 };
 
+const pct = (part, total) => {
+  const p = Number(part || 0);
+  const t = Number(total || 0);
+  if (!t || p <= 0) return 0;
+  const raw = (p / t) * 100;
+  if (raw > 0 && raw < 0.01) {
+    return Number(raw.toFixed(4));
+  }
+  return Math.round(raw * 100) / 100;
+};
+
+const rate = (v) => {
+  const num = Number(v || 0);
+  if (num === 0) return '0 %';
+  if (num > 0 && num < 0.01) {
+    return `${num.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 4 })} %`;
+  }
+  return `${num.toLocaleString('fr-FR', { minimumFractionDigits: 0, maximumFractionDigits: 2 })} %`;
+};
+
+function summaryOf(rows) {
+  const sum = (key) => (rows || []).reduce((total, row) => total + Number(row[key] || 0), 0);
+  const total_notifie = sum('total_credits');
+  const total_engage = sum('credits_engages');
+  const total_disponible = sum('credits_disponibles');
+  const total_ordonnance = sum('total_ordonnance');
+  const total_paiement = sum('total_paiements');
+  return {
+    total_notifie,
+    total_engage,
+    total_disponible,
+    total_ordonnance,
+    total_paiement,
+    taux_consommation: pct(total_engage, total_notifie),
+    taux_ordonnancement: pct(total_ordonnance, total_engage),
+    taux_ordonnancement_notifie: pct(total_ordonnance, total_notifie),
+    taux_paiement_ordonnancement: pct(total_paiement, total_ordonnance),
+    taux_paiement_engagement: pct(total_paiement, total_engage),
+    taux_paiement_notifie: pct(total_paiement, total_notifie),
+  };
+}
+
+function PhaseCard({ step, label, value, rateValue, secondaryRate, Icon, tone, detail }) {
+  return (
+    <article className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <span className={`absolute inset-y-0 left-0 w-1 ${tone}`} />
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-[.16em] text-slate-400">Taux {step}</p>
+          <p className="mt-1 text-sm font-bold text-slate-700">{label}</p>
+          <p className="mt-2 text-2xl font-black text-slate-950">{money(value)}</p>
+          <div className="mt-2 space-y-0.5">
+            <p className="text-xs font-bold text-emerald-700">{rateValue}</p>
+            {secondaryRate && <p className="text-xs font-semibold text-slate-600">{secondaryRate}</p>}
+          </div>
+          {detail && <p className="mt-1.5 text-xs text-slate-400">{detail}</p>}
+        </div>
+        <span className="grid h-10 w-10 place-items-center rounded-xl bg-slate-100 text-slate-600">
+          <Icon size={20} />
+        </span>
+      </div>
+    </article>
+  );
+}
+
 function Progress({ value, color = 'bg-blue-600' }) {
   return <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100"><div className={`h-full rounded-full ${color}`} style={{ width: `${Math.min(100, value)}%` }} /></div>;
 }
@@ -55,7 +167,8 @@ export default function DashboardDirecteur() {
   const currentYear = new Date().getFullYear();
   const [year, setYear] = useState(String(currentYear));
   const [month, setMonth] = useState('');
-  const [tab, setTab] = useState('overview');
+  const [domaine, setDomaine] = useState('ALL'); // 'ALL' | 'FONCTIONNEMENT' | 'INVESTISSEMENT'
+  const [tab, setTab] = useState('notifications');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
@@ -69,18 +182,70 @@ export default function DashboardDirecteur() {
     navigate('/login');
   };
 
+  const getNotifDomaine = (notif) => {
+    if (notif.domaine) return notif.domaine;
+    const domaines = (notif.lignes || []).map((l) => l.domaine).filter(Boolean);
+    if (domaines.length === 0) return 'INVESTISSEMENT';
+    const hasInv = domaines.includes('INVESTISSEMENT');
+    const hasFnc = domaines.includes('FONCTIONNEMENT');
+    if (hasInv && hasFnc) return 'MIXTE';
+    return hasFnc ? 'FONCTIONNEMENT' : 'INVESTISSEMENT';
+  };
+
+  const getDossierDomaine = (item) => {
+    if (item.domaine) return item.domaine;
+    const lineDom = item.notification_ligne?.domaine || item.notificationLigne?.domaine || item.budget?.domaine;
+    if (lineDom) return lineDom;
+    const lineId = item.notification_ligne_id || item.budget_ligne_id;
+    if (lineId && store.lines) {
+      const found = store.lines.find((l) => l.id === lineId);
+      if (found?.domaine) return found.domaine;
+    }
+    return 'INVESTISSEMENT';
+  };
+
+  const availableYears = useMemo(() => {
+    const current = new Date().getFullYear();
+    const yearSet = new Set();
+    for (let y = current + 2; y >= 2018; y--) {
+      yearSet.add(y);
+    }
+    store.notifications?.forEach((n) => {
+      if (n.exercice) yearSet.add(Number(n.exercice));
+      if (n.date_notification) yearSet.add(new Date(n.date_notification).getFullYear());
+    });
+    store.consultations?.forEach((c) => {
+      if (c.annee) yearSet.add(Number(c.annee));
+      if (c.date_consultation) yearSet.add(new Date(c.date_consultation).getFullYear());
+    });
+    store.aoos?.forEach((a) => {
+      if (a.annee || a.exercice) yearSet.add(Number(a.annee || a.exercice));
+      if (a.date_lancement || a.created_at) yearSet.add(new Date(a.date_lancement || a.created_at).getFullYear());
+    });
+    return Array.from(yearSet).filter((y) => y >= 2010 && y <= 2050).sort((a, b) => b - a);
+  }, [store]);
+
   useEffect(() => {
     let active = true;
     async function load() {
       setLoading(true); setError('');
-      const query = `?exercice=${year}`;
+      const query = year ? `?exercice=${year}` : '';
       const responses = await Promise.allSettled([
-        api.get('/consultations'), api.get('/aoos'), api.get('/notifications'),
+        api.get('/consultations'), api.get('/aoos'), api.get(`/notifications${query}`),
         api.get(`/notification-lignes${query}`), api.get(`/dashboard/budget${query}`),
+        api.get(`/ordonnancements${query}`),
       ]);
       if (!active) return;
       const result = (index, fallback) => responses[index].status === 'fulfilled' ? responses[index].value.data : fallback;
-      setStore({ consultations: result(0, []), aoos: result(1, []), notifications: result(2, []), lines: result(3, []), budget: result(4, {}) });
+      const ordData = result(5, { data: [] });
+      setStore({ 
+        consultations: result(0, []), 
+        aoos: result(1, []), 
+        notifications: result(2, []), 
+        lines: result(3, []), 
+        budget: result(4, {}),
+        ordonnancements: Array.isArray(ordData) ? ordData : (ordData.data || [])
+      });
       if (responses.some((item) => item.status === 'rejected')) setError('Certaines sources n’ont pas pu être chargées. Les données disponibles restent affichées.');
       setLoading(false);
     }
@@ -88,42 +253,259 @@ export default function DashboardDirecteur() {
     return () => { active = false; };
   }, [year]);
 
+  const realRows = useMemo(() => {
+    const map = new Map();
+    const getLineKey = (dom, imp) => `${(dom || 'INVESTISSEMENT').toUpperCase()}_${imp}`;
+
+    // 1. Process backend budget lines
+    if (store.budget?.lignes && Array.isArray(store.budget.lignes)) {
+      store.budget.lignes.forEach((line) => {
+        const lineDom = String(line.domaine || 'INVESTISSEMENT').toUpperCase();
+        const imp = line.imputation || `${line.article || ''} / ${line.paragraphe || ''} / ${line.ligne_budgetaire || ''}`;
+        const key = getLineKey(lineDom, imp);
+        const notif = Number(line.total_credits || line.montant || 0);
+        const eng = Number(line.credits_engages || 0);
+        const ord = Number(line.total_ordonnance || 0);
+        const pai = Number(line.total_paiements || line.total_paiement || 0);
+        map.set(key, {
+          domaine: lineDom,
+          imputation: imp,
+          libelle: line.libelle || '',
+          total_credits: notif,
+          credits_engages: eng,
+          credits_disponibles: Number(line.credits_disponibles ?? (notif - eng)),
+          total_ordonnance: ord,
+          total_paiements: pai,
+        });
+      });
+    }
+
+    // 1b. Process ordonnancements directly from Registre to ensure all 5 column sums are included
+    if (store.ordonnancements && Array.isArray(store.ordonnancements) && store.ordonnancements.length > 0) {
+      store.ordonnancements.forEach((ord) => {
+        const dom = String(ord.budget_type || ord.domaine || 'INVESTISSEMENT').toUpperCase().includes('FONCT') ? 'FONCTIONNEMENT' : 'INVESTISSEMENT';
+        const art = ord.article || ord.art || '';
+        const par = ord.paragraphe || ord.par || '';
+        const lig = ord.ligne || ord.ligne_budgetaire || ord.lig || '';
+        const imp = (art && par && lig) ? `${art} / ${par} / ${lig}` : null;
+        
+        // Calcul de la somme des colonnes du registre d'ordonnancement
+        let sumOrd = 0;
+        let isPaye = ['payé', 'paye', 'clôturé', 'cloture'].includes(String(ord.statut || '').toLowerCase());
+        
+        if (ord.ordres && Array.isArray(ord.ordres) && ord.ordres.length > 0) {
+          sumOrd = ord.ordres.reduce((s, o) => s + Number(o.montant || 0), 0);
+        } else {
+          const mRep = Number(ord.paiement_reports || (String(ord.creance || '').includes('Report') ? ord.montant_brut : 0));
+          const mCons = Number(ord.credit_consolide || (String(ord.creance || '').includes('Consolid') ? ord.montant_brut : 0));
+          const mNeuf = Number(ord.credit_neuf || (String(ord.creance || '').includes('Neuf') ? ord.montant_brut : 0));
+          const mRas = Number(ord.ras_total || (Number(ord.retenue_tva || 0) + Number(ord.retenue_ias || 0) + Number(ord.autres_retenues || 0)));
+          const mRap = Number(ord.rap_total || (String(ord.creance || '').includes('Reste') ? ord.net_a_payer : 0));
+          sumOrd = (mRep + mCons + mNeuf + mRas + mRap) || Number(ord.montant_brut || ord.net_a_payer || 0);
+        }
+
+        if (imp) {
+          const key = getLineKey(dom, imp);
+          if (map.has(key)) {
+            const row = map.get(key);
+            if (row.total_ordonnance === 0 && sumOrd > 0) {
+              row.total_ordonnance = sumOrd;
+              row.total_paiements = sumOrd;
+            }
+          }
+        }
+      });
+    }
+
+    // 2. Process store.lines if any lines are missing or have additional credits
+    if (store.lines && Array.isArray(store.lines)) {
+      store.lines.forEach((line) => {
+        const lineDom = String(line.domaine || line.notification?.domaine || 'INVESTISSEMENT').toUpperCase();
+        const imp = line.imputation || `${line.article || ''} / ${line.paragraphe || ''} / ${line.ligne_budgetaire || ''}`;
+        const key = getLineKey(lineDom, imp);
+        const reports = Number(line.reports || 0);
+        const neufs = Number(line.credits_neufs || 0);
+        const engs = Number(line.credits_engagements || 0);
+        const dimReports = Number(line.diminution_report || 0);
+        const dimNeufs = Number(line.diminution_credit_neuf || 0);
+        const dimEngs = Number(line.diminution_credit_engagement || 0);
+        const netReports = Math.max(0, reports - dimReports);
+        const netNeufs = Math.max(0, neufs - dimNeufs);
+        const netEngs = Math.max(0, engs - dimEngs);
+        const netCredits = Number(line.total_credits) || (netReports + netNeufs + netEngs);
+        const actualEngageNeuf = Number(line.engage_neuf || 0);
+        const eng = Number(line.credits_engages || 0) || (reports + engs + actualEngageNeuf);
+        const ord = Number(line.total_ordonnance || 0);
+        const pai = Number(line.total_paiements || line.total_paiement || ord || 0);
+
+        if (!map.has(key)) {
+          map.set(key, {
+            domaine: lineDom,
+            imputation: imp,
+            libelle: line.libelle || '',
+            total_credits: netCredits,
+            credits_engages: eng,
+            credits_disponibles: Math.max(0, netCredits - eng),
+            total_ordonnance: ord,
+            total_paiements: pai,
+          });
+        }
+      });
+    }
+
+    // 3. Process store.notifications (in case there are notifications with lines or total amount)
+    if (store.notifications && Array.isArray(store.notifications)) {
+      store.notifications.forEach((notif) => {
+        const notifDom = getNotifDomaine(notif);
+        if (notif.lignes && notif.lignes.length > 0) {
+          notif.lignes.forEach((line) => {
+            const lineDom = String(line.domaine || notifDom || 'INVESTISSEMENT').toUpperCase();
+            const imp = `${line.article || ''} / ${line.paragraphe || ''} / ${line.ligne_budgetaire || ''}`;
+            const key = getLineKey(lineDom, imp);
+            if (!map.has(key)) {
+              const reports = Number(line.reports || 0);
+              const neufs = Number(line.credits_neufs || 0);
+              const engs = Number(line.credits_engagements || 0);
+              const dimReports = Number(line.diminution_report || 0);
+              const dimNeufs = Number(line.diminution_credit_neuf || 0);
+              const dimEngs = Number(line.diminution_credit_engagement || 0);
+              const netReports = Math.max(0, reports - dimReports);
+              const netNeufs = Math.max(0, neufs - dimNeufs);
+              const netEngs = Math.max(0, engs - dimEngs);
+              const lineCredits = Number(line.total_credits) || (netReports + netNeufs + netEngs);
+              const lineEngages = reports + engs;
+              map.set(key, {
+                domaine: lineDom,
+                imputation: imp,
+                libelle: line.libelle || '',
+                total_credits: lineCredits,
+                credits_engages: lineEngages,
+                credits_disponibles: Math.max(0, lineCredits - lineEngages),
+                total_ordonnance: 0,
+                total_paiements: 0,
+              });
+            }
+          });
+        }
+      });
+    }
+
+    // If map is empty but notifications exist, create summary row from notifications
+    if (map.size === 0 && store.notifications && store.notifications.length > 0) {
+      store.notifications.forEach((notif) => {
+        const notifDom = getNotifDomaine(notif);
+        const key = `${notifDom}_Global`;
+        const mnt = Number(notif.montant || notif.montant_total || 0);
+        if (map.has(key)) {
+          const cur = map.get(key);
+          cur.total_credits += mnt;
+          cur.credits_disponibles += mnt;
+        } else {
+          map.set(key, {
+            domaine: notifDom,
+            imputation: `Notification #${notif.numero || notif.reference || notif.id}`,
+            libelle: notif.objet || 'Crédits notifiés',
+            total_credits: mnt,
+            credits_engages: 0,
+            credits_disponibles: mnt,
+            total_ordonnance: 0,
+            total_paiements: 0,
+          });
+        }
+      });
+    }
+
+    return Array.from(map.values()).map((row) => ({
+      ...row,
+      taux_engagement: pct(row.credits_engages, row.total_credits),
+      taux_ordonnancement: pct(row.total_ordonnance, row.credits_engages),
+      taux_ordonnancement_notifie: pct(row.total_ordonnance, row.total_credits),
+      taux_paiement_ordonnancement: pct(row.total_paiements, row.total_ordonnance),
+      taux_paiement_engagement: pct(row.total_paiements, row.credits_engages),
+      taux_paiement_notifie: pct(row.total_paiements, row.total_credits),
+    }));
+  }, [store.budget, store.lines, store.notifications]);
+
+  const budgetColumns = ['DOMAINE', 'LIGNE BUDGÉTAIRE', 'NOTIFIÉ', 'TOTAL ENGAGEMENTS', 'TAUX ENG.', 'DISPONIBLE', 'TOTAL ORDONNANCEMENT', 'TAUX ORD./ENG.', 'TAUX ORD./NOT.', 'TOTAL PAIEMENTS', 'TAUX PAI./ORD.', 'TAUX PAI./ENG.', 'TAUX PAI./NOT.'];
+
+  const budgetRows = useMemo(() => {
+    if (domaine === 'ALL') return realRows;
+    return realRows.filter((r) => r.domaine === domaine);
+  }, [realRows, domaine]);
+
+  const budgetSummary = useMemo(() => summaryOf(budgetRows), [budgetRows]);
+  const invBudgetRows = useMemo(() => realRows.filter((r) => r.domaine === 'INVESTISSEMENT'), [realRows]);
+  const fncBudgetRows = useMemo(() => realRows.filter((r) => r.domaine === 'FONCTIONNEMENT'), [realRows]);
+  const invSummary = useMemo(() => summaryOf(invBudgetRows), [invBudgetRows]);
+  const fncSummary = useMemo(() => summaryOf(fncBudgetRows), [fncBudgetRows]);
+
   const dashboard = useMemo(() => {
-    const dossiers = [
+    const matchYear = (item) => !year || String(item.annee || item.exercice || new Date(item.date_consultation || item.date_lancement || item.created_at || 0).getFullYear()) === String(year);
+    const rawDossiers = [
       ...store.consultations.map((item) => ({ ...item, type: 'Consultation', ref: item.numero_consultation, title: item.objet_consultation, route: `/consultations/${item.id}` })),
       ...store.aoos.map((item) => ({ ...item, type: 'Appel d’offres', ref: item.num_aoo, title: item.objet, route: `/aoos/${item.id}` })),
-    ];
-    const filtered = month ? dossiers.filter((item) => new Date(item.created_at || item.date_consultation || item.date_preparation).getMonth() + 1 === Number(month)) : dossiers;
-    const notified = Number(store.budget.total_notifie || store.lines.reduce((sum, line) => sum + Number(line.total_credits || 0), 0));
-    const engaged = Number(store.budget.total_engage || store.lines.reduce((sum, line) => sum + Number(line.credits_engages || 0), 0));
-    const ordered = Number(store.budget.total_ordonnance || 0);
-    const paid = Number(store.budget.total_paiement || 0);
+    ].filter(matchYear);
+    const filteredByMonth = month ? rawDossiers.filter((item) => new Date(item.created_at || item.date_consultation || item.date_preparation).getMonth() + 1 === Number(month)) : rawDossiers;
+    const filtered = domaine === 'ALL'
+      ? filteredByMonth
+      : filteredByMonth.filter((item) => getDossierDomaine(item) === domaine);
+
+    const notified = budgetSummary.total_notifie;
+    const engaged = budgetSummary.total_engage;
+    const ordered = budgetSummary.total_ordonnance;
+    const paid = budgetSummary.total_paiement;
+
     const count = (keywords) => filtered.filter((item) => keywords.some((word) => String(item.statut_dossier || item.statut || '').toLowerCase().includes(word))).length;
     const trends = months.map((name, index) => {
-      const notifications = store.notifications.filter((item) => new Date(item.date_notification || item.created_at).getMonth() === index);
+      const notifications = store.notifications.filter((item) => {
+        const notifMonth = new Date(item.date_notification || item.created_at).getMonth() === index;
+        if (!notifMonth) return false;
+        if (domaine === 'ALL') return true;
+        const d = getNotifDomaine(item);
+        return d === domaine || d === 'MIXTE';
+      });
       return { name, Nombre: notifications.length, Montant: notifications.reduce((sum, item) => sum + Number(item.montant || item.montant_total || 0), 0) };
     });
-    return { dossiers: filtered, notified, engaged, ordered, paid, available: Number(store.budget.total_disponible ?? notified - engaged), engagement: percentage(engaged, notified), ordering: percentage(ordered, engaged), payment: percentage(paid, ordered), completed: count(['termin', 'clôtur', 'valid']), active: count(['cours', 'lanc', 'analyse']), planned: count(['programm', 'prépar']), trends };
-  }, [store, month]);
+
+    return {
+      dossiers: filtered,
+      notified,
+      engaged,
+      ordered,
+      paid,
+      available: notified - engaged,
+      engagement: percentage(engaged, notified),
+      ordering: percentage(ordered, engaged),
+      payment: percentage(paid, ordered),
+      completed: count(['termin', 'clôtur', 'valid']),
+      active: count(['cours', 'lanc', 'analyse']),
+      planned: count(['programm', 'prépar']),
+      trends,
+    };
+  }, [store, month, year, domaine, budgetSummary]);
+
+  const filteredNotifications = useMemo(() => {
+    return store.notifications.filter((n) => {
+      if (domaine === 'ALL') return true;
+      const d = getNotifDomaine(n);
+      return d === domaine || d === 'MIXTE';
+    });
+  }, [store.notifications, domaine]);
 
   const shownDossiers = dashboard.dossiers.filter((item) => `${item.ref || ''} ${item.title || ''} ${item.type}`.toLowerCase().includes(search.toLowerCase()));
   const exportReport = () => {
-    const rows = [['Référence', 'Type', 'Objet', 'Statut', 'Phase', 'Avancement'], ...dashboard.dossiers.map((item) => { const [label, progress] = phase(item); return [item.ref || '', item.type, item.title || '', item.statut_dossier || item.statut || '', label, `${progress}%`]; })];
+    const rows = [['Référence', 'Domaine', 'Type', 'Objet', 'Statut', 'Phase', 'Avancement'], ...dashboard.dossiers.map((item) => { const [label, progress] = phase(item); return [item.ref || '', getDossierDomaine(item), item.type, item.title || '', item.statut_dossier || item.statut || '', label, `${progress}%`]; })];
     const csv = rows.map((row) => row.map((cell) => `"${String(cell).replaceAll('"', '""')}"`).join(';')).join('\n');
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' }); const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob); link.download = `rapport-directeur-${year}.csv`; link.click(); URL.revokeObjectURL(link.href);
+    link.href = URL.createObjectURL(blob); link.download = `rapport-directeur-${year}-${domaine.toLowerCase()}.csv`; link.click(); URL.revokeObjectURL(link.href);
   };
 
   if (loading) return <div className="grid min-h-screen place-items-center bg-slate-50 text-slate-600"><span className="flex items-center gap-3"><Loader2 className="animate-spin text-blue-700" /> Chargement du tableau de pilotage…</span></div>;
 
   const navigation = [
-    { label: 'Vue d’ensemble', icon: LayoutDashboard, action: () => setTab('overview') },
-    { label: 'Notifications', icon: Bell, action: () => setTab('notifications') },
-    { label: 'Consultations & AOO', icon: FolderKanban, action: () => setTab('dossiers') },
-    { label: 'Engagements', icon: FileCheck2, action: () => navigate('/engagements') },
-    { label: 'Ordonnancements', icon: FileText, action: () => navigate('/ordonnancements') },
-    { label: 'Paiements & taux', icon: CircleDollarSign, action: () => navigate('/directeur/suivi-budget') },
-    { label: 'Analyse budgétaire', icon: CreditCard, action: () => setTab('budget') },
+    { label: 'Notifications', icon: Bell, tabKey: 'notifications', action: () => setTab('notifications') },
+    { label: 'Consultations', icon: FolderKanban, tabKey: 'dossiers', action: () => setTab('dossiers') },
+    { label: 'Paiements & taux', icon: CircleDollarSign, tabKey: 'paiements', action: () => setTab('paiements') },
   ];
 
   return (
@@ -135,11 +517,11 @@ export default function DashboardDirecteur() {
         </Link>
         <p className="mt-7 px-3 text-[10px] font-bold uppercase tracking-[.16em] text-slate-500">Pilotage</p>
         <nav className="mt-3 space-y-1">
-          {navigation.map(({ label, icon: Icon, action }) => (
+          {navigation.map(({ label, icon: Icon, tabKey, action }) => (
             <button
               key={label}
               onClick={action}
-              className={`flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold transition ${((tab === 'overview' && label === 'Vue d’ensemble') || (tab === 'notifications' && label === 'Notifications') || (tab === 'dossiers' && label === 'Consultations & AOO') || (tab === 'budget' && label === 'Analyse budgétaire')) ? 'bg-blue-600 text-white shadow-lg shadow-blue-950/30' : 'text-slate-300 hover:bg-slate-800 hover:text-white'}`}
+              className={`flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold transition ${tab === tabKey ? 'bg-blue-600 text-white shadow-lg shadow-blue-950/30' : 'text-slate-300 hover:bg-slate-800 hover:text-white'}`}
             >
               <Icon size={18} />{label}
             </button>
@@ -194,8 +576,12 @@ export default function DashboardDirecteur() {
         {mobileNavOpen && (
           <div className="fixed inset-x-4 top-16 z-50 rounded-2xl border border-slate-200 bg-white p-3 shadow-xl lg:hidden">
             <div className="space-y-1">
-              {navigation.map(({ label, icon: Icon, action }) => (
-                <button key={label} onClick={() => { action(); setMobileNavOpen(false); }} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-slate-700 hover:bg-blue-50 hover:text-blue-700">
+              {navigation.map(({ label, icon: Icon, tabKey, action }) => (
+                <button
+                  key={label}
+                  onClick={() => { action(); setMobileNavOpen(false); }}
+                  className={`flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold ${tab === tabKey ? 'bg-blue-50 text-blue-700 font-bold' : 'text-slate-700 hover:bg-slate-50'}`}
+                >
                   <Icon size={18} />{label}
                 </button>
               ))}
@@ -209,20 +595,59 @@ export default function DashboardDirecteur() {
           </div>
         )}
 
-        <main className="mx-auto max-w-[1600px] px-4 py-7 sm:px-7">
+        <main className="mx-auto max-w-[1920px] px-4 py-7 sm:px-7">
           <div className="flex flex-col justify-between gap-5 xl:flex-row xl:items-end">
             <div>
               <p className="text-sm font-semibold text-blue-700">DIRECTION RÉGIONALE</p>
               <h1 className="mt-1 text-3xl font-bold tracking-tight">Tableau de bord Directeur</h1>
               <p className="mt-2 text-sm text-slate-500">Vue consolidée des activités, procédures et indicateurs budgétaires.</p>
             </div>
-            <div className="flex flex-wrap gap-2">
-              <label className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600">
-                <CalendarDays size={16} />
-                <select value={year} onChange={(event) => setYear(event.target.value)} className="bg-transparent font-semibold outline-none">
-                  <option value={currentYear}>{currentYear}</option>
-                  <option value={currentYear - 1}>{currentYear - 1}</option>
-                  <option value={currentYear - 2}>{currentYear - 2}</option>
+            <div className="flex flex-wrap items-center gap-2">
+              {/* Sélecteur de Domaine (FONCTIONNEMENT vs INVESTISSEMENT) */}
+              <div className="flex bg-slate-200/80 p-1 rounded-xl text-xs font-bold items-center gap-1 border border-slate-300 shadow-2xs">
+                <button
+                  type="button"
+                  onClick={() => setDomaine('ALL')}
+                  className={`px-3 py-1.5 rounded-lg transition ${
+                    domaine === 'ALL'
+                      ? 'bg-white text-slate-900 shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  Tous les domaines
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDomaine('FONCTIONNEMENT')}
+                  className={`px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 ${
+                    domaine === 'FONCTIONNEMENT'
+                      ? 'bg-[#1e40af] text-white shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  <span className={`w-2 h-2 rounded-full ${domaine === 'FONCTIONNEMENT' ? 'bg-white' : 'bg-blue-500'}`}></span>
+                  Fonctionnement
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDomaine('INVESTISSEMENT')}
+                  className={`px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 ${
+                    domaine === 'INVESTISSEMENT'
+                      ? 'bg-indigo-700 text-white shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  <span className={`w-2 h-2 rounded-full ${domaine === 'INVESTISSEMENT' ? 'bg-white' : 'bg-indigo-400'}`}></span>
+                  Investissement
+                </button>
+              </div>
+
+              <label className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 hover:border-slate-300 transition-colors">
+                <CalendarDays size={16} className="text-blue-600" />
+                <select value={year} onChange={(event) => setYear(event.target.value)} className="bg-transparent font-semibold outline-none cursor-pointer">
+                  {availableYears.map((y) => (
+                    <option key={y} value={y}>{y}</option>
+                  ))}
                 </select>
               </label>
               <select value={month} onChange={(event) => setMonth(event.target.value)} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-600 outline-none">
@@ -237,121 +662,177 @@ export default function DashboardDirecteur() {
 
           {error && <p className="mt-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">{error}</p>}
 
-          {tab === 'overview' && (
-            <>
-              <section className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-                <Kpi label="Consultations" value={dashboard.dossiers.length} icon={ClipboardList} detail={`${dashboard.completed} terminées`} />
-                <Kpi label="Appels d’offres" value={store.aoos.length} icon={FileText} tone="violet" detail={`${dashboard.active} en cours`} />
-                <Kpi label="Notifications" value={store.notifications.length} icon={Bell} tone="amber" detail={money(dashboard.notified)} />
-                <Kpi label="Engagements" value={money(dashboard.engaged)} icon={FileCheck2} tone="emerald" detail={`${dashboard.engagement}% du notifié`} />
-                <Kpi label="Disponible" value={money(dashboard.available)} icon={WalletCards} tone="rose" detail="Crédits restant à engager" />
-              </section>
-
-              <section className="mt-6 max-w-xl">
-                <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                  <div className="flex justify-between">
-                    <div>
-                      <h2 className="font-bold">Taux d’engagement</h2>
-                      <p className="mt-1 text-sm text-slate-500">Engagé / notifié</p>
-                    </div>
-                    <Gauge className="text-emerald-600" size={20} />
-                  </div>
-                  <div className="relative mt-4 h-56">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie data={[{ value: dashboard.engagement }, { value: Math.max(0, 100 - dashboard.engagement) }]} dataKey="value" innerRadius={68} outerRadius={88} startAngle={90} endAngle={-270} stroke="none">
-                          <Cell fill="#10b981" />
-                          <Cell fill="#e2e8f0" />
-                        </Pie>
-                      </PieChart>
-                    </ResponsiveContainer>
-                    <div className="absolute inset-0 grid place-items-center">
-                      <b className="text-3xl">{dashboard.engagement}%</b>
-                    </div>
-                  </div>
-                  <p className="rounded-xl bg-emerald-50 px-3 py-2 text-center text-sm font-semibold text-emerald-700">
-                    {money(dashboard.engaged)} engagés
-                  </p>
-                </div>
-              </section>
-
-              <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div>
-                    <h2 className="font-bold">Cycle d’exécution budgétaire</h2>
-                    <p className="mt-1 text-sm text-slate-500">Montants et taux de passage à chaque étape.</p>
-                  </div>
-                  <Link to="/notifications" className="text-sm font-semibold text-blue-700">Voir les notifications <ChevronRight className="inline" size={15} /></Link>
-                </div>
-                <div className="mt-6 grid gap-3 md:grid-cols-4">
-                  {[
-                    ['Notification', dashboard.notified, 100, Landmark, 'bg-blue-600'],
-                    ['Engagement', dashboard.engaged, dashboard.engagement, FileCheck2, 'bg-emerald-500'],
-                    ['Ordonnancement', dashboard.ordered, dashboard.ordering, FileText, 'bg-violet-500'],
-                    ['Paiement', dashboard.paid, dashboard.payment, CircleDollarSign, 'bg-amber-500'],
-                  ].map(([label, value, rate, Icon, color]) => (
-                    <div key={label} className="rounded-xl border border-slate-100 bg-slate-50 p-4">
-                      <Icon className="text-slate-500" size={19} />
-                      <p className="mt-3 text-xs font-semibold uppercase text-slate-500">{label}</p>
-                      <b className="mt-1 block text-lg">{money(value)}</b>
-                      <div className="mt-3 flex items-center gap-3">
-                        <Progress value={rate} color={color} />
-                        <span className="text-xs font-bold">{rate}%</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </section>
-            </>
-          )}
-
           {tab === 'notifications' && (
             <section className="mt-6">
               <div className="grid gap-4 md:grid-cols-3">
-                <Kpi label="Notifications de l’exercice" value={store.notifications.length} icon={Bell} tone="amber" detail={`Exercice ${year}`} />
-                <Kpi label="Montant total notifié" value={money(dashboard.notified)} icon={Landmark} detail="Crédits budgétaires notifiés" />
-                <Kpi label="Lignes budgétaires" value={store.lines.length} icon={ClipboardList} tone="violet" detail="Lignes suivies" />
+                <Kpi label="Notifications filtrées" value={filteredNotifications.length} icon={Bell} tone="amber" detail={domaine === 'ALL' ? `Exercice ${year}` : `${domaine} · Exercice ${year}`} />
+                <Kpi label="Montant total notifié" value={money(dashboard.notified)} icon={Landmark} detail={domaine === 'ALL' ? 'Tous les crédits notifiés' : `Crédits ${domaine.toLowerCase()}`} />
+                <Kpi label="Lignes budgétaires" value={(store.lines || []).filter(l => domaine === 'ALL' || (l.domaine || 'INVESTISSEMENT') === domaine).length} icon={ClipboardList} tone="violet" detail={domaine === 'ALL' ? 'Total lignes suivies' : `Lignes ${domaine.toLowerCase()}`} />
               </div>
-              <div className="mt-6 grid gap-6 xl:grid-cols-[1.5fr_1fr]">
-                <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+              <div className="mt-6 space-y-6">
+                <div className="w-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
                   <div className="flex items-center justify-between border-b border-slate-100 p-5">
                     <div>
-                      <h2 className="font-bold">Liste des notifications</h2>
+                      <div className="flex items-center gap-2">
+                        <h2 className="font-bold text-base text-slate-800">Liste des notifications</h2>
+                        <span className={`text-xs px-2.5 py-0.5 rounded-full font-bold ${
+                          domaine === 'FONCTIONNEMENT' ? 'bg-blue-100 text-blue-800 border border-blue-200' :
+                          domaine === 'INVESTISSEMENT' ? 'bg-indigo-100 text-indigo-800 border border-indigo-200' :
+                          'bg-slate-100 text-slate-700'
+                        }`}>
+                          {domaine === 'ALL' ? 'Tous les domaines' : domaine}
+                        </span>
+                      </div>
                       <p className="mt-1 text-sm text-slate-500">Consultez les informations de l'exercice {year}.</p>
                     </div>
                     <Bell className="text-amber-500" size={20} />
                   </div>
                   <div className="overflow-x-auto">
-                    <table className="w-full min-w-[630px] text-left text-sm">
+                    <table className="w-full min-w-[850px] text-left text-sm">
                       <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
                         <tr>
                           <th className="px-5 py-3">Référence</th>
+                          <th className="px-5 py-3">Domaine</th>
                           <th className="px-5 py-3">Date</th>
                           <th className="px-5 py-3">Exercice</th>
+                          <th className="px-5 py-3 text-right">Crédits</th>
+                          <th className="px-5 py-3 text-right">Diminution</th>
                           <th className="px-5 py-3 text-right">Montant</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
-                        {store.notifications.map((notification) => (
-                          <tr key={notification.id} className="hover:bg-slate-50">
-                            <td className="px-5 py-4 font-mono text-xs font-semibold text-blue-700">{notification.numero || notification.reference || `Notification #${notification.id}`}</td>
-                            <td className="px-5 py-4 text-slate-600">{date(notification.date_notification || notification.created_at)}</td>
-                            <td className="px-5 py-4 text-slate-600">{notification.exercice || year}</td>
-                            <td className="px-5 py-4 text-right font-semibold">{money(notification.montant || notification.montant_total)}</td>
-                          </tr>
-                        ))}
-                        {!store.notifications.length && (
-                          <tr><td colSpan="4" className="px-5 py-12 text-center text-slate-500">Aucune notification pour cet exercice.</td></tr>
+                        {filteredNotifications.map((notification) => {
+                          const lignes = notification.lignes || [];
+                          const notifDom = getNotifDomaine(notification);
+                          const isFonct = notifDom === 'FONCTIONNEMENT';
+
+                          const totalReports = lignes.reduce((sum, l) => sum + Number(l.reports || 0), 0);
+                          const totalNeufs = lignes.reduce((sum, l) => sum + Number(l.credits_neufs || 0), 0);
+                          const totalEngagements = lignes.reduce((sum, l) => sum + Number(l.credits_engagements || 0), 0);
+                          const totalCredits = (totalReports + totalNeufs + totalEngagements) || Number(notification.montant || 0);
+
+                          const totalDimReports = lignes.reduce((sum, l) => sum + Number(l.diminution_report || 0), 0);
+                          const totalDimNeufs = lignes.reduce((sum, l) => sum + Number(l.diminution_credit_neuf || 0), 0);
+                          const totalDimEngagements = lignes.reduce((sum, l) => sum + Number(l.diminution_credit_engagement || 0), 0);
+                          const totalDiminution = totalDimReports + totalDimNeufs + totalDimEngagements;
+
+                          return (
+                            <tr key={notification.id} className="hover:bg-slate-50 transition-colors">
+                              <td className="px-5 py-4 font-mono text-xs font-semibold text-blue-700">
+                                {notification.numero || notification.reference || `Notification #${notification.id}`}
+                              </td>
+                              <td className="px-5 py-4">
+                                <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold border ${
+                                  notifDom === 'FONCTIONNEMENT'
+                                    ? 'bg-blue-50 text-[#1e40af] border-blue-200'
+                                    : notifDom === 'INVESTISSEMENT'
+                                    ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
+                                    : 'bg-teal-50 text-teal-700 border-teal-200'
+                                }`}>
+                                  <span className={`w-1.5 h-1.5 rounded-full ${
+                                    notifDom === 'FONCTIONNEMENT' ? 'bg-blue-500' : notifDom === 'INVESTISSEMENT' ? 'bg-indigo-500' : 'bg-teal-500'
+                                  }`}></span>
+                                  {notifDom}
+                                </span>
+                              </td>
+                              <td className="px-5 py-4 text-slate-600">
+                                {date(notification.date_notification || notification.created_at)}
+                              </td>
+                              <td className="px-5 py-4 text-slate-600">
+                                {notification.exercice || year}
+                              </td>
+                              <td className="px-5 py-4 text-right">
+                                <div className="flex flex-col items-end gap-1.5">
+                                  {(totalReports > 0 || totalNeufs > 0 || totalEngagements > 0) ? (
+                                    <div className="flex flex-col items-end gap-1.5 w-full min-w-[205px] max-w-[225px]">
+                                      {totalReports > 0 && (
+                                        <div className="w-full flex items-center justify-between gap-2 px-2.5 py-1 bg-sky-50/90 border border-sky-200/90 rounded-lg text-xs shadow-xs hover:bg-sky-100/70 transition-colors">
+                                          <span className="inline-flex items-center gap-1.5 font-semibold text-sky-800 text-[11px]">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-sky-500"></span>
+                                            {isFonct ? 'Reste à payer' : 'Reports'}
+                                          </span>
+                                          <span className="font-mono font-bold text-sky-950 text-xs">{money(totalReports)}</span>
+                                        </div>
+                                      )}
+                                      {totalNeufs > 0 && (
+                                        <div className="w-full flex items-center justify-between gap-2 px-2.5 py-1 bg-emerald-50/90 border border-emerald-200/90 rounded-lg text-xs shadow-xs hover:bg-emerald-100/70 transition-colors">
+                                          <span className="inline-flex items-center gap-1.5 font-semibold text-emerald-800 text-[11px]">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                            Crédits neufs
+                                          </span>
+                                          <span className="font-mono font-bold text-emerald-950 text-xs">{money(totalNeufs)}</span>
+                                        </div>
+                                      )}
+                                      {totalEngagements > 0 && (
+                                        <div className="w-full flex items-center justify-between gap-2 px-2.5 py-1 bg-indigo-50/90 border border-indigo-200/90 rounded-lg text-xs shadow-xs hover:bg-indigo-100/70 transition-colors">
+                                          <span className="inline-flex items-center gap-1.5 font-semibold text-indigo-800 text-[11px]">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
+                                            Crédits d'eng.
+                                          </span>
+                                          <span className="font-mono font-bold text-indigo-950 text-xs">{money(totalEngagements)}</span>
+                                        </div>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-mono font-semibold text-slate-400 bg-slate-100/80 border border-slate-200/60">0 DH</span>
+                                  )}
+                                </div>
+                              </td>
+                              <td className="px-5 py-4 text-right">
+                                <div className="flex flex-col items-end gap-1.5">
+                                  {totalDiminution > 0 ? (
+                                    <div className="flex flex-col items-end gap-1.5 w-full min-w-[205px] max-w-[225px]">
+                                      {totalDimReports > 0 && (
+                                        <div className="w-full flex items-center justify-between gap-2 px-2.5 py-1 bg-rose-50/90 border border-rose-200/90 rounded-lg text-xs shadow-xs hover:bg-rose-100/70 transition-colors">
+                                          <span className="inline-flex items-center gap-1.5 font-semibold text-rose-800 text-[11px]">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                                            {isFonct ? 'Dim. Reste à payer' : 'Dim. Reports'}
+                                          </span>
+                                          <span className="font-mono font-bold text-rose-950 text-xs">−{money(totalDimReports)}</span>
+                                        </div>
+                                      )}
+                                      {totalDimNeufs > 0 && (
+                                        <div className="w-full flex items-center justify-between gap-2 px-2.5 py-1 bg-rose-50/90 border border-rose-200/90 rounded-lg text-xs shadow-xs hover:bg-rose-100/70 transition-colors">
+                                          <span className="inline-flex items-center gap-1.5 font-semibold text-rose-800 text-[11px]">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                                            Dim. Neufs
+                                          </span>
+                                          <span className="font-mono font-bold text-rose-950 text-xs">−{money(totalDimNeufs)}</span>
+                                        </div>
+                                      )}
+                                      {totalDimEngagements > 0 && (
+                                        <div className="w-full flex items-center justify-between gap-2 px-2.5 py-1 bg-rose-50/90 border border-rose-200/90 rounded-lg text-xs shadow-xs hover:bg-rose-100/70 transition-colors">
+                                          <span className="inline-flex items-center gap-1.5 font-semibold text-rose-800 text-[11px]">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                                            Dim. Eng.
+                                          </span>
+                                          <span className="font-mono font-bold text-rose-950 text-xs">−{money(totalDimEngagements)}</span>
+                                        </div>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-mono font-semibold text-slate-400 bg-slate-50 border border-slate-200/60">0 DH</span>
+                                  )}
+                                </div>
+                              </td>
+                              <td className="px-5 py-4 text-right font-black text-slate-900">
+                                {money(notification.montant || totalCredits)}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                        {!filteredNotifications.length && (
+                          <tr><td colSpan="7" className="px-5 py-12 text-center text-slate-500">Aucune notification {domaine !== 'ALL' ? `pour le domaine ${domaine}` : ''} pour cet exercice.</td></tr>
                         )}
                       </tbody>
                     </table>
                   </div>
                 </div>
-                <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <div className="w-full rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                   <div className="flex items-center justify-between">
                     <div>
                       <h2 className="font-bold">Évolution des notifications</h2>
-                      <p className="mt-1 text-sm text-slate-500">Nombre de notifications par mois.</p>
+                      <p className="mt-1 text-sm text-slate-500">Nombre de notifications par mois {domaine !== 'ALL' ? `(${domaine})` : ''}.</p>
                     </div>
                     <TrendingUp className="text-blue-600" size={20} />
                   </div>
@@ -387,7 +868,16 @@ export default function DashboardDirecteur() {
               <div className="mt-6 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
                 <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 p-5">
                   <div>
-                    <h2 className="font-bold">Suivi des procédures</h2>
+                    <div className="flex items-center gap-2">
+                      <h2 className="font-bold text-base text-slate-800">Suivi des procédures & Consultations</h2>
+                      <span className={`text-xs px-2.5 py-0.5 rounded-full font-bold ${
+                        domaine === 'FONCTIONNEMENT' ? 'bg-blue-100 text-blue-800 border border-blue-200' :
+                        domaine === 'INVESTISSEMENT' ? 'bg-indigo-100 text-indigo-800 border border-indigo-200' :
+                        'bg-slate-100 text-slate-700'
+                      }`}>
+                        {domaine === 'ALL' ? 'Tous les domaines' : domaine}
+                      </span>
+                    </div>
                     <p className="mt-1 text-sm text-slate-500">Cliquez sur un dossier pour visualiser sa timeline.</p>
                   </div>
                   <label className="flex items-center gap-2 rounded-xl bg-slate-100 px-3 py-2 text-slate-500">
@@ -396,28 +886,39 @@ export default function DashboardDirecteur() {
                   </label>
                 </div>
                 <div className="overflow-x-auto">
-                  <table className="w-full min-w-[1240px] text-left text-sm">
+                  <table className="w-full min-w-[1050px] text-left text-sm">
                     <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
                       <tr>
                         <th className="px-5 py-3">Référence</th>
+                        <th className="px-5 py-3">Domaine</th>
                         <th className="px-5 py-3">Mode d’engagement</th>
                         <th className="px-5 py-3">Ligne budgétaire</th>
                         <th className="px-5 py-3">Objet</th>
                         <th className="px-5 py-3">Lancement</th>
-                        <th className="px-5 py-3">Statut</th>
-                        <th className="px-5 py-3">Phase & avancement</th>
-                        <th className="px-5 py-3"></th>
+                        <th className="px-5 py-3 text-center">Phase / Statut</th>
+                        <th className="px-5 py-3 text-right"></th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
                       {shownDossiers.map((item) => {
-                        const [label, progress] = phase(item);
+                        const phaseInfo = getDossierPhase(item);
                         const mode = engagementMode(item);
+                        const dossierDom = getDossierDomaine(item);
                         return (
-                          <tr key={`${item.type}-${item.id}`} className="hover:bg-slate-50">
+                          <tr key={`${item.type}-${item.id}`} className="hover:bg-slate-50 transition-colors">
                             <td className="px-5 py-4">
                               <b className="font-mono text-blue-700">{item.ref || '—'}</b>
                               <small className="mt-1 block text-slate-400">{item.type}</small>
+                            </td>
+                            <td className="px-5 py-4">
+                              <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold border ${
+                                dossierDom === 'FONCTIONNEMENT'
+                                  ? 'bg-blue-50 text-[#1e40af] border-blue-200'
+                                  : 'bg-indigo-50 text-indigo-700 border-indigo-200'
+                              }`}>
+                                <span className={`w-1.5 h-1.5 rounded-full ${dossierDom === 'FONCTIONNEMENT' ? 'bg-blue-500' : 'bg-indigo-500'}`}></span>
+                                {dossierDom}
+                              </span>
                             </td>
                             <td className="px-5 py-4">
                               <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-bold ${mode === 'Appel d’offres' ? 'bg-violet-50 text-violet-700' : 'bg-cyan-50 text-cyan-700'}`}>{mode}</span>
@@ -428,14 +929,13 @@ export default function DashboardDirecteur() {
                               <small className="text-slate-500">{item.service || item.structure_acheteuse || 'DRCA RSK'}</small>
                             </td>
                             <td className="px-5 py-4 text-slate-600">{date(item.date_lancement || item.date_consultation || item.created_at)}</td>
-                            <td className="px-5 py-4">
-                              <span className="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-bold text-blue-700">{item.statut_dossier || item.statut || 'Programmée'}</span>
+                            <td className="px-5 py-4 text-center">
+                              <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ${phaseInfo.badgeClass}`}>
+                                <span className={`w-1.5 h-1.5 rounded-full ${phaseInfo.dotClass}`}></span>
+                                {phaseInfo.label}
+                              </span>
                             </td>
-                            <td className="w-48 px-5 py-4">
-                              <div className="mb-1 flex justify-between text-xs"><span>{label}</span><b>{progress}%</b></div>
-                              <Progress value={progress} />
-                            </td>
-                            <td className="px-5 py-4">
+                            <td className="px-5 py-4 text-right">
                               <button onClick={() => setSelected(item)} className="inline-flex items-center gap-1 font-semibold text-blue-700 hover:underline">
                                 <Eye size={16} /> Détail
                               </button>
@@ -444,7 +944,7 @@ export default function DashboardDirecteur() {
                         );
                       })}
                       {!shownDossiers.length && (
-                        <tr><td colSpan="8" className="px-5 py-12 text-center text-slate-500">Aucun dossier ne correspond aux filtres.</td></tr>
+                        <tr><td colSpan="8" className="px-5 py-12 text-center text-slate-500">Aucun dossier ne correspond aux filtres ({domaine !== 'ALL' ? domaine : 'Tous'}).</td></tr>
                       )}
                     </tbody>
                   </table>
@@ -453,80 +953,159 @@ export default function DashboardDirecteur() {
             </section>
           )}
 
-          {tab === 'budget' && (
-            <section className="mt-6">
-              <div className="grid gap-4 md:grid-cols-3">
-                <Kpi label="Taux d’engagement" value={`${dashboard.engagement}%`} icon={Gauge} tone="emerald" detail="Engagé / notifié" />
-                <Kpi label="Taux d’ordonnancement" value={`${dashboard.ordering}%`} icon={FileText} tone="violet" detail="Ordonnancé / engagé" />
-                <Kpi label="Taux de paiement" value={`${dashboard.payment}%`} icon={CircleDollarSign} tone="amber" detail="Payé / ordonnancé" />
+          {tab === 'paiements' && (
+            <section className="mt-6 space-y-6">
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                <PhaseCard step="1" label={`Crédits notifiés (${domaine === 'ALL' ? 'Total' : domaine})`} value={budgetSummary?.total_notifie} rateValue="Taux : 100 %" detail="Base de calcul" Icon={BarChart3} tone="bg-blue-600" />
+                <PhaseCard step="2" label={`Engagement (${domaine === 'ALL' ? 'Total' : domaine})`} value={budgetSummary?.total_engage} rateValue={`Taux / notifié : ${rate(budgetSummary?.taux_consommation || pct(budgetSummary?.total_engage, budgetSummary?.total_notifie))}`} detail="Engagé / notifié" Icon={FileCheck2} tone="bg-emerald-600" />
+                <PhaseCard step="3" label={`Ordonnancement (${domaine === 'ALL' ? 'Total' : domaine})`} value={budgetSummary?.total_ordonnance} rateValue={`Taux / notifié : ${rate(budgetSummary?.taux_ordonnancement_notifie || pct(budgetSummary?.total_ordonnance, budgetSummary?.total_notifie))}`} secondaryRate={`Taux / engagé : ${rate(budgetSummary?.taux_ordonnancement || pct(budgetSummary?.total_ordonnance, budgetSummary?.total_engage))}`} detail="Ordonnancé / notifié & engagé" Icon={FileText} tone="bg-violet-600" />
+                <PhaseCard step="4" label={`Paiement (${domaine === 'ALL' ? 'Total' : domaine})`} value={budgetSummary?.total_paiement} rateValue={`Taux / notifié : ${rate(budgetSummary?.taux_paiement_notifie || pct(budgetSummary?.total_paiement, budgetSummary?.total_notifie))}`} secondaryRate={`Taux / ordonnancé : ${rate(budgetSummary?.taux_paiement_ordonnancement || pct(budgetSummary?.total_paiement, budgetSummary?.total_ordonnance))}`} detail={`Payé / notifié · ${rate(budgetSummary?.taux_paiement_engagement || pct(budgetSummary?.total_paiement, budgetSummary?.total_engage))} de l'engagé`} Icon={CircleDollarSign} tone="bg-amber-600" />
               </div>
-              <div className="mt-6 grid gap-6 xl:grid-cols-2">
-                <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                  <h2 className="font-bold">Notifications par ligne budgétaire</h2>
-                  <p className="mt-1 text-sm text-slate-500">Comparaison des crédits notifiés et engagés.</p>
-                  <div className="mt-5 h-80">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={store.lines.slice(0, 7).map((line) => ({ name: `${line.article}/${line.paragraphe}/${line.ligne_budgetaire}`, Notifié: Number(line.total_credits || 0), Engagé: Number(line.credits_engages || 0) }))}>
-                        <CartesianGrid vertical={false} stroke="#e2e8f0" />
-                        <XAxis dataKey="name" fontSize={10} axisLine={false} tickLine={false} />
-                        <YAxis tickFormatter={(value) => `${Math.round(value / 1000)}k`} fontSize={11} axisLine={false} tickLine={false} />
-                        <Tooltip formatter={(value) => money(value)} />
-                        <Bar dataKey="Notifié" fill="#2563eb" radius={[4, 4, 0, 0]} />
-                        <Bar dataKey="Engagé" fill="#10b981" radius={[4, 4, 0, 0]} />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                </div>
-                <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                  <h2 className="font-bold">Comparaison financière</h2>
-                  <p className="mt-1 text-sm text-slate-500">Suivi de la consommation budgétaire.</p>
-                  <div className="mt-7 space-y-6">
-                    {[
-                      ['Notifiés', dashboard.notified, 100, 'bg-blue-600'],
-                      ['Engagés', dashboard.engaged, dashboard.engagement, 'bg-emerald-500'],
-                      ['Ordonnancés', dashboard.ordered, dashboard.ordering, 'bg-violet-500'],
-                      ['Payés', dashboard.paid, dashboard.payment, 'bg-amber-500'],
-                    ].map(([label, value, rate, color]) => (
-                      <div key={label}>
-                        <div className="mb-2 flex justify-between text-sm">
-                          <span className="font-semibold">{label}</span>
-                          <b>{money(value)}</b>
-                        </div>
-                        <Progress value={rate} color={color} />
+
+              {/* Si Domaine === ALL, affichage comparatif synthétique INVESTISSEMENT vs FONCTIONNEMENT */}
+              {domaine === 'ALL' && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="p-4 bg-indigo-50/50 border border-indigo-200 rounded-2xl">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-xs font-black uppercase text-indigo-900 flex items-center gap-1.5">
+                        <span className="w-2.5 h-2.5 rounded-full bg-indigo-600"></span>
+                        Domaine : INVESTISSEMENT
+                      </span>
+                      <span className="text-xs font-bold text-indigo-700 font-mono">{invBudgetRows.length} lignes</span>
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center text-xs">
+                      <div className="bg-white p-2.5 rounded-xl border border-indigo-100 shadow-2xs">
+                        <p className="text-[10px] text-slate-500 font-semibold uppercase">Notifié</p>
+                        <p className="font-bold text-slate-900 font-mono mt-0.5">{money(invSummary.total_notifie)}</p>
                       </div>
-                    ))}
+                      <div className="bg-white p-2.5 rounded-xl border border-indigo-100 shadow-2xs">
+                        <p className="text-[10px] text-slate-500 font-semibold uppercase">Engagé</p>
+                        <p className="font-bold text-emerald-700 font-mono mt-0.5">{money(invSummary.total_engage)}</p>
+                        <p className="text-[10px] text-emerald-600 font-bold">{rate(invSummary.taux_consommation)}</p>
+                      </div>
+                      <div className="bg-white p-2.5 rounded-xl border border-indigo-100 shadow-2xs">
+                        <p className="text-[10px] text-slate-500 font-semibold uppercase">Ordonnancé</p>
+                        <p className="font-bold text-violet-700 font-mono mt-0.5">{money(invSummary.total_ordonnance)}</p>
+                        <p className="text-[10px] text-violet-600 font-bold">{rate(invSummary.taux_ordonnancement)}</p>
+                      </div>
+                      <div className="bg-white p-2.5 rounded-xl border border-indigo-100 shadow-2xs">
+                        <p className="text-[10px] text-slate-500 font-semibold uppercase">Payé</p>
+                        <p className="font-bold text-amber-700 font-mono mt-0.5">{money(invSummary.total_paiement)}</p>
+                        <p className="text-[10px] text-amber-600 font-bold">{rate(invSummary.taux_paiement_ordonnancement)}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="p-4 bg-blue-50/50 border border-blue-200 rounded-2xl">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-xs font-black uppercase text-blue-900 flex items-center gap-1.5">
+                        <span className="w-2.5 h-2.5 rounded-full bg-blue-600"></span>
+                        Domaine : FONCTIONNEMENT
+                      </span>
+                      <span className="text-xs font-bold text-[#1e40af] font-mono">{fncBudgetRows.length} lignes</span>
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center text-xs">
+                      <div className="bg-white p-2.5 rounded-xl border border-blue-100 shadow-2xs">
+                        <p className="text-[10px] text-slate-500 font-semibold uppercase">Notifié</p>
+                        <p className="font-bold text-slate-900 font-mono mt-0.5">{money(fncSummary.total_notifie)}</p>
+                      </div>
+                      <div className="bg-white p-2.5 rounded-xl border border-blue-100 shadow-2xs">
+                        <p className="text-[10px] text-slate-500 font-semibold uppercase">Engagé</p>
+                        <p className="font-bold text-emerald-700 font-mono mt-0.5">{money(fncSummary.total_engage)}</p>
+                        <p className="text-[10px] text-emerald-600 font-bold">{rate(fncSummary.taux_consommation)}</p>
+                      </div>
+                      <div className="bg-white p-2.5 rounded-xl border border-blue-100 shadow-2xs">
+                        <p className="text-[10px] text-slate-500 font-semibold uppercase">Ordonnancé</p>
+                        <p className="font-bold text-violet-700 font-mono mt-0.5">{money(fncSummary.total_ordonnance)}</p>
+                        <p className="text-[10px] text-violet-600 font-bold">{rate(fncSummary.taux_ordonnancement)}</p>
+                      </div>
+                      <div className="bg-white p-2.5 rounded-xl border border-blue-100 shadow-2xs">
+                        <p className="text-[10px] text-slate-500 font-semibold uppercase">Payé</p>
+                        <p className="font-bold text-amber-700 font-mono mt-0.5">{money(fncSummary.total_paiement)}</p>
+                        <p className="text-[10px] text-amber-600 font-bold">{rate(fncSummary.taux_paiement_ordonnancement)}</p>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div className="mt-6 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-                <div className="border-b border-slate-100 p-5">
-                  <h2 className="font-bold">Détail par ligne budgétaire</h2>
+              )}
+
+              <div className="overflow-hidden rounded-2xl border border-slate-300 bg-white shadow-sm">
+                <div className="border-b border-slate-200 px-5 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div>
+                    <h2 className="font-black text-slate-900">Synthèse par ligne budgétaire</h2>
+                    <p className="mt-1 text-xs text-slate-500">Montants totaux et taux de passage pour {domaine === 'ALL' ? 'Investissement et Fonctionnement' : `le domaine ${domaine}`}.</p>
+                  </div>
+                  <span className={`text-xs px-3 py-1 rounded-full font-bold self-start sm:self-auto ${
+                    domaine === 'FONCTIONNEMENT' ? 'bg-blue-100 text-blue-800' :
+                    domaine === 'INVESTISSEMENT' ? 'bg-indigo-100 text-indigo-800' :
+                    'bg-slate-100 text-slate-700'
+                  }`}>
+                    {domaine === 'ALL' ? 'Tous les domaines' : domaine}
+                  </span>
                 </div>
                 <div className="overflow-x-auto">
-                  <table className="w-full min-w-[800px] text-left text-sm">
-                    <thead className="bg-slate-50 text-xs uppercase text-slate-500">
+                  <table className="min-w-[1650px] w-full border-collapse text-xs">
+                    <thead className="bg-emerald-700 text-left font-extrabold uppercase tracking-wide text-white">
                       <tr>
-                        <th className="px-5 py-3">Ligne</th>
-                        <th className="px-5 py-3">Libellé</th>
-                        <th className="px-5 py-3 text-right">Notifié</th>
-                        <th className="px-5 py-3 text-right">Engagé</th>
-                        <th className="px-5 py-3 text-right">Disponible</th>
+                        {budgetColumns.map((c) => (
+                          <th key={c} className="border-r border-emerald-600 px-4 py-4 text-right first:text-left">{c}</th>
+                        ))}
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
-                      {store.lines.map((line) => (
-                        <tr key={line.id}>
-                          <td className="px-5 py-4 font-mono text-xs font-semibold">{line.article}/{line.paragraphe}/{line.ligne_budgetaire}</td>
-                          <td className="px-5 py-4 text-slate-600">{line.libelle || '—'}</td>
-                          <td className="px-5 py-4 text-right font-semibold">{money(line.total_credits)}</td>
-                          <td className="px-5 py-4 text-right font-semibold text-emerald-700">{money(line.credits_engages)}</td>
-                          <td className="px-5 py-4 text-right font-semibold text-blue-700">{money(line.credits_disponibles)}</td>
+                      {budgetRows.map((r, idx) => (
+                        <tr key={`${r.domaine}-${r.imputation}-${idx}`} className="hover:bg-emerald-50/40">
+                          <td className="px-4 py-3">
+                            <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${
+                              r.domaine === 'FONCTIONNEMENT'
+                                ? 'bg-blue-50 text-[#1e40af] border-blue-200'
+                                : 'bg-indigo-50 text-indigo-700 border-indigo-200'
+                            }`}>
+                              <span className={`w-1.5 h-1.5 rounded-full ${r.domaine === 'FONCTIONNEMENT' ? 'bg-blue-500' : 'bg-indigo-500'}`}></span>
+                              {r.domaine}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 font-bold text-slate-700">
+                            {r.imputation}
+                            <span className="ml-2 font-normal text-slate-400">{r.libelle}</span>
+                          </td>
+                          <td className="px-4 py-3 text-right">{money(r.total_credits)}</td>
+                          <td className="px-4 py-3 text-right font-bold text-emerald-700">{money(r.credits_engages)}</td>
+                          <td className="px-4 py-3 text-right">{rate(r.taux_engagement)}</td>
+                          <td className="px-4 py-3 text-right">{money(r.credits_disponibles)}</td>
+                          <td className="px-4 py-3 text-right font-bold text-violet-700">{money(r.total_ordonnance)}</td>
+                          <td className="px-4 py-3 text-right">{rate(r.taux_ordonnancement)}</td>
+                          <td className="px-4 py-3 text-right font-semibold text-emerald-700">{rate(r.taux_ordonnancement_notifie)}</td>
+                          <td className="px-4 py-3 text-right font-bold text-amber-700">{money(r.total_paiements)}</td>
+                          <td className="px-4 py-3 text-right">{rate(r.taux_paiement_ordonnancement)}</td>
+                          <td className="px-4 py-3 text-right">{rate(r.taux_paiement_engagement)}</td>
+                          <td className="px-4 py-3 text-right font-semibold text-emerald-700">{rate(r.taux_paiement_notifie)}</td>
                         </tr>
                       ))}
-                      {!store.lines.length && (
-                        <tr><td colSpan="5" className="px-5 py-12 text-center text-slate-500">Aucune ligne budgétaire pour cet exercice.</td></tr>
+                      {!budgetRows.length && (
+                        <tr>
+                          <td colSpan="13" className="px-5 py-12 text-center text-slate-500">
+                            Aucune ligne budgétaire pour ce filtre.
+                          </td>
+                        </tr>
                       )}
                     </tbody>
+                    <tfoot className="border-t-2 border-emerald-700 bg-emerald-50 font-black text-emerald-950">
+                      <tr>
+                        <td className="px-4 py-4" colSpan="2">TOTAL {domaine === 'ALL' ? 'GLOBAL' : domaine}</td>
+                        <td className="px-4 py-4 text-right">{money(budgetSummary?.total_notifie)}</td>
+                        <td className="px-4 py-4 text-right">{money(budgetSummary?.total_engage)}</td>
+                        <td className="px-4 py-4 text-right">{rate(budgetSummary?.taux_consommation)}</td>
+                        <td className="px-4 py-4 text-right">{money(budgetSummary?.total_disponible)}</td>
+                        <td className="px-4 py-4 text-right">{money(budgetSummary?.total_ordonnance)}</td>
+                        <td className="px-4 py-4 text-right">{rate(budgetSummary?.taux_ordonnancement)}</td>
+                        <td className="px-4 py-4 text-right">{rate(budgetSummary?.taux_ordonnancement_notifie || pct(budgetSummary?.total_ordonnance, budgetSummary?.total_notifie))}</td>
+                        <td className="px-4 py-4 text-right">{money(budgetSummary?.total_paiement)}</td>
+                        <td className="px-4 py-4 text-right">{rate(budgetSummary?.taux_paiement_ordonnancement)}</td>
+                        <td className="px-4 py-4 text-right">{rate(budgetSummary?.taux_paiement_engagement)}</td>
+                        <td className="px-4 py-4 text-right">{rate(budgetSummary?.taux_paiement_notifie || pct(budgetSummary?.total_paiement, budgetSummary?.total_notifie))}</td>
+                      </tr>
+                    </tfoot>
                   </table>
                 </div>
               </div>

@@ -752,27 +752,36 @@ const GestionAoo = () => {
           </table>
         </div>
 
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <button
-            type="button"
-            onClick={() => handleAddLotItem(lotIndex)}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-bold rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            <Plus size={16} /> Ajouter une ligne
-          </button>
+        <div className="flex flex-col gap-4">
+          <div className="flex justify-start">
+            <button
+              type="button"
+              onClick={() => handleAddLotItem(lotIndex)}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-bold rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
+            >
+              <Plus size={16} /> Ajouter une ligne
+            </button>
+          </div>
 
-          <div className="bg-slate-100 border border-slate-200 rounded-xl px-4 py-3 text-sm space-y-1 min-w-64">
-            <div className="flex justify-between gap-4">
-              <span className="text-slate-600">Total HT</span>
-              <span className="font-mono font-semibold">{formatCurrency(totalHT)} DH</span>
-            </div>
-            <div className="flex justify-between gap-4">
-              <span className="text-slate-600">TVA (20%)</span>
-              <span className="font-mono font-semibold">{formatCurrency(totalTVA)} DH</span>
-            </div>
-            <div className="flex justify-between gap-4 pt-1 border-t border-slate-300">
-              <span className="font-bold text-slate-800">Estimation TTC du lot</span>
-              <span className="font-mono font-bold text-blue-700">{formatCurrency(totalTTC)} DH</span>
+          {/* BLOC ESTIMATION DU LOT (3 Cartes) */}
+          <div className="bg-blue-50/70 rounded-2xl p-5 border border-blue-100">
+            <h4 className="font-extrabold text-blue-800 text-xs tracking-wider mb-3 text-center uppercase">
+              ESTIMATION {lot.num_lot ? `DU ${lot.num_lot.toUpperCase()}` : `DU LOT ${lotIndex + 1}`}
+              {lot.objet_lot ? ` — ${lot.objet_lot}` : ''}
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-white p-4 rounded-xl text-center shadow-sm border border-slate-100">
+                <span className="block text-xs font-bold text-slate-500 mb-1">Montant HT ({lot.num_lot || `Lot ${lotIndex + 1}`})</span>
+                <span className="text-xl font-black text-slate-800">{formatCurrency(totalHT)} MAD</span>
+              </div>
+              <div className="bg-white p-4 rounded-xl text-center shadow-sm border border-slate-100">
+                <span className="block text-xs font-bold text-slate-500 mb-1">TVA (20%)</span>
+                <span className="text-xl font-black text-slate-800">{formatCurrency(totalTVA)} MAD</span>
+              </div>
+              <div className="bg-blue-600 p-4 rounded-xl text-center shadow-sm shadow-blue-500/20 text-white transform hover:scale-[1.02] transition-transform">
+                <span className="block text-xs font-bold text-blue-100 mb-1">Montant TTC ({lot.num_lot || `Lot ${lotIndex + 1}`})</span>
+                <span className="text-2xl font-black">{formatCurrency(totalTTC)} MAD</span>
+              </div>
             </div>
           </div>
         </div>

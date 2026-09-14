@@ -430,8 +430,8 @@ const DossierLiquidation = () => {
   const progressPercent = (finances.total_liquide / finances.montant_marche) * 100;
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans p-6">
-      <main className="flex-1 max-w-7xl mx-auto space-y-6">
+    <div className="min-h-screen bg-slate-50 font-sans p-4 sm:p-6 lg:p-8">
+      <main className="flex-1 w-full max-w-[1920px] mx-auto space-y-6">
         
         {/* Header */}
         <div className="flex items-center gap-4 bg-white p-4 rounded-2xl shadow-sm border border-slate-200">

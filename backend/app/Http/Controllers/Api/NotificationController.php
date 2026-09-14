@@ -64,59 +64,6 @@ class NotificationController extends Controller
 
         $exercice = $validated['exercice'];
 
-        // RÈGLE MÉTIER STRICTE : Le REPORT est lié UNIQUEMENT à l'EXERCICE.
-        // Pour un même exercice, il ne peut être saisi qu'un seul REPORT au total, toutes lignes et notifications confondues.
-        $hasReportInPayload = false;
-        $reportCountInPayload = 0;
-        $totalReportMontantPayload = 0;
-
-        foreach ($validated['lignes'] as $ligneData) {
-            $ligneHasReport = false;
-            $montantLigneReport = 0;
-
-            if (floatval($ligneData['reports'] ?? 0) > 0) {
-                $ligneHasReport = true;
-                $montantLigneReport = floatval($ligneData['reports']);
-            }
-
-            if (!empty($ligneData['mouvements'])) {
-                foreach ($ligneData['mouvements'] as $mvt) {
-                    if (($mvt['type_credit'] ?? '') === 'REPORT' && floatval($mvt['montant'] ?? 0) > 0) {
-                        $ligneHasReport = true;
-                        $montantLigneReport = floatval($mvt['montant']);
-                    }
-                }
-            }
-
-            if ($ligneHasReport && $montantLigneReport > 0) {
-                $hasReportInPayload = true;
-                $reportCountInPayload++;
-                $totalReportMontantPayload += $montantLigneReport;
-            }
-        }
-
-        if ($reportCountInPayload > 1) {
-            return response()->json([
-                'message' => "⚠️ Un seul crédit de REPORT peut être saisi au total pour l'exercice {$exercice}. Vous avez saisi un montant de report sur {$reportCountInPayload} lignes distinctes dans cette notification.",
-            ], 422);
-        }
-
-        if ($hasReportInPayload && $totalReportMontantPayload > 0) {
-            $existingReportLigne = NotificationLigne::where('reports', '>', 0)
-                ->whereHas('notification', function ($q) use ($exercice) {
-                    $q->where('exercice', $exercice);
-                })
-                ->with('notification')
-                ->first();
-
-            if ($existingReportLigne) {
-                $notifNum = $existingReportLigne->notification ? $existingReportLigne->notification->numero : 'existante';
-                return response()->json([
-                    'message' => "⚠️ Un REPORT existe déjà pour l'exercice {$exercice} (Notification : {$notifNum}, Ligne : {$existingReportLigne->article}/{$existingReportLigne->paragraphe}/{$existingReportLigne->ligne_budgetaire}, Montant : " . number_format($existingReportLigne->reports, 2, ',', ' ') . " DH). Le REPORT ne peut être saisi qu'une seule fois par exercice, quelle que soit la ligne budgétaire ou la notification.",
-                ], 422);
-            }
-        }
-
         DB::beginTransaction();
         try {
             $globalHasReport = false;
@@ -545,34 +492,68 @@ class NotificationController extends Controller
     public function getReportExerciceStatus(Request $request)
     {
         $exercice = $request->query('exercice', date('Y'));
+        $domaine = $request->query('domaine');
 
-        $reportLigne = NotificationLigne::where('reports', '>', 0)
+        $invReportLigne = NotificationLigne::where('reports', '>', 0)
+            ->where(function ($q) {
+                $q->where('domaine', 'INVESTISSEMENT')
+                  ->orWhereNull('domaine')
+                  ->orWhereHas('notification', function ($nq) {
+                      $nq->where('domaine', 'INVESTISSEMENT')->orWhereNull('domaine');
+                  });
+            })
             ->whereHas('notification', function ($q) use ($exercice) {
                 $q->where('exercice', $exercice);
             })
             ->with('notification')
             ->first();
 
-        if ($reportLigne) {
-            return response()->json([
-                'has_report' => true,
-                'exercice' => intval($exercice),
-                'report_montant' => floatval($reportLigne->reports),
-                'notification_numero' => $reportLigne->notification ? $reportLigne->notification->numero : null,
-                'notification_date' => $reportLigne->notification ? $reportLigne->notification->date_notification : null,
-                'ligne_budgetaire' => "{$reportLigne->article}/{$reportLigne->paragraphe}/{$reportLigne->ligne_budgetaire}",
-                'libelle' => $reportLigne->libelle,
-            ]);
+        $fncReportLigne = NotificationLigne::where('reports', '>', 0)
+            ->where(function ($q) {
+                $q->where('domaine', 'FONCTIONNEMENT')
+                  ->orWhereHas('notification', function ($nq) {
+                      $nq->where('domaine', 'FONCTIONNEMENT');
+                  });
+            })
+            ->whereHas('notification', function ($q) use ($exercice) {
+                $q->where('exercice', $exercice);
+            })
+            ->with('notification')
+            ->first();
+
+        $chosen = null;
+        if ($domaine === 'FONCTIONNEMENT') {
+            $chosen = $fncReportLigne;
+        } elseif ($domaine === 'INVESTISSEMENT') {
+            $chosen = $invReportLigne;
+        } else {
+            $chosen = $invReportLigne ?: $fncReportLigne;
         }
 
         return response()->json([
-            'has_report' => false,
+            'has_report' => (bool)$chosen,
             'exercice' => intval($exercice),
-            'report_montant' => 0,
-            'notification_numero' => null,
-            'notification_date' => null,
-            'ligne_budgetaire' => null,
-            'libelle' => null,
+            'report_montant' => $chosen ? floatval($chosen->reports) : 0,
+            'notification_numero' => $chosen?->notification?->numero,
+            'notification_date' => $chosen?->notification?->date_notification,
+            'ligne_budgetaire' => $chosen ? "{$chosen->article}/{$chosen->paragraphe}/{$chosen->ligne_budgetaire}" : null,
+            'libelle' => $chosen?->libelle,
+            'investissement' => [
+                'has_report' => (bool)$invReportLigne,
+                'report_montant' => $invReportLigne ? floatval($invReportLigne->reports) : 0,
+                'notification_numero' => $invReportLigne?->notification?->numero,
+                'notification_date' => $invReportLigne?->notification?->date_notification,
+                'ligne_budgetaire' => $invReportLigne ? "{$invReportLigne->article}/{$invReportLigne->paragraphe}/{$invReportLigne->ligne_budgetaire}" : null,
+                'libelle' => $invReportLigne?->libelle,
+            ],
+            'fonctionnement' => [
+                'has_report' => (bool)$fncReportLigne,
+                'report_montant' => $fncReportLigne ? floatval($fncReportLigne->reports) : 0,
+                'notification_numero' => $fncReportLigne?->notification?->numero,
+                'notification_date' => $fncReportLigne?->notification?->date_notification,
+                'ligne_budgetaire' => $fncReportLigne ? "{$fncReportLigne->article}/{$fncReportLigne->paragraphe}/{$fncReportLigne->ligne_budgetaire}" : null,
+                'libelle' => $fncReportLigne?->libelle,
+            ],
         ]);
     }
 
@@ -612,41 +593,102 @@ class NotificationController extends Controller
             if (str_contains($texte, 'report')) return 'reports';
             if (str_contains($texte, 'consolid')) return 'credits_consolides';
             if (str_contains($texte, 'neuf')) return 'credits_neufs';
-            if (str_contains($texte, 'retenue') || str_contains($texte, 'tva') || str_contains($texte, 'ias')) return 'ras';
+            if (str_contains($texte, 'retenue') || str_contains($texte, 'tva') || str_contains($texte, 'ias') || str_contains($texte, 'ras')) return 'ras';
             return 'rap';
         };
 
-        $ordonnancements = Ordonnancement::with('ordres')
+        $ordonnancements = Ordonnancement::with(['ordres', 'consultation', 'marche', 'liquidation', 'notificationLigne'])
             ->where('exercice', $exercice)
-            ->whereNotNull('notification_ligne_id')
             ->get();
 
         foreach ($ordonnancements as $ordonnancement) {
-            $cle = $lignesParId[$ordonnancement->notification_ligne_id] ?? null;
+            // Identifier la clé de ligne budgétaire
+            $ligneId = $ordonnancement->notification_ligne_id 
+                ?: $ordonnancement->notificationLigne?->id 
+                ?: $ordonnancement->consultation?->notification_ligne_id 
+                ?: $ordonnancement->marche?->notification_ligne_id;
+
+            $cle = $ligneId ? ($lignesParId[$ligneId] ?? null) : null;
+
+            if (!$cle) {
+                $dom = strtoupper($ordonnancement->budget_type ?: ($ordonnancement->domaine ?: 'INVESTISSEMENT'));
+                if (str_contains($dom, 'FONCT')) $dom = 'FONCTIONNEMENT';
+                else $dom = 'INVESTISSEMENT';
+                $art = $ordonnancement->article ?: $ordonnancement->art;
+                $par = $ordonnancement->paragraphe ?: $ordonnancement->par;
+                $lig = $ordonnancement->ligne ?: $ordonnancement->ligne_budgetaire ?: $ordonnancement->lig;
+                if ($art && $par && $lig) {
+                    $cle = $dom . '_' . $art . '/' . $par . '/' . $lig;
+                }
+            }
+
             $index = $cle !== null ? ($indexParImputation[$cle] ?? null) : null;
+            if ($index === null && count($lignes) > 0) {
+                // Si une seule ligne existe ou première ligne du domaine
+                $dom = strtoupper($ordonnancement->budget_type ?: 'INVESTISSEMENT');
+                $targetDom = str_contains($dom, 'FONCT') ? 'FONCTIONNEMENT' : 'INVESTISSEMENT';
+                foreach ($lignes as $idx => $l) {
+                    if ($l['domaine'] === $targetDom) {
+                        $index = $idx;
+                        break;
+                    }
+                }
+                if ($index === null) $index = 0;
+            }
             if ($index === null) continue;
 
-            $montantOrdonnance = (float) $ordonnancement->montant_brut;
-            $lignes[$index]['total_ordonnance'] += $montantOrdonnance;
-            $estPaye = $ordonnancement->statut === 'Payé';
-            if ($estPaye) $lignes[$index]['total_paiements'] += $montantOrdonnance;
+            if ($ordonnancement->ordres && $ordonnancement->ordres->isNotEmpty()) {
+                foreach ($ordonnancement->ordres as $ordre) {
+                    $type = $classerMouvement($ordre);
+                    $montant = (float) $ordre->montant;
+                    $lignes[$index]['ordonnance_' . $type] += $montant;
+                    $lignes[$index]['total_ordonnance'] += $montant;
+                    $lignes[$index]['paiement_' . $type] += $montant;
+                    $lignes[$index]['total_paiements'] += $montant;
+                }
+            } else {
+                $mReports = (float) ($ordonnancement->paiement_reports ?: (str_contains(mb_strtolower($ordonnancement->creance ?? ''), 'report') ? $ordonnancement->montant_brut : 0));
+                $mConsolid = (float) ($ordonnancement->credit_consolide ?: (str_contains(mb_strtolower($ordonnancement->creance ?? ''), 'consolid') ? $ordonnancement->montant_brut : 0));
+                $mNeufs = (float) ($ordonnancement->credit_neuf ?: (str_contains(mb_strtolower($ordonnancement->creance ?? ''), 'neuf') ? $ordonnancement->montant_brut : 0));
+                $mRas = (float) ($ordonnancement->ras_total ?: ($ordonnancement->retenue_tva + $ordonnancement->retenue_ias + $ordonnancement->autres_retenues));
+                $mRap = (float) ($ordonnancement->rap_total ?: (str_contains(mb_strtolower($ordonnancement->creance ?? ''), 'reste') ? $ordonnancement->net_a_payer : 0));
+                
+                $mBrut = (float) ($ordonnancement->montant_brut ?: ($mReports + $mConsolid + $mNeufs + $mRas + $mRap) ?: $ordonnancement->net_a_payer);
 
-            $mouvements = $ordonnancement->ordres->isNotEmpty()
-                ? $ordonnancement->ordres
-                : collect([(object) ['montant' => $montantOrdonnance, 'creance' => $ordonnancement->creance, 'type_mouvement' => '']]);
-            foreach ($mouvements as $mouvement) {
-                $type = $classerMouvement($mouvement);
-                $montant = (float) $mouvement->montant;
-                $lignes[$index]['ordonnance_' . $type] += $montant;
-                if ($estPaye) $lignes[$index]['paiement_' . $type] += $montant;
+                $lignes[$index]['ordonnance_reports'] += $mReports;
+                $lignes[$index]['ordonnance_credits_consolides'] += $mConsolid;
+                $lignes[$index]['ordonnance_credits_neufs'] += $mNeufs;
+                $lignes[$index]['ordonnance_ras'] += $mRas;
+                $lignes[$index]['ordonnance_rap'] += $mRap;
+                $lignes[$index]['total_ordonnance'] += $mBrut;
+
+                $lignes[$index]['paiement_reports'] += $mReports;
+                $lignes[$index]['paiement_credits_consolides'] += $mConsolid;
+                $lignes[$index]['paiement_credits_neufs'] += $mNeufs;
+                $lignes[$index]['paiement_ras'] += $mRas;
+                $lignes[$index]['paiement_rap'] += $mRap;
+                $lignes[$index]['total_paiements'] += $mBrut;
             }
         }
 
+        $calcPct = function ($part, $total) {
+            $p = (float) ($part ?? 0);
+            $t = (float) ($total ?? 0);
+            if ($t <= 0 || $p <= 0) return 0;
+            $raw = ($p / $t) * 100;
+            if ($raw > 0 && $raw < 0.01) {
+                return round($raw, 4);
+            }
+            return round($raw, 2);
+        };
+
         foreach ($lignes as &$ligne) {
-            $ligne['taux_engagement'] = $ligne['total_credits'] > 0 ? round(($ligne['credits_engages'] / $ligne['total_credits']) * 100, 2) : 0;
-            $ligne['taux_ordonnancement'] = $ligne['credits_engages'] > 0 ? round(($ligne['total_ordonnance'] / $ligne['credits_engages']) * 100, 2) : 0;
-            $ligne['taux_paiement_ordonnancement'] = $ligne['total_ordonnance'] > 0 ? round(($ligne['total_paiements'] / $ligne['total_ordonnance']) * 100, 2) : 0;
-            $ligne['taux_paiement_engagement'] = $ligne['credits_engages'] > 0 ? round(($ligne['total_paiements'] / $ligne['credits_engages']) * 100, 2) : 0;
+            $ligne['taux_engagement'] = $calcPct($ligne['credits_engages'], $ligne['total_credits']);
+            $ligne['taux_ordonnancement'] = $calcPct($ligne['total_ordonnance'], $ligne['credits_engages']);
+            $ligne['taux_ordonnancement_notifie'] = $calcPct($ligne['total_ordonnance'], $ligne['total_credits']);
+            $ligne['taux_paiement_ordonnancement'] = $calcPct($ligne['total_paiements'], $ligne['total_ordonnance']);
+            $ligne['taux_paiement_engagement'] = $calcPct($ligne['total_paiements'], $ligne['credits_engages']);
+            $ligne['taux_paiement_notifie'] = $calcPct($ligne['total_paiements'], $ligne['total_credits']);
         }
         unset($ligne);
 
@@ -655,7 +697,7 @@ class NotificationController extends Controller
         $totalDisponible = array_sum(array_column($lignes, 'credits_disponibles'));
         $totalOrdonnance = array_sum(array_column($lignes, 'total_ordonnance'));
         $totalPaiement = array_sum(array_column($lignes, 'total_paiements'));
-        $tauxConsommation = $totalNotifie > 0 ? round(($totalEngage / $totalNotifie) * 100, 2) : 0;
+        $tauxConsommation = $calcPct($totalEngage, $totalNotifie);
 
         return response()->json([
             'total_notifie' => $totalNotifie,
@@ -665,9 +707,11 @@ class NotificationController extends Controller
             'total_ordonnance' => $totalOrdonnance,
             'total_paiement' => $totalPaiement,
             'taux_consommation' => $tauxConsommation,
-            'taux_ordonnancement' => $totalEngage > 0 ? round(($totalOrdonnance / $totalEngage) * 100, 2) : 0,
-            'taux_paiement_ordonnancement' => $totalOrdonnance > 0 ? round(($totalPaiement / $totalOrdonnance) * 100, 2) : 0,
-            'taux_paiement_engagement' => $totalEngage > 0 ? round(($totalPaiement / $totalEngage) * 100, 2) : 0,
+            'taux_ordonnancement' => $calcPct($totalOrdonnance, $totalEngage),
+            'taux_ordonnancement_notifie' => $calcPct($totalOrdonnance, $totalNotifie),
+            'taux_paiement_ordonnancement' => $calcPct($totalPaiement, $totalOrdonnance),
+            'taux_paiement_engagement' => $calcPct($totalPaiement, $totalEngage),
+            'taux_paiement_notifie' => $calcPct($totalPaiement, $totalNotifie),
             'lignes' => $lignes,
         ]);
     }

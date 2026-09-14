@@ -61,8 +61,8 @@ const ListeLiquidations = () => {
   });
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans flex flex-col p-6">
-        <main className="flex-1 w-full max-w-7xl mx-auto">
+    <div className="min-h-screen bg-slate-50 font-sans flex flex-col p-4 sm:p-6 lg:p-8">
+        <main className="flex-1 w-full max-w-[1920px] mx-auto">
           <div className="mb-4">
              <Link to="/dashboard" className="text-sm font-semibold text-indigo-600 hover:underline">
                ← Retour au tableau de bord

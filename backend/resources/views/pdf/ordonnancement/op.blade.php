@@ -328,10 +328,10 @@
     <!-- 5. RENSEIGNEMENTS SUR LA DÉPENSE -->
     <table class="table-section">
         <tr>
-            <th colspan="2" class="section-header">RENSEIGNEMENTS SUR LA DEPENSE</th>
+            <th colspan="2" class="section-header">RENSEIGNEMENTS SUR LA DÉPENSE</th>
         </tr>
         <tr>
-            <td class="cell-label">BENEFICIAIRE</td>
+            <td class="cell-label">BÉNÉFICIAIRE</td>
             <td class="cell-value">
                 <div style="font-size: 10px; text-transform: uppercase;">{{ $beneficiaireNom }}</div>
                 @if($beneficiaireAdresse || $beneficiaireVille)
@@ -361,12 +361,12 @@
         </tr>
     </table>
 
-    <!-- 6. PIECES JOINTES & MONTANT & MODE DE PAIEMENT -->
+    <!-- 6. PIÈCES JOINTES & MONTANT & MODE DE PAIEMENT -->
     <table class="table-pj">
         <thead>
             <tr>
                 <th style="width: 18%;">MONTANT (DH)</th>
-                <th style="width: 62%;">PIECES JOINTES:</th>
+                <th style="width: 62%;">PIÈCES JOINTES :</th>
                 <th style="width: 20%;">MODE DE PAIEMENT</th>
             </tr>
         </thead>
@@ -381,7 +381,7 @@
                 </td>
             </tr>
             <tr>
-                <td><span style="font-weight: bold; margin-right: 6px;">2</span> PV D'examen des devis</td>
+                <td><span style="font-weight: bold; margin-right: 6px;">2</span> PV d'examen des devis</td>
             </tr>
             <tr>
                 <td><span style="font-weight: bold; margin-right: 6px;">3</span> Lettre de confirmation</td>
@@ -410,11 +410,11 @@
         </tbody>
     </table>
 
-    <!-- 7. SOMME A PAYER -->
+    <!-- 7. SOMME À PAYER -->
     <table class="table-somme">
         <tr>
             <td style="width: 18%; font-weight: bold; text-align: center; font-size: 9px; line-height: 1.1;">
-                SOMME A PAYER<br><span style="font-weight: normal; font-size: 8.5px;">(en lettres)</span>
+                SOMME À PAYER<br><span style="font-weight: normal; font-size: 8.5px;">(en lettres)</span>
             </td>
             <td style="width: 82%; font-weight: bold; font-size: 9.5px; padding-left: 8px;">
                 # {{ \App\Helpers\NumberToWordsHelper::toFrenchMoneyWords($montantPaiement) }} #
@@ -447,8 +447,8 @@
                 <td>{{ number_format($montantPaiement, 2, ',', ' ') }}</td>
             </tr>
             <tr>
-                <th colspan="4" style="text-align: center; font-size: 8.5px;">INTITULE DE LA RUBRIQUE</th>
-                <th colspan="2" style="text-align: center; font-size: 8.5px;">PRETSATION DE MEME NATURE</th>
+                <th colspan="4" style="text-align: center; font-size: 8.5px;">INTITULÉ DE LA RUBRIQUE</th>
+                <th colspan="2" style="text-align: center; font-size: 8.5px;">PRESTATION DE MÊME NATURE</th>
             </tr>
             <tr>
                 <td colspan="4" style="text-align: left; padding-left: 6px; font-size: 8.5px; font-weight: normal;">
@@ -465,7 +465,7 @@
     <table class="visa-table">
         <tr>
             <th>VISA DU SOUS-ORDONNATEUR</th>
-            <th>VISA DU FONDE DE POUVOIRS</th>
+            <th>VISA DU FONDÉ DE POUVOIR</th>
         </tr>
         <tr>
             <td></td>

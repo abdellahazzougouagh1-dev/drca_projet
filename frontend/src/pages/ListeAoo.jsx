@@ -98,8 +98,8 @@ const ListeAoo = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-4 sm:p-6 lg:p-8">
+      <div className="w-full max-w-[1920px] mx-auto">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-4xl font-extrabold text-slate-800 mb-2">Appels d'Offres</h1>

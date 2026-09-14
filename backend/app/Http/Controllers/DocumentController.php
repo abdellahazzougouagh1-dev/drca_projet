@@ -125,24 +125,16 @@ class DocumentController extends Controller
     {
         $marche = Marche::with(['aoo', 'fournisseur', 'lot'])->findOrFail($id);
 
-        if (!$marche->date_approbation) {
-            return response()->json(['message' => 'La date d\'approbation est obligatoire.'], 400);
-        }
-
         $pdf = Pdf::loadView('pdf.notification_approbation', compact('marche'));
-        return $pdf->download($this->safeFileName('Notification_Approbation', $marche->num_marche));
+        return $pdf->download($this->safeFileName('Notification_Approbation', $marche->num_marche ?: $marche->id));
     }
 
     public function generateOs($id)
     {
         $marche = Marche::with(['aoo', 'fournisseur', 'lot'])->findOrFail($id);
 
-        if (!$marche->date_notification_marche) {
-            return response()->json(['message' => 'La date de notification est obligatoire pour générer l\'OS.'], 400);
-        }
-
         $pdf = Pdf::loadView('pdf.os_commencement', compact('marche'));
-        return $pdf->download($this->safeFileName('OS_Commencement', $marche->num_marche));
+        return $pdf->download($this->safeFileName('OS_Commencement', $marche->num_marche ?: $marche->id));
     }
 
     public function generateOsArretReprise($id)

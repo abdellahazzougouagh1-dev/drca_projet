@@ -278,8 +278,8 @@ export default function DossierOrdonnancement() {
 
       {/* STICKY HEADER */}
       <header className="bg-white/95 border-b border-slate-200 sticky top-0 z-30 shadow-sm backdrop-blur">
-        <div className="w-full px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-          <div className="py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="w-full px-3 sm:px-5">
+          <div className="py-3 sm:py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="flex items-center gap-4">
               <button
                 onClick={() => navigate('/ordonnancements')}
@@ -332,7 +332,7 @@ export default function DossierOrdonnancement() {
         </div>
       </header>
 
-      <main className="w-full px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto py-8 space-y-6">
+      <main className="w-full px-3 sm:px-5 py-6 space-y-6">
 
         {/* RÉSUMÉ DU DOSSIER D'ORDONNANCEMENT (HERO BANNER) */}
         <div className="bg-gradient-to-br from-blue-900 via-blue-800 to-indigo-900 rounded-[1.5rem] p-6 shadow-xl shadow-blue-900/20 relative overflow-hidden border border-white/10 space-y-4">

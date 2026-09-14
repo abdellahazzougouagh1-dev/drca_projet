@@ -159,11 +159,75 @@ export default function NouvelleNotification() {
     return match && match.has_report ? match : null;
   };
 
+  const getCalculatedDiminutionAmount = (ligne, typeDim) => {
+    let base = 0;
+    if (typeDim === 'REPORT') {
+      base = Number(ligne.report_amount) || 0;
+    } else if (typeDim === 'PAIEMENT') {
+      base = (ligne.credits_neufs || []).reduce((sum, cn) => sum + (Number(cn.montant) || 0), 0);
+    } else if (typeDim === 'ENGAGEMENT') {
+      base = (ligne.credits_engagement || []).reduce((sum, eng) => sum + (Number(eng.montant) || 0), 0);
+    }
+    const val = base * 0.01;
+    return val > 0 ? Number(val.toFixed(2)) : '';
+  };
+
+  const syncLineDiminutions = (ligne) => {
+    if (!ligne.diminutions || ligne.diminutions.length === 0) return ligne;
+    const updatedDims = ligne.diminutions.map((dim) => {
+      const calc = getCalculatedDiminutionAmount(ligne, dim.type_diminution);
+      return {
+        ...dim,
+        montant: calc !== '' ? calc : '',
+      };
+    });
+    return { ...ligne, diminutions: updatedDims };
+  };
+
   const updateLigne = (ligneId, field, value) => {
     setLignes((prev) =>
       prev.map((l) => {
         if (l.id !== ligneId) return l;
         const updated = { ...l, [field]: value };
+
+        if (field === 'domaine' && value === 'FONCTIONNEMENT') {
+          // Vider les crédits d'engagement et réinitialiser les diminutions d'engagement
+          updated.credits_engagement = [];
+          if (updated.diminutions) {
+            let hasRep = false;
+            updated.diminutions = updated.diminutions.map((d) => {
+              if (d.type_diminution === 'REPORT') {
+                if (hasRep) return { ...d, type_diminution: 'PAIEMENT' };
+                hasRep = true;
+                return d;
+              }
+              if (d.type_diminution === 'ENGAGEMENT') {
+                if (hasRep) return { ...d, type_diminution: 'PAIEMENT' };
+                hasRep = true;
+                return { ...d, type_diminution: 'REPORT' };
+              }
+              return d;
+            });
+          }
+          if (updated.credits_neufs) {
+            updated.credits_neufs = updated.credits_neufs.map((cn) => ({
+              ...cn,
+              type_credit_neuf: 'CPN',
+            }));
+          }
+        }
+
+        if (field === 'domaine' && value === 'INVESTISSEMENT') {
+          if (!updated.credits_engagement || updated.credits_engagement.length === 0) {
+            updated.credits_engagement = [
+              {
+                id: 'eng-' + Date.now() + '-1',
+                montant: '',
+                date_mouvement: generalInfo.date_notification || new Date().toISOString().split('T')[0],
+              },
+            ];
+          }
+        }
 
         if (['article', 'paragraphe', 'ligne_budgetaire'].includes(field)) {
           const art = field === 'article' ? value : l.article;
@@ -183,7 +247,7 @@ export default function NouvelleNotification() {
           }
         }
 
-        return updated;
+        return syncLineDiminutions(updated);
       })
     );
   };
@@ -258,123 +322,125 @@ export default function NouvelleNotification() {
   // Sous-mouvements
   const addCreditEngagement = (ligneId) => {
     setLignes((prev) =>
-      prev.map((l) =>
-        l.id === ligneId
-          ? {
-            ...l,
-            credits_engagement: [
-              ...l.credits_engagement,
-              {
-                id: 'eng-' + Date.now(),
-                montant: '',
-                date_mouvement:
-                  generalInfo.date_notification || new Date().toISOString().split('T')[0],
-              },
-            ],
-          }
-          : l
-      )
+      prev.map((l) => {
+        if (l.id !== ligneId) return l;
+        const updated = {
+          ...l,
+          credits_engagement: [
+            ...l.credits_engagement,
+            {
+              id: 'eng-' + Date.now(),
+              montant: '',
+              date_mouvement:
+                generalInfo.date_notification || new Date().toISOString().split('T')[0],
+            },
+          ],
+        };
+        return syncLineDiminutions(updated);
+      })
     );
   };
 
   const removeCreditEngagement = (ligneId, mvtId) => {
     setLignes((prev) =>
-      prev.map((l) =>
-        l.id === ligneId
-          ? {
-            ...l,
-            credits_engagement: l.credits_engagement.filter((m) => m.id !== mvtId),
-          }
-          : l
-      )
+      prev.map((l) => {
+        if (l.id !== ligneId) return l;
+        const updated = {
+          ...l,
+          credits_engagement: l.credits_engagement.filter((m) => m.id !== mvtId),
+        };
+        return syncLineDiminutions(updated);
+      })
     );
   };
 
   const updateCreditEngagement = (ligneId, mvtId, field, value) => {
     setLignes((prev) =>
-      prev.map((l) =>
-        l.id === ligneId
-          ? {
-            ...l,
-            credits_engagement: l.credits_engagement.map((m) =>
-              m.id === mvtId ? { ...m, [field]: value } : m
-            ),
-          }
-          : l
-      )
+      prev.map((l) => {
+        if (l.id !== ligneId) return l;
+        const updated = {
+          ...l,
+          credits_engagement: l.credits_engagement.map((m) =>
+            m.id === mvtId ? { ...m, [field]: value } : m
+          ),
+        };
+        return syncLineDiminutions(updated);
+      })
     );
   };
 
   const addCreditNeuf = (ligneId) => {
     setLignes((prev) =>
-      prev.map((l) =>
-        l.id === ligneId
-          ? {
-            ...l,
-            credits_neufs: [
-              ...l.credits_neufs,
-              {
-                id: 'neuf-' + Date.now(),
-                type_credit_neuf: 'CC',
-                montant: '',
-                date_mouvement:
-                  generalInfo.date_notification || new Date().toISOString().split('T')[0],
-              },
-            ],
-          }
-          : l
-      )
+      prev.map((l) => {
+        if (l.id !== ligneId) return l;
+        const updated = {
+          ...l,
+          credits_neufs: [
+            ...l.credits_neufs,
+            {
+              id: 'neuf-' + Date.now(),
+              type_credit_neuf: l.domaine === 'FONCTIONNEMENT' ? 'CPN' : 'CC',
+              montant: '',
+              date_mouvement:
+                generalInfo.date_notification || new Date().toISOString().split('T')[0],
+            },
+          ],
+        };
+        return syncLineDiminutions(updated);
+      })
     );
   };
 
   const removeCreditNeuf = (ligneId, mvtId) => {
     setLignes((prev) =>
-      prev.map((l) =>
-        l.id === ligneId
-          ? {
-            ...l,
-            credits_neufs: l.credits_neufs.filter((m) => m.id !== mvtId),
-          }
-          : l
-      )
+      prev.map((l) => {
+        if (l.id !== ligneId) return l;
+        const updated = {
+          ...l,
+          credits_neufs: l.credits_neufs.filter((m) => m.id !== mvtId),
+        };
+        return syncLineDiminutions(updated);
+      })
     );
   };
 
   const updateCreditNeuf = (ligneId, mvtId, field, value) => {
     setLignes((prev) =>
-      prev.map((l) =>
-        l.id === ligneId
-          ? {
-            ...l,
-            credits_neufs: l.credits_neufs.map((m) =>
-              m.id === mvtId ? { ...m, [field]: value } : m
-            ),
-          }
-          : l
-      )
+      prev.map((l) => {
+        if (l.id !== ligneId) return l;
+        const updated = {
+          ...l,
+          credits_neufs: l.credits_neufs.map((m) =>
+            m.id === mvtId ? { ...m, [field]: value } : m
+          ),
+        };
+        return syncLineDiminutions(updated);
+      })
     );
   };
 
   const addDiminution = (ligneId) => {
     setLignes((prev) =>
-      prev.map((l) =>
-        l.id === ligneId
-          ? {
-            ...l,
-            diminutions: [
-              ...l.diminutions,
-              {
-                id: 'dim-' + Date.now(),
-                type_diminution: 'REPORT',
-                motif: '',
-                montant: '',
-                date_mouvement:
-                  generalInfo.date_notification || new Date().toISOString().split('T')[0],
-              },
-            ],
-          }
-          : l
-      )
+      prev.map((l) => {
+        if (l.id !== ligneId) return l;
+        const hasReportDim = l.diminutions.some((d) => d.type_diminution === 'REPORT');
+        const defaultType = hasReportDim ? 'PAIEMENT' : 'REPORT';
+        const calcMontant = getCalculatedDiminutionAmount(l, defaultType);
+        return {
+          ...l,
+          diminutions: [
+            ...l.diminutions,
+            {
+              id: 'dim-' + Date.now() + '-' + Math.random().toString(36).substring(2, 5),
+              type_diminution: defaultType,
+              motif: '',
+              montant: calcMontant !== '' ? calcMontant : '',
+              date_mouvement:
+                generalInfo.date_notification || new Date().toISOString().split('T')[0],
+            },
+          ],
+        };
+      })
     );
   };
 
@@ -393,16 +459,24 @@ export default function NouvelleNotification() {
 
   const updateDiminution = (ligneId, mvtId, field, value) => {
     setLignes((prev) =>
-      prev.map((l) =>
-        l.id === ligneId
-          ? {
-            ...l,
-            diminutions: l.diminutions.map((m) =>
-              m.id === mvtId ? { ...m, [field]: value } : m
-            ),
-          }
-          : l
-      )
+      prev.map((l) => {
+        if (l.id !== ligneId) return l;
+        return {
+          ...l,
+          diminutions: l.diminutions.map((m) => {
+            if (m.id !== mvtId) return m;
+            if (field === 'type_diminution') {
+              const calcMontant = getCalculatedDiminutionAmount(l, value);
+              return {
+                ...m,
+                type_diminution: value,
+                montant: calcMontant !== '' ? calcMontant : m.montant,
+              };
+            }
+            return { ...m, [field]: value };
+          }),
+        };
+      })
     );
   };
 
@@ -546,12 +620,6 @@ export default function NouvelleNotification() {
         // 1. INCLUSION DU REPORT (si présent)
         const mntReport = Number(l.report_amount);
         if (mntReport && mntReport > 0) {
-          if (exerciseReportStatus?.has_report) {
-            throw new Error(
-              `⚠️ Un REPORT existe déjà pour l'exercice ${generalInfo.exercice} (Notification : ${exerciseReportStatus.notification_numero || 'existante'}, Montant : ${formatMoney(exerciseReportStatus.report_montant)}). Le REPORT ne peut être saisi qu'une seule fois par exercice, quelle que soit la ligne budgétaire ou la notification.`
-            );
-          }
-
           mouvementsPayload.push({
             type_budget: 'REPORT',
             nature: 'REPORT',
@@ -574,7 +642,7 @@ export default function NouvelleNotification() {
               nature: 'ALIMENTATION',
               type_credit: 'ENGAGEMENT',
               numero_notification: extractedNumero,
-              date_mouvement: eng.date_mouvement || extractedDate,
+              date_mouvement: extractedDate,
               montant: Number(eng.montant),
             });
             ligneCreditsEngagement += Number(eng.montant);
@@ -591,7 +659,7 @@ export default function NouvelleNotification() {
               nature: 'ALIMENTATION',
               type_credit: neuf.type_credit_neuf === 'CC' ? 'NEUF_CC' : 'NEUF_CPN',
               numero_notification: extractedNumero,
-              date_mouvement: neuf.date_mouvement || extractedDate,
+              date_mouvement: extractedDate,
               montant: Number(neuf.montant),
             });
             ligneCreditsNeufs += Number(neuf.montant);
@@ -622,7 +690,7 @@ export default function NouvelleNotification() {
               nature: 'DIMINUTION',
               type_credit: typeCreditCode,
               numero_notification: extractedNumero,
-              date_mouvement: dim.date_mouvement || extractedDate,
+              date_mouvement: extractedDate,
               montant: Number(dim.montant),
               motif: dim.motif,
             });
@@ -695,10 +763,10 @@ export default function NouvelleNotification() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 py-10 px-4 sm:px-8 lg:px-12">
-      <div className="max-w-6xl mx-auto">
+    <div className="min-h-screen bg-slate-50 py-5 px-3 sm:px-5 w-full">
+      <div className="w-full">
         {/* Header */}
-        <header className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <header className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <Link
               to="/notifications"
@@ -751,7 +819,7 @@ export default function NouvelleNotification() {
               <span className="text-xs text-slate-400 font-mono">Exercice {generalInfo.exercice}</span>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase">
                   N° DE NOTIFICATION *
@@ -782,26 +850,20 @@ export default function NouvelleNotification() {
                   className="w-full p-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 text-xs font-semibold text-slate-800"
                 />
               </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase">
-                  OBJET / RÉFÉRENCE
-                </label>
-                <input
-                  type="text"
-                  placeholder="Ex: Notification initiale du budget d'investissement"
-                  value={generalInfo.objet}
-                  onChange={(e) => setGeneralInfo({ ...generalInfo, objet: e.target.value })}
-                  className="w-full p-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 text-xs"
-                />
-              </div>
             </div>
           </div>
 
           {/* LIGNES BUDGÉTAIRES DE LA NOTIFICATION */}
           <section className="space-y-6">
             {lignes.map((l, index) => {
-              const otherLineHasReport = lignes.some((ol) => ol.id !== l.id && Number(ol.report_amount) > 0);
+              const isFonctionnement = l.domaine === 'FONCTIONNEMENT';
+              const domainReportStatus = isFonctionnement
+                ? (exerciseReportStatus.fonctionnement || { has_report: false })
+                : (exerciseReportStatus.investissement || exerciseReportStatus || { has_report: false });
+              const otherLineHasReport = lignes.some(
+                (ol) => ol.id !== l.id && ol.domaine === l.domaine && Number(ol.report_amount) > 0
+              );
+              const labelReportType = isFonctionnement ? 'RESTE À PAYER' : 'REPORT';
 
               return (
                 <div
@@ -820,7 +882,7 @@ export default function NouvelleNotification() {
                     </div>
 
                     <div className="flex items-center gap-2 flex-wrap">
-                      {/* Choix du type pour cette ligne : NOTIFIER ou REPORT + NOTIFIER (1 seul report au total par exercice) */}
+                      {/* Choix du type pour cette ligne : NOTIFIER ou REPORT/RESTE À PAYER + NOTIFIER */}
                       <div className="flex bg-slate-100 p-1 rounded-xl text-xs font-bold items-center gap-1">
                         <button
                           type="button"
@@ -832,41 +894,16 @@ export default function NouvelleNotification() {
                         >
                           <Receipt size={14} /> NOTIFIER
                         </button>
-
-                        {exerciseReportStatus.has_report ? (
-                          <div
-                            title={`⚠️ Un REPORT (${formatMoney(exerciseReportStatus.report_montant)}) existe déjà pour l'exercice ${generalInfo.exercice} (Notification : ${exerciseReportStatus.notification_numero || '-'}, Ligne : ${exerciseReportStatus.ligne_budgetaire || '-'}). Le REPORT ne peut être saisi qu'une seule fois par exercice, toutes lignes et notifications confondues.`}
-                            className="px-3 py-1.5 rounded-lg text-slate-400 bg-slate-200/70 cursor-not-allowed flex items-center gap-1.5 select-none"
-                          >
-                            <Lock size={13} className="text-slate-500" />
-                            <span className="text-slate-500 font-semibold">REPORT + NOTIFIER</span>
-                            <span className="text-[10px] bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded font-bold">
-                              Report déjà saisi en {generalInfo.exercice}
-                            </span>
-                          </div>
-                        ) : otherLineHasReport ? (
-                          <div
-                            title="Un crédit de report est déjà renseigné sur une autre ligne de cette notification. Un seul report est autorisé par exercice."
-                            className="px-3 py-1.5 rounded-lg text-slate-400 bg-slate-200/70 cursor-not-allowed flex items-center gap-1.5 select-none"
-                          >
-                            <Lock size={13} className="text-slate-500" />
-                            <span className="text-slate-500 font-semibold">REPORT + NOTIFIER</span>
-                            <span className="text-[10px] bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded font-bold">
-                              Report sur autre ligne
-                            </span>
-                          </div>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => updateLigne(l.id, 'type_ligne', 'BOTH')}
-                            className={`px-3.5 py-1.5 rounded-lg transition flex items-center gap-1.5 ${l.type_ligne === 'BOTH'
-                              ? 'bg-indigo-700 text-white shadow-xs'
-                              : 'text-slate-600 hover:text-slate-900'
-                              }`}
-                          >
-                            <Sparkles size={14} /> REPORT + NOTIFIER
-                          </button>
-                        )}
+                        <button
+                          type="button"
+                          onClick={() => updateLigne(l.id, 'type_ligne', 'BOTH')}
+                          className={`px-3.5 py-1.5 rounded-lg transition flex items-center gap-1.5 ${l.type_ligne === 'BOTH'
+                            ? 'bg-indigo-700 text-white shadow-xs'
+                            : 'text-slate-600 hover:text-slate-900'
+                            }`}
+                        >
+                          <Sparkles size={14} /> {labelReportType} + NOTIFIER
+                        </button>
                       </div>
 
                       {lignes.length > 1 && (
@@ -962,37 +999,45 @@ export default function NouvelleNotification() {
                     </div>
                   </div>
 
-                  {/* CAS 1 : SI TYPE = REPORT ou BOTH (INTERFACE ÉPURÉE CONFORME À LA CAPTURE) */}
+                  {/* CAS 1 : SI TYPE = REPORT ou BOTH */}
                   {(l.type_ligne === 'REPORT' || l.type_ligne === 'BOTH') && (
                     <div className="border border-purple-200 bg-purple-50/40 rounded-xl p-5 space-y-4">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2.5 font-bold text-sm text-purple-950">
                           <FolderSync size={18} className="text-purple-700" />
-                          <span>1. Crédit de REPORT (Exercices antérieurs)</span>
+                          <span>
+                            {isFonctionnement
+                              ? `1. Restes à payer (${generalInfo.exercice - 2}/${generalInfo.exercice - 1})`
+                              : '1. Crédit de REPORT (Exercices antérieurs)'}
+                          </span>
                         </div>
                         <span className="text-[11px] font-bold text-purple-800 bg-purple-100 px-2.5 py-1 rounded-md">
-                          Alimente Colonne (1)
+                          {isFonctionnement
+                            ? 'Alimente Colonne (1) - Reste à payer'
+                            : 'Alimente Colonne (1)'}
                         </span>
                       </div>
 
-                      {exerciseReportStatus.has_report ? (
+                      {domainReportStatus.has_report ? (
                         <div className="p-3.5 bg-amber-50 border border-amber-200 rounded-xl text-amber-900 text-xs font-medium flex items-center gap-2">
                           <Info size={18} className="text-amber-600 flex-shrink-0" />
                           <span>
-                            ⚠️ Un crédit de report de <strong>{formatMoney(exerciseReportStatus.report_montant)}</strong> existe déjà pour l&apos;exercice {generalInfo.exercice} (Notification : <strong>{exerciseReportStatus.notification_numero || 'existante'}</strong>, Ligne : <strong>{exerciseReportStatus.ligne_budgetaire || '-'}</strong>). Le REPORT ne peut être saisi qu&apos;une seule fois par exercice, toutes lignes et notifications confondues.
+                            ⚠️ Un {labelReportType.toLowerCase()} de <strong>{formatMoney(domainReportStatus.report_montant)}</strong> existe déjà pour l&apos;exercice {generalInfo.exercice} (Notification : <strong>{domainReportStatus.notification_numero || 'existante'}</strong>, Ligne : <strong>{domainReportStatus.ligne_budgetaire || '-'}</strong>). Le {labelReportType} ne peut être saisi qu&apos;une seule fois par exercice pour le domaine {l.domaine}.
                           </span>
                         </div>
                       ) : otherLineHasReport ? (
                         <div className="p-3.5 bg-slate-100 border border-slate-200 rounded-xl text-slate-700 text-xs font-medium flex items-center gap-2">
                           <Info size={18} className="text-slate-500 flex-shrink-0" />
                           <span>
-                            Un montant de report est déjà renseigné sur une autre ligne de cette notification. Un seul report est autorisé par exercice.
+                            Un montant de {labelReportType.toLowerCase()} est déjà renseigné sur une autre ligne de cette notification. Un seul {labelReportType.toLowerCase()} est autorisé par exercice pour le domaine {l.domaine}.
                           </span>
                         </div>
                       ) : (
                         <div className="max-w-sm pt-2">
                           <label className="block text-xs font-bold text-purple-900 mb-1.5 uppercase">
-                            MONTANT DU REPORT (DH) *
+                            {isFonctionnement
+                              ? `RESTES À PAYER ${generalInfo.exercice - 2}/${generalInfo.exercice - 1} (DH) *`
+                              : 'MONTANT DU REPORT (DH) *'}
                           </label>
                           <div className="relative">
                             <input
@@ -1014,7 +1059,7 @@ export default function NouvelleNotification() {
                     </div>
                   )}
 
-                  {/* CAS 2 : SI TYPE = NOTIFIER ou BOTH (DOMAINE, NATURE, CRÉDITS NEUFS / ENGAGEMENT / DIMINUTIONS) */}
+                  {/* CAS 2 : SI TYPE = NOTIFIER ou BOTH */}
                   {(l.type_ligne === 'NOTIFIER' || l.type_ligne === 'BOTH') && (
                     <div className="border border-blue-200 bg-blue-50/20 rounded-xl p-5 space-y-5">
                       {/* Domaine */}
@@ -1031,7 +1076,7 @@ export default function NouvelleNotification() {
                               }`}
                           >
                             <span className="text-xs">FONCTIONNEMENT</span>
-                            <span className="text-[10px] text-slate-500">Dépenses courantes</span>
+                            <span className="text-[10px] text-slate-500">Dépenses courantes (Reste à payer, Crédit neuf)</span>
                           </label>
                           <label
                             onClick={() => updateLigne(l.id, 'domaine', 'INVESTISSEMENT')}
@@ -1046,85 +1091,72 @@ export default function NouvelleNotification() {
                         </div>
                       </div>
 
-                      {/* ALIMENTATION (Crédits d'engagement (5) & Crédits Neufs (3)) */}
+                      {/* ALIMENTATION */}
                       <div className="space-y-5">
-                        {/* Crédits d'engagement */}
-                        <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
-                          <div className="flex justify-between items-center">
-                            <h4 className="text-xs font-bold text-[#1e3a8a] uppercase tracking-wide">
-                              Crédits d&apos;engagement (5)
-                            </h4>
-                            <button
-                              type="button"
-                              onClick={() => addCreditEngagement(l.id)}
-                              className="text-xs font-bold bg-emerald-100 text-emerald-800 px-3 py-1.5 rounded-lg flex items-center gap-1.5 hover:bg-emerald-200 transition"
-                            >
-                              <Plus size={14} /> + Ajouter crédit d&apos;engagement
-                            </button>
-                          </div>
-
-                          {l.credits_engagement.map((eng) => (
-                            <div
-                              key={eng.id}
-                              className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center bg-white p-3 rounded-xl border border-slate-200 shadow-2xs"
-                            >
-                              <div className="md:col-span-7">
-                                <label className="block text-[10px] font-bold text-slate-600 mb-1 uppercase">
-                                  Montant Crédit d&apos;Engagement (DH) *
-                                </label>
-                                <input
-                                  type="number"
-                                  step="0.01"
-                                  min="0"
-                                  placeholder="100 000"
-                                  value={eng.montant}
-                                  onChange={(e) =>
-                                    updateCreditEngagement(
-                                      l.id,
-                                      eng.id,
-                                      'montant',
-                                      e.target.value
-                                    )
-                                  }
-                                  className="w-full p-2 text-xs border rounded-lg text-right font-bold text-emerald-700 focus:ring-1 focus:ring-blue-500"
-                                />
-                              </div>
-                              <div className="md:col-span-4">
-                                <label className="block text-[10px] font-bold text-slate-600 mb-1 uppercase">
-                                  Date *
-                                </label>
-                                <input
-                                  type="date"
-                                  value={eng.date_mouvement}
-                                  onChange={(e) =>
-                                    updateCreditEngagement(
-                                      l.id,
-                                      eng.id,
-                                      'date_mouvement',
-                                      e.target.value
-                                    )
-                                  }
-                                  className="w-full p-2 text-xs border rounded-lg focus:ring-1 focus:ring-blue-500"
-                                />
-                              </div>
-                              <div className="md:col-span-1 flex justify-end">
-                                <button
-                                  type="button"
-                                  onClick={() => removeCreditEngagement(l.id, eng.id)}
-                                  className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition"
-                                >
-                                  <Trash2 size={16} />
-                                </button>
-                              </div>
+                        {/* Crédits d'engagement (Uniquement pour INVESTISSEMENT) */}
+                        {l.domaine !== 'FONCTIONNEMENT' && (
+                          <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
+                            <div className="flex justify-between items-center">
+                              <h4 className="text-xs font-bold text-[#1e3a8a] uppercase tracking-wide">
+                                Crédits d&apos;engagement (5)
+                              </h4>
+                              <button
+                                type="button"
+                                onClick={() => addCreditEngagement(l.id)}
+                                className="text-xs font-bold bg-emerald-100 text-emerald-800 px-3 py-1.5 rounded-lg flex items-center gap-1.5 hover:bg-emerald-200 transition"
+                              >
+                                <Plus size={14} /> + Ajouter crédit d&apos;engagement
+                              </button>
                             </div>
-                          ))}
-                        </div>
+
+                            {l.credits_engagement.map((eng) => (
+                              <div
+                                key={eng.id}
+                                className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center bg-white p-3 rounded-xl border border-slate-200 shadow-2xs"
+                              >
+                                <div className="md:col-span-11">
+                                  <label className="block text-[10px] font-bold text-slate-600 mb-1 uppercase">
+                                    Montant Crédit d&apos;Engagement (DH) *
+                                  </label>
+                                  <input
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    placeholder="100 000"
+                                    value={eng.montant}
+                                    onChange={(e) =>
+                                      updateCreditEngagement(
+                                        l.id,
+                                        eng.id,
+                                        'montant',
+                                        e.target.value
+                                      )
+                                    }
+                                    className="w-full p-2 text-xs border rounded-lg text-right font-bold text-emerald-700 focus:ring-1 focus:ring-blue-500"
+                                  />
+                                </div>
+                                <div className="md:col-span-1 flex justify-end pt-3 md:pt-4">
+                                  <button
+                                    type="button"
+                                    onClick={() => removeCreditEngagement(l.id, eng.id)}
+                                    className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition"
+                                    title="Supprimer ce mouvement"
+                                  >
+                                    <Trash2 size={16} />
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
 
                         {/* Crédits Neufs */}
                         <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
                           <div className="flex justify-between items-center">
                             <h4 className="text-xs font-bold text-[#1e3a8a] uppercase tracking-wide">
-                              Crédits Neufs (3) (CC / CPN)
+                              {l.domaine === 'FONCTIONNEMENT'
+                                ? 'Crédits Neufs (3)'
+                                : "Crédits Neufs (3) (CC / CPN)"}
                             </h4>
                             <button
                               type="button"
@@ -1140,38 +1172,49 @@ export default function NouvelleNotification() {
                               key={neuf.id}
                               className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center bg-white p-3 rounded-xl border border-slate-200 shadow-2xs"
                             >
-                              <div className="md:col-span-3">
-                                <label className="block text-[10px] font-bold text-slate-600 mb-1 uppercase">
-                                  Type *
-                                </label>
-                                <div className="flex gap-1.5">
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      updateCreditNeuf(l.id, neuf.id, 'type_credit_neuf', 'CC')
-                                    }
-                                    className={`flex-1 py-1 px-1.5 text-[11px] font-bold rounded-lg border transition ${neuf.type_credit_neuf === 'CC'
-                                      ? 'bg-[#1e40af] text-white border-[#1e40af]'
-                                      : 'bg-slate-50 text-slate-700 border-slate-200'
-                                      }`}
-                                  >
-                                    CC
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      updateCreditNeuf(l.id, neuf.id, 'type_credit_neuf', 'CPN')
-                                    }
-                                    className={`flex-1 py-1 px-1.5 text-[11px] font-bold rounded-lg border transition ${neuf.type_credit_neuf === 'CPN'
-                                      ? 'bg-[#1e40af] text-white border-[#1e40af]'
-                                      : 'bg-slate-50 text-slate-700 border-slate-200'
-                                      }`}
-                                  >
-                                    CPN
-                                  </button>
+                              {l.domaine === 'FONCTIONNEMENT' ? (
+                                <div className="md:col-span-3">
+                                  <label className="block text-[10px] font-bold text-slate-600 mb-1 uppercase">
+                                    Type
+                                  </label>
+                                  <div className="p-2 text-xs font-bold text-[#1e40af] bg-blue-50 border border-blue-200 rounded-lg text-center">
+                                    Crédit Neuf
+                                  </div>
                                 </div>
-                              </div>
-                              <div className="md:col-span-5">
+                              ) : (
+                                <div className="md:col-span-4">
+                                  <label className="block text-[10px] font-bold text-slate-600 mb-1 uppercase">
+                                    Type *
+                                  </label>
+                                  <div className="flex gap-1.5">
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        updateCreditNeuf(l.id, neuf.id, 'type_credit_neuf', 'CC')
+                                      }
+                                      className={`flex-1 py-1 px-1.5 text-[11px] font-bold rounded-lg border transition ${neuf.type_credit_neuf === 'CC'
+                                        ? 'bg-[#1e40af] text-white border-[#1e40af]'
+                                        : 'bg-slate-50 text-slate-700 border-slate-200'
+                                        }`}
+                                    >
+                                      CC
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        updateCreditNeuf(l.id, neuf.id, 'type_credit_neuf', 'CPN')
+                                      }
+                                      className={`flex-1 py-1 px-1.5 text-[11px] font-bold rounded-lg border transition ${neuf.type_credit_neuf === 'CPN'
+                                        ? 'bg-[#1e40af] text-white border-[#1e40af]'
+                                        : 'bg-slate-50 text-slate-700 border-slate-200'
+                                        }`}
+                                    >
+                                      CPN
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
+                              <div className={l.domaine === 'FONCTIONNEMENT' ? "md:col-span-8" : "md:col-span-7"}>
                                 <label className="block text-[10px] font-bold text-slate-600 mb-1 uppercase">
                                   Montant Crédit Neuf (DH) *
                                 </label>
@@ -1192,29 +1235,12 @@ export default function NouvelleNotification() {
                                   className="w-full p-2 text-xs border rounded-lg text-right font-bold text-indigo-700 focus:ring-1 focus:ring-blue-500"
                                 />
                               </div>
-                              <div className="md:col-span-3">
-                                <label className="block text-[10px] font-bold text-slate-600 mb-1 uppercase">
-                                  Date *
-                                </label>
-                                <input
-                                  type="date"
-                                  value={neuf.date_mouvement}
-                                  onChange={(e) =>
-                                    updateCreditNeuf(
-                                      l.id,
-                                      neuf.id,
-                                      'date_mouvement',
-                                      e.target.value
-                                    )
-                                  }
-                                  className="w-full p-2 text-xs border rounded-lg focus:ring-1 focus:ring-blue-500"
-                                />
-                              </div>
-                              <div className="md:col-span-1 flex justify-end">
+                              <div className="md:col-span-1 flex justify-end pt-3 md:pt-4">
                                 <button
                                   type="button"
                                   onClick={() => removeCreditNeuf(l.id, neuf.id)}
                                   className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition"
+                                  title="Supprimer ce mouvement"
                                 >
                                   <Trash2 size={16} />
                                 </button>
@@ -1224,11 +1250,13 @@ export default function NouvelleNotification() {
                         </div>
                       </div>
 
-                      {/* DIMINUTIONS (2, 4, 6) */}
+                      {/* DIMINUTIONS */}
                       <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
                         <div className="flex justify-between items-center mb-2">
                           <h4 className="text-xs font-bold text-amber-900 uppercase tracking-wide">
-                            Mouvements de Diminution (Motif obligatoire) (2, 4, 6)
+                            {l.domaine === 'FONCTIONNEMENT'
+                              ? 'Mouvements de Diminution (2, 4)'
+                              : 'Mouvements de Diminution (Motif obligatoire) (2, 4, 6)'}
                           </h4>
                           <button
                             type="button"
@@ -1239,72 +1267,82 @@ export default function NouvelleNotification() {
                           </button>
                         </div>
 
-                        {l.diminutions.map((dim) => (
-                          <div
-                            key={dim.id}
-                            className="bg-white p-3 rounded-xl border border-slate-200 shadow-2xs space-y-2"
-                          >
-                            <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
-                              <div className="md:col-span-4">
-                                <label className="block text-[10px] font-bold text-slate-600 mb-1 uppercase">
-                                  Catégorie *
-                                </label>
-                                <select
-                                  value={dim.type_diminution}
-                                  onChange={(e) =>
-                                    updateDiminution(
-                                      l.id,
-                                      dim.id,
-                                      'type_diminution',
-                                      e.target.value
-                                    )
-                                  }
-                                  className="w-full p-2 text-xs border rounded-lg font-semibold text-slate-800 focus:ring-1 focus:ring-blue-500"
-                                >
-                                  <option value="REPORT">1. DIMINUTION DU REPORT (2)</option>
-                                  <option value="PAIEMENT">2. DIMINUTION DU PAIEMENT / CRÉDIT NEUF (4)</option>
-                                  <option value="ENGAGEMENT">3. DIMINUTION DE L&apos;ENGAGEMENT (6)</option>
-                                </select>
-                              </div>
-                              <div className="md:col-span-4">
-                                <label className="block text-[10px] font-bold text-slate-600 mb-1 uppercase">
-                                  Montant (DH) *
-                                </label>
+                        {l.diminutions.map((dim) => {
+                          const hasOtherReportDim = l.diminutions.some(
+                            (d) => d.id !== dim.id && d.type_diminution === 'REPORT'
+                          );
+
+                          return (
+                            <div
+                              key={dim.id}
+                              className="bg-white p-3 rounded-xl border border-slate-200 shadow-2xs space-y-2"
+                            >
+                              <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
+                                <div className="md:col-span-5">
+                                  <label className="block text-[10px] font-bold text-slate-600 mb-1 uppercase">
+                                    Catégorie *
+                                  </label>
+                                  <select
+                                    value={
+                                      l.domaine === 'FONCTIONNEMENT' && dim.type_diminution === 'ENGAGEMENT'
+                                        ? 'REPORT'
+                                        : dim.type_diminution
+                                    }
+                                    onChange={(e) =>
+                                      updateDiminution(
+                                        l.id,
+                                        dim.id,
+                                        'type_diminution',
+                                        e.target.value
+                                      )
+                                    }
+                                    className="w-full p-2 text-xs border rounded-lg font-semibold text-slate-800 focus:ring-1 focus:ring-blue-500"
+                                  >
+                                    {l.domaine === 'FONCTIONNEMENT' ? (
+                                      <>
+                                        {(!hasOtherReportDim || dim.type_diminution === 'REPORT') && (
+                                          <option value="REPORT">1. DIMINUTION / RESTE À PAYER (2)</option>
+                                        )}
+                                        <option value="PAIEMENT">2. DIMINUTION / CRÉDITS NEUFS (4)</option>
+                                      </>
+                                    ) : (
+                                      <>
+                                        {(!hasOtherReportDim || dim.type_diminution === 'REPORT') && (
+                                          <option value="REPORT">1. DIMINUTION DU REPORT (2)</option>
+                                        )}
+                                        <option value="PAIEMENT">2. DIMINUTION DU PAIEMENT / CRÉDIT NEUF (4)</option>
+                                        <option value="ENGAGEMENT">3. DIMINUTION DE L&apos;ENGAGEMENT (6)</option>
+                                      </>
+                                    )}
+                                  </select>
+                                </div>
+                              <div className="md:col-span-6">
+                                <div className="flex items-center justify-between mb-1">
+                                  <label className="block text-[10px] font-bold text-slate-600 uppercase">
+                                    Montant (DH) *
+                                  </label>
+                                  <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-200">
+                                    1% automatique
+                                  </span>
+                                </div>
                                 <input
                                   type="number"
                                   step="0.01"
-                                  min="0.01"
-                                  placeholder="Montant"
+                                  min="0"
+                                  placeholder="Auto 1% du crédit"
                                   value={dim.montant}
                                   onChange={(e) =>
                                     updateDiminution(l.id, dim.id, 'montant', e.target.value)
                                   }
-                                  className="w-full p-2 text-xs border rounded-lg text-right font-bold text-amber-700 focus:ring-1 focus:ring-blue-500"
+                                  className="w-full p-2 text-xs border rounded-lg text-right font-bold text-amber-800 bg-amber-50/40 focus:ring-1 focus:ring-blue-500"
                                 />
                               </div>
-                              <div className="md:col-span-3">
-                                <label className="block text-[10px] font-bold text-slate-600 mb-1 uppercase">
-                                  Date
-                                </label>
-                                <input
-                                  type="date"
-                                  value={dim.date_mouvement}
-                                  onChange={(e) =>
-                                    updateDiminution(
-                                      l.id,
-                                      dim.id,
-                                      'date_mouvement',
-                                      e.target.value
-                                    )
-                                  }
-                                  className="w-full p-2 text-xs border rounded-lg focus:ring-1 focus:ring-blue-500"
-                                />
-                              </div>
-                              <div className="md:col-span-1 flex justify-end">
+                              <div className="md:col-span-1 flex justify-end pt-3 md:pt-4">
                                 <button
                                   type="button"
                                   onClick={() => removeDiminution(l.id, dim.id)}
                                   className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition"
+                                  title="Supprimer ce mouvement"
                                 >
                                   <Trash2 size={16} />
                                 </button>
@@ -1326,7 +1364,8 @@ export default function NouvelleNotification() {
                               />
                             </div>
                           </div>
-                        ))}
+                        );
+                      })}
                       </div>
                     </div>
                   )}
@@ -1353,7 +1392,9 @@ export default function NouvelleNotification() {
                   <Receipt className="text-emerald-600" size={22} /> Tableau Récapitulatif Budgétaire
                 </h2>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Formule réglementaire : Total = (1) Reports + (3) Crédits Neufs + (5) Crédits d&apos;Engagement
+                  {lignes.every((l) => l.domaine === 'FONCTIONNEMENT')
+                    ? `Budget de Fonctionnement : Total = (1) Reste à payer ${generalInfo.exercice - 2}/${generalInfo.exercice - 1} + (3) Crédits Neufs`
+                    : "Formule réglementaire : Total = (1) Reports + (3) Crédits Neufs + (5) Crédits d'Engagement"}
                 </p>
               </div>
 
@@ -1383,181 +1424,478 @@ export default function NouvelleNotification() {
 
             {/* VUE 1 : CETTE NOTIFICATION */}
             {recapViewTab === 'cette_notification' && (
-              <div className="overflow-x-auto border border-slate-200 rounded-xl shadow-2xs">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="bg-[#1e3a8a] text-white text-xs font-bold">
-                      <th className="p-3.5 border-r border-blue-800">Ligne Budgétaire</th>
-                      <th className="p-3.5 text-right border-r border-blue-800">
-                        Reports {generalInfo.exercice - 1}/{generalInfo.exercice}
-                      </th>
-                      <th className="p-3.5 text-right border-r border-blue-800">
-                        Diminution / report
-                      </th>
-                      <th className="p-3.5 text-right border-r border-blue-800">Crédits neufs</th>
-                      <th className="p-3.5 text-right border-r border-blue-800">
-                        Diminution / Crédit neuf
-                      </th>
-                      <th className="p-3.5 text-right border-r border-blue-800">
-                        Crédits d&apos;engagement
-                      </th>
-                      <th className="p-3.5 text-right border-r border-blue-800">
-                        Diminution engagement
-                      </th>
-                      <th className="p-3.5 text-right bg-blue-950 font-black">
-                        Total crédits {generalInfo.exercice}
-                      </th>
-                    </tr>
-                    <tr className="bg-blue-900 text-blue-200 text-[11px] font-mono text-center">
-                      <th className="p-1 border-r border-blue-800 text-left pl-3">Réf.</th>
-                      <th className="p-1 border-r border-blue-800 text-right pr-3">(1)</th>
-                      <th className="p-1 border-r border-blue-800 text-right pr-3">(2)</th>
-                      <th className="p-1 border-r border-blue-800 text-right pr-3">(3)</th>
-                      <th className="p-1 border-r border-blue-800 text-right pr-3">(4)</th>
-                      <th className="p-1 border-r border-blue-800 text-right pr-3">(5)</th>
-                      <th className="p-1 border-r border-blue-800 text-right pr-3">(6)</th>
-                      <th className="p-1 bg-blue-950 text-right pr-3 font-bold text-white">
-                        (1) + (3) + (5)
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-200 text-xs">
-                    {notificationRecap.lignes.map((row, idx) => (
-                      <tr key={row.id} className="hover:bg-slate-50 transition font-medium">
-                        <td className="p-3.5 border-r border-slate-200">
-                          <span className="font-mono font-bold text-[#1e3a8a]">
-                            {row.article || '••'}/{row.paragraphe || '••'}/{row.ligne_budgetaire || '••'}
-                          </span>
-                          <span className="text-slate-600 block text-[11px] truncate max-w-xs mt-0.5">
-                            {row.libelle || `Ligne #${idx + 1}`}
-                          </span>
-                        </td>
-                        <td className={`p-3.5 text-right font-mono border-r border-slate-200 ${row.reports > 0 ? 'text-purple-900 font-bold bg-purple-50/50' : 'text-slate-400'}`}>
-                          {formatMoney(row.reports)}
-                        </td>
-                        <td className={`p-3.5 text-right font-mono border-r border-slate-200 ${row.dimReport > 0 ? 'text-amber-800 font-bold bg-amber-50/50' : 'text-slate-400'}`}>
-                          {formatMoney(row.dimReport)}
-                        </td>
-                        <td className={`p-3.5 text-right font-mono border-r border-slate-200 ${row.creditsNeufs > 0 ? 'text-indigo-900 font-bold bg-indigo-50/50' : 'text-slate-400'}`}>
-                          {formatMoney(row.creditsNeufs)}
-                        </td>
-                        <td className={`p-3.5 text-right font-mono border-r border-slate-200 ${row.dimCreditNeuf > 0 ? 'text-amber-800 font-bold bg-amber-50/50' : 'text-slate-400'}`}>
-                          {formatMoney(row.dimCreditNeuf)}
-                        </td>
-                        <td className={`p-3.5 text-right font-mono border-r border-slate-200 ${row.creditsEngagement > 0 ? 'text-emerald-900 font-bold bg-emerald-50/50' : 'text-slate-400'}`}>
-                          {formatMoney(row.creditsEngagement)}
-                        </td>
-                        <td className={`p-3.5 text-right font-mono border-r border-slate-200 ${row.dimEngagement > 0 ? 'text-amber-800 font-bold bg-amber-50/50' : 'text-slate-400'}`}>
-                          {formatMoney(row.dimEngagement)}
-                        </td>
-                        <td className="p-3.5 text-right font-mono font-black text-[#1e3a8a] bg-blue-50/80 text-sm">
-                          {formatMoney(row.totalCredits)}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                  <tfoot>
-                    <tr className="bg-slate-100 font-bold text-xs text-slate-800">
-                      <td className="p-3.5 border-r border-slate-200 uppercase">
-                        Total Notification
-                      </td>
-                      <td className="p-3.5 text-right font-mono border-r border-slate-200">
-                        {formatMoney(notificationRecap.totaux.reports)}
-                      </td>
-                      <td className="p-3.5 text-right font-mono border-r border-slate-200 text-amber-700">
-                        {formatMoney(notificationRecap.totaux.dimReport)}
-                      </td>
-                      <td className="p-3.5 text-right font-mono border-r border-slate-200">
-                        {formatMoney(notificationRecap.totaux.creditsNeufs)}
-                      </td>
-                      <td className="p-3.5 text-right font-mono border-r border-slate-200 text-amber-700">
-                        {formatMoney(notificationRecap.totaux.dimCreditNeuf)}
-                      </td>
-                      <td className="p-3.5 text-right font-mono border-r border-slate-200">
-                        {formatMoney(notificationRecap.totaux.creditsEngagement)}
-                      </td>
-                      <td className="p-3.5 text-right font-mono border-r border-slate-200 text-amber-700">
-                        {formatMoney(notificationRecap.totaux.dimEngagement)}
-                      </td>
-                      <td className="p-3.5 text-right font-mono font-black text-white bg-[#1e40af] text-sm">
-                        {formatMoney(notificationRecap.totaux.totalCredits)}
-                      </td>
-                    </tr>
-                  </tfoot>
-                </table>
-              </div>
-            )}
+              (() => {
+                const isFonctionnementOnly = notificationRecap.lignes.every(
+                  (l) => l.domaine === 'FONCTIONNEMENT'
+                );
 
-            {/* VUE 2 : CUMUL EXERCICE */}
-            {recapViewTab === 'cumul_exercice' && (
-              <div className="space-y-3">
-                <div className="p-3 bg-blue-50/80 border border-blue-200 rounded-xl text-xs text-blue-900 flex items-center gap-2">
-                  <Info size={16} className="text-[#1e40af] flex-shrink-0" />
-                  <span>
-                    Ce tableau consolide l&apos;ensemble des notifications déjà enregistrées sur l&apos;exercice{' '}
-                    <strong>{generalInfo.exercice}</strong>.
-                  </span>
-                </div>
+                if (isFonctionnementOnly) {
+                  return (
+                    <div className="overflow-x-auto border border-slate-200 rounded-xl shadow-2xs">
+                      <table className="w-full text-left border-collapse">
+                        <thead>
+                          <tr className="bg-[#1e3a8a] text-white text-xs font-bold">
+                            <th className="p-3.5 border-r border-blue-800">Ligne Budgétaire</th>
+                            <th className="p-3.5 text-right border-r border-blue-800 text-red-100">
+                              Reste à payer {generalInfo.exercice - 2}/{generalInfo.exercice - 1}
+                            </th>
+                            <th className="p-3.5 text-right border-r border-blue-800 text-red-100">
+                              Diminution / Reste à payer
+                            </th>
+                            <th className="p-3.5 text-right border-r border-blue-800 text-red-100">
+                              Crédits Neufs
+                            </th>
+                            <th className="p-3.5 text-right border-r border-blue-800 text-red-100">
+                              Diminution / Crédits Neufs
+                            </th>
+                            <th className="p-3.5 text-right bg-blue-950 font-black text-red-100">
+                              Total crédits LF {generalInfo.exercice}
+                            </th>
+                          </tr>
+                          <tr className="bg-blue-900 text-blue-200 text-[11px] font-mono text-center">
+                            <th className="p-1 border-r border-blue-800 text-left pl-3 text-red-300">Réf.</th>
+                            <th className="p-1 border-r border-blue-800 text-right pr-3 text-red-300">(1)</th>
+                            <th className="p-1 border-r border-blue-800 text-right pr-3 text-red-300">(2)</th>
+                            <th className="p-1 border-r border-blue-800 text-right pr-3 text-red-300">(3)</th>
+                            <th className="p-1 border-r border-blue-800 text-right pr-3 text-red-300">(4)</th>
+                            <th className="p-1 bg-blue-950 text-right pr-3 font-bold text-red-300">
+                              (3) = (1) + (3)
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-200 text-xs">
+                          {notificationRecap.lignes.map((row, idx) => (
+                            <tr key={row.id} className="hover:bg-slate-50 transition font-medium">
+                              <td className="p-3.5 border-r border-slate-200">
+                                <span className="font-mono font-bold text-[#1e3a8a]">
+                                  {row.article || '••'}/{row.paragraphe || '••'}/{row.ligne_budgetaire || '••'}
+                                </span>
+                                <span className="text-slate-600 block text-[11px] truncate max-w-xs mt-0.5">
+                                  {row.libelle || `Ligne #${idx + 1}`}
+                                </span>
+                              </td>
+                              <td
+                                className={`p-3.5 text-right font-mono border-r border-slate-200 ${row.reports > 0 ? 'text-purple-900 font-bold bg-purple-50/50' : 'text-slate-400'
+                                  }`}
+                              >
+                                {row.reports > 0 ? formatMoney(row.reports) : '-'}
+                              </td>
+                              <td
+                                className={`p-3.5 text-right font-mono border-r border-slate-200 ${row.dimReport > 0 ? 'text-amber-800 font-bold bg-amber-50/50' : 'text-slate-400'
+                                  }`}
+                              >
+                                {row.dimReport > 0 ? formatMoney(row.dimReport) : '-'}
+                              </td>
+                              <td
+                                className={`p-3.5 text-right font-mono border-r border-slate-200 ${row.creditsNeufs > 0 ? 'text-indigo-900 font-bold bg-indigo-50/50' : 'text-slate-400'
+                                  }`}
+                              >
+                                {row.creditsNeufs > 0 ? formatMoney(row.creditsNeufs) : '-'}
+                              </td>
+                              <td
+                                className={`p-3.5 text-right font-mono border-r border-slate-200 ${row.dimCreditNeuf > 0 ? 'text-amber-800 font-bold bg-amber-50/50' : 'text-slate-400'
+                                  }`}
+                              >
+                                {row.dimCreditNeuf > 0 ? formatMoney(row.dimCreditNeuf) : '-'}
+                              </td>
+                              <td className="p-3.5 text-right font-mono font-black text-[#1e3a8a] bg-blue-50/80 text-sm">
+                                {formatMoney(row.reports + row.creditsNeufs)}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                        <tfoot>
+                          <tr className="bg-slate-100 font-bold text-xs text-slate-800">
+                            <td className="p-3.5 border-r border-slate-200 uppercase">
+                              Total Notification
+                            </td>
+                            <td className="p-3.5 text-right font-mono border-r border-slate-200">
+                              {formatMoney(notificationRecap.totaux.reports)}
+                            </td>
+                            <td className="p-3.5 text-right font-mono border-r border-slate-200 text-amber-700">
+                              {formatMoney(notificationRecap.totaux.dimReport)}
+                            </td>
+                            <td className="p-3.5 text-right font-mono border-r border-slate-200">
+                              {formatMoney(notificationRecap.totaux.creditsNeufs)}
+                            </td>
+                            <td className="p-3.5 text-right font-mono border-r border-slate-200 text-amber-700">
+                              {formatMoney(notificationRecap.totaux.dimCreditNeuf)}
+                            </td>
+                            <td className="p-3.5 text-right font-mono font-black text-white bg-[#1e40af] text-sm">
+                              {formatMoney(
+                                notificationRecap.totaux.reports + notificationRecap.totaux.creditsNeufs
+                              )}
+                            </td>
+                          </tr>
+                        </tfoot>
+                      </table>
+                    </div>
+                  );
+                }
 
-                {recapExerciceData?.lignes?.length === 0 ? (
-                  <p className="p-8 text-center text-slate-500 text-xs italic bg-slate-50 rounded-xl border">
-                    Aucune notification n&apos;est encore enregistrée pour l&apos;exercice {generalInfo.exercice}.
-                  </p>
-                ) : (
+                // Pour INVESTISSEMENT ou MIXTE (7 colonnes)
+                return (
                   <div className="overflow-x-auto border border-slate-200 rounded-xl shadow-2xs">
-                    <table className="w-full text-left border-collapse text-xs">
+                    <table className="w-full text-left border-collapse">
                       <thead>
-                        <tr className="bg-[#1e3a8a] text-white font-bold">
-                          <th className="p-3 border-r border-blue-800">Imputation Budgétaire</th>
-                          <th className="p-3 border-r border-blue-800">Libellé</th>
-                          <th className="p-3 text-right border-r border-blue-800">(1) Reports</th>
-                          <th className="p-3 text-right border-r border-blue-800">(2) Dim. report</th>
-                          <th className="p-3 text-right border-r border-blue-800">(3) Crédits neufs</th>
-                          <th className="p-3 text-right border-r border-blue-800">(4) Dim. crédit neuf</th>
-                          <th className="p-3 text-right border-r border-blue-800">(5) Crédits d&apos;eng.</th>
-                          <th className="p-3 text-right border-r border-blue-800">(6) Dim. eng.</th>
-                          <th className="p-3 text-right bg-blue-950 font-black">
-                            Total Crédits (1+3+5)
+                        <tr className="bg-[#1e3a8a] text-white text-xs font-bold">
+                          <th className="p-3.5 border-r border-blue-800">Ligne Budgétaire</th>
+                          <th className="p-3.5 text-right border-r border-blue-800">
+                            Reports {generalInfo.exercice - 1}/{generalInfo.exercice}
+                          </th>
+                          <th className="p-3.5 text-right border-r border-blue-800">
+                            Diminution / report
+                          </th>
+                          <th className="p-3.5 text-right border-r border-blue-800">Crédits neufs</th>
+                          <th className="p-3.5 text-right border-r border-blue-800">
+                            Diminution / Crédit neuf
+                          </th>
+                          <th className="p-3.5 text-right border-r border-blue-800">
+                            Crédits d&apos;engagement
+                          </th>
+                          <th className="p-3.5 text-right border-r border-blue-800">
+                            Diminution engagement
+                          </th>
+                          <th className="p-3.5 text-right bg-blue-950 font-black">
+                            Total crédits {generalInfo.exercice}
+                          </th>
+                        </tr>
+                        <tr className="bg-blue-900 text-blue-200 text-[11px] font-mono text-center">
+                          <th className="p-1 border-r border-blue-800 text-left pl-3">Réf.</th>
+                          <th className="p-1 border-r border-blue-800 text-right pr-3">(1)</th>
+                          <th className="p-1 border-r border-blue-800 text-right pr-3">(2)</th>
+                          <th className="p-1 border-r border-blue-800 text-right pr-3">(3)</th>
+                          <th className="p-1 border-r border-blue-800 text-right pr-3">(4)</th>
+                          <th className="p-1 border-r border-blue-800 text-right pr-3">(5)</th>
+                          <th className="p-1 border-r border-blue-800 text-right pr-3">(6)</th>
+                          <th className="p-1 bg-blue-950 text-right pr-3 font-bold text-white">
+                            (1) + (3) + (5)
                           </th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-slate-200">
-                        {recapExerciceData?.lignes?.map((row) => (
-                          <tr key={row.imputation} className="hover:bg-slate-50 transition font-medium">
-                            <td className="p-3 font-mono font-bold text-[#1e3a8a] border-r border-slate-200 whitespace-nowrap">
-                              {row.imputation}
+                      <tbody className="divide-y divide-slate-200 text-xs">
+                        {notificationRecap.lignes.map((row, idx) => (
+                          <tr key={row.id} className="hover:bg-slate-50 transition font-medium">
+                            <td className="p-3.5 border-r border-slate-200">
+                              <span className="font-mono font-bold text-[#1e3a8a]">
+                                {row.article || '••'}/{row.paragraphe || '••'}/{row.ligne_budgetaire || '••'}
+                              </span>
+                              <span className="text-slate-600 block text-[11px] truncate max-w-xs mt-0.5">
+                                {row.libelle || `Ligne #${idx + 1}`}
+                              </span>
                             </td>
-                            <td className="p-3 border-r border-slate-200 text-slate-700">
-                              {row.libelle}
-                            </td>
-                            <td className="p-3 text-right font-mono border-r border-slate-200">
+                            <td
+                              className={`p-3.5 text-right font-mono border-r border-slate-200 ${row.reports > 0 ? 'text-purple-900 font-bold bg-purple-50/50' : 'text-slate-400'
+                                }`}
+                            >
                               {formatMoney(row.reports)}
                             </td>
-                            <td className="p-3 text-right font-mono border-r border-slate-200 text-amber-700">
-                              {formatMoney(row.diminution_report)}
+                            <td
+                              className={`p-3.5 text-right font-mono border-r border-slate-200 ${row.dimReport > 0 ? 'text-amber-800 font-bold bg-amber-50/50' : 'text-slate-400'
+                                }`}
+                            >
+                              {formatMoney(row.dimReport)}
                             </td>
-                            <td className="p-3 text-right font-mono border-r border-slate-200 font-semibold">
-                              {formatMoney(row.credits_neufs)}
+                            <td
+                              className={`p-3.5 text-right font-mono border-r border-slate-200 ${row.creditsNeufs > 0 ? 'text-indigo-900 font-bold bg-indigo-50/50' : 'text-slate-400'
+                                }`}
+                            >
+                              {formatMoney(row.creditsNeufs)}
                             </td>
-                            <td className="p-3 text-right font-mono border-r border-slate-200 text-amber-700">
-                              {formatMoney(row.diminution_credit_neuf)}
+                            <td
+                              className={`p-3.5 text-right font-mono border-r border-slate-200 ${row.dimCreditNeuf > 0 ? 'text-amber-800 font-bold bg-amber-50/50' : 'text-slate-400'
+                                }`}
+                            >
+                              {formatMoney(row.dimCreditNeuf)}
                             </td>
-                            <td className="p-3 text-right font-mono border-r border-slate-200 font-semibold">
-                              {formatMoney(row.credits_engagements)}
+                            <td
+                              className={`p-3.5 text-right font-mono border-r border-slate-200 ${row.creditsEngagement > 0 ? 'text-emerald-900 font-bold bg-emerald-50/50' : 'text-slate-400'
+                                }`}
+                            >
+                              {formatMoney(row.creditsEngagement)}
                             </td>
-                            <td className="p-3 text-right font-mono border-r border-slate-200 text-amber-700">
-                              {formatMoney(row.diminution_credit_engagement)}
+                            <td
+                              className={`p-3.5 text-right font-mono border-r border-slate-200 ${row.dimEngagement > 0 ? 'text-amber-800 font-bold bg-amber-50/50' : 'text-slate-400'
+                                }`}
+                            >
+                              {formatMoney(row.dimEngagement)}
                             </td>
-                            <td className="p-3 text-right font-mono font-black text-[#1e3a8a] bg-blue-50/50">
-                              {formatMoney(row.total_credits)}
+                            <td className="p-3.5 text-right font-mono font-black text-[#1e3a8a] bg-blue-50/80 text-sm">
+                              {formatMoney(row.totalCredits)}
                             </td>
                           </tr>
                         ))}
                       </tbody>
+                      <tfoot>
+                        <tr className="bg-slate-100 font-bold text-xs text-slate-800">
+                          <td className="p-3.5 border-r border-slate-200 uppercase">
+                            Total Notification
+                          </td>
+                          <td className="p-3.5 text-right font-mono border-r border-slate-200">
+                            {formatMoney(notificationRecap.totaux.reports)}
+                          </td>
+                          <td className="p-3.5 text-right font-mono border-r border-slate-200 text-amber-700">
+                            {formatMoney(notificationRecap.totaux.dimReport)}
+                          </td>
+                          <td className="p-3.5 text-right font-mono border-r border-slate-200">
+                            {formatMoney(notificationRecap.totaux.creditsNeufs)}
+                          </td>
+                          <td className="p-3.5 text-right font-mono border-r border-slate-200 text-amber-700">
+                            {formatMoney(notificationRecap.totaux.dimCreditNeuf)}
+                          </td>
+                          <td className="p-3.5 text-right font-mono border-r border-slate-200">
+                            {formatMoney(notificationRecap.totaux.creditsEngagement)}
+                          </td>
+                          <td className="p-3.5 text-right font-mono border-r border-slate-200 text-amber-700">
+                            {formatMoney(notificationRecap.totaux.dimEngagement)}
+                          </td>
+                          <td className="p-3.5 text-right font-mono font-black text-white bg-[#1e40af] text-sm">
+                            {formatMoney(notificationRecap.totaux.totalCredits)}
+                          </td>
+                        </tr>
+                      </tfoot>
                     </table>
                   </div>
-                )}
-              </div>
+                );
+              })()
+            )}
+
+            {/* VUE 2 : CUMUL EXERCICE */}
+            {recapViewTab === 'cumul_exercice' && (
+              (() => {
+                const allLignes = recapExerciceData?.lignes || [];
+                const lignesInvestissement = allLignes.filter(
+                  (row) => (row.domaine || '').toUpperCase() === 'INVESTISSEMENT' || !row.domaine
+                );
+                const lignesFonctionnement = allLignes.filter(
+                  (row) => (row.domaine || '').toUpperCase() === 'FONCTIONNEMENT'
+                );
+
+                const calcTotals = (rows) =>
+                  rows.reduce(
+                    (acc, row) => ({
+                      reports: acc.reports + Number(row.reports || 0),
+                      diminution_report: acc.diminution_report + Number(row.diminution_report || 0),
+                      credits_neufs: acc.credits_neufs + Number(row.credits_neufs || 0),
+                      diminution_credit_neuf: acc.diminution_credit_neuf + Number(row.diminution_credit_neuf || 0),
+                      credits_engagements: acc.credits_engagements + Number(row.credits_engagements || 0),
+                      diminution_credit_engagement: acc.diminution_credit_engagement + Number(row.diminution_credit_engagement || 0),
+                      total_credits: acc.total_credits + Number(row.total_credits || 0),
+                    }),
+                    {
+                      reports: 0,
+                      diminution_report: 0,
+                      credits_neufs: 0,
+                      diminution_credit_neuf: 0,
+                      credits_engagements: 0,
+                      diminution_credit_engagement: 0,
+                      total_credits: 0,
+                    }
+                  );
+
+                const totalsInvestissement = calcTotals(lignesInvestissement);
+                const totalsFonctionnement = calcTotals(lignesFonctionnement);
+
+                return (
+                  <div className="space-y-6">
+                    <div className="p-3 bg-blue-50/80 border border-blue-200 rounded-xl text-xs text-blue-900 flex items-center gap-2">
+                      <Info size={16} className="text-[#1e40af] flex-shrink-0" />
+                      <span>
+                        Ce tableau consolide l&apos;ensemble des notifications déjà enregistrées sur l&apos;exercice{' '}
+                        <strong>{generalInfo.exercice}</strong>.
+                      </span>
+                    </div>
+
+                    {/* SECTION INVESTISSEMENT (7 COLONNES) */}
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2">
+                        <span className="px-2.5 py-0.5 rounded-md text-xs font-bold bg-blue-100 text-blue-800 border border-blue-200">
+                          INVESTISSEMENT
+                        </span>
+                        <h3 className="text-sm font-bold text-slate-800">
+                          Budget d&apos;Investissement {generalInfo.exercice} ({lignesInvestissement.length} ligne{lignesInvestissement.length > 1 ? 's' : ''})
+                        </h3>
+                      </div>
+                      {lignesInvestissement.length === 0 ? (
+                        <p className="p-4 text-center text-slate-400 text-xs italic bg-slate-50 rounded-xl border">
+                          Aucune ligne d&apos;investissement enregistrée pour l&apos;exercice {generalInfo.exercice}.
+                        </p>
+                      ) : (
+                        <div className="overflow-x-auto border border-slate-200 rounded-xl shadow-2xs">
+                          <table className="w-full text-left border-collapse text-xs">
+                            <thead>
+                              <tr className="bg-[#1e3a8a] text-white font-bold">
+                                <th className="p-3 border-r border-blue-800">Imputation Budgétaire</th>
+                                <th className="p-3 border-r border-blue-800">Libellé</th>
+                                <th className="p-3 text-right border-r border-blue-800">(1) Reports</th>
+                                <th className="p-3 text-right border-r border-blue-800">(2) Dim. report</th>
+                                <th className="p-3 text-right border-r border-blue-800">(3) Crédits neufs</th>
+                                <th className="p-3 text-right border-r border-blue-800">(4) Dim. crédit neuf</th>
+                                <th className="p-3 text-right border-r border-blue-800">(5) Crédits d&apos;eng.</th>
+                                <th className="p-3 text-right border-r border-blue-800">(6) Dim. eng.</th>
+                                <th className="p-3 text-right bg-blue-950 font-black">
+                                  Total Crédits (1+3+5)
+                                </th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-200">
+                              <tr className="bg-slate-100 font-bold text-xs text-slate-900 border-b-2 border-slate-300">
+                                <td colSpan="2" className="p-3 border-r border-slate-300 uppercase font-black">
+                                  Total Investissement {generalInfo.exercice}
+                                </td>
+                                <td className="p-3 text-right font-mono border-r border-slate-300">
+                                  {Number(totalsInvestissement.reports) > 0 ? formatMoney(totalsInvestissement.reports) : ''}
+                                </td>
+                                <td className="p-3 text-right font-mono border-r border-slate-300 text-amber-700">
+                                  {formatMoney(totalsInvestissement.diminution_report)}
+                                </td>
+                                <td className="p-3 text-right font-mono border-r border-slate-300">
+                                  {formatMoney(totalsInvestissement.credits_neufs)}
+                                </td>
+                                <td className="p-3 text-right font-mono border-r border-slate-300 text-amber-700">
+                                  {formatMoney(totalsInvestissement.diminution_credit_neuf)}
+                                </td>
+                                <td className="p-3 text-right font-mono border-r border-slate-300">
+                                  {formatMoney(totalsInvestissement.credits_engagements)}
+                                </td>
+                                <td className="p-3 text-right font-mono border-r border-slate-300 text-amber-700">
+                                  {formatMoney(totalsInvestissement.diminution_credit_engagement)}
+                                </td>
+                                <td className="p-3 text-right font-mono font-black text-white bg-[#1e40af]">
+                                  {formatMoney(totalsInvestissement.total_credits)}
+                                </td>
+                              </tr>
+                              {lignesInvestissement.map((row) => (
+                                <tr key={row.imputation} className="hover:bg-slate-50 transition font-medium">
+                                  <td className="p-3 font-mono font-bold text-[#1e3a8a] border-r border-slate-200 whitespace-nowrap">
+                                    {row.imputation}
+                                  </td>
+                                  <td className="p-3 border-r border-slate-200 text-slate-700">
+                                    {row.libelle}
+                                  </td>
+                                  <td className="p-3 text-right font-mono border-r border-slate-200">
+                                    {formatMoney(row.reports)}
+                                  </td>
+                                  <td className="p-3 text-right font-mono border-r border-slate-200 text-amber-700">
+                                    {formatMoney(row.diminution_report)}
+                                  </td>
+                                  <td className="p-3 text-right font-mono border-r border-slate-200 font-semibold">
+                                    {formatMoney(row.credits_neufs)}
+                                  </td>
+                                  <td className="p-3 text-right font-mono border-r border-slate-200 text-amber-700">
+                                    {formatMoney(row.diminution_credit_neuf)}
+                                  </td>
+                                  <td className="p-3 text-right font-mono border-r border-slate-200 font-semibold">
+                                    {formatMoney(row.credits_engagements)}
+                                  </td>
+                                  <td className="p-3 text-right font-mono border-r border-slate-200 text-amber-700">
+                                    {formatMoney(row.diminution_credit_engagement)}
+                                  </td>
+                                  <td className="p-3 text-right font-mono font-black text-[#1e3a8a] bg-blue-50/50">
+                                    {formatMoney(row.total_credits)}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* SECTION FONCTIONNEMENT (5 COLONNES) */}
+                    <div className="space-y-3 pt-4 border-t">
+                      <div className="flex items-center gap-2">
+                        <span className="px-2.5 py-0.5 rounded-md text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                          FONCTIONNEMENT
+                        </span>
+                        <h3 className="text-sm font-bold text-slate-800">
+                          Budget de Fonctionnement {generalInfo.exercice} ({lignesFonctionnement.length} ligne{lignesFonctionnement.length > 1 ? 's' : ''})
+                        </h3>
+                      </div>
+                      {lignesFonctionnement.length === 0 ? (
+                        <p className="p-4 text-center text-slate-400 text-xs italic bg-slate-50 rounded-xl border">
+                          Aucune ligne de fonctionnement enregistrée pour l&apos;exercice {generalInfo.exercice}.
+                        </p>
+                      ) : (
+                        <div className="overflow-x-auto border border-slate-200 rounded-xl shadow-2xs">
+                          <table className="w-full text-left border-collapse text-xs">
+                            <thead>
+                              <tr className="bg-[#1e3a8a] text-white font-bold">
+                                <th className="p-3 border-r border-blue-800">Imputation Budgétaire</th>
+                                <th className="p-3 border-r border-blue-800">Libellé</th>
+                                <th className="p-3 text-right border-r border-blue-800 text-red-100">
+                                  Reste à payer {generalInfo.exercice - 2}/{generalInfo.exercice - 1} (1)
+                                </th>
+                                <th className="p-3 text-right border-r border-blue-800 text-red-100">
+                                  Diminution / Reste à payer (2)
+                                </th>
+                                <th className="p-3 text-right border-r border-blue-800 text-red-100">
+                                  Crédits Neufs (3)
+                                </th>
+                                <th className="p-3 text-right border-r border-blue-800 text-red-100">
+                                  Diminution / Crédits Neufs (4)
+                                </th>
+                                <th className="p-3 text-right bg-blue-950 font-black text-red-100">
+                                  Total crédits LF {generalInfo.exercice}
+                                </th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-200">
+                              <tr className="bg-slate-100 font-bold text-xs text-slate-900 border-b-2 border-slate-300">
+                                <td colSpan="2" className="p-3 border-r border-slate-300 uppercase font-black">
+                                  Total Fonctionnement {generalInfo.exercice}
+                                </td>
+                                <td className="p-3 text-right font-mono border-r border-slate-300">
+                                  {Number(totalsFonctionnement.reports) > 0 ? formatMoney(totalsFonctionnement.reports) : ''}
+                                </td>
+                                <td className="p-3 text-right font-mono border-r border-slate-300 text-amber-700">
+                                  {formatMoney(totalsFonctionnement.diminution_report)}
+                                </td>
+                                <td className="p-3 text-right font-mono border-r border-slate-300">
+                                  {formatMoney(totalsFonctionnement.credits_neufs)}
+                                </td>
+                                <td className="p-3 text-right font-mono border-r border-slate-300 text-amber-700">
+                                  {formatMoney(totalsFonctionnement.diminution_credit_neuf)}
+                                </td>
+                                <td className="p-3 text-right font-mono font-black text-white bg-[#1e40af]">
+                                  {formatMoney(
+                                    totalsFonctionnement.reports + totalsFonctionnement.credits_neufs
+                                  )}
+                                </td>
+                              </tr>
+                              {lignesFonctionnement.map((row) => (
+                                <tr key={row.imputation} className="hover:bg-slate-50 transition font-medium">
+                                  <td className="p-3 font-mono font-bold text-[#1e3a8a] border-r border-slate-200 whitespace-nowrap">
+                                    {row.imputation}
+                                  </td>
+                                  <td className="p-3 border-r border-slate-200 text-slate-700">
+                                    {row.libelle}
+                                  </td>
+                                  <td className="p-3 text-right font-mono border-r border-slate-200">
+                                    {formatMoney(row.reports)}
+                                  </td>
+                                  <td className="p-3 text-right font-mono border-r border-slate-200 text-amber-700">
+                                    {formatMoney(row.diminution_report)}
+                                  </td>
+                                  <td className="p-3 text-right font-mono border-r border-slate-200 font-semibold">
+                                    {formatMoney(row.credits_neufs)}
+                                  </td>
+                                  <td className="p-3 text-right font-mono border-r border-slate-200 text-amber-700">
+                                    {formatMoney(row.diminution_credit_neuf)}
+                                  </td>
+                                  <td className="p-3 text-right font-mono font-black text-[#1e3a8a] bg-blue-50/50">
+                                    {formatMoney(row.reports + row.credits_neufs)}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()
             )}
           </section>
 

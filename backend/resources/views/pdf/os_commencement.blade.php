@@ -66,7 +66,7 @@
         /* Fixed Footer */
         .footer {
             position: fixed;
-            bottom: -10mm;
+            bottom: -13mm;
             left: 0;
             right: 0;
             width: 100%;
@@ -75,7 +75,7 @@
         .footer-banner {
             width: 100%;
             height: auto;
-            max-height: 45px;
+            max-height: 58px;
         }
     </style>
 </head>
@@ -167,7 +167,7 @@
 
     <div style="width: 100%; text-align: center; margin: 6px 0 8px 0;">
         @if(file_exists(public_path('images/info_DRCA.png')))
-            <img src="{{ public_path('images/info_DRCA.png') }}" style="width: 100%; height: auto; max-height: 36px;" alt="ONCA Separator">
+            <img src="{{ public_path('images/info_DRCA.png') }}" style="width: 100%; height: auto; max-height: 58px;" alt="ONCA Separator">
         @endif
         <hr style="border: 1.2px solid #000; margin-top: 3px;">
     </div>

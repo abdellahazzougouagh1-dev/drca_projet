@@ -266,8 +266,8 @@ export default function RegistreOrdonnancements() {
   const totalOrdonneGlobal = totalReportsGlobal + totalCreditConsolidesGlobal + totalCNeufsGlobal + totalRasGlobal + totalRapGlobal;
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(14,165,233,0.10),_transparent_30%),linear-gradient(135deg,_#f8fafc_0%,_#eef6ff_100%)] font-sans flex flex-col p-6 sm:p-8 pb-24">
-      <main className="flex-1 w-full max-w-[99%] mx-auto space-y-6">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(14,165,233,0.10),_transparent_30%),linear-gradient(135deg,_#f8fafc_0%,_#eef6ff_100%)] font-sans flex flex-col p-3 sm:p-5 pb-24 w-full">
+      <main className="flex-1 w-full space-y-6">
         
         {/* Back Link */}
         <div>
@@ -416,7 +416,7 @@ export default function RegistreOrdonnancements() {
                   <th className="px-3 py-3.5 border-r border-emerald-600/70 w-10">N°</th>
                   <th className="px-3.5 py-3.5 border-r border-emerald-600/70 min-w-[100px]">N° OP</th>
                   <th className="px-3.5 py-3.5 border-r border-emerald-600/70 min-w-[95px]">Date OP</th>
-                  <th className="px-4 py-3.5 border-r border-emerald-600/70 text-left min-w-[180px]">Bénéficiaires</th>
+                  <th className="px-4 py-3.5 border-r border-emerald-600/70 text-left min-w-[180px]">Bénéficiaire</th>
                   <th className="px-4 py-3.5 border-r border-emerald-600/70 text-left min-w-[160px]">Référence</th>
                   <th className="px-3 py-3.5 border-r border-emerald-600/70 min-w-[95px]">Budget</th>
                   <th className="px-3.5 py-3.5 border-r border-emerald-600/70 min-w-[130px]">Créance</th>
@@ -427,11 +427,11 @@ export default function RegistreOrdonnancements() {
                   <th className="px-2.5 py-3.5 border-r border-emerald-600/70 min-w-[55px]">S.LIG</th>
                   <th className="px-4 py-3.5 border-r border-emerald-600/70 text-left min-w-[200px]">Intitulé</th>
                   <th className="px-3.5 py-3.5 border-r border-emerald-600/70 text-right min-w-[130px]">Paiement Reports</th>
-                  <th className="px-3.5 py-3.5 border-r border-emerald-600/70 text-right min-w-[145px]">Paiement Crédit Consolidés</th>
+                  <th className="px-3.5 py-3.5 border-r border-emerald-600/70 text-right min-w-[145px]">Paiement Crédits Consolidés</th>
                   <th className="px-3.5 py-3.5 border-r border-emerald-600/70 text-right min-w-[130px]">Paiement C.Neufs</th>
                   <th className="px-3.5 py-3.5 border-r border-emerald-600/70 text-right min-w-[150px]">Paiement Retenue à la source</th>
                   <th className="px-3.5 py-3.5 border-r border-emerald-600/70 text-right min-w-[145px]">Paiement Reste à payer</th>
-                  <th className="px-3.5 py-3.5 border-r border-emerald-600/70 min-w-[125px]">Payé/Rejet</th>
+                  <th className="px-3.5 py-3.5 border-r border-emerald-600/70 min-w-[125px]">Payé / Rejet</th>
                   <th className="px-4 py-3.5 min-w-[130px] text-center">Actions</th>
                 </tr>
               </thead>

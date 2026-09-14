@@ -27,6 +27,7 @@ import DetailsNotification from './pages/DetailsNotification';
 import RegistreOrdonnancements from './pages/RegistreOrdonnancements';
 import DossierOrdonnancement from './pages/DossierOrdonnancement';
 import SuiviBudgetDirecteur from './pages/SuiviBudgetDirecteur';
+import DashboardDirecteur from './pages/DashboardDirecteur';
 function App() {
   const isAuthenticated = !!localStorage.getItem('token');
   let storedUser = null;
@@ -63,7 +64,7 @@ function App() {
           path="/directeur"
           element={
             <DirectorRoute>
-              <Dashboard mode="directeur" />
+              <DashboardDirecteur />
             </DirectorRoute>
           }
         />

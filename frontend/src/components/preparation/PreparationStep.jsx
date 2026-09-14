@@ -188,7 +188,7 @@ export default function PreparationStep({
           status={getSectionStatus('pubs')}
           handleSavePublications={handleSavePublications}
           saving={saving}
-          isReadOnly={isReadOnly}
+          isReadOnly={formData.statut === 'attribue'}
         />
       </div>
 

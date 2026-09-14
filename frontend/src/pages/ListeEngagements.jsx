@@ -120,8 +120,8 @@ const ListeEngagements = () => {
     });
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-4 sm:p-6 lg:p-8">
+      <div className="max-w-[1920px] w-full mx-auto">
         {/* Header */}
         <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
@@ -212,60 +212,69 @@ const ListeEngagements = () => {
               <div className="bg-white rounded-2xl shadow-sm overflow-hidden border border-slate-200">
                 {filteredMarches.length > 0 ? (
                   <div className="overflow-x-auto">
-                    <table className="w-full text-left">
+                    <table className="w-full text-left border-collapse">
                       <thead className="bg-slate-50 border-b border-slate-200 text-xs font-bold text-slate-600 uppercase">
                         <tr>
-                          <th className="px-6 py-4">N° Marché</th>
-                          <th className="px-6 py-4">Titulaire</th>
-                          <th className="px-6 py-4">Objet</th>
-                          <th className="px-6 py-4">Montant TTC</th>
-                          <th className="px-6 py-4">Statut</th>
-                          <th className="px-6 py-4">Agent Suivi</th>
-                          <th className="px-6 py-4 text-center">Actions</th>
+                          <th className="px-4 py-3.5 whitespace-nowrap">N° Marché</th>
+                          <th className="px-3 py-3.5 text-center whitespace-nowrap">Lot</th>
+                          <th className="px-4 py-3.5 whitespace-nowrap">Titulaire</th>
+                          <th className="px-4 py-3.5">Objet</th>
+                          <th className="px-4 py-3.5 whitespace-nowrap text-right">Montant TTC</th>
+                          <th className="px-4 py-3.5 text-center whitespace-nowrap">Statut</th>
+                          <th className="px-3 py-3.5 text-center whitespace-nowrap">Agent Suivi</th>
+                          <th className="px-4 py-3.5 text-center whitespace-nowrap">Actions</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100 text-sm">
                         {filteredMarches.map((marche, idx) => (
                           <tr key={marche.id} className="hover:bg-blue-50/40 transition-colors">
-                            <td className="px-6 py-4 font-mono font-bold text-blue-700">
-                              {marche.num_marche}
+                            <td className="px-4 py-3 whitespace-nowrap">
+                              <span className="font-mono font-bold text-blue-700 text-xs sm:text-sm">{marche.num_marche}</span>
+                              {marche.aoo?.num_aoo && (
+                                <div className="text-[11px] text-slate-400 font-mono">AOO: {marche.aoo.num_aoo}</div>
+                              )}
                             </td>
-                            <td className="px-6 py-4 font-medium text-slate-800">
+                            <td className="px-3 py-3 text-center whitespace-nowrap">
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-lg text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                                {typeof marche.lot === 'object' ? (marche.lot?.num_lot || 'Lot unique') : (marche.lot || 'Lot unique')}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 font-medium text-slate-800 text-xs sm:text-sm max-w-[180px] truncate" title={marche.titulaire}>
                               {marche.titulaire}
                             </td>
-                            <td className="px-6 py-4 text-slate-600 max-w-xs truncate">
+                            <td className="px-4 py-3 text-slate-600 text-xs sm:text-sm max-w-xs truncate" title={marche.objet_marche}>
                               {marche.objet_marche}
                             </td>
-                            <td className="px-6 py-4 font-bold text-slate-900">
+                            <td className="px-4 py-3 font-bold text-slate-900 whitespace-nowrap text-right text-xs sm:text-sm">
                               {formatMoney(marche.montant)}
                             </td>
-                            <td className="px-6 py-4">
-                              <span className={`px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap ${getStatusBadgeColor(marche.statut)}`}>
+                            <td className="px-4 py-3 text-center whitespace-nowrap">
+                              <span className={`px-2.5 py-1 rounded-full text-[11px] font-bold whitespace-nowrap inline-block ${getStatusBadgeColor(marche.statut)}`}>
                                 {marche.statut?.replace(/_/g, ' ').toUpperCase()}
                               </span>
                             </td>
-                            <td className="px-6 py-4 text-slate-500">
+                            <td className="px-3 py-3 text-center text-slate-500 text-xs whitespace-nowrap">
                               {marche.agent_suivi || '-'}
                             </td>
-                            <td className="px-6 py-4 text-center">
-                              <div className="flex gap-1.5 justify-center">
+                            <td className="px-4 py-3 text-center whitespace-nowrap">
+                              <div className="flex gap-1.5 justify-center items-center">
                                 <button
                                   onClick={() => navigate(`/engagements/${marche.id}`)}
-                                  className="p-2 text-blue-600 hover:bg-blue-50 rounded-xl transition-all font-bold text-xs flex items-center gap-1 border border-blue-200"
+                                  className="px-2.5 py-1.5 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-xl transition-all font-bold text-xs flex items-center gap-1 border border-blue-200 shadow-sm"
                                   title="Traiter l'Engagement"
                                 >
-                                  <Eye size={16} /> Traiter
+                                  <Eye size={14} /> Traiter
                                 </button>
                                 <button
                                   onClick={() => navigate(`/liquidations/marches/${marche.id}`)}
-                                  className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all"
+                                  className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all border border-transparent hover:border-indigo-200"
                                   title="Passer à la Liquidation"
                                 >
                                   <ReceiptText size={16} />
                                 </button>
                                 <button
                                   onClick={() => handleDelete(marche.id)}
-                                  className="p-2 text-red-600 hover:bg-red-50 rounded-xl transition-all"
+                                  className="p-1.5 text-red-500 hover:bg-red-50 rounded-xl transition-all border border-transparent hover:border-red-200"
                                   title="Supprimer"
                                 >
                                   <Trash2 size={16} />

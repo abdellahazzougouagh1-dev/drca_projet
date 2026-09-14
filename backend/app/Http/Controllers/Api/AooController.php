@@ -1683,13 +1683,14 @@ class AooController extends Controller
             'attributions.*.marche_data' => 'nullable|array',
         ]);
 
-        $aoo = Aoo::findOrFail($id);
+        $aoo = Aoo::with('lots.items')->findOrFail($id);
+        $createdMarches = [];
 
-        DB::transaction(function () use ($aoo, $data) {
-            foreach ($data['attributions'] as $attributionData) {
+        DB::transaction(function () use ($aoo, $data, &$createdMarches) {
+            foreach ($data['attributions'] as $index => $attributionData) {
                 $lotId = $attributionData['lot_id'];
                 $fournisseurId = (int) $attributionData['fournisseur_id'];
-                $lot = $aoo->lots()->findOrFail($lotId);
+                $lot = $aoo->lots()->with('items')->findOrFail($lotId);
                 $fournisseur = \App\Models\Fournisseur::findOrFail($fournisseurId);
                 
                 if (!empty($attributionData['titulaire_data'])) {
@@ -1742,11 +1743,23 @@ class AooController extends Controller
                     ]
                 );
 
-                // Créer ou synchroniser le Marché d'engagement
-                $numMarche = 'M-' . str_replace('/', '-', $aoo->num_aoo) . ($aoo->lots->count() > 1 ? '-' . str_replace(' ', '', $lot->num_lot) : '');
-                $montantMarche = $attributionData['marche_data']['montant_attribue_ttc'] ?? ($lot->montant_attribue_ttc ?? ($lot->estimation ?? ($aoo->budget ?? 0)));
+                // Génération de la référence unique du marché pour ce lot
+                $cleanedAoo = str_replace('/', '-', $aoo->num_aoo);
+                $lotCode = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $lot->num_lot ?? 'LOT' . ($index + 1)));
+                if (empty($lotCode)) {
+                    $lotCode = 'LOT' . ($lot->id ?? ($index + 1));
+                }
+                $numMarche = 'M-' . $cleanedAoo . '-' . $lotCode;
 
-                \App\Models\Marche::updateOrCreate(
+                $montantMarche = $attributionData['marche_data']['montant_attribue_ttc'] 
+                    ?? ($lot->montant_attribue_ttc ?? ($lot->estimation ?? ($aoo->budget ?? 0)));
+                $tauxTva = $attributionData['marche_data']['tva_taux_attribue'] 
+                    ?? ($lot->tva_taux_attribue ?? ($lot->tva_taux ?? 20));
+                $delaiExecution = $attributionData['marche_data']['delai_execution_jours'] 
+                    ?? ($lot->delai_execution_jours ?? ($aoo->delai_execution ?? null));
+
+                // Créer ou synchroniser le Marché distinct pour ce lot
+                $marche = \App\Models\Marche::updateOrCreate(
                     [
                         'aoo_id' => $aoo->id,
                         'lot_id' => $lotId,
@@ -1754,13 +1767,47 @@ class AooController extends Controller
                     [
                         'num_marche' => $numMarche,
                         'fournisseur_id' => $fournisseurId,
-                        'lot' => $lot->num_lot ?? 'Lot unique',
+                        'lot' => $lot->num_lot ?? 'Lot ' . ($index + 1),
                         'titulaire' => $fournisseur->raison_sociale,
                         'objet_marche' => $lot->objet_lot ?: $aoo->objet,
                         'montant' => $montantMarche,
+                        'taux_tva' => $tauxTva,
+                        'delai_execution' => $delaiExecution,
+                        'notification_ligne_id' => $lot->notification_ligne_id ?: $aoo->notification_ligne_id,
+                        'article_budget' => $lot->art ?: $aoo->art,
+                        'paragraphe_budget' => $lot->par ?: $aoo->par,
+                        'ligne_budget' => $lot->lig ?: $aoo->lig,
+                        'type_budget' => $aoo->type_budget ?? 'Investissement',
+                        'qualite_gerant' => $fournisseur->qualite_representant ?: 'Gérant',
                         'statut' => 'engagement_en_cours',
                     ]
                 );
+
+                // Synchroniser les articles du bordereau du marché avec ceux du lot
+                if ($lot->items && $lot->items->count() > 0) {
+                    $marche->bordereauItems()->delete();
+                    foreach ($lot->items as $item) {
+                        $puHt = (float) ($item->prix_unitaire_ht ?? 0);
+                        $tvaVal = (float) ($tauxTva ?? 20);
+                        $puTtc = round($puHt * (1 + $tvaVal / 100), 2);
+                        $marche->bordereauItems()->create([
+                            'lot_item_id' => $item->id,
+                            'prix_unitaire_attributaire' => $puHt,
+                            'prix_unitaire_ttc' => $puTtc,
+                            'taux_tva' => $tvaVal,
+                            'montant_ht' => round($puHt * (float) ($item->quantite ?? 1), 2),
+                            'montant_ttc' => round($puTtc * (float) ($item->quantite ?? 1), 2),
+                        ]);
+                    }
+                }
+
+                $createdMarches[] = [
+                    'marche_id' => $marche->id,
+                    'num_marche' => $marche->num_marche,
+                    'lot' => $marche->lot,
+                    'titulaire' => $marche->titulaire,
+                    'montant' => $marche->montant,
+                ];
             }
             
             $aoo->update([
@@ -1769,51 +1816,35 @@ class AooController extends Controller
         });
 
         return response()->json([
-            'message' => 'Attributions enregistrées avec succès',
+            'message' => count($createdMarches) . ' marché(s) enregistré(s) et synchronisé(s) avec succès.',
+            'marches' => $createdMarches,
+            'marche_id' => $createdMarches[0]['marche_id'] ?? null,
         ]);
     }
 
     public function cloturerAoo($id)
     {
-        $aoo = Aoo::with(['concurrents.fournisseur', 'lots.attributaire', 'lots.decisions'])->findOrFail($id);
+        $aoo = Aoo::with(['concurrents.fournisseur', 'lots.attributaire', 'lots.decisions', 'lots.items'])->findOrFail($id);
 
-        // Si multi-lots
-        if ($aoo->lots->count() > 1) {
-            $createdMarcheIds = [];
-            foreach ($aoo->lots as $lot) {
-                if ($lot->attributaire_fournisseur_id) {
-                    $fournisseur = \App\Models\Fournisseur::findOrFail($lot->attributaire_fournisseur_id);
-                    $marche = Marche::firstOrCreate(
-                        ['aoo_id' => $aoo->id, 'lot_id' => $lot->id],
-                        [
-                            'num_marche' => 'M-' . str_replace('/', '-', $aoo->num_aoo) . '-' . str_replace(' ', '', $lot->num_lot),
-                            'fournisseur_id' => $fournisseur->id,
-                            'lot' => $lot->num_lot,
-                            'titulaire' => $fournisseur->raison_sociale,
-                            'montant' => $lot->montant_attribue_ttc ?? ($lot->estimation ?? 0),
-                            'statut' => 'engagement_en_cours',
-                        ]
-                    );
-                    $createdMarcheIds[] = $marche->id;
+        $attributedLots = $aoo->lots->filter(function ($l) {
+            return !empty($l->attributaire_fournisseur_id);
+        });
+
+        // Si aucun lot n'a encore d'attributaire explicite mais qu'il y a des concurrents retenus
+        if ($attributedLots->count() === 0) {
+            foreach ($aoo->lots as $l) {
+                $retenuDecision = $l->decisions->firstWhere('statut', 'Retenu');
+                if ($retenuDecision && $retenuDecision->fournisseur_id) {
+                    $l->update(['attributaire_fournisseur_id' => $retenuDecision->fournisseur_id]);
                 }
             }
-
-            if (empty($createdMarcheIds)) {
-                return response()->json(['error' => "Impossible de clôturer : aucun lot n'a d'attributaire sélectionné."], 400);
-            }
-
-            $aoo->update(['statut' => 'attribue']);
-            return response()->json([
-                'message' => 'AOO multi-lots clôturé avec succès. Les marchés ont été générés.',
-                'marche_id' => $createdMarcheIds[0] ?? null,
-            ], 200);
+            $aoo->load('lots.attributaire', 'lots.items');
+            $attributedLots = $aoo->lots->filter(fn($l) => !empty($l->attributaire_fournisseur_id));
         }
 
-        // Lot unique
-        $lot = $aoo->lots->first();
-        $attributaireId = $lot?->attributaire_fournisseur_id;
-
-        if (!$attributaireId) {
+        // Fallback lot unique
+        if ($attributedLots->count() === 0 && $aoo->lots->count() === 1) {
+            $lot = $aoo->lots->first();
             $attributaire = $aoo->concurrents->where('statut_analyse', 'retenu')->first();
             if (!$attributaire) {
                 $attributaire = $aoo->concurrents
@@ -1827,35 +1858,91 @@ class AooController extends Controller
                     ->first();
             }
             if ($attributaire && $attributaire->fournisseur_id) {
-                $attributaireId = $attributaire->fournisseur_id;
-                if ($lot) {
-                    $lot->update(['attributaire_fournisseur_id' => $attributaireId]);
-                }
+                $lot->update(['attributaire_fournisseur_id' => $attributaire->fournisseur_id]);
+                $lot->refresh();
+                $attributedLots = collect([$lot]);
             }
         }
 
-        if (!$attributaireId) {
-            return response()->json(['error' => "Le fournisseur retenu par la Commission est introuvable. Impossible de clôturer."], 400);
+        if ($attributedLots->count() === 0) {
+            return response()->json(['error' => "Impossible de clôturer : aucun lot n'a d'attributaire sélectionné."], 400);
         }
 
-        $fournisseur = \App\Models\Fournisseur::findOrFail($attributaireId);
-        $aoo->update(['statut' => 'attribue']);
+        $createdMarches = [];
 
-        $marche = Marche::firstOrCreate(
-            ['aoo_id' => $aoo->id, 'lot_id' => $lot?->id],
-            [
-                'num_marche' => 'M-' . str_replace('/', '-', $aoo->num_aoo),
-                'fournisseur_id' => $fournisseur->id,
-                'lot' => $lot?->num_lot ?? 'Lot unique',
-                'titulaire' => $fournisseur->raison_sociale,
-                'montant' => $lot?->montant_attribue_ttc ?? ($aoo->budget ?? 0),
-                'statut' => 'engagement_en_cours',
-            ]
-        );
+        DB::transaction(function () use ($aoo, $attributedLots, &$createdMarches) {
+            foreach ($attributedLots as $index => $lot) {
+                $fournisseur = \App\Models\Fournisseur::findOrFail($lot->attributaire_fournisseur_id);
+                $cleanedAoo = str_replace('/', '-', $aoo->num_aoo);
+                $lotCode = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $lot->num_lot ?? 'LOT' . ($index + 1)));
+                if (empty($lotCode)) {
+                    $lotCode = 'LOT' . ($lot->id ?? ($index + 1));
+                }
+                $numMarche = 'M-' . $cleanedAoo . '-' . $lotCode;
+
+                $montantMarche = $lot->montant_attribue_ttc ?? ($lot->estimation ?? ($aoo->budget ?? 0));
+                $tauxTva = $lot->tva_taux_attribue ?? ($lot->tva_taux ?? 20);
+                $delaiExecution = $lot->delai_execution_jours ?? ($aoo->delai_execution ?? null);
+
+                $marche = Marche::updateOrCreate(
+                    [
+                        'aoo_id' => $aoo->id,
+                        'lot_id' => $lot->id,
+                    ],
+                    [
+                        'num_marche' => $numMarche,
+                        'fournisseur_id' => $fournisseur->id,
+                        'lot' => $lot->num_lot ?? 'Lot ' . ($index + 1),
+                        'titulaire' => $fournisseur->raison_sociale,
+                        'objet_marche' => $lot->objet_lot ?: $aoo->objet,
+                        'montant' => $montantMarche,
+                        'taux_tva' => $tauxTva,
+                        'delai_execution' => $delaiExecution,
+                        'notification_ligne_id' => $lot->notification_ligne_id ?: $aoo->notification_ligne_id,
+                        'article_budget' => $lot->art ?: $aoo->art,
+                        'paragraphe_budget' => $lot->par ?: $aoo->par,
+                        'ligne_budget' => $lot->lig ?: $aoo->lig,
+                        'type_budget' => $aoo->type_budget ?? 'Investissement',
+                        'qualite_gerant' => $fournisseur->qualite_representant ?: 'Gérant',
+                        'statut' => 'engagement_en_cours',
+                    ]
+                );
+
+                // Synchroniser les articles du bordereau si le lot en a
+                if ($lot->items && $lot->items->count() > 0) {
+                    $marche->bordereauItems()->delete();
+                    foreach ($lot->items as $item) {
+                        $puHt = (float) ($item->prix_unitaire_ht ?? 0);
+                        $tvaVal = (float) ($tauxTva ?? 20);
+                        $puTtc = round($puHt * (1 + $tvaVal / 100), 2);
+                        $marche->bordereauItems()->create([
+                            'lot_item_id' => $item->id,
+                            'prix_unitaire_attributaire' => $puHt,
+                            'prix_unitaire_ttc' => $puTtc,
+                            'taux_tva' => $tvaVal,
+                            'montant_ht' => round($puHt * (float) ($item->quantite ?? 1), 2),
+                            'montant_ttc' => round($puTtc * (float) ($item->quantite ?? 1), 2),
+                        ]);
+                    }
+                }
+
+                $createdMarches[] = [
+                    'marche_id' => $marche->id,
+                    'num_marche' => $marche->num_marche,
+                    'lot' => $marche->lot,
+                    'titulaire' => $marche->titulaire,
+                    'montant' => $marche->montant,
+                ];
+            }
+
+            $aoo->update(['statut' => 'attribue']);
+        });
 
         return response()->json([
-            'message' => "L'AOO a été clôturé et le marché a été initialisé avec succès.",
-            'marche_id' => $marche->id,
+            'message' => "L'AOO a été clôturé et " . count($createdMarches) . " marché(s) distinct(s) ont été initialisés avec succès.",
+            'marches' => $createdMarches,
+            'marche_ids' => array_column($createdMarches, 'marche_id'),
+            'marche_id' => $createdMarches[0]['marche_id'] ?? null,
         ], 200);
     }
 

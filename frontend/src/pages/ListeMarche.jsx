@@ -98,8 +98,8 @@ const ListeMarche = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-4 sm:p-6 lg:p-8">
+      <div className="max-w-[1920px] w-full mx-auto">
         {/* Header */}
         <div className="mb-8">
           <Link to="/dashboard" className="flex items-center gap-4 mb-6">
@@ -161,66 +161,75 @@ const ListeMarche = () => {
           <div className="bg-white rounded-2xl shadow-lg overflow-hidden border border-slate-200">
             {filteredMarches.length > 0 ? (
               <div className="overflow-x-auto">
-                <table className="w-full">
+                <table className="w-full border-collapse">
                   <thead className="bg-gradient-to-r from-blue-50 to-slate-100 border-b border-slate-200">
                     <tr>
-                      <th className="px-6 py-4 text-left text-sm font-bold text-slate-700">N° Marché</th>
-                      <th className="px-6 py-4 text-left text-sm font-bold text-slate-700">Titulaire</th>
-                      <th className="px-6 py-4 text-left text-sm font-bold text-slate-700">Objet</th>
-                      <th className="px-6 py-4 text-left text-sm font-bold text-slate-700">Montant</th>
-                      <th className="px-6 py-4 text-left text-sm font-bold text-slate-700">Statut</th>
-                      <th className="px-6 py-4 text-left text-sm font-bold text-slate-700">Agent Suivi</th>
-                      <th className="px-6 py-4 text-center text-sm font-bold text-slate-700">Actions</th>
+                      <th className="px-4 py-3.5 text-left text-xs font-bold text-slate-700 whitespace-nowrap">N° Marché</th>
+                      <th className="px-3 py-3.5 text-center text-xs font-bold text-slate-700 whitespace-nowrap">Lot</th>
+                      <th className="px-4 py-3.5 text-left text-xs font-bold text-slate-700 whitespace-nowrap">Titulaire</th>
+                      <th className="px-4 py-3.5 text-left text-xs font-bold text-slate-700">Objet</th>
+                      <th className="px-4 py-3.5 text-right text-xs font-bold text-slate-700 whitespace-nowrap">Montant</th>
+                      <th className="px-4 py-3.5 text-center text-xs font-bold text-slate-700 whitespace-nowrap">Statut</th>
+                      <th className="px-3 py-3.5 text-center text-xs font-bold text-slate-700 whitespace-nowrap">Agent Suivi</th>
+                      <th className="px-4 py-3.5 text-center text-xs font-bold text-slate-700 whitespace-nowrap">Actions</th>
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody className="divide-y divide-slate-100 text-sm">
                     {filteredMarches.map((marche, idx) => (
-                      <tr key={marche.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-slate-50 hover:bg-slate-100'}>
-                        <td className="px-6 py-4">
-                          <span className="font-bold text-blue-600">{marche.num_marche}</span>
+                      <tr key={marche.id} className={idx % 2 === 0 ? 'bg-white hover:bg-blue-50/30' : 'bg-slate-50/60 hover:bg-blue-50/40'}>
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          <span className="font-bold text-blue-600 text-xs sm:text-sm font-mono">{marche.num_marche}</span>
+                          {marche.aoo?.num_aoo && (
+                            <div className="text-[11px] text-slate-400 font-mono">AOO: {marche.aoo.num_aoo}</div>
+                          )}
                         </td>
-                        <td className="px-6 py-4">
-                          <div className="text-sm font-medium text-slate-800">{marche.titulaire}</div>
+                        <td className="px-3 py-3 text-center whitespace-nowrap">
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-lg text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                            {typeof marche.lot === 'object' ? (marche.lot?.num_lot || 'Lot unique') : (marche.lot || 'Lot unique')}
+                          </span>
                         </td>
-                        <td className="px-6 py-4">
-                          <div className="text-sm text-slate-600 line-clamp-2">{marche.objet_marche}</div>
+                        <td className="px-4 py-3 max-w-[180px] truncate text-xs sm:text-sm font-medium text-slate-800" title={marche.titulaire}>
+                          {marche.titulaire}
                         </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-1 text-slate-800">
-                            <DollarSign size={16} className="text-emerald-600" />
+                        <td className="px-4 py-3 max-w-xs truncate text-xs sm:text-sm text-slate-600" title={marche.objet_marche}>
+                          {marche.objet_marche}
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap text-right text-xs sm:text-sm">
+                          <div className="flex items-center justify-end gap-1 text-slate-800">
+                            <DollarSign size={14} className="text-emerald-600" />
                             <span className="font-semibold">{formatMoney(marche.montant)}</span>
                           </div>
                         </td>
-                        <td className="px-6 py-4">
-                          <span className={`px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap inline-block ${getStatusBadgeColor(marche.statut)}`}>
+                        <td className="px-4 py-3 text-center whitespace-nowrap">
+                          <span className={`px-2.5 py-1 rounded-full text-[11px] font-bold whitespace-nowrap inline-block ${getStatusBadgeColor(marche.statut)}`}>
                             {marche.statut?.replace(/_/g, ' ').toUpperCase()}
                           </span>
                         </td>
-                        <td className="px-6 py-4">
-                          <span className="text-sm text-slate-600">{marche.agent_suivi || '-'}</span>
+                        <td className="px-3 py-3 text-center text-xs text-slate-600 whitespace-nowrap">
+                          {marche.agent_suivi || '-'}
                         </td>
-                        <td className="px-6 py-4 text-center">
-                          <div className="flex gap-2 justify-center">
+                        <td className="px-4 py-3 text-center whitespace-nowrap">
+                          <div className="flex gap-1.5 justify-center">
                             <button
                               onClick={() => navigate(`/marches/${marche.id}`)}
-                              className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                              className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-all border border-blue-200"
                               title="Voir"
                             >
-                              <Eye size={18} />
+                              <Eye size={16} />
                             </button>
                             <button
                               onClick={() => navigate(`/marches/${marche.id}`)}
-                              className="p-2 text-amber-600 hover:bg-amber-50 rounded-lg transition-all"
+                              className="p-1.5 text-amber-600 hover:bg-amber-50 rounded-lg transition-all border border-amber-200"
                               title="Modifier"
                             >
-                              <Edit2 size={18} />
+                              <Edit2 size={16} />
                             </button>
                             <button
                               onClick={() => handleDelete(marche.id)}
-                              className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                              className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-all border border-red-200"
                               title="Supprimer"
                             >
-                              <Trash2 size={18} />
+                              <Trash2 size={16} />
                             </button>
                           </div>
                         </td>
