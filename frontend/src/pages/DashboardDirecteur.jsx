@@ -214,6 +214,7 @@ export default function DashboardDirecteur() {
   const [month, setMonth] = useState('');
   const [domaine, setDomaine] = useState('ALL'); // 'ALL' | 'FONCTIONNEMENT' | 'INVESTISSEMENT'
   const [tab, setTab] = useState('notifications');
+  const [refreshVersion, setRefreshVersion] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
@@ -289,7 +290,9 @@ export default function DashboardDirecteur() {
 
   useEffect(() => {
     let active = true;
+    let requestVersion = 0;
     async function load() {
+      const currentRequest = ++requestVersion;
       setLoading(true); setError('');
       const query = year ? `?exercice=${year}` : '';
       const responses = await Promise.allSettled([
@@ -297,7 +300,7 @@ export default function DashboardDirecteur() {
         api.get(`/notification-lignes${query}`), api.get(`/dashboard/budget${query}`),
         api.get(`/ordonnancements${query}`),
       ]);
-      if (!active) return;
+      if (!active || currentRequest !== requestVersion) return;
       const result = (index, fallback) => responses[index].status === 'fulfilled' ? responses[index].value.data : fallback;
       const ordData = result(5, { data: [] });
       setStore({
@@ -312,8 +315,19 @@ export default function DashboardDirecteur() {
       setLoading(false);
     }
     load();
-    return () => { active = false; };
-  }, [year]);
+    const refreshVisible = () => {
+      if (document.visibilityState === 'visible') load();
+    };
+    window.addEventListener('focus', refreshVisible);
+    document.addEventListener('visibilitychange', refreshVisible);
+    const timer = window.setInterval(refreshVisible, 60000);
+    return () => {
+      active = false;
+      window.removeEventListener('focus', refreshVisible);
+      document.removeEventListener('visibilitychange', refreshVisible);
+      window.clearInterval(timer);
+    };
+  }, [year, refreshVersion]);
 
   const realRows = useMemo(() => {
     const map = new Map();
@@ -734,7 +748,7 @@ export default function DashboardDirecteur() {
               <div className="grid gap-4 md:grid-cols-3">
                 <Kpi label="Notifications filtrées" value={filteredNotifications.length} icon={Bell} tone="amber" detail={domaine === 'ALL' ? `Exercice ${year}` : `${domaine} · Exercice ${year}`} />
                 <Kpi label="Montant total notifié" value={money(dashboard.notified)} icon={Landmark} detail={domaine === 'ALL' ? 'Tous les crédits notifiés' : `Crédits ${domaine.toLowerCase()}`} />
-                <Kpi label="Lignes budgétaires" value={(store.lines || []).filter(l => domaine === 'ALL' || (l.domaine || 'INVESTISSEMENT') === domaine).length} icon={ClipboardList} tone="violet" detail={domaine === 'ALL' ? 'Total lignes suivies' : `Lignes ${domaine.toLowerCase()}`} />
+                <Kpi label="Lignes budgétaires" value={budgetRows.length} icon={ClipboardList} tone="violet" detail={domaine === 'ALL' ? 'Total lignes suivies' : `Lignes ${domaine.toLowerCase()}`} />
               </div>
               <div className="mt-6 space-y-6">
                 <div className="w-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
@@ -742,6 +756,7 @@ export default function DashboardDirecteur() {
                     <div>
                       <div className="flex items-center gap-2">
                         <h2 className="font-bold text-base text-slate-800">Liste des notifications</h2>
+                        <button type="button" disabled={loading} onClick={() => setRefreshVersion((value) => value + 1)} className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-50 disabled:opacity-50">{loading ? 'Actualisation…' : 'Actualiser'}</button>
                         <span className={`text-xs px-2.5 py-0.5 rounded-full font-bold ${domaine === 'FONCTIONNEMENT' ? 'bg-blue-100 text-blue-800 border border-blue-200' :
                           domaine === 'INVESTISSEMENT' ? 'bg-indigo-100 text-indigo-800 border border-indigo-200' :
                             'bg-slate-100 text-slate-700'
