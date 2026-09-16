@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/axios';
-import { Save, ArrowLeft, CheckCircle2, AlertCircle, FileText, Calculator, Loader2 } from 'lucide-react';
+import { Save, ArrowLeft, CheckCircle2, AlertCircle, FileText, Calculator, Loader2, BookOpen } from 'lucide-react';
+import LigneBudgetaireSelector from '../components/LigneBudgetaireSelector';
 
 const NouvelleConsultation = () => {
   const navigate = useNavigate();
@@ -30,7 +31,7 @@ const NouvelleConsultation = () => {
     type_prestation: '',
     intitule: '',
     mode_engagement: 'BC',
-    type_budget: 'Fonctionnement',
+    type_budget: 'Investissement',
     delai_execution: 30,
     statut_dossier: 'Programmation',
 
@@ -45,6 +46,37 @@ const NouvelleConsultation = () => {
   });
 
   const [montantTTC, setMontantTTC] = useState(0);
+
+  // Gestion du choix depuis la nomenclature officielle
+  const handleNomenclatureSelect = (ligne) => {
+    setFormData((prev) => {
+      const art = ligne.article || prev.art || '415';
+      const par = ligne.paragraphe || prev.par || '';
+      const lig = ligne.ligne || prev.lig || '';
+      const code = ligne.code_imputation || `${art}${par}${lig}`;
+      const intitule = ligne.intitule || prev.intitule;
+
+      return {
+        ...prev,
+        type_budget: ligne.type_budget || prev.type_budget,
+        art: art,
+        par: par,
+        lig: lig,
+        code_imputation: code,
+        intitule: intitule,
+        type_prestation: intitule,
+      };
+    });
+
+    setFieldErrors((prev) => ({
+      ...prev,
+      art: null,
+      par: null,
+      lig: null,
+      intitule: null,
+      type_budget: null,
+    }));
+  };
 
   // Auto-calcul TTC
   useEffect(() => {
@@ -380,47 +412,64 @@ const NouvelleConsultation = () => {
 
           {/* L'imputation des AO est renseignée au niveau des lots. */}
           {formData.mode_engagement !== 'AO' && (
-            <section className="bg-white dark:bg-gray-800 p-8 rounded-3xl shadow-lg border border-gray-100 dark:border-gray-700">
-              <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-100 dark:border-gray-700">
+            <section className="bg-white dark:bg-gray-800 p-6 sm:p-8 rounded-3xl shadow-lg border border-gray-100 dark:border-gray-700 space-y-6">
+              <div className="flex items-center gap-3 pb-4 border-b border-gray-100 dark:border-gray-700">
                 <div className="p-2 bg-amber-100 dark:bg-amber-900/50 text-amber-600 dark:text-amber-400 rounded-lg">
                   <Calculator size={20} />
                 </div>
-                <h2 className="text-xl font-bold text-gray-800 dark:text-white">Imputation Budgétaires</h2>
+                <div>
+                  <h2 className="text-xl font-bold text-gray-800 dark:text-white">Imputation Budgétaires</h2>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Sélectionnez une ligne dans la nomenclature officielle ou renseignez manuellement les codes.
+                  </p>
+                </div>
+              </div>
+
+              {/* Sélecteur intelligent depuis la nomenclature */}
+              <div className="bg-slate-50/80 dark:bg-gray-900/50 p-4 sm:p-5 rounded-2xl border border-slate-200/80 dark:border-gray-700">
+                <LigneBudgetaireSelector
+                  selectedCode={formData.code_imputation}
+                  selectedArt={formData.art}
+                  selectedPar={formData.par}
+                  selectedLig={formData.lig}
+                  typeBudget={formData.type_budget}
+                  onSelect={handleNomenclatureSelect}
+                />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                  Article (ART) <span className="text-red-600 font-bold ml-0.5">*</span>
-                </label>
-                <input type="text" name="art" value={formData.art} onChange={handleChange} placeholder="Ex: 10" className={getInputClass('art')} />
-              </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                    Article (ART) <span className="text-red-600 font-bold ml-0.5">*</span>
+                  </label>
+                  <input type="text" name="art" value={formData.art} onChange={handleChange} placeholder="Ex: 415" className={getInputClass('art')} />
+                </div>
 
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                  Paragraphe (PAR) <span className="text-red-600 font-bold ml-0.5">*</span>
-                </label>
-                <input type="text" name="par" value={formData.par} onChange={handleChange} placeholder="Ex: 20" className={getInputClass('par')} />
-              </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                    Paragraphe (PAR) <span className="text-red-600 font-bold ml-0.5">*</span>
+                  </label>
+                  <input type="text" name="par" value={formData.par} onChange={handleChange} placeholder="Ex: 10" className={getInputClass('par')} />
+                </div>
 
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                  Ligne (LIG) <span className="text-red-600 font-bold ml-0.5">*</span>
-                </label>
-                <input type="text" name="lig" value={formData.lig} onChange={handleChange} placeholder="Ex: 30" className={getInputClass('lig')} />
-              </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                    Ligne (LIG) <span className="text-red-600 font-bold ml-0.5">*</span>
+                  </label>
+                  <input type="text" name="lig" value={formData.lig} onChange={handleChange} placeholder="Ex: 10" className={getInputClass('lig')} />
+                </div>
 
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Code d'imputation</label>
-                <input readOnly type="text" name="code_imputation" value={formData.code_imputation} placeholder="Ex: 102030" className="w-full px-4 py-3 rounded-xl bg-gray-100 dark:bg-gray-800/70 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 font-mono font-bold outline-none cursor-not-allowed transition-all" />
-              </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Code d'imputation</label>
+                  <input readOnly type="text" name="code_imputation" value={formData.code_imputation} placeholder="Ex: 4151010" className="w-full px-4 py-3 rounded-xl bg-gray-100 dark:bg-gray-800/70 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 font-mono font-bold outline-none cursor-not-allowed transition-all" />
+                </div>
 
-              <div className="md:col-span-2">
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                  Exercice budgétaire <span className="text-red-600 font-bold ml-0.5">*</span>
-                </label>
-                <input type="number" name="exercice_budgetaire" min="2026" max="2099" onInput={(e) => { if (e.target.value.length > 4) e.target.value = e.target.value.slice(0, 4); }} value={formData.exercice_budgetaire} onChange={handleChange} className={getInputClass('exercice_budgetaire')} />
-              </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                    Exercice budgétaire <span className="text-red-600 font-bold ml-0.5">*</span>
+                  </label>
+                  <input type="number" name="exercice_budgetaire" min="2026" max="2099" onInput={(e) => { if (e.target.value.length > 4) e.target.value = e.target.value.slice(0, 4); }} value={formData.exercice_budgetaire} onChange={handleChange} className={getInputClass('exercice_budgetaire')} />
+                </div>
               </div>
             </section>
           )}

@@ -70,6 +70,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('notification-lignes/{id}', [\App\Http\Controllers\Api\NotificationController::class, 'updateLigne']);
 
     Route::apiResource('budgets', BudgetController::class)->only(['index', 'store', 'show']);
+    Route::get('lignes-budgetaires', [\App\Http\Controllers\Api\LigneBudgetaireController::class, 'index']);
 
     // Workflow Machine à États (Engagements Génériques)
     Route::post('/engagements/workflow', [\App\Http\Controllers\EngagementWorkflowController::class, 'store']);

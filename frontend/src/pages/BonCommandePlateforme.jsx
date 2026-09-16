@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import api from '../api/axios';
 import * as XLSX from 'xlsx';
 import UserMenu from '../components/UserMenu';
+import LigneBudgetaireSelector from '../components/LigneBudgetaireSelector';
 import {
   ArrowLeft,
   ArrowRight,
@@ -3729,9 +3730,33 @@ const BonCommandePlateforme = () => {
               </div>
 
               {/* Section Budgétaire */}
-              <div className="pt-3 border-t border-slate-100">
-                <p className="text-xs font-extrabold uppercase tracking-wider text-slate-500 mb-3">Imputation Budgétaires</p>
-                <div className="grid grid-cols-3 gap-3 mb-3">
+              <div className="pt-3 border-t border-slate-100 space-y-3">
+                <p className="text-xs font-extrabold uppercase tracking-wider text-slate-500">Imputation Budgétaires</p>
+                
+                <LigneBudgetaireSelector
+                  selectedCode={editingConsultationData.code_imputation}
+                  selectedArt={editingConsultationData.art}
+                  selectedPar={editingConsultationData.par}
+                  selectedLig={editingConsultationData.lig}
+                  typeBudget={editingConsultationData.type_budget}
+                  onSelect={(ligne) => {
+                    const art = ligne.article || editingConsultationData.art || '415';
+                    const par = ligne.paragraphe || editingConsultationData.par || '';
+                    const lig = ligne.ligne || editingConsultationData.lig || '';
+                    const code = ligne.code_imputation || `${art}${par}${lig}`;
+                    setEditingConsultationData({
+                      ...editingConsultationData,
+                      type_budget: ligne.type_budget || editingConsultationData.type_budget,
+                      art,
+                      par,
+                      lig,
+                      code_imputation: code,
+                      intitule: ligne.intitule || editingConsultationData.intitule,
+                    });
+                  }}
+                />
+
+                <div className="grid grid-cols-3 gap-3">
                   <div>
                     <label className="block text-[11px] font-bold text-slate-600 mb-1">ART</label>
                     <input
