@@ -5,7 +5,7 @@ import {
   CheckCircle2, Clock, Send, AlertTriangle, ChevronRight,
   WalletCards, Layers, Landmark, ArrowUpDown, Download,
   Building, RefreshCw, Calculator, FileText, Check,
-  ChevronDown, Receipt
+  ChevronDown, Receipt, ArrowLeft
 } from 'lucide-react';
 import api from '../api/axios';
 import ModalNouveauOrdonnancement from '../components/ordonnancement/ModalNouveauOrdonnancement';
@@ -271,8 +271,19 @@ export default function RegistreOrdonnancements() {
         
         {/* Back Link */}
         <div>
-          <Link to="/dashboard" className="inline-flex items-center gap-1.5 text-sm font-semibold text-blue-600 hover:text-blue-700 hover:underline transition">
-            ← Retour au tableau de bord
+          <Link
+            to="/bons-commande"
+            onClick={(event) => {
+              if (event.button === 0 && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey
+                && window.history.state?.idx > 0) {
+                event.preventDefault();
+                navigate(-1);
+              }
+            }}
+            className="group inline-flex items-center gap-2 rounded-lg px-2 py-2 text-sm font-semibold text-slate-600 transition-colors hover:bg-white/80 hover:text-blue-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+          >
+            <ArrowLeft size={17} aria-hidden="true" className="transition-transform group-hover:-translate-x-1 motion-reduce:transform-none motion-reduce:transition-none" />
+            Retour en arrière
           </Link>
         </div>
 

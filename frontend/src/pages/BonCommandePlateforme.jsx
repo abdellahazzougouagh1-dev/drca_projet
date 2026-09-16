@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import api from '../api/axios';
 import * as XLSX from 'xlsx';
 import UserMenu from '../components/UserMenu';
+import './BonCommandePlateforme.css';
 import {
   ArrowLeft,
   ArrowRight,
@@ -1775,12 +1776,33 @@ const BonCommandePlateforme = () => {
     : null;
   const selectedFields = selectedDocument ? documentFieldGroups[selectedDocument.id] || [] : [];
 
+  const fieldSections = [
+    { id: 'references', title: 'Références du document', description: 'Identifiez la commande et précisez son objet.' },
+    { id: 'supplier', title: 'Informations du fournisseur', description: 'Coordonnées et identifiants de la société.' },
+    { id: 'schedule', title: 'Dates et modalités', description: 'Précisez les dates, les lieux et les délais.' },
+    { id: 'finance', title: 'Budget et montants', description: 'Renseignez les imputations et les montants associés.' },
+    { id: 'details', title: 'Prestations et intervenants', description: 'Vérifiez les prestations, les entreprises et les commissions.' },
+  ].map((section) => ({
+    ...section,
+    fields: selectedFields.filter((field) => {
+      if (field.condition && !field.condition(documentForms[selectedDocument.id])) return false;
+      if (selectedDocument.id === 'fiche_engagement' && String(savedConsultation?.type_budget || '').toLowerCase() === 'fonctionnement'
+        && ['credit_ouvert_ce', 'depenses_anterieures_ce', 'depenses_credits_engagement'].includes(field.name)) return false;
+      const group = /table|selector|societes_refusees_input/.test(field.type || '') ? 'details'
+        : /^(titulaire_nom|societe|adresse_societe|ville_societe|patente|cnss|ice|if|rib)$/.test(field.name) ? 'supplier'
+        : /^(art|par|lig|s_lig|intitule|credit_|depenses_|montant_|interets_)/.test(field.name) ? 'finance'
+        : /^(date_|heure_|lieu_|delai_|periode_)/.test(field.name) ? 'schedule'
+        : 'references';
+      return group === section.id;
+    }),
+  })).filter((section) => section.fields.length > 0);
+
   const sidebarNav = [
     ...phases.map((p) => ({ id: p.id, label: p.label, icon: p.icon })),
   ];
 
   return (
-    <div className="relative min-h-screen lg:flex" style={{ backgroundColor: "#f1f5f9" }}>
+    <div className="purchase-orders relative min-h-screen bg-slate-50 text-slate-800 lg:flex">
       {isSidebarOpen && (
         <button
           type="button"
@@ -1790,18 +1812,19 @@ const BonCommandePlateforme = () => {
         />
       )}
       {/* Sidebar */}
-      <aside className={`fixed inset-y-0 left-0 z-50 flex h-dvh w-72 shrink-0 flex-col bg-[#0f172a] text-white shadow-xl transition-transform duration-300 lg:sticky lg:top-0 lg:h-screen lg:w-64 lg:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+      <aside className={`fixed inset-y-0 left-0 z-50 flex h-dvh w-72 shrink-0 flex-col bg-[#0f172a] text-white transition-transform duration-300 lg:sticky lg:top-0 lg:h-screen lg:w-64 lg:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="px-5 py-5 border-b border-white/10">
           <Link to="/bons-commande" className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center font-black text-white text-xs shadow-md">ON</div>
+            <div className="w-10 h-10 rounded-xl border border-white/20 bg-white/10 flex items-center justify-center font-bold text-white text-xs">ON</div>
             <div>
-              <p className="text-sm font-extrabold text-white tracking-wide">ERP ONCA</p>
-              <p className="text-xs text-blue-400 font-semibold">Bon de commande</p>
+              <p className="text-sm font-semibold text-white tracking-wide">ERP ONCA</p>
+              <p className="text-xs text-slate-400 font-medium">Bon de commande</p>
             </div>
           </Link>
         </div>
 
         <nav className="flex-1 px-3 py-4 overflow-y-auto">
+          <p className="px-4 pb-4 pt-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">Parcours de la commande</p>
           <ul className="space-y-1.5">
             {sidebarNav.map((item) => {
               const Icon = item.icon;
@@ -1811,7 +1834,8 @@ const BonCommandePlateforme = () => {
                   <button
                     type="button"
                     onClick={() => goToPhase(item.id)}
-                    className={`w-full flex items-center space-x-3 px-6 py-4 text-slate-100 font-medium transition-all duration-200 rounded-xl mx-2 my-1 text-left ${isActive ? 'bg-blue-900/80 text-white border-l-4 border-cyan-400 font-bold' : 'hover:bg-blue-800/50'
+                    aria-current={isActive ? 'step' : undefined}
+                    className={`w-full flex items-center gap-3 px-4 py-3.5 text-sm font-medium transition-colors duration-200 rounded-xl text-left ${isActive ? 'bg-white/10 text-white ring-1 ring-inset ring-white/10' : 'text-slate-400 hover:bg-white/5 hover:text-white'
                       }`}
                   >
                     <Icon size={18} />
@@ -1830,10 +1854,10 @@ const BonCommandePlateforme = () => {
       </aside>
 
       {/* Main content */}
-      <main className="min-w-0 flex-1 w-full p-3 sm:p-5 lg:p-6">
-        <div className="w-full space-y-5">
+      <main className="min-w-0 flex-1 w-full p-4 sm:p-6 lg:p-8 xl:p-10">
+        <div className="mx-auto w-full max-w-[1600px] space-y-8">
           {/* Header bar */}
-          <div className="bg-white border border-slate-200/80 rounded-2xl px-3 py-3 sm:px-6 sm:py-4 flex items-start sm:items-center justify-between gap-3 shadow-sm">
+          <div className="bc-heading border-b border-slate-200 pb-6 flex items-start sm:items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <button
                 type="button"
@@ -1843,20 +1867,38 @@ const BonCommandePlateforme = () => {
               >
                 <Menu size={21} />
               </button>
-              <button onClick={() => navigate('/bons-commande')} className="p-2 rounded-lg text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition-colors" title="Retour">
-                <ArrowLeft size={18} />
+              <button
+                type="button"
+                onClick={() => {
+                  if (selectedDocument) {
+                    setSelectedDocumentId(null);
+                  } else if (activePhase === 'registre') {
+                    goToPhase('engagement');
+                  } else if (phaseIndex > 0) {
+                    goPrev();
+                  } else if (window.history.state?.idx > 0) {
+                    navigate(-1);
+                  } else {
+                    navigate('/dashboard');
+                  }
+                }}
+                className="bc-back-button"
+                title="Revenir en arrière"
+              >
+                <ArrowLeft size={17} aria-hidden="true" />
+                <span>Retour</span>
               </button>
               <div className="h-5 w-px bg-slate-200" />
               <div>
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-xs font-bold text-blue-600 uppercase tracking-widest">Bon de commande</span>
+                  <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-[0.18em]">Bon de commande</span>
                   {savedConsultation && (
-                    <span className="px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-[10px] font-extrabold">
+                    <span className="px-2 py-0.5 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-[10px] font-semibold">
                       N° {savedConsultation.numero_consultation}
                     </span>
                   )}
                 </div>
-                <h1 className="text-xl font-black text-slate-900 tracking-tight leading-tight">
+                <h1 className="mt-1 text-2xl sm:text-3xl font-semibold text-slate-900 tracking-tight leading-tight">
                   {activePhase === 'registre'
                     ? "Registre d'engagement"
                     : `Phase : ${phases.find((p) => p.id === activePhase)?.label}`}
@@ -1865,14 +1907,25 @@ const BonCommandePlateforme = () => {
             </div>
             {savedConsultation && (
               <div className="hidden sm:flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2">
-                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <div className="w-2 h-2 rounded-full bg-blue-600" />
                 <span className="text-xs font-semibold text-slate-600 max-w-xs truncate">{savedConsultation.objet_consultation}</span>
               </div>
             )}
           </div>
 
+          <nav className="bc-phase-steps" aria-label="Phases du bon de commande">
+            {phases.map((phase, index) => (
+              <button key={phase.id} type="button" aria-current={activePhase === phase.id ? 'step' : undefined}
+                onClick={() => { setSelectedDocumentId(null); goToPhase(phase.id); }}>
+                <span className="bc-phase-number">{index + 1}</span>
+                <span><small>Phase {index + 1}</small><strong>{phase.label}</strong></span>
+                <ArrowRight size={16} aria-hidden="true" />
+              </button>
+            ))}
+          </nav>
+
           {message && (
-            <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 font-semibold flex items-center gap-3 shadow-sm animate-fadeIn">
+            <div className="p-4 rounded-2xl bg-blue-50 border border-blue-200 text-blue-800 font-semibold flex items-center gap-3 shadow-sm animate-fadeIn">
               <CheckCircle2 size={20} />
               {message}
             </div>
@@ -1886,10 +1939,10 @@ const BonCommandePlateforme = () => {
 
 
           {activePhase === 'registre' && !selectedDocument && (
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="bc-panel bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
               <div className="p-6 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                  <h2 className="text-xl font-extrabold text-slate-900 flex items-center gap-2">
+                  <h2 className="text-xl font-semibold text-slate-900 flex items-center gap-2">
                     <FileSpreadsheet className="text-blue-700" /> Registre des engagements
                   </h2>
                   
@@ -1938,33 +1991,33 @@ const BonCommandePlateforme = () => {
                   <div className="overflow-x-auto">
                   <table className="min-w-[2450px] w-full text-left border-collapse text-xs">
                     <thead>
-                      <tr className="border-b border-emerald-700 bg-emerald-700 text-[11px] font-extrabold uppercase tracking-wide text-white">
-                        <th className="border-r border-emerald-600 px-4 py-4">N° ordre</th>
-                        <th className="border-r border-emerald-600 px-4 py-4">N° rubrique / fiche d’engagement</th>
-                        <th className="border-r border-emerald-600 px-4 py-4">Date</th>
-                        <th className="border-r border-emerald-600 px-4 py-4">Mode</th>
-                        <th className="border-r border-emerald-600 px-4 py-4">Référence</th>
-                        <th className="border-r border-emerald-600 px-4 py-4">Référence 2</th>
-                        <th className="border-r border-emerald-600 px-4 py-4">Budget</th>
-                        <th className="border-r border-emerald-600 px-4 py-4">Code</th>
-                        <th className="border-r border-emerald-600 px-3 py-4">ART</th>
-                        <th className="border-r border-emerald-600 px-3 py-4">PAR</th>
-                        <th className="border-r border-emerald-600 px-3 py-4">LIG</th>
-                        <th className="border-r border-emerald-600 px-3 py-4">S/LIG</th>
-                        <th className="border-r border-emerald-600 px-4 py-4">Intitulé</th>
-                        <th className="border-r border-emerald-600 px-4 py-4">Crédit ouvert CP</th>
-                        <th className="border-r border-emerald-600 px-4 py-4">Crédit ouvert CE</th>
-                        <th className="border-r border-emerald-600 px-4 py-4">Crédit consolidé (CC)</th>
-                        <th className="border-r border-emerald-600 px-4 py-4">Dépenses antérieures CE</th>
-                        <th className="border-r border-emerald-600 px-4 py-4">Dépenses antérieures CP</th>
-                        <th className="border-r border-emerald-600 px-4 py-4">Dépenses crédits d’engagement</th>
-                        <th className="border-r border-emerald-600 px-4 py-4">Dépenses crédits consolidés</th>
-                        <th className="border-r border-emerald-600 px-4 py-4">Dépenses reste à payer</th>
-                        <th className="border-r border-emerald-600 px-4 py-4">Dépense neuf</th>
-                        <th className="border-r border-emerald-600 px-4 py-4">Intérêts 1%</th>
-                        <th className="border-r border-emerald-600 px-4 py-4">À engager neuf</th>
-                        <th className="border-r border-emerald-600 px-4 py-4">Objet</th>
-                        <th className="border-r border-emerald-600 px-4 py-4">Bénéficiaire</th>
+                      <tr className="border-b border-blue-700 bg-blue-700 text-[11px] font-semibold uppercase tracking-wide text-white">
+                        <th className="border-r border-blue-600 px-4 py-4">N° ordre</th>
+                        <th className="border-r border-blue-600 px-4 py-4">N° rubrique / fiche d’engagement</th>
+                        <th className="border-r border-blue-600 px-4 py-4">Date</th>
+                        <th className="border-r border-blue-600 px-4 py-4">Mode</th>
+                        <th className="border-r border-blue-600 px-4 py-4">Référence</th>
+                        <th className="border-r border-blue-600 px-4 py-4">Référence 2</th>
+                        <th className="border-r border-blue-600 px-4 py-4">Budget</th>
+                        <th className="border-r border-blue-600 px-4 py-4">Code</th>
+                        <th className="border-r border-blue-600 px-3 py-4">ART</th>
+                        <th className="border-r border-blue-600 px-3 py-4">PAR</th>
+                        <th className="border-r border-blue-600 px-3 py-4">LIG</th>
+                        <th className="border-r border-blue-600 px-3 py-4">S/LIG</th>
+                        <th className="border-r border-blue-600 px-4 py-4">Intitulé</th>
+                        <th className="border-r border-blue-600 px-4 py-4">Crédit ouvert CP</th>
+                        <th className="border-r border-blue-600 px-4 py-4">Crédit ouvert CE</th>
+                        <th className="border-r border-blue-600 px-4 py-4">Crédit consolidé (CC)</th>
+                        <th className="border-r border-blue-600 px-4 py-4">Dépenses antérieures CE</th>
+                        <th className="border-r border-blue-600 px-4 py-4">Dépenses antérieures CP</th>
+                        <th className="border-r border-blue-600 px-4 py-4">Dépenses crédits d’engagement</th>
+                        <th className="border-r border-blue-600 px-4 py-4">Dépenses crédits consolidés</th>
+                        <th className="border-r border-blue-600 px-4 py-4">Dépenses reste à payer</th>
+                        <th className="border-r border-blue-600 px-4 py-4">Dépense neuf</th>
+                        <th className="border-r border-blue-600 px-4 py-4">Intérêts 1%</th>
+                        <th className="border-r border-blue-600 px-4 py-4">À engager neuf</th>
+                        <th className="border-r border-blue-600 px-4 py-4">Objet</th>
+                        <th className="border-r border-blue-600 px-4 py-4">Bénéficiaire</th>
                         <th className="px-4 py-4 text-right">Action</th>
                       </tr>
                     </thead>
@@ -2035,17 +2088,17 @@ const BonCommandePlateforme = () => {
             <div>
 
 
-              <div className="flex items-center justify-between mb-6">
+              <div className="bc-section-heading flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
                 <div>
-                  <h3 className="text-lg font-extrabold text-slate-900 flex items-center gap-2">
-                    <Building2 className="text-blue-700" /> Base des Consultations
+                  <h3 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
+                    <Building2 className="text-blue-700" /> Consultations
                   </h3>
-                  <p className="text-sm text-slate-500 mt-1">Choisir une consultation pour ouvrir son workflow complet.</p>
+                  <p className="text-sm text-slate-500 mt-1">Retrouvez vos consultations et accédez aux documents de chaque étape.</p>
                 </div>
                 <button
                   type="button"
                   onClick={() => navigate('/consultations/nouvelle')}
-                  className="px-5 py-2.5 bg-emerald-700 text-white font-bold rounded-xl hover:bg-emerald-800 inline-flex items-center gap-2"
+                  className="px-5 py-2.5 bg-blue-700 text-white font-bold rounded-xl hover:bg-blue-800 inline-flex items-center gap-2"
                 >
                   <Plus size={18} /> Nouvelle consultation
                 </button>
@@ -2064,13 +2117,14 @@ const BonCommandePlateforme = () => {
                   Aucune consultation enregistrée. Cliquez sur « Nouvelle consultation » pour en créer une puis générer l'avis d'achat.
                 </div>
               ) : (
-                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                <div className="bc-panel bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                   {/* Search and summary header */}
-                  <div className="p-4 bg-slate-50/70 border-b border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <div className="bc-table-toolbar p-5 bg-white border-b border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4">
                     <div className="relative w-full sm:w-80">
                       <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
                       <input
                         type="text"
+                        aria-label="Rechercher une consultation"
                         placeholder="Rechercher une consultation..."
                         value={consultationSearchTerm}
                         onChange={(e) => setConsultationSearchTerm(e.target.value)}
@@ -2086,7 +2140,7 @@ const BonCommandePlateforme = () => {
                   <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse">
                       <thead>
-                        <tr className="bg-slate-100/80 border-b border-slate-200 text-slate-700 text-xs font-bold uppercase tracking-wider">
+                        <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 text-xs font-bold uppercase tracking-wider">
                           <th className="px-6 py-4">Réf. Consultation</th>
                           <th className="px-4 py-4">Année</th>
                           <th className="px-6 py-4">Objet de la Consultation</th>
@@ -2117,7 +2171,7 @@ const BonCommandePlateforme = () => {
                                       {consultation.numero_consultation}
                                     </span>
                                     {isCurrent && (
-                                      <span className="px-2 py-0.5 bg-blue-600 text-white text-[10px] font-extrabold uppercase tracking-wide rounded-full">
+                                      <span className="px-2 py-0.5 bg-blue-600 text-white text-[10px] font-semibold uppercase tracking-wide rounded-full">
                                         Sélectionnée
                                       </span>
                                     )}
@@ -2133,11 +2187,11 @@ const BonCommandePlateforme = () => {
                                 </td>
                                 <td className="px-4 py-4 whitespace-nowrap">
                                   {consultation.mode_engagement === 'AO' || consultation.mode_engagement === "Appel d'offres" || consultation.mode_engagement === "Appel d'offre" ? (
-                                    <span className="inline-block rounded-full bg-violet-100 px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-violet-800">
+                                    <span className="inline-block rounded-full bg-slate-100 px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-slate-800">
                                       Appel d'offres
                                     </span>
                                   ) : (
-                                    <span className="inline-block rounded-full bg-cyan-100 px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-cyan-800">
+                                    <span className="inline-block rounded-full bg-slate-100 px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-slate-800">
                                       Bon de commande
                                     </span>
                                   )}
@@ -2145,9 +2199,9 @@ const BonCommandePlateforme = () => {
                                 <td className="px-4 py-4 whitespace-nowrap">
                                   <span
                                     className={`px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wide inline-block ${consultation.statut_dossier === 'Validé'
-                                      ? 'bg-emerald-100 text-emerald-800'
+                                      ? 'bg-blue-100 text-blue-800'
                                       : consultation.statut_dossier === 'En cours'
-                                        ? 'bg-amber-100 text-amber-800'
+                                        ? 'bg-slate-100 text-slate-800'
                                         : consultation.statut_dossier === 'Clôturé'
                                           ? 'bg-slate-100 text-slate-700'
                                           : 'bg-blue-100 text-blue-800'
@@ -2162,7 +2216,7 @@ const BonCommandePlateforme = () => {
                                       type="button"
                                       onClick={() => selectConsultation(consultation)}
                                       className={`px-3.5 py-2 font-bold text-xs rounded-xl inline-flex items-center gap-1.5 transition-all shadow-sm ${isCurrent
-                                        ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                                        ? 'bg-blue-600 hover:bg-blue-700 text-white'
                                         : 'bg-blue-700 hover:bg-blue-800 text-white'
                                         }`}
                                     >
@@ -2172,7 +2226,7 @@ const BonCommandePlateforme = () => {
                                         </>
                                       ) : (
                                         <>
-                                          <FileText size={14} /> Selectionner la Consultation
+                                          <FileText size={14} /> Ouvrir
                                         </>
                                       )}
                                     </button>
@@ -2180,7 +2234,7 @@ const BonCommandePlateforme = () => {
                                     <button
                                       type="button"
                                       onClick={() => openEditConsultationModal(consultation)}
-                                      className="px-3 py-2 text-amber-700 hover:bg-amber-100/80 bg-amber-50 border border-amber-200 font-bold text-xs rounded-xl inline-flex items-center gap-1 transition-colors"
+                                      className="px-3 py-2 text-slate-700 hover:bg-slate-100/80 bg-slate-50 border border-slate-200 font-bold text-xs rounded-xl inline-flex items-center gap-1 transition-colors"
                                       title="Modifier la consultation"
                                     >
                                       <Edit3 size={14} />
@@ -2190,7 +2244,7 @@ const BonCommandePlateforme = () => {
                                     <button
                                       type="button"
                                       onClick={() => handleDeleteConsultation(consultation)}
-                                      className="px-3 py-2 text-red-700 hover:bg-red-100/80 bg-red-50 border border-red-200 font-bold text-xs rounded-xl inline-flex items-center gap-1 transition-colors"
+                                      className="px-3 py-2 text-slate-500 hover:text-red-700 hover:bg-red-50 bg-white border border-slate-200 font-bold text-xs rounded-xl inline-flex items-center gap-1 transition-colors"
                                       title="Supprimer la consultation"
                                     >
                                       <Trash2 size={14} />
@@ -2212,7 +2266,7 @@ const BonCommandePlateforme = () => {
                 <button type="button" onClick={goPrev} className="inline-flex items-center gap-2 px-5 py-2.5 bg-white border border-slate-200 text-slate-700 font-semibold rounded-xl hover:bg-slate-50 shadow-sm transition-all">
                   <ArrowLeft size={18} /> Précédent
                 </button>
-                <button type="button" onClick={goNext} className="inline-flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 shadow-md shadow-blue-500/20 transition-all">
+                <button type="button" onClick={goNext} className="inline-flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 shadow-sm transition-all">
                   Suivant : Documents de consultation <ArrowRight size={18} />
                 </button>
               </div>
@@ -2224,22 +2278,22 @@ const BonCommandePlateforme = () => {
               <button type="button" onClick={goPrev} className="inline-flex items-center gap-2 px-5 py-2.5 bg-white border border-slate-200 text-slate-700 font-semibold rounded-xl hover:bg-slate-50 shadow-sm transition-all">
                 <ArrowLeft size={18} /> Précédent
               </button>
-              <button type="button" onClick={goNext} className="inline-flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 shadow-md shadow-blue-500/20 transition-all">
+              <button type="button" onClick={goNext} className="inline-flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 shadow-sm transition-all">
                 Suivant : {phaseIndex < phases.length - 1 ? phases[phaseIndex + 1].label : 'Fin du processus'} <ArrowRight size={18} />
               </button>
             </div>
           )}
 
           {activePhase !== 'dashboard' && activePhase !== 'registre' && activePhase !== 'Ordonnancement' && !selectedDocument && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div key={activePhase} className="bc-document-grid grid grid-cols-1 md:grid-cols-2 gap-4">
               {(documentsByPhase[activePhase] || []).map((doc) => (
-                <div key={doc.id} className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-sm hover:shadow-md hover:border-blue-200 transition-all duration-200 flex flex-col">
+                <div key={doc.id} style={{ '--card-index': (documentsByPhase[activePhase] || []).indexOf(doc) }} className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-sm hover:shadow-md hover:border-slate-300 transition-all duration-200 flex flex-col">
                   <div className="flex items-start justify-between gap-4">
                     <div>
-                      <div className="text-xs font-extrabold text-blue-700 uppercase tracking-wide">
+                      <div className="text-xs font-semibold text-blue-700 uppercase tracking-wide">
                         {String(doc.step).padStart(2, '0')} - {phases.find((p) => p.id === activePhase)?.label}
                       </div>
-                      <h3 className="text-base font-extrabold text-slate-900 mt-1">{doc.title}</h3>
+                      <h3 className="text-base font-semibold text-slate-900 mt-1">{doc.title}</h3>
                       <p className="text-sm text-slate-600 mt-2">{doc.role}</p>
                     </div>
                     <button
@@ -2263,10 +2317,10 @@ const BonCommandePlateforme = () => {
                 <div className="bg-white rounded-2xl border border-blue-200/80 p-6 shadow-sm hover:shadow-md hover:border-blue-300 transition-all duration-200 flex flex-col">
                   <div className="flex items-start justify-between gap-4">
                     <div>
-                      <div className="text-xs font-extrabold text-blue-700 uppercase tracking-wide">
+                      <div className="text-xs font-semibold text-blue-700 uppercase tracking-wide">
                         07 - ENGAGEMENT
                       </div>
-                      <h3 className="text-base font-extrabold text-slate-900 mt-1 flex items-center gap-2">
+                      <h3 className="text-base font-semibold text-slate-900 mt-1 flex items-center gap-2">
                         <FileSpreadsheet size={18} className="text-blue-700" />
                         Registre d'engagement
                       </h3>
@@ -2293,18 +2347,18 @@ const BonCommandePlateforme = () => {
           )}
 
           {selectedDocument && (
-            <div className="bg-white rounded-3xl p-4 sm:p-6 lg:p-8 shadow-md border border-slate-100">
+            <div key={selectedDocument.id} className="bc-editor bg-white rounded-3xl p-4 sm:p-6 lg:p-8 shadow-md border border-slate-100">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 pb-6 border-b border-slate-100">
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-extrabold text-emerald-700 uppercase tracking-wide">
+                    <span className="text-xs font-semibold text-blue-700 uppercase tracking-wide">
                       Phase : {phases.find((p) => p.id === activePhase)?.label}
                     </span>
                     <span className="text-xs font-bold px-2 py-0.5 rounded bg-blue-50 text-blue-700 font-mono">
-                      Étape {selectedDocument.step}/7
+                      Document {selectedDocument.step}
                     </span>
                   </div>
-                  <h2 className="text-2xl font-extrabold text-slate-900 mt-1">{selectedDocument.title}</h2>
+                  <h2 className="text-2xl font-semibold text-slate-900 mt-1">{selectedDocument.title}</h2>
                   <p className="text-sm text-slate-600 mt-1">{selectedDocument.role}</p>
                 </div>
                 <div className="flex items-center gap-3">
@@ -2319,12 +2373,12 @@ const BonCommandePlateforme = () => {
               </div>
 
               <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-600 mb-5 bg-slate-50 border border-slate-200/60 px-3.5 py-2 rounded-xl w-fit">
-                <span className="text-red-600 font-extrabold text-sm">*</span> : Les champs obligatoires
+                <span className="text-red-600 font-semibold text-sm">*</span> : Les champs obligatoires
               </div>
 
               {selectedDocument.id === 'fiche_engagement' && (
                 <div className="mb-6 rounded-2xl border border-blue-200 bg-blue-50/60 p-5">
-                  <label className="block text-xs font-extrabold uppercase tracking-wide text-blue-900 mb-2">
+                  <label className="block text-xs font-semibold uppercase tracking-wide text-blue-900 mb-2">
                     Numéro du bon de commande
                   </label>
                   <div className="flex flex-col sm:flex-row gap-3">
@@ -2352,17 +2406,23 @@ const BonCommandePlateforme = () => {
                     </button>
                   </div>
                   {savedConsultation?.numero_bc && (
-                    <p className="mt-2 text-xs font-semibold text-emerald-700">Bon de commande trouvé et associé.</p>
+                    <p className="mt-2 text-xs font-semibold text-blue-700">Bon de commande trouvé et associé.</p>
                   )}
                 </div>
               )}
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 2xl:grid-cols-3 gap-4 sm:gap-5">
-                {selectedFields.filter((field) => {
-                  if (selectedDocument.id !== 'fiche_engagement') return true;
-                  if (String(savedConsultation?.type_budget || '').toLowerCase() !== 'fonctionnement') return true;
-                  return !['credit_ouvert_ce', 'depenses_anterieures_ce', 'depenses_credits_engagement'].includes(field.name);
-                }).map((field) => {
+              <div className="bc-field-sections">
+                {fieldSections.map((section, sectionIndex) => (
+                  <section key={section.id} className="bc-field-section" aria-labelledby={`section-${section.id}`}>
+                    <div className="bc-field-section-title">
+                      <span className="bc-section-number">{String(sectionIndex + 1).padStart(2, '0')}</span>
+                      <div>
+                        <h3 id={`section-${section.id}`}>{section.title}</h3>
+                        <p>{section.description}</p>
+                      </div>
+                    </div>
+                    <div className="bc-fields grid grid-cols-1 md:grid-cols-2 gap-5">
+                {section.fields.map((field) => {
                   if (field.condition && !field.condition(documentForms[selectedDocument.id])) {
                     return null;
                   }
@@ -2402,7 +2462,7 @@ const BonCommandePlateforme = () => {
                       <div key={`${selectedDocument.id}-${field.name}`} className="col-span-full bg-slate-50 border border-slate-200 rounded-2xl p-5 shadow-sm">
                         <div className="flex items-center justify-between mb-3">
                           <div>
-                            <label className="block text-xs font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                            <label className="block text-xs font-semibold text-slate-800 uppercase tracking-wider flex items-center gap-2">
                               📦 {field.label} {field.required && !field.fromDb && <span className="text-red-600 font-bold ml-0.5">*</span>}
                             </label>
                             <p className="text-xs text-slate-500 mt-0.5">
@@ -2431,7 +2491,7 @@ const BonCommandePlateforme = () => {
                                       type="checkbox"
                                       checked={!!item.receptionne}
                                       onChange={(e) => updateItem(idx, 'receptionne', e.target.checked)}
-                                      className="w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500 cursor-pointer"
+                                      className="w-4 h-4 text-blue-600 rounded focus:ring-emerald-500 cursor-pointer"
                                     />
                                   </td>
                                   <td className="py-2 px-3 text-center font-bold text-slate-700">
@@ -2463,7 +2523,7 @@ const BonCommandePlateforme = () => {
                                         const val = Math.min(Number(item.quantite) || 0, Math.max(0, Number(e.target.value) || 0));
                                         updateItem(idx, 'quantite_receptionnee', val);
                                       }}
-                                      className="w-20 px-2 py-1.5 rounded border border-slate-200 text-center text-xs font-bold text-emerald-700 outline-none focus:border-emerald-500 bg-white"
+                                      className="w-20 px-2 py-1.5 rounded border border-slate-200 text-center text-xs font-bold text-blue-700 outline-none focus:border-blue-500 bg-white"
                                     />
                                   </td>
                                 </tr>
@@ -2542,7 +2602,7 @@ const BonCommandePlateforme = () => {
                     return (
                       <div key={`${selectedDocument.id}-${field.name}`} className="col-span-full">
                         <div className="flex items-center justify-between mb-3">
-                          <span className="text-xs font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                          <span className="text-xs font-semibold text-slate-800 uppercase tracking-wider flex items-center gap-2">
                             📋 {field.label} {field.required && !field.fromDb && <span className="text-red-600 font-bold ml-0.5">*</span>}
                           </span>
                           <button
@@ -2879,12 +2939,12 @@ const BonCommandePlateforme = () => {
                     return (
                       <div key={`${selectedDocument.id}-${field.name}`} className="col-span-full bg-slate-50 border border-slate-200 rounded-2xl p-5 shadow-sm">
                         <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
-                          <label className="block text-xs font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                          <label className="block text-xs font-semibold text-slate-800 uppercase tracking-wider flex items-center gap-2">
                             🏢 {field.label} {field.required && !field.fromDb && <span className="text-red-600 font-bold ml-0.5">*</span>}
                           </label>
 
                           <div className="flex flex-wrap items-center gap-2">
-                            <label className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg inline-flex items-center gap-1.5 shadow-sm transition-all cursor-pointer">
+                            <label className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-lg inline-flex items-center gap-1.5 shadow-sm transition-all cursor-pointer">
                               <FileSpreadsheet size={14} /> Importer Excel / CSV
                               <input
                                 type="file"
@@ -2919,10 +2979,10 @@ const BonCommandePlateforme = () => {
                                 const rank = c.classement || idx + 1;
                                 const isWinner = rank === 1;
                                 return (
-                                  <tr key={idx} className={`border-b border-slate-100 hover:bg-slate-50 transition-all ${isWinner ? 'bg-emerald-50/50' : ''}`}>
+                                  <tr key={idx} className={`border-b border-slate-100 hover:bg-slate-50 transition-all ${isWinner ? 'bg-blue-50/50' : ''}`}>
                                     <td className="py-2 px-3 text-center font-bold">
-                                      <span className={`px-2.5 py-1 rounded-full text-[11px] font-extrabold inline-block ${isWinner
-                                        ? 'bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-sm'
+                                      <span className={`px-2.5 py-1 rounded-full text-[11px] font-semibold inline-block ${isWinner
+                                        ? 'bg-blue-100 text-blue-800 border border-blue-300 shadow-sm'
                                         : 'bg-slate-100 text-slate-700 border border-slate-200'
                                         }`}>
                                         {rank === 1 ? '🥇 1er (Moins-disant)' : `${rank}ème`}
@@ -3045,7 +3105,7 @@ const BonCommandePlateforme = () => {
                     return (
                       <div key={`${selectedDocument.id}-${field.name}`} className="col-span-full bg-slate-50 border border-slate-200 rounded-2xl p-5 shadow-sm">
                         <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
-                          <label className="block text-xs font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                          <label className="block text-xs font-semibold text-slate-800 uppercase tracking-wider flex items-center gap-2">
                             ❌ {field.label} {field.required && !field.fromDb && <span className="text-red-600 font-bold ml-0.5">*</span>}
                           </label>
 
@@ -3180,11 +3240,11 @@ const BonCommandePlateforme = () => {
                     return (
                       <div key={`${selectedDocument.id}-${field.name}`} className="col-span-full bg-slate-50 border border-slate-200 rounded-2xl p-5 shadow-sm space-y-3">
                         <div className="flex items-center justify-between">
-                          <label className="block text-xs font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                          <label className="block text-xs font-semibold text-slate-800 uppercase tracking-wider flex items-center gap-2">
                             🏆 {field.label} {field.required && !field.fromDb && <span className="text-red-600 font-bold ml-0.5">*</span>}
                           </label>
                           {selectedAttr && (
-                            <span className="px-2.5 py-1 bg-emerald-100 text-emerald-800 border border-emerald-300 rounded-full text-[11px] font-extrabold">
+                            <span className="px-2.5 py-1 bg-blue-100 text-blue-800 border border-blue-300 rounded-full text-[11px] font-semibold">
                               Société retenue : {selectedAttr}
                             </span>
                           )}
@@ -3234,7 +3294,7 @@ const BonCommandePlateforme = () => {
                     return (
                       <div key={`${selectedDocument.id}-${field.name}`} className="col-span-full bg-slate-50 border border-slate-200 rounded-2xl p-5 shadow-sm">
                         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-3">
-                          <label className="block text-xs font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                          <label className="block text-xs font-semibold text-slate-800 uppercase tracking-wider flex items-center gap-2">
                             <Users size={16} className="text-blue-700" />
                             {field.label} {field.required && !field.fromDb && <span className="text-red-600 font-bold ml-0.5">*</span>}
                           </label>
@@ -3285,7 +3345,7 @@ const BonCommandePlateforme = () => {
                                 type="button"
                                 disabled={!nouveauMembreForm.membre_id}
                                 onClick={() => addMembreToDocumentCommission(selectedDocument.id, field.name)}
-                                className="w-full h-full py-2.5 bg-emerald-700 hover:bg-emerald-800 disabled:opacity-50 text-white font-bold text-xs rounded-xl inline-flex items-center justify-center gap-1 shadow-sm transition-all"
+                                className="w-full h-full py-2.5 bg-blue-700 hover:bg-blue-800 disabled:opacity-50 text-white font-bold text-xs rounded-xl inline-flex items-center justify-center gap-1 shadow-sm transition-all"
                               >
                                 <Plus size={14} /> Ajouter
                               </button>
@@ -3299,14 +3359,14 @@ const BonCommandePlateforme = () => {
                             {currentCommissionList.map((m, idx) => (
                               <div key={idx} className="flex items-center justify-between p-3.5 bg-white border border-slate-200 rounded-xl shadow-sm hover:border-slate-300 transition-all">
                                 <div className="flex items-center gap-3">
-                                  <span className={`px-3 py-1 rounded-lg text-xs font-extrabold tracking-wide uppercase ${m.qualite === 'Président' ? 'bg-blue-100 text-blue-800 border border-blue-200' :
-                                    m.qualite === 'Rapporteur' ? 'bg-amber-100 text-amber-800 border border-amber-200' :
-                                      'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                                  <span className={`px-3 py-1 rounded-lg text-xs font-semibold tracking-wide uppercase ${m.qualite === 'Président' ? 'bg-blue-100 text-blue-800 border border-blue-200' :
+                                    m.qualite === 'Rapporteur' ? 'bg-slate-100 text-slate-800 border border-slate-200' :
+                                      'bg-blue-100 text-blue-800 border border-blue-200'
                                     }`}>
                                     {m.qualite}
                                   </span>
                                   <div>
-                                    <p className="text-sm font-extrabold text-slate-900">{m.nom || m.nom_prenom}</p>
+                                    <p className="text-sm font-semibold text-slate-900">{m.nom || m.nom_prenom}</p>
                                     <p className="text-xs font-medium text-slate-500">{m.fonction || 'Membre de commission'}</p>
                                   </div>
                                 </div>
@@ -3350,14 +3410,14 @@ const BonCommandePlateforme = () => {
                   const currentLen = String(displayedVal || '').length;
 
                   return (
-                    <label key={`${selectedDocument.id}-${field.name}`} className="block">
+                    <label key={`${selectedDocument.id}-${field.name}`} className={`bc-field block ${['objet', 'intitule', 'adresse_societe', 'motif_ajournement'].includes(field.name) ? 'md:col-span-2' : ''}`}>
                       <span className="block text-xs font-bold text-slate-700 mb-1.5 flex items-center justify-between">
                         <span>
                           {field.label} {field.required && !field.fromDb && <span className="text-red-600 font-bold ml-0.5">*</span>}
                         </span>
                         {maxLen && (
                           <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full font-bold transition-all ${currentLen === maxLen
-                            ? 'bg-amber-100 text-amber-800 border border-amber-300 font-extrabold'
+                            ? 'bg-slate-100 text-slate-800 border border-slate-300 font-semibold'
                             : 'text-slate-400 bg-slate-100'
                             }`}>
                             {currentLen} / {maxLen} chiffres max
@@ -3365,11 +3425,13 @@ const BonCommandePlateforme = () => {
                         )}
                       </span>
 
+                      {field.readOnly && <span className="bc-field-hint">Calculé automatiquement</span>}
                       {field.type === 'select' ? (
                         <select
                           value={documentForms[selectedDocument.id]?.[field.name] || field.options?.[0] || ''}
                           onChange={(event) => handleDocumentFieldChange(selectedDocument.id, field.name, event.target.value)}
                           disabled={field.readOnly}
+                          aria-invalid={hasError || undefined}
                           className={fieldClass}
                         >
                           {(field.options || []).map((opt) => (
@@ -3385,6 +3447,7 @@ const BonCommandePlateforme = () => {
                           inputMode={maxLen ? 'numeric' : undefined}
                           value={displayedVal}
                           readOnly={field.readOnly}
+                          aria-invalid={hasError || undefined}
                           onChange={(event) => {
                             let val = event.target.value;
                             if (maxLen) {
@@ -3396,9 +3459,13 @@ const BonCommandePlateforme = () => {
                           className={`${fieldClass} ${field.readOnly ? 'bg-slate-100 text-slate-600 cursor-not-allowed' : ''}`}
                         />
                       )}
+                      {hasError && <span role="alert" className="mt-2 block text-xs text-red-700">{formErrors[selectedDocument.id][field.name]}</span>}
                     </label>
                   );
                 })}
+                    </div>
+                  </section>
+                ))}
               </div>
 
               <div className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-slate-100 pt-6">
@@ -3408,7 +3475,7 @@ const BonCommandePlateforme = () => {
                     type="button"
                     disabled={!savedConsultation}
                     onClick={() => saveDocumentDataToDatabase(selectedDocument.id, true)}
-                    className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold inline-flex items-center gap-2 disabled:opacity-50 transition-all shadow-md shadow-blue-500/20 hover:shadow-lg hover:shadow-blue-500/30"
+                    className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold inline-flex items-center gap-2 disabled:opacity-50 transition-all shadow-sm hover:shadow-lg hover:shadow-blue-500/30"
                     title="Enregistrer les informations modifiées dans la base de données"
                   >
                     <Save size={18} />
@@ -3418,7 +3485,7 @@ const BonCommandePlateforme = () => {
                     type="button"
                     disabled={!savedConsultation || downloading === selectedDocument.id}
                     onClick={() => downloadDocument(selectedDocument)}
-                    className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold inline-flex items-center gap-2 disabled:opacity-50 transition-all shadow-md shadow-emerald-500/20"
+                    className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold inline-flex items-center gap-2 disabled:opacity-50 transition-all shadow-sm"
                   >
                     {downloading === selectedDocument.id ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} />}
                     Télécharger le PDF
@@ -3438,7 +3505,7 @@ const BonCommandePlateforme = () => {
                       disabled={!isSaved}
                       onClick={() => isSaved && setSelectedDocumentId(nextDoc.id)}
                       className={`px-6 py-3.5 rounded-xl font-bold inline-flex items-center gap-2 transition-all shadow-md ${isSaved
-                        ? 'bg-emerald-600 hover:bg-emerald-700 hover:shadow-lg text-white cursor-pointer'
+                        ? 'bg-blue-600 hover:bg-blue-700 hover:shadow-lg text-white cursor-pointer'
                         : 'bg-slate-200 text-slate-400 cursor-not-allowed'
                         }`}
                       title={isSaved ? `Aller au document suivant : ${nextDoc.title}` : 'Veuillez d’abord cliquer sur « Enregistrer en BD » pour continuer'}
@@ -3459,7 +3526,7 @@ const BonCommandePlateforme = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
           <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl border border-slate-100">
             <div className="flex items-center justify-between pb-4 border-b border-slate-100 mb-4">
-              <h3 className="text-lg font-extrabold text-slate-900 flex items-center gap-2">
+              <h3 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
                 <Users size={20} className="text-blue-700" />
                 Nouveau membre de commission
               </h3>
@@ -3508,8 +3575,8 @@ const BonCommandePlateforme = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm overflow-y-auto">
           <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full p-6 my-8 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between pb-4 mb-4 border-b border-slate-200">
-              <div className="flex items-center gap-2 text-slate-800 font-extrabold text-base">
-                <Edit3 className="text-amber-600" size={20} />
+              <div className="flex items-center gap-2 text-slate-800 font-semibold text-base">
+                <Edit3 className="text-slate-600" size={20} />
                 <span>Modifier la consultation : {editingConsultationData.numero_consultation}</span>
               </div>
               <button
@@ -3709,7 +3776,7 @@ const BonCommandePlateforme = () => {
 
               {/* Section Budgétaire */}
               <div className="pt-3 border-t border-slate-100">
-                <p className="text-xs font-extrabold uppercase tracking-wider text-slate-500 mb-3">Imputation Budgétaires</p>
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">Imputation Budgétaires</p>
                 <div className="grid grid-cols-3 gap-3 mb-3">
                   <div>
                     <label className="block text-[11px] font-bold text-slate-600 mb-1">ART</label>
@@ -3792,7 +3859,7 @@ const BonCommandePlateforme = () => {
                 <button
                   type="submit"
                   disabled={editingSaving}
-                  className="px-5 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-xl inline-flex items-center gap-1.5 disabled:opacity-50"
+                  className="px-5 py-2 bg-slate-600 hover:bg-slate-700 text-white text-xs font-bold rounded-xl inline-flex items-center gap-1.5 disabled:opacity-50"
                 >
                   {editingSaving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
                   Enregistrer les modifications
