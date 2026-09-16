@@ -6,6 +6,7 @@ import {
   Loader2,
   Plus,
   Eye,
+  Trash2,
   Landmark,
   AlertCircle,
   Receipt,
@@ -38,6 +39,22 @@ const ListeNotifications = () => {
       setLoading(false);
     }
   }, [selectedExercice]);
+
+  const handleDeleteNotification = async (notif) => {
+    if (!notif?.id) return;
+    const num = notif.numero || `N-${notif.id}`;
+    if (!window.confirm(`Êtes-vous sûr de vouloir supprimer la notification "${num}" ? Toutes les lignes budgétaires associées seront également supprimées.`)) {
+      return;
+    }
+    try {
+      await api.delete(`/notifications/${notif.id}`);
+      setNotifications(prev => prev.filter(n => n.id !== notif.id));
+      fetchNotificationsAndRecap();
+    } catch (err) {
+      console.error('Erreur suppression notification:', err);
+      alert(err.response?.data?.message || 'Erreur lors de la suppression de la notification.');
+    }
+  };
 
   useEffect(() => {
     fetchNotificationsAndRecap();
@@ -231,6 +248,13 @@ const ListeNotifications = () => {
                         >
                           <Eye size={14} /> Fiche Détails
                         </Link>
+                        <button
+                          onClick={() => handleDeleteNotification(notif)}
+                          className="px-3.5 py-1.5 rounded-xl bg-red-50 text-red-600 hover:bg-red-100 text-xs font-bold transition flex items-center gap-1.5 border border-red-200 cursor-pointer"
+                          title="Supprimer cette notification"
+                        >
+                          <Trash2 size={14} /> Supprimer
+                        </button>
                       </div>
                     </div>
 

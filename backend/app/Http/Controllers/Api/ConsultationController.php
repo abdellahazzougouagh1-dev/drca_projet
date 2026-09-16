@@ -433,10 +433,45 @@ class ConsultationController extends Controller
             $validated
         );
 
+        // Auto-synchronize / create LiquidationFinanciere for this Bon de Commande
+        $consultation->load(['prestations', 'engagement', 'registreEngagement', 'liquidation']);
+        $totalPrestationsTTC = 0;
+        if ($consultation->prestations && $consultation->prestations->count() > 0) {
+            $totalPrestationsTTC = (float) $consultation->prestations->reduce(function ($sum, $p) {
+                $ht = (float) ($p->montant_ht ?: (($p->quantite ?: 1) * ($p->prix_unitaire_ht ?: 0)));
+                $tvaRate = (float) ($p->tva ?: 20);
+                return $sum + ($ht * (1 + ($tvaRate / 100)));
+            }, 0);
+        }
+
+        $montantEngagement = (float) (
+            $consultation->montant_engager_neuf ?:
+            ($consultation->montant_depense_neuf ?:
+            ($consultation->engagement?->montant_engagement ?:
+            ($consultation->registreEngagement?->montant_engager_neuf ?:
+            ($consultation->registreEngagement?->montant_engage ?: $totalPrestationsTTC))))
+        );
+
+        $montantLiq = $montantEngagement > 0 ? $montantEngagement : $totalPrestationsTTC;
+        if ($montantLiq > 0) {
+            $consultation->liquidation()->updateOrCreate(
+                ['consultation_id' => $consultation->id],
+                [
+                    'montant_a_payer' => $montantLiq,
+                    'reference_facture' => $validated['numero_bc'] ?? ($consultation->numero_bc ?? $consultation->numero_consultation),
+                    'date_facture' => $validated['date_reception_definitive'] ?? ($validated['date_decision'] ?? now()->format('Y-m-d')),
+                ]
+            );
+        }
+
+        if (!in_array(strtoupper((string) $consultation->statut_dossier), ['PAYÉ', 'PAYE', 'CLÔTURÉ', 'CLOTURE'])) {
+            $consultation->update(['statut_dossier' => 'LIQUIDÉ']);
+        }
+
         return response()->json([
-            'message' => 'Commission de réception enregistrée.',
+            'message' => 'Commission de réception et liquidation enregistrées avec succès.',
             'reception_commission' => $commission,
-            'consultation' => $consultation->load(['receptionCommission', 'budget', 'prestations', 'fournisseur', 'offres'])
+            'consultation' => $consultation->load(['receptionCommission', 'budget', 'prestations', 'fournisseur', 'offres', 'liquidation'])
         ]);
     }
 }

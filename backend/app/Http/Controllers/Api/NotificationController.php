@@ -485,7 +485,14 @@ class NotificationController extends Controller
     public function destroy($id)
     {
         $notification = Notification::findOrFail($id);
-        $notification->delete();
+        DB::transaction(function () use ($notification) {
+            foreach ($notification->lignes as $ligne) {
+                $ligne->mouvements()->delete();
+                $ligne->delete();
+            }
+            $notification->mouvements()->delete();
+            $notification->delete();
+        });
         return response()->json(['message' => 'Notification supprimée avec succès']);
     }
 

@@ -167,31 +167,61 @@ class OrdonnancementController extends Controller
             ];
         }
 
-        // Les bons de commande ne créent pas de `Liquidation` de marché : leur
-        // liquidation est stockée dans `liquidation_financieres`. Les exposer
-        // ici permet de les envoyer dans le même registre d'ordonnancement,
-        // sans modifier le parcours des marchés issus d'AOO.
+        // Bons de commande / Consultations disponibles pour ordonnancement
         $consultationsBc = Consultation::with([
             'fournisseur',
             'budget',
             'notificationLigne',
             'liquidation',
             'registreEngagement',
+            'engagement',
+            'prestations',
+            'receptionCommission',
+            'receptions',
             'ordonnancements.ordres',
         ])
-            ->whereIn('mode_engagement', ['BC', 'Bon de commande'])
-            ->whereHas('liquidation')
             ->orderByDesc('id')
             ->get();
 
         foreach ($consultationsBc as $consultation) {
             $liq = $consultation->liquidation;
-            $montantLiquidation = (float) ($liq->montant_a_payer ?? 0);
+            $montantLiquidation = 0;
+
+            if ($liq && (float) ($liq->montant_a_payer ?? 0) > 0) {
+                $montantLiquidation = (float) $liq->montant_a_payer;
+            } else {
+                $totalPrestationsTTC = 0;
+                if ($consultation->prestations && $consultation->prestations->count() > 0) {
+                    $totalPrestationsTTC = (float) $consultation->prestations->reduce(function ($sum, $p) {
+                        $ht = (float) ($p->montant_ht ?: (($p->quantite ?: 1) * ($p->prix_unitaire_ht ?: 0)));
+                        $tvaRate = (float) ($p->tva ?: 20);
+                        return $sum + ($ht * (1 + ($tvaRate / 100)));
+                    }, 0);
+                }
+
+                $montantEngagement = (float) (
+                    $consultation->montant_engager_neuf ?:
+                    ($consultation->montant_depense_neuf ?:
+                    ($consultation->engagement?->montant_engagement ?:
+                    ($consultation->registreEngagement?->montant_engager_neuf ?:
+                    ($consultation->registreEngagement?->montant_engage ?: $totalPrestationsTTC))))
+                );
+
+                $isEligible = $consultation->receptionCommission
+                    || $consultation->receptions->count() > 0
+                    || in_array(strtoupper((string) $consultation->statut_dossier), ['LIQUIDÉ', 'LIQUIDE', 'PAYÉ', 'PAYE', 'RÉCEPTIONNÉ', 'RECEPTIONNE', 'CLÔTURÉ', 'CLOTURE', 'LIQUIDATION', 'ORDONNANCEMENT'])
+                    || $montantEngagement > 0;
+
+                if ($isEligible && ($montantEngagement > 0 || $totalPrestationsTTC > 0)) {
+                    $montantLiquidation = round($montantEngagement > 0 ? $montantEngagement : $totalPrestationsTTC, 2);
+                }
+            }
+
             if ($montantLiquidation <= 0) {
                 continue;
             }
 
-            $dejaOrdonnance = $consultation->ordonnancements->sum(function ($ord) {
+            $dejaOrdonnance = (float) $consultation->ordonnancements->sum(function ($ord) {
                 return (float) ($ord->ordres->sum('montant') ?: $ord->montant_brut ?: 0);
             });
             $resteDisponible = round(max(0, $montantLiquidation - $dejaOrdonnance), 2);
@@ -204,37 +234,46 @@ class OrdonnancementController extends Controller
             $registre = $consultation->registreEngagement;
             $tauxTva = (float) ($budget?->tva ?? 20);
             $montantHt = $tauxTva > 0
-                ? round($montantLiquidation / (1 + ($tauxTva / 100)), 2)
-                : $montantLiquidation;
+                ? round($resteDisponible / (1 + ($tauxTva / 100)), 2)
+                : $resteDisponible;
+
+            $numLiq = $liq?->reference_facture
+                ? "LIQ-BC-{$liq->reference_facture}"
+                : ('LIQ-BC-' . ($consultation->annee ?: date('Y')) . '-' . str_pad((string) $consultation->id, 3, '0', STR_PAD_LEFT));
+
+            $dateLiq = $liq?->date_facture
+                ?: ($consultation->receptionCommission?->date_reception_definitive
+                ?: ($consultation->receptionCommission?->date_decision
+                ?: ($consultation->date_consultation ?: $consultation->created_at?->format('Y-m-d'))));
 
             $disponibles[] = [
                 'type_source' => 'consultation_liquidation',
                 'liquidation_id' => null,
-                'liquidation_financiere_id' => $liq->id,
+                'liquidation_financiere_id' => $liq?->id,
                 'marche_id' => null,
                 'consultation_id' => $consultation->id,
                 'fournisseur_id' => $consultation->fournisseur_id,
                 'notification_ligne_id' => $consultation->notification_ligne_id,
-                'num_liquidation' => 'LIQ-BC-' . ($consultation->annee ?: date('Y')) . '-' . str_pad((string) $consultation->id, 3, '0', STR_PAD_LEFT),
-                'date_liquidation' => $liq->date_facture ?: $liq->created_at?->format('Y-m-d'),
-                'reference' => $consultation->numero_bc ?: $consultation->numero_consultation,
+                'num_liquidation' => $numLiq,
+                'date_liquidation' => $dateLiq,
+                'reference' => $consultation->numero_bc ?: ($consultation->numero_consultation ?: "BC #{$consultation->id}"),
                 'type_procedure' => 'Bon de commande',
                 'beneficiaire' => $consultation->fournisseur?->raison_sociale ?? 'Fournisseur non spécifié',
-                'rib' => $consultation->fournisseur?->rib ?? '',
+                'rib' => $consultation->fournisseur?->rib ?? ($consultation->fournisseur?->compte_bancaire ?? ''),
                 'banque' => $consultation->fournisseur?->banque ?? '',
                 'budget_type' => $consultation->type_budget ?: ($notificationLigne?->type_budget ?? 'Investissement'),
                 'creance' => 'Reste à payer',
-                'code_imputation' => $budget?->code_imputation ?: ($registre?->code ?: ''),
-                'article' => $budget?->art ?: ($registre?->art ?: ''),
-                'paragraphe' => $budget?->par ?: ($registre?->par ?: ''),
-                'ligne' => $budget?->lig ?: ($registre?->lig ?: ''),
+                'code_imputation' => $budget?->code_imputation ?: ($registre?->code ?: ($consultation->code_imputation ?? '225320')),
+                'article' => $budget?->art ?: ($registre?->art ?: ($consultation->article ?: '415')),
+                'paragraphe' => $budget?->par ?: ($registre?->par ?: ($consultation->paragraphe ?: '20')),
+                'ligne' => $budget?->lig ?: ($registre?->lig ?: ($consultation->ligne ?: '13')),
                 'sous_ligne' => $consultation->s_lig ?: ($registre?->s_lig ?: '0'),
-                'intitule_depense' => $consultation->intitule ?: $consultation->objet_consultation,
+                'intitule_depense' => $consultation->intitule ?: ($consultation->objet_consultation ?: 'Dépense Bon de commande'),
                 'montant_brut' => $resteDisponible,
                 'montant_ht' => $montantHt,
                 'deja_ordonnance' => $dejaOrdonnance,
                 'reste_disponible' => $resteDisponible,
-                'suggested_tva' => round($montantLiquidation - $montantHt, 2),
+                'suggested_tva' => round($resteDisponible - $montantHt, 2),
                 'suggested_ias' => 0,
                 'credit_consolide' => (float) ($consultation->depenses_credits_consolides ?? $registre?->credit_consolide ?? 0),
                 'credit_neuf' => (float) ($consultation->montant_engager_neuf ?? $registre?->montant_engager_neuf ?? 0),
@@ -324,10 +363,36 @@ class OrdonnancementController extends Controller
                     }
                 }
             } elseif (!empty($validated['consultation_id'])) {
-                $liqBc = LiquidationFinanciere::where('consultation_id', $validated['consultation_id'])->first();
-                if ($liqBc) {
+                $consultation = Consultation::with(['prestations', 'engagement', 'registreEngagement', 'liquidation'])->find($validated['consultation_id']);
+                if ($consultation) {
+                    $liqBc = $consultation->liquidation;
+                    if (!$liqBc) {
+                        $totalPrestationsTTC = 0;
+                        if ($consultation->prestations && $consultation->prestations->count() > 0) {
+                            $totalPrestationsTTC = (float) $consultation->prestations->reduce(function ($sum, $p) {
+                                $ht = (float) ($p->montant_ht ?: (($p->quantite ?: 1) * ($p->prix_unitaire_ht ?: 0)));
+                                $tvaRate = (float) ($p->tva ?: 20);
+                                return $sum + ($ht * (1 + ($tvaRate / 100)));
+                            }, 0);
+                        }
+                        $montantEngagement = (float) (
+                            $consultation->montant_engager_neuf ?:
+                            ($consultation->montant_depense_neuf ?:
+                            ($consultation->engagement?->montant_engagement ?:
+                            ($consultation->registreEngagement?->montant_engager_neuf ?:
+                            ($consultation->registreEngagement?->montant_engage ?: $totalPrestationsTTC))))
+                        );
+                        $montantLiq = $montantEngagement > 0 ? $montantEngagement : ($totalPrestationsTTC > 0 ? $totalPrestationsTTC : (float) $validated['montant_brut']);
+                        $liqBc = LiquidationFinanciere::create([
+                            'consultation_id' => $consultation->id,
+                            'montant_a_payer' => $montantLiq,
+                            'reference_facture' => $consultation->numero_bc ?? $consultation->numero_consultation,
+                            'date_facture' => $consultation->date_consultation ?? now()->format('Y-m-d'),
+                        ]);
+                    }
+
                     $montantLiquidation = (float) $liqBc->montant_a_payer;
-                    $dejaOrdonnance = Ordonnancement::with('ordres')
+                    $dejaOrdonnance = (float) Ordonnancement::with('ordres')
                         ->where('consultation_id', $validated['consultation_id'])
                         ->get()
                         ->sum(fn ($ord) => (float) ($ord->ordres->sum('montant') ?: $ord->montant_brut ?: 0));
@@ -386,12 +451,17 @@ class OrdonnancementController extends Controller
                 $liq->save();
             }
 
-            // 6. Update Marche status if linked
+            // 6. Update Marche or Consultation status if linked
             if (!empty($validated['marche_id'])) {
                 $marche = Marche::find($validated['marche_id']);
                 if ($marche) {
                     $marche->statut = 'ordonnancement_validee';
                     $marche->save();
+                }
+            } elseif (!empty($validated['consultation_id'])) {
+                $consultation = Consultation::find($validated['consultation_id']);
+                if ($consultation) {
+                    $consultation->update(['statut_dossier' => 'ORDONNANCÉ']);
                 }
             }
 

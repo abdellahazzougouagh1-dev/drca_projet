@@ -11,6 +11,7 @@ import {
   History,
   TrendingUp,
   Layers,
+  Trash2,
 } from 'lucide-react';
 import {
   BarChart,
@@ -50,6 +51,21 @@ export default function DetailsNotification() {
     };
     fetchNotificationAndRecap();
   }, [id]);
+
+  const handleDelete = async () => {
+    if (!notification?.id) return;
+    const num = notification.numero || `N-${notification.id}`;
+    if (!window.confirm(`Êtes-vous sûr de vouloir supprimer la notification "${num}" ? Toutes les lignes budgétaires associées seront également supprimées.`)) {
+      return;
+    }
+    try {
+      await api.delete(`/notifications/${notification.id}`);
+      navigate('/notifications');
+    } catch (err) {
+      console.error('Erreur suppression notification:', err);
+      alert(err.response?.data?.message || 'Erreur lors de la suppression de la notification.');
+    }
+  };
 
   const formatMoney = (value) =>
     new Intl.NumberFormat('fr-FR', {
@@ -168,25 +184,34 @@ export default function DetailsNotification() {
             </div>
           </div>
 
-          {/* Onglets de vue */}
-          <div className="flex bg-white p-1 rounded-xl border border-slate-200 shadow-2xs text-xs font-bold">
+          {/* Actions & Onglets de vue */}
+          <div className="flex items-center gap-3 flex-wrap">
+            <div className="flex bg-white p-1 rounded-xl border border-slate-200 shadow-2xs text-xs font-bold">
+              <button
+                onClick={() => setActiveTab('notification')}
+                className={`px-4 py-2 rounded-lg transition ${activeTab === 'notification'
+                    ? 'bg-[#1e40af] text-white shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                  }`}
+              >
+                Détails de cette Notification
+              </button>
+              <button
+                onClick={() => setActiveTab('cumul_exercice')}
+                className={`px-4 py-2 rounded-lg transition ${activeTab === 'cumul_exercice'
+                    ? 'bg-[#1e40af] text-white shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                  }`}
+              >
+                Cumul Exercice {notification.exercice}
+              </button>
+            </div>
             <button
-              onClick={() => setActiveTab('notification')}
-              className={`px-4 py-2 rounded-lg transition ${activeTab === 'notification'
-                  ? 'bg-[#1e40af] text-white shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
-                }`}
+              onClick={handleDelete}
+              className="px-4 py-2 bg-red-50 text-red-600 hover:bg-red-100 rounded-xl text-xs font-bold border border-red-200 transition flex items-center gap-1.5 cursor-pointer"
+              title="Supprimer cette notification"
             >
-              Détails de cette Notification
-            </button>
-            <button
-              onClick={() => setActiveTab('cumul_exercice')}
-              className={`px-4 py-2 rounded-lg transition ${activeTab === 'cumul_exercice'
-                  ? 'bg-[#1e40af] text-white shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
-                }`}
-            >
-              Cumul Exercice {notification.exercice}
+              <Trash2 size={15} /> Supprimer
             </button>
           </div>
         </header>
