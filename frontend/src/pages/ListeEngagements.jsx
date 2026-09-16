@@ -1,3 +1,5 @@
+import RegistreScroll from '../components/RegistreScroll';
+import RegistreFonctionnement, { fonctionnementRow } from '../components/RegistreFonctionnement';
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/axios';
@@ -107,7 +109,7 @@ const ListeEngagements = () => {
   const registreRows = marches
     .filter((m) => {
       const bType = m.type_budget || m.registre_engagement?.budget || 'Investissement';
-      return bType === registreBudget;
+      return bType === registreBudget && (registreBudget !== 'Fonctionnement' || Boolean(m.registre_engagement));
     })
     .filter((m) => {
       if (!searchTerm.trim()) return true;
@@ -330,8 +332,14 @@ const ListeEngagements = () => {
                 Aucune ligne enregistrée dans le registre {registreBudget.toLowerCase()}.
               </div>
             ) : (
-              <div className="overflow-x-auto rounded-2xl border border-slate-200">
-                <table className="min-w-[1500px] w-full border-collapse text-xs text-left">
+              <RegistreScroll className="">
+                {registreBudget === 'Fonctionnement' ? (
+<RegistreFonctionnement rows={registreRows.filter((m) => m.registre_engagement).map((m) => fonctionnementRow(m.registre_engagement, m, true))} onOpen={(row) => {
+  const marche = registreRows.find((m) => m.registre_engagement?.id === row.id);
+  if (marche) navigate(`/engagements/${marche.id}`);
+}} />
+) : (
+<table className="min-w-[1500px] w-full border-collapse text-xs text-left">
                   <thead className="bg-slate-100 font-extrabold text-slate-700">
                     <tr>
                       <th className="px-4 py-3">N° ordre</th>
@@ -385,7 +393,8 @@ const ListeEngagements = () => {
                     })}
                   </tbody>
                 </table>
-              </div>
+)}
+              </RegistreScroll>
             )}
           </div>
         )}

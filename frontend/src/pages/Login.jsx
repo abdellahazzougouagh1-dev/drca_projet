@@ -17,7 +17,7 @@ export default function Login() {
       localStorage.setItem('token', response.data.token);
       localStorage.setItem('user', JSON.stringify(response.data.user));
       api.defaults.headers.common.Authorization = `Bearer ${response.data.token}`;
-      navigate(response.data.user?.role === 'directeur' ? '/directeur' : '/consultations');
+      navigate(response.data.user?.role === 'directeur' ? '/directeur' : '/dashboard', { replace: true });
     } catch (err) {
       setError(err.response?.data?.message || 'Email ou mot de passe incorrect');
     }
@@ -81,9 +81,9 @@ export default function Login() {
           </button>
 
           <div className="flex flex-col sm:flex-row sm:justify-between gap-3 text-sm text-slate-500 text-center mt-3">
-            <button type="button" className="underline decoration-slate-500 decoration-2 hover:text-white transition-colors">
+            <Link to="/forgot-password" className="underline decoration-slate-500 decoration-2 hover:text-white transition-colors">
               Mot de passe oublié ?
-            </button>
+            </Link>
             <Link to="/register" className="underline decoration-slate-500 decoration-2 hover:text-white transition-colors">
               Créer un compte
             </Link>

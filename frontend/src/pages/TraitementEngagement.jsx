@@ -858,10 +858,7 @@ const TraitementEngagement = () => {
                     </div>
                   </>
                 )}
-                <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-2">Dépenses sur reste à payer</label>
-                  <input type="number" step="0.01" name="depenses_rap" value={formData.depenses_rap || ''} onChange={handleChange} className={inputClass} />
-                </div>
+
                 <div>
                   <label className="block text-sm font-bold text-slate-700 mb-2">Montant de la dépense neuve</label>
                   <input type="number" step="0.01" name="montant_depense_neuf" value={formData.montant_depense_neuf || ''} onChange={handleChange} className={inputClass} />

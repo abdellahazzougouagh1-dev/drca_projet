@@ -290,7 +290,7 @@ export default function SuiviBudgetDirecteur() {
   const summary = summaryOf(rows);
 
   if (loading && realRows.length === 0) return <div className="grid min-h-screen place-items-center bg-slate-50 text-slate-500"><span className="flex items-center gap-2"><Loader2 className="animate-spin" /> Chargement du suivi budgétaire…</span></div>;
-  const columns = ['Domaine', 'Ligne budgétaire', 'Notifié', 'Total engagements', 'Taux Eng.', 'Disponible', 'Total ordonnancement', 'Taux Ord./Eng.', 'Taux Ord./Not.', 'Total paiements', 'Taux Pai./Ord.', 'Taux Pai./Eng.', 'Taux Pai./Not.'];
+  const columns = ['Type de budget', 'Ligne budgétaire', 'Notifié', 'Total engagements', 'Taux Eng.', 'Disponible', 'Total ordonnancement', 'Taux Ord./Eng.', 'Taux Ord./Not.', 'Total paiements', 'Taux Pai./Ord.', 'Taux Pai./Eng.', 'Taux Pai./Not.'];
 
   return <main className="min-h-screen bg-slate-50 p-4 text-slate-900 sm:p-7"><div className="mx-auto max-w-[1800px]">
     <Link to="/directeur" className="inline-flex items-center gap-2 text-sm font-bold text-blue-700 hover:underline"><ArrowLeft size={16} /> Retour au tableau de bord</Link>

@@ -26,7 +26,8 @@ export default function OrdreDocumentsModal({
       setDownloadingDoc(docType);
       const ordId = ordonnancement?.id;
       if (!ordId) {
-        // If in creation wizard before saving, open preview
+        alert('Enregistrez d’abord l’ordonnancement pour télécharger le PDF.');
+        // Keep draft preview available.
         if (onOpenPreview) {
           onOpenPreview(docType, ordre);
         }
@@ -46,11 +47,7 @@ export default function OrdreDocumentsModal({
       window.URL.revokeObjectURL(fileUrl);
     } catch (err) {
       console.error('Erreur téléchargement document ordre:', err);
-      if (onOpenPreview) {
-        onOpenPreview(docType, ordre);
-      } else {
-        alert('Erreur lors du téléchargement du document PDF.');
-      }
+      alert('Le téléchargement du PDF a échoué. Veuillez réessayer.');
     } finally {
       setDownloadingDoc(null);
     }

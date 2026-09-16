@@ -317,7 +317,8 @@ export default function DashboardDirecteur() {
 
   const realRows = useMemo(() => {
     const map = new Map();
-    const getLineKey = (dom, imp) => `${(dom || 'INVESTISSEMENT').toUpperCase()}_${imp}`;
+    // API and notification lines may format the same imputation with different spacing.
+    const getLineKey = (dom, imp) => `${String(dom || 'INVESTISSEMENT').trim().toUpperCase()}_${String(imp || '').replace(/\s+/g, '')}`;
 
     // 1. Process backend budget lines
     if (store.budget?.lignes && Array.isArray(store.budget.lignes)) {
@@ -396,7 +397,7 @@ export default function DashboardDirecteur() {
         const netEngs = Math.max(0, engs - dimEngs);
         const netCredits = Number(line.total_credits) || (netReports + netNeufs + netEngs);
         const actualEngageNeuf = Number(line.engage_neuf || 0);
-        const eng = Number(line.credits_engages || 0) || (reports + engs + actualEngageNeuf);
+        const eng = Number(line.credits_engages ?? (lineDom === 'FONCTIONNEMENT' ? reports - dimReports + actualEngageNeuf : reports + engs + actualEngageNeuf));
         const ord = Number(line.total_ordonnance || 0);
         const pai = Number(line.total_paiements || line.total_paiement || ord || 0);
 
@@ -435,7 +436,7 @@ export default function DashboardDirecteur() {
               const netNeufs = Math.max(0, neufs - dimNeufs);
               const netEngs = Math.max(0, engs - dimEngs);
               const lineCredits = Number(line.total_credits) || (netReports + netNeufs + netEngs);
-              const lineEngages = reports + engs;
+              const lineEngages = Number(line.credits_engages ?? (lineDom === 'FONCTIONNEMENT' ? reports - dimReports : reports + engs));
               map.set(key, {
                 domaine: lineDom,
                 imputation: imp,
@@ -556,7 +557,7 @@ export default function DashboardDirecteur() {
 
   const shownDossiers = dashboard.dossiers.filter((item) => `${item.ref || ''} ${item.title || ''} ${item.type}`.toLowerCase().includes(search.toLowerCase()));
   const exportReport = () => {
-    const rows = [['Référence', 'Domaine', 'Type', 'Objet', 'Statut', 'Phase', 'Avancement'], ...dashboard.dossiers.map((item) => { const [label, progress] = phase(item); return [item.ref || '', getDossierDomaine(item), item.type, item.title || '', item.statut_dossier || item.statut || '', label, `${progress}%`]; })];
+    const rows = [['Référence', 'Type de budget', 'Type', 'Objet', 'Statut', 'Phase', 'Avancement'], ...dashboard.dossiers.map((item) => { const [label, progress] = phase(item); return [item.ref || '', getDossierDomaine(item), item.type, item.title || '', item.statut_dossier || item.statut || '', label, `${progress}%`]; })];
     const csv = rows.map((row) => row.map((cell) => `"${String(cell).replaceAll('"', '""')}"`).join(';')).join('\n');
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' }); const link = document.createElement('a');
     link.href = URL.createObjectURL(blob); link.download = `rapport-directeur-${year}-${domaine.toLowerCase()}.csv`; link.click(); URL.revokeObjectURL(link.href);
@@ -757,7 +758,7 @@ export default function DashboardDirecteur() {
                       <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
                         <tr>
                           <th className="px-5 py-3">Référence</th>
-                          <th className="px-5 py-3">Domaine</th>
+                          <th className="px-5 py-3">Type de budget</th>
                           <th className="px-5 py-3">Date</th>
                           <th className="px-5 py-3">Exercice</th>
                           <th className="px-5 py-3 text-right">Crédits</th>
@@ -774,7 +775,9 @@ export default function DashboardDirecteur() {
                           const totalReports = lignes.reduce((sum, l) => sum + Number(l.reports || 0), 0);
                           const totalNeufs = lignes.reduce((sum, l) => sum + Number(l.credits_neufs || 0), 0);
                           const totalEngagements = lignes.reduce((sum, l) => sum + Number(l.credits_engagements || 0), 0);
-                          const totalCredits = (totalReports + totalNeufs + totalEngagements) || Number(notification.montant || 0);
+                          const totalCredits = lignes.length > 0
+                            ? totalReports + totalNeufs + (isFonct ? 0 : totalEngagements)
+                            : Number(notification.montant || 0);
 
                           const totalDimReports = lignes.reduce((sum, l) => sum + Number(l.diminution_report || 0), 0);
                           const totalDimNeufs = lignes.reduce((sum, l) => sum + Number(l.diminution_credit_neuf || 0), 0);
@@ -879,7 +882,7 @@ export default function DashboardDirecteur() {
                                 </div>
                               </td>
                               <td className="px-5 py-4 text-right font-black text-slate-900">
-                                {money(notification.montant || totalCredits)}
+                                {money(totalCredits)}
                               </td>
                             </tr>
                           );
@@ -952,7 +955,7 @@ export default function DashboardDirecteur() {
                     <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
                       <tr>
                         <th className="px-5 py-3">Référence</th>
-                        <th className="px-5 py-3">Domaine</th>
+                        <th className="px-5 py-3">Type de budget</th>
                         <th className="px-5 py-3">Mode d’engagement</th>
                         <th className="px-5 py-3">Ligne budgétaire</th>
                         <th className="px-5 py-3">Objet</th>

@@ -13,6 +13,9 @@ Route::post('/login', [AuthController::class, 'login'])->name('login');
 
 Route::post('/register', [AuthController::class, 'register']);
 
+Route::post('/forgot-password', [\App\Http\Controllers\Api\PasswordResetController::class, 'sendCode'])->middleware('throttle:5,1');
+Route::post('/reset-password', [\App\Http\Controllers\Api\PasswordResetController::class, 'reset'])->middleware('throttle:10,1');
+
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', function (Request $request) {
         return $request->user();

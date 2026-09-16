@@ -450,8 +450,8 @@ export default function DetailsNotification() {
                             </span>
                           </td>
                           <td className="p-3 font-semibold text-slate-800">
-                            {mvt.type_credit === 'NEUF_CC' && 'Crédit Consolidé (CC)'}
-                            {mvt.type_credit === 'NEUF_CPN' && 'Crédit de Paiement Neuf (CPN)'}
+                            {mvt.type_credit === 'NEUF_CC' && 'Crédit consolidé'}
+                            {mvt.type_credit === 'NEUF_CPN' && 'Crédit de paiement neuf'}
                             {mvt.type_credit === 'ENGAGEMENT' && "Crédit d'engagement"}
                             {mvt.type_credit === 'REPORT' && 'Report / Reste à payer'}
                             {mvt.type_credit === 'DIMINUTION_REPORT' && 'Diminution du report / Reste à payer'}

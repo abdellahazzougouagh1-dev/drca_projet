@@ -1,3 +1,5 @@
+import RegistreScroll from '../components/RegistreScroll';
+import RegistreFonctionnement, { fonctionnementRow } from '../components/RegistreFonctionnement';
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../api/axios';
@@ -1785,13 +1787,11 @@ const GestionAoo = () => {
             <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
               {[
                 ['numero_engagement', "N° Fiche d'Engagement", 'text'],
-                ['date_engagement', 'Date de visa / engagement', 'date'],
                 ['credit_ouvert_cp', 'Crédit ouvert CP', 'number'],
                 ['credit_ouvert_ce', 'Crédit ouvert CE', 'number'],
                 ['depenses_anterieures_cp', 'Dépenses antérieures CP', 'number'],
                 ['depenses_anterieures_ce', 'Dépenses antérieures CE', 'number'],
                 ['depenses_credits_engagement', "Dépenses sur crédits d'engagement", 'number'],
-                ['depenses_rap', 'Dépenses sur reste à payer', 'number'],
                 ['montant_depense_neuf', 'Montant de la dépense neuve', 'number'],
                 ['interets_moratoires', 'Intérêts moratoires 1 %', 'number'],
                 ['montant_engager_neuf', 'Montant à engager neuf', 'number'],
@@ -1859,8 +1859,11 @@ const GestionAoo = () => {
               </div>
             ) : (
               <div className="overflow-hidden rounded-2xl border border-slate-200 shadow-sm">
-                <div className="overflow-x-auto">
-                <table className="min-w-[1500px] w-full border-collapse text-xs text-left">
+                <RegistreScroll className="">
+                {registreBudget === 'Fonctionnement' ? (
+<RegistreFonctionnement rows={registreRowsFiltres.map(({ row }) => fonctionnementRow(row, row))} />
+) : (
+<table className="min-w-[1500px] w-full border-collapse text-xs text-left">
                   <thead className="bg-emerald-700 text-[11px] font-extrabold uppercase tracking-wide text-white">
                     <tr>
                       <th className="border-r border-emerald-600 px-4 py-4">N° ordre</th>
@@ -1901,7 +1904,8 @@ const GestionAoo = () => {
                     })}
                   </tbody>
                 </table>
-                </div>
+)}
+                </RegistreScroll>
                 <div className="flex items-center justify-between border-t border-slate-200 bg-slate-50 px-5 py-3 text-xs text-slate-500">
                   <span>Affichage de {registreRowsFiltres.length} ligne(s) d’engagement</span>
                   <span className="rounded-lg bg-white px-3 py-1 font-semibold text-slate-400 shadow-sm">1</span>

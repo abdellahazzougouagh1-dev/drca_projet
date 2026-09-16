@@ -1,3 +1,4 @@
+import RegistreScroll from '../components/RegistreScroll';
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
@@ -418,7 +419,7 @@ export default function RegistreOrdonnancements() {
 
         {/* REGISTRY TABLE - Official Moroccan DRCA Columns */}
         <div className="bg-white rounded-3xl border border-slate-300 shadow-sm overflow-hidden flex flex-col">
-          <div className="overflow-x-auto min-h-[420px]">
+          <RegistreScroll className="min-h-[420px]">
             <table className="w-full text-left border-collapse text-xs md:text-sm">
               
               {/* Header - Styled in Institutional Green */}
@@ -581,7 +582,7 @@ export default function RegistreOrdonnancements() {
               </tbody>
 
             </table>
-          </div>
+          </RegistreScroll>
 
           {/* Table Footer Pagination Info */}
           <div className="px-6 py-3.5 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-3 text-xs text-slate-500">

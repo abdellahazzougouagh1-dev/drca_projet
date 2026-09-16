@@ -1,3 +1,4 @@
+import ForgotPassword from './pages/ForgotPassword';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Dashboard from './pages/Dashboard';
 import NouvelleConsultation from './pages/NouvelleConsultation';
@@ -36,12 +37,13 @@ function App() {
   } catch {
     storedUser = null;
   }
-  const homePath = storedUser?.role === 'directeur' ? '/directeur' : '/consultations';
+  const homePath = storedUser?.role === 'directeur' ? '/directeur' : '/dashboard';
 
   return (
     <Router>
       <Routes>
         <Route path="/login" element={<Login />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/register" element={<Register />} />
 
         <Route
@@ -270,7 +272,7 @@ function App() {
         />
 
         <Route path="/" element={<Navigate to={isAuthenticated ? homePath : '/login'} replace />} />
-        <Route path="*" element={<Navigate to={isAuthenticated ? '/dashboard' : '/login'} replace />} />
+        <Route path="*" element={<Navigate to={isAuthenticated ? homePath : '/login'} replace />} />
       </Routes>
     </Router>
   );

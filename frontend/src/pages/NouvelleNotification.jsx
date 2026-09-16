@@ -196,6 +196,9 @@ export default function NouvelleNotification() {
           if (updated.diminutions) {
             let hasRep = false;
             updated.diminutions = updated.diminutions.map((d) => {
+              if (!(Number(updated.report_amount) > 0) && (d.type_diminution === 'REPORT' || d.type_diminution === 'ENGAGEMENT')) {
+                return { ...d, type_diminution: 'PAIEMENT' };
+              }
               if (d.type_diminution === 'REPORT') {
                 if (hasRep) return { ...d, type_diminution: 'PAIEMENT' };
                 hasRep = true;
@@ -424,7 +427,7 @@ export default function NouvelleNotification() {
       prev.map((l) => {
         if (l.id !== ligneId) return l;
         const hasReportDim = l.diminutions.some((d) => d.type_diminution === 'REPORT');
-        const defaultType = hasReportDim ? 'PAIEMENT' : 'REPORT';
+        const defaultType = hasReportDim || (l.domaine === 'FONCTIONNEMENT' && !(Number(l.report_amount) > 0)) ? 'PAIEMENT' : 'REPORT';
         const calcMontant = getCalculatedDiminutionAmount(l, defaultType);
         return {
           ...l,
@@ -470,7 +473,7 @@ export default function NouvelleNotification() {
               return {
                 ...m,
                 type_diminution: value,
-                montant: calcMontant !== '' ? calcMontant : m.montant,
+                montant: calcMontant,
               };
             }
             return { ...m, [field]: value };
@@ -1156,7 +1159,7 @@ export default function NouvelleNotification() {
                             <h4 className="text-xs font-bold text-[#1e3a8a] uppercase tracking-wide">
                               {l.domaine === 'FONCTIONNEMENT'
                                 ? 'Crédits Neufs (3)'
-                                : "Crédits Neufs (3) (CC / CPN)"}
+                                : "Crédits neufs (3) — Crédit consolidé / Crédit de paiement neuf"}
                             </h4>
                             <button
                               type="button"
@@ -1197,7 +1200,7 @@ export default function NouvelleNotification() {
                                         : 'bg-slate-50 text-slate-700 border-slate-200'
                                         }`}
                                     >
-                                      CC
+                                      Crédit consolidé
                                     </button>
                                     <button
                                       type="button"
@@ -1209,7 +1212,7 @@ export default function NouvelleNotification() {
                                         : 'bg-slate-50 text-slate-700 border-slate-200'
                                         }`}
                                     >
-                                      CPN
+                                      Crédit de paiement neuf
                                     </button>
                                   </div>
                                 </div>
@@ -1330,12 +1333,18 @@ export default function NouvelleNotification() {
                                   step="0.01"
                                   min="0"
                                   placeholder="Auto 1% du crédit"
-                                  value={dim.montant}
+                                  value={l.domaine === 'FONCTIONNEMENT' ? getCalculatedDiminutionAmount(l, dim.type_diminution) : dim.montant}
+                                  readOnly={l.domaine === 'FONCTIONNEMENT'}
                                   onChange={(e) =>
                                     updateDiminution(l.id, dim.id, 'montant', e.target.value)
                                   }
                                   className="w-full p-2 text-xs border rounded-lg text-right font-bold text-amber-800 bg-amber-50/40 focus:ring-1 focus:ring-blue-500"
                                 />
+                                {l.domaine === 'FONCTIONNEMENT' && (
+                                  <p className="mt-1 text-[11px] text-slate-500">
+                                    {dim.type_diminution === 'REPORT' ? '1 % du reste à payer saisi.' : '1 % de la somme des crédits neufs saisis.'}
+                                  </p>
+                                )}
                               </div>
                               <div className="md:col-span-1 flex justify-end pt-3 md:pt-4">
                                 <button

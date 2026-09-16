@@ -5,6 +5,7 @@ import { numberToFrenchWords } from '../../utils/numberToWords';
 import { resolveOrdreDocument } from '../../utils/ordonnancementDocs';
 
 export default function DocumentPreviewModal({ isOpen, onClose, ordonnancement, ordre, docType = 'op' }) {
+  const [downloading, setDownloading] = useState(false);
   if (!isOpen || !ordonnancement) return null;
 
   const isRas = docType === 'op_ras' || docType === 'op_ras_is' || docType === 'op_ras_tva' || (docType === 'op' && (ordre?.type_mouvement?.toLowerCase().includes('retenue') || ordre?.creance?.toLowerCase().includes('retenue')));
@@ -32,19 +33,22 @@ export default function DocumentPreviewModal({ isOpen, onClose, ordonnancement, 
   const rib = currentOrdre?.rib_compte || ordonnancement.fournisseur?.rib || '310 810 100 002 470 105 200 152';
   const modePaiement = isRas ? (currentOrdre?.mode_paiement || 'TELEPAIEMENT') : (currentOrdre?.mode_paiement || 'VIREMENT');
 
-  const [downloading, setDownloading] = useState(false);
 
   const downloadPdf = async () => {
     try {
+      if (!ordonnancement.id) {
+        alert('Enregistrez d’abord l’ordonnancement pour télécharger le PDF. L’aperçu et l’impression restent disponibles.');
+        return;
+      }
       setDownloading(true);
-      const endpoint = `/ordonnancements/${ordonnancement.id}/documents/${docType}${currentOrdre ? `/${currentOrdre.id}` : ''}`;
+      const endpoint = `/ordonnancements/${ordonnancement.id}/documents/${docType}${currentOrdre?.id ? `/${currentOrdre.id}` : ''}`;
       const res = await api.get(endpoint, { responseType: 'blob' });
       const mimeType = res.data.type || res.headers['content-type'] || 'application/pdf';
       const fileUrl = window.URL.createObjectURL(new Blob([res.data], { type: mimeType }));
       const link = document.createElement('a');
       link.href = fileUrl;
       const docLabel = docType === 'etat_liquidation' ? 'Etat_Liquidation' : (docType === 'op_ras_is' ? 'OP_RAS_IS' : (docType === 'op_ras_tva' ? 'OP_RAS_TVA' : (docType === 'op_ras' ? 'OP_RAS' : docType.toUpperCase())));
-      const safeNum = (currentOrdre?.num_ordre || ordonnancement.num_ordonnancement || ordonnancement.id).replace(/[^a-zA-Z0-9_\-]/g, '_');
+      const safeNum = String(currentOrdre?.num_ordre || ordonnancement.num_ordonnancement || ordonnancement.id).replace(/[^a-zA-Z0-9_\-]/g, '_');
       link.setAttribute('download', `${docLabel}_${safeNum}.pdf`);
       document.body.appendChild(link);
       link.click();
@@ -68,7 +72,13 @@ export default function DocumentPreviewModal({ isOpen, onClose, ordonnancement, 
   }).format(val || 0) + ' DH';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 backdrop-blur-md p-2 md:p-4 overflow-y-auto">
+    <div className="ordre-preview fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/80 backdrop-blur-md p-2 md:p-4 overflow-y-auto">
+      <style>{`@media print {
+        body * { visibility: hidden !important; }
+        .ordre-print-content, .ordre-print-content * { visibility: visible !important; }
+        .ordre-preview, .ordre-preview > div { position: absolute !important; inset: 0 !important; height: auto !important; max-height: none !important; overflow: visible !important; display: block !important; padding: 0 !important; border: none !important; box-shadow: none !important; }
+        .ordre-print-content { position: absolute !important; top: 0; left: 0; width: 100%; overflow: visible !important; padding: 0 !important; }
+      }`}</style>
       <div className="bg-white w-full max-w-6xl rounded-3xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col h-[94vh] animate-in fade-in zoom-in duration-200">
 
         {/* Modal Header */}
@@ -120,7 +130,7 @@ export default function DocumentPreviewModal({ isOpen, onClose, ordonnancement, 
         </div>
 
         {/* Modal Body - Official Document Rendering Full Width */}
-        <div className="p-6 md:p-10 overflow-y-auto bg-white flex-1 text-slate-900 font-sans text-sm">
+        <div className="ordre-print-content p-6 md:p-10 overflow-y-auto bg-white flex-1 text-slate-900 font-sans text-sm">
           <div className="w-full max-w-5xl mx-auto">
 
             {/* Top Org Header with Official Enlarged Logos */}

@@ -1384,7 +1384,6 @@ const GestionMarches = () => {
               <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                 {[
                   ['num_engagement', "N° Fiche d'Engagement", 'text'],
-                  ['date_engagement', 'Date de visa / engagement', 'date'],
                   ['reference_engagement', 'Référence du marché', 'text'],
                   ['article_budget', 'Article (ART)', 'text'],
                   ['paragraphe_budget', 'Paragraphe (PAR)', 'text'],

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 import { Search, Plus, Eye, Edit2, Trash2, Calendar, DollarSign, FileText, AlertCircle, Loader2 } from 'lucide-react';
@@ -6,7 +6,7 @@ import { Search, Plus, Eye, Edit2, Trash2, Calendar, DollarSign, FileText, Alert
 const ListeAoo = () => {
   const navigate = useNavigate();
   const [aoos, setAoos] = useState([]);
-  const [filteredAoos, setFilteredAoos] = useState([]);
+  const [budgetType, setBudgetType] = useState('Investissement');
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
@@ -16,9 +16,6 @@ const ListeAoo = () => {
     fetchAoos();
   }, []);
 
-  useEffect(() => {
-    filterAoos();
-  }, [searchTerm, aoos]);
 
   const fetchAoos = async () => {
     try {
@@ -34,22 +31,22 @@ const ListeAoo = () => {
     }
   };
 
-  const filterAoos = () => {
-    if (!searchTerm.trim()) {
-      setFilteredAoos(aoos);
-      return;
-    }
-
-    const term = searchTerm.toLowerCase();
-    const filtered = aoos.filter(aoo =>
-      aoo.num_aoo?.toLowerCase().includes(term) ||
-      aoo.objet?.toLowerCase().includes(term) ||
-      aoo.statut?.toLowerCase().includes(term) ||
-      aoo.etat_avancement?.toLowerCase().includes(term)
-    );
-
-    setFilteredAoos(filtered);
-  };
+  const aoosByBudget = useMemo(() => {
+    const groups = { Investissement: [], Fonctionnement: [], 'Non renseigné': [] };
+    aoos.forEach((aoo) => {
+      const value = String(aoo.type_budget || '').trim().toLowerCase();
+      const budget = value === 'investissement' ? 'Investissement'
+        : value === 'fonctionnement' ? 'Fonctionnement' : 'Non renseigné';
+      groups[budget].push(aoo);
+    });
+    return groups;
+  }, [aoos]);
+  const budgetAoos = aoosByBudget[budgetType];
+  const filteredAoos = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
+    return budgetAoos.filter((aoo) => !term || [aoo.num_aoo, aoo.objet, aoo.statut, aoo.etat_avancement]
+      .some((value) => String(value || '').toLowerCase().includes(term)));
+  }, [budgetAoos, searchTerm]);
 
   const handleDelete = async (id) => {
     if (!window.confirm('Êtes-vous sûr de vouloir supprimer cet AOO ?')) {
@@ -119,12 +116,25 @@ const ListeAoo = () => {
           </div>
         )}
 
+        {!loading && (
+          <div role="group" aria-label="Type de budget des appels d’offres" className="mb-5 flex flex-wrap gap-2 rounded-2xl border border-slate-200 bg-white p-3">
+            {Object.entries(aoosByBudget).filter(([budget, items]) => budget !== 'Non renseigné' || items.length > 0 || budgetType === budget).map(([budget, items]) => (
+              <button key={budget} type="button" aria-pressed={budgetType === budget} onClick={() => setBudgetType(budget)}
+                className={`inline-flex items-center gap-3 rounded-xl border px-4 py-2.5 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 ${budgetType === budget ? 'border-teal-700 bg-teal-50 text-teal-800' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'}`}>
+                {budget}
+                <span className={`min-w-6 rounded-md px-2 py-0.5 text-center text-xs ${budgetType === budget ? 'bg-teal-100 text-teal-800' : 'bg-slate-100 text-slate-600'}`}>{items.length}</span>
+              </button>
+            ))}
+          </div>
+        )}
+
         {/* Controls */}
         <div className="mb-6 flex flex-col md:flex-row gap-4 items-center justify-between">
           <div className="flex-1 relative">
             <Search size={20} className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400" />
             <input
               type="text"
+              aria-label="Rechercher un appel d’offres dans le budget sélectionné"
               placeholder="Rechercher par N° AOO, objet, statut..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -226,7 +236,7 @@ const ListeAoo = () => {
             ) : (
               <div className="p-12 text-center">
                 <FileText size={48} className="mx-auto text-slate-300 mb-4" />
-                <p className="text-slate-500 text-lg">Aucun AOO trouvé</p>
+                <p className="text-slate-500 text-lg">{budgetAoos.length === 0 ? `Aucun appel d’offres dans le budget ${budgetType.toLowerCase()}.` : 'Aucun appel d’offres ne correspond à cette recherche.'}</p>
                 {searchTerm && (
                   <p className="text-slate-400 text-sm mt-2">Essayez une autre recherche</p>
                 )}
@@ -238,7 +248,7 @@ const ListeAoo = () => {
         {/* Summary */}
         {!loading && (
           <div className="mt-6 p-4 bg-slate-100 rounded-lg text-sm text-slate-600">
-            Affichage : <strong>{filteredAoos.length}</strong> / <strong>{aoos.length}</strong> AOO
+            Affichage : <strong>{filteredAoos.length}</strong> / <strong>{budgetAoos.length}</strong> AOO · {budgetType}
           </div>
         )}
       </div>
