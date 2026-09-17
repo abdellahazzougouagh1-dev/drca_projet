@@ -49,4 +49,21 @@ class UserController extends Controller
 
         return response()->json(null, 204);
     }
+    public function index()
+    {
+        return response()->json(User::orderBy('created_at', 'desc')->get());
+    }
+
+    // Basculer l'état Actif / Inactif
+    public function toggleStatus($id)
+    {
+        $user = User::findOrFail($id);
+        $user->is_active = !$user->is_active;
+        $user->save();
+
+        return response()->json([
+            'message' => 'Statut mis à jour avec succès.',
+            'user' => $user
+        ]);
+    }
 }

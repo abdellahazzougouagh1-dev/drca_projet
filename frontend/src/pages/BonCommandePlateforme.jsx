@@ -6,6 +6,7 @@ import api from '../api/axios';
 import * as XLSX from 'xlsx';
 import UserMenu from '../components/UserMenu';
 import './BonCommandePlateforme.css';
+import LigneBudgetaireSelector from '../components/LigneBudgetaireSelector';
 import {
   ArrowLeft,
   ArrowRight,
@@ -354,8 +355,6 @@ const BonCommandePlateforme = () => {
   const [activePhase, setActivePhase] = useState(() => {
     const searchParams = new URLSearchParams(window.location.search);
     const savedPhase = searchParams.get('phase') || localStorage.getItem('drca_active_phase') || 'consultation';
-    // Ancienne valeur conservée avant que l'ordonnancement devienne un module
-    // partagé : ouvrir le BC sur sa dernière phase interne, sans redirection.
     return savedPhase === 'Ordonnancement' ? 'liquidation' : savedPhase;
   });
 
@@ -366,7 +365,6 @@ const BonCommandePlateforme = () => {
     return searchParams.get('doc') || localStorage.getItem('drca_selected_doc_id') || null;
   });
 
-  // Formulaire minimal de création (phase Consultation)
   const [formData, setFormData] = useState({
     numero_consultation: '',
     numero_decision: '',
@@ -394,12 +392,11 @@ const BonCommandePlateforme = () => {
   const [downloading, setDownloading] = useState(null);
   const [documentForms, setDocumentForms] = useState({});
   const [formErrors, setFormErrors] = useState({});
-  const [savedDocumentIds, setSavedDocumentIds] = useState(new Set()); // documents enregistrés en BD
+  const [savedDocumentIds, setSavedDocumentIds] = useState(new Set());
   const [searchingBonCommande, setSearchingBonCommande] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
-  // Synchronisation des états actifs dans le localStorage
   useEffect(() => {
     if (savedConsultation?.id) {
       localStorage.setItem('drca_selected_consultation_id', String(savedConsultation.id));
@@ -434,7 +431,6 @@ const BonCommandePlateforme = () => {
     }
   }, [selectedDocumentId]);
 
-  // --- Base de consultations (liste) ---
   const [consultationsList, setConsultationsList] = useState([]);
   const [consultationsLoading, setConsultationsLoading] = useState(false);
   const [consultationsError, setConsultationsError] = useState('');
@@ -464,7 +460,6 @@ const BonCommandePlateforme = () => {
     );
   }, [budgetConsultations, consultationSearchTerm]);
 
-  // --- Référentiel des membres de la commission ---
   const [membresCatalog, setMembresCatalog] = useState([]);
   const [nouveauMembreForm, setNouveauMembreForm] = useState({ membre_id: '', qualite: 'Président' });
   const [isQuickMembreModalOpen, setIsQuickMembreModalOpen] = useState(false);
@@ -472,7 +467,6 @@ const BonCommandePlateforme = () => {
   const [quickMembreSaving, setQuickMembreSaving] = useState(false);
   const [quickMembreError, setQuickMembreError] = useState(null);
 
-  // --- Modal de modification de consultation ---
   const [isEditConsultationModalOpen, setIsEditConsultationModalOpen] = useState(false);
   const [editingConsultationData, setEditingConsultationData] = useState(null);
   const [editingPrestations, setEditingPrestations] = useState([]);
@@ -498,7 +492,6 @@ const BonCommandePlateforme = () => {
         setConsultationsList(sorted);
         setConsultationsError('');
 
-        // Déterminer la consultation à sélectionner (state router, URL query param, ou localStorage)
         const searchParams = new URLSearchParams(location.search);
         const urlConsultationId = searchParams.get('consultation_id') || searchParams.get('consultationId');
         const targetId = location.state?.autoSelectId || urlConsultationId || localStorage.getItem('drca_selected_consultation_id');
@@ -510,8 +503,9 @@ const BonCommandePlateforme = () => {
             setSavedConsultation(found);
             localStorage.setItem('drca_selected_consultation_id', String(found.id));
             const retrievedIntitule = found.intitule || found.type_prestation || found.objet_consultation;
-          if (retrievedIntitule) {
-            handleDocumentFieldChange('bon_commande', 'intitule', retrievedIntitule);
+            if (retrievedIntitule) {
+              handleDocumentFieldChange('bon_commande', 'intitule', retrievedIntitule);
+            }
           }
         }
 
@@ -519,7 +513,7 @@ const BonCommandePlateforme = () => {
           const consultationToEdit = sorted.find((c) => String(c.id) === String(targetEditId));
           if (consultationToEdit) openEditConsultationModal(consultationToEdit);
         }
-        }
+
       } catch (err) {
         setConsultationsError("Impossible de charger la liste des consultations.");
       } finally {
@@ -654,7 +648,6 @@ const BonCommandePlateforme = () => {
         await api.post(`/consultations/${editingConsultationData.id}/prestations`, { prestations: cleanPrestations });
       }
 
-      // Re-fetch la liste
       const listRes = await api.get('/consultations');
       const sorted = Array.isArray(listRes.data) ? [...listRes.data].sort((a, b) => b.id - a.id) : [];
       setConsultationsList(sorted);
@@ -1120,7 +1113,6 @@ const BonCommandePlateforme = () => {
       // ── Champs OI / OP / OV ────────────────────────────────────────────────
       else if (field.name === 'numero_oi') defaults.numero_oi = '';
       else if (field.name === 'numero_op') {
-        // Pour ordre_virement, reprend le numéro OP déjà saisi dans ordre_paiement
         defaults.numero_op = documentForms.ordre_paiement?.numero_op || '';
       }
       else if (field.name === 'numero_ov') defaults.numero_ov = '';
@@ -1134,7 +1126,6 @@ const BonCommandePlateforme = () => {
           : (savedConsultation?.numero_consultation ? `Bon de commande N° ${savedConsultation.numero_consultation}` : '');
       }
       else if (field.name === 'montant_oi' || field.name === 'montant_op' || field.name === 'montant_ov') {
-        // Calcul du montant TTC depuis les prestations
         const srcP = savedConsultation?.prestations?.length > 0 ? savedConsultation.prestations : prestations.filter(p => p.designation?.trim());
         const ttc = srcP.reduce((sum, p) => {
           const ht = (Number(p.quantite) || 0) * (Number(p.prix_unitaire_ht) || 0);
@@ -1183,12 +1174,10 @@ const BonCommandePlateforme = () => {
     setError('');
   };
 
-  // Auto-remplissage automatique dès qu'une consultation est sélectionnée
   useEffect(() => {
     if (savedConsultation) {
       allDocuments.forEach((doc) => autoFillDocument(doc.id));
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [savedConsultation?.id]);
 
   const validateDocumentForm = (documentId) => {
@@ -1256,7 +1245,7 @@ const BonCommandePlateforme = () => {
           });
 
           if (hasEmptyCell || hasInvalidPrice) {
-            errors[field.name] = checkPrice
+            errors[field.name] = checkPrice ? `Veuillez remplir tous les champs et P.U HT > 0` : `Veuillez remplir tous les champs`;
             missingLabels.push(`${field.label} (Tous les champs et P.U HT > 0)`);
           }
         } else if (val === undefined || val === null || String(val).trim() === '') {
@@ -1265,7 +1254,6 @@ const BonCommandePlateforme = () => {
         }
       }
 
-      // Validation spécifique du format des données de société (RIB, ICE, IF, RC, CNSS)
       const fieldValue = values[field.name];
       if (fieldValue && typeof fieldValue === 'string' && fieldValue.trim() !== '') {
         const cleanVal = fieldValue.replace(/\s/g, '');
@@ -1355,7 +1343,6 @@ const BonCommandePlateforme = () => {
       }
     }
 
-    // Convertir délai en jours → affichage mois dans le PDF
     if (values.delai_livraison) {
       const jours = parseInt(values.delai_livraison, 10);
       if (!isNaN(jours) && jours > 0) {
@@ -1366,10 +1353,8 @@ const BonCommandePlateforme = () => {
       }
     }
 
-    // Aplatir les lignes de consistance de prestation
     if (Array.isArray(values.consistance_lignes) && values.consistance_lignes.length > 0) {
       data.consistance_lignes = values.consistance_lignes;
-      // Pour compatibilité avec les champs individuels (premier élément)
       const first = values.consistance_lignes[0];
       if (first) {
         data.numero_prix = data.numero_prix || first.numero_prix;
@@ -1552,7 +1537,6 @@ const BonCommandePlateforme = () => {
       if (values.s_lig !== undefined) updatePayload.s_lig = values.s_lig;
     }
 
-    // Récupérer et associer l'entreprise retenue (attributaire / titulaire_nom) en BD
     const chosenAttributaire = values.attributaire || values.titulaire_nom || documentForms['pv_ouverture_attribution']?.attributaire || documentForms['bon_commande']?.titulaire_nom;
     if (chosenAttributaire && typeof chosenAttributaire === 'string' && chosenAttributaire.trim() !== '') {
       try {
@@ -1604,7 +1588,6 @@ const BonCommandePlateforme = () => {
         }
       }
 
-      // Sauvegarde des informations spécifiques de la commission de réception en base de données
       if (documentId === 'decision_commission_reception' || documentId === 'pv_reception') {
         const recData = {
           numero_bc: values.numero_bc !== undefined ? values.numero_bc : (documentForms.decision_commission_reception?.numero_bc || ''),
@@ -1631,7 +1614,6 @@ const BonCommandePlateforme = () => {
         }
       }
 
-      // Synchroniser les lignes du tableau "Consistance de la prestation" en base de données
       if (Array.isArray(values.consistance_lignes) && values.consistance_lignes.length > 0) {
         const prestationsPayload = values.consistance_lignes.map((l) => ({
           numero_prix: l.numero_prix || '1',
@@ -1728,7 +1710,6 @@ const BonCommandePlateforme = () => {
       setDownloading('archive');
       setError('');
 
-      // Construire les données saisies réelles de chaque document de la phase
       const docsToExport = currentPhase ? (documentsByPhase[currentPhase] || []) : allDocuments;
       const allDocsData = {};
       docsToExport.forEach((doc) => {
@@ -1860,7 +1841,6 @@ const BonCommandePlateforme = () => {
                 </li>
               );
             })}
-
           </ul>
         </nav>
 
@@ -1972,11 +1952,10 @@ const BonCommandePlateforme = () => {
           )}
           {error && (
             <div className="p-4 rounded-2xl bg-red-50 border border-red-200 text-red-800 font-semibold flex items-center gap-3 shadow-sm">
+              <AlertCircle size={20} />
               {error}
             </div>
           )}
-
-
 
           {activePhase === 'registre' && !selectedDocument && (
             <div className="bc-panel bc-register bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
@@ -1985,7 +1964,6 @@ const BonCommandePlateforme = () => {
                   <h2 className="text-xl font-semibold text-slate-900 flex items-center gap-2">
                     <FileSpreadsheet className="text-blue-700" /> Registre des engagements
                   </h2>
-                  
                 </div>
                 <span className="px-3 py-1.5 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-xs font-bold whitespace-nowrap">
                   {consultationsList.filter((consultation) => consultation.registre_engagement && consultation.type_budget === registreBudget).length} ligne(s)
@@ -2029,100 +2007,100 @@ const BonCommandePlateforme = () => {
               ) : (
                 <div className="overflow-hidden rounded-b-2xl border-t border-slate-200">
                   <RegistreScroll className="">
-                  {registreBudget === 'Fonctionnement' ? (
-<RegistreFonctionnement rows={consultationsList.filter((c) => c.registre_engagement && c.type_budget === registreBudget).map((c) => fonctionnementRow(c.registre_engagement, c))} onOpen={(row) => {
-  const consultation = consultationsList.find((c) => c.registre_engagement?.id === row.id);
-  if (consultation) {
-    selectConsultation(consultation);
-    setActivePhase('engagement');
-    setSelectedDocumentId('fiche_engagement');
-  }
-}} />
-) : (
-<table className="min-w-[2450px] w-full text-left border-collapse text-xs">
-                    <thead>
-                      <tr className="border-b border-blue-700 bg-blue-700 text-[11px] font-semibold uppercase tracking-wide text-white">
-                        <th className="border-r border-blue-600 px-4 py-4">N° d’ordre général</th>
-                        <th className="border-r border-blue-600 px-4 py-4">N° d’ordre dans la rubrique</th>
-                        <th className="border-r border-blue-600 px-4 py-4">Date d’engagement</th>
-                        <th className="border-r border-blue-600 px-4 py-4">Mode d’engagement</th>
-                        <th className="border-r border-blue-600 px-4 py-4">Référence</th>
-                        <th className="border-r border-blue-600 px-4 py-4">Référence 2</th>
-                        <th className="border-r border-blue-600 px-4 py-4">Budget</th>
-                        <th className="border-r border-blue-600 px-4 py-4">Code</th>
-                        <th className="border-r border-blue-600 px-3 py-4">ART</th>
-                        <th className="border-r border-blue-600 px-3 py-4">PAR</th>
-                        <th className="border-r border-blue-600 px-3 py-4">LIG</th>
-                        <th className="border-r border-blue-600 px-3 py-4">S/LIG</th>
-                        <th className="min-w-[320px] border-r border-blue-600 px-4 py-4">Intitulé</th>
-                        <th className="border-r border-blue-600 px-4 py-4">Crédit ouvert CP</th>
-                        <th className="border-r border-blue-600 px-4 py-4">Crédit ouvert CE</th>
-                        <th className="border-r border-blue-600 px-4 py-4">Dépenses engagées antérieurement CE</th>
-                        <th className="border-r border-blue-600 px-4 py-4">Dépenses engagées antérieurement CP</th>
-                        <th className="border-r border-blue-600 px-4 py-4">Dépenses sur crédits d’engagement</th>
-                        <th className="border-r border-blue-600 px-4 py-4">Dépenses sur crédits consolidés</th>
-                        <th className="border-r border-blue-600 px-4 py-4">Dépenses sur reste à payer</th>
-                        <th className="border-r border-blue-600 px-4 py-4">Montant de la dépense neuve</th>
-                        <th className="border-r border-blue-600 px-4 py-4">Intérêts moratoires 1 %</th>
-                        <th className="border-r border-blue-600 px-4 py-4">Montant à engager neuf</th>
-                        <th className="border-r border-blue-600 px-4 py-4">Objet</th>
-                        <th className="border-r border-blue-600 px-4 py-4">Bénéficiaire</th>
-                        <th className="px-4 py-4 text-right">Action</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                      {consultationsList.filter((consultation) => consultation.registre_engagement && consultation.type_budget === registreBudget).map((consultation) => {
-                        const row = consultation.registre_engagement;
-                        const formatDate = (value) => value ? new Date(value).toLocaleDateString('fr-FR') : '-';
-                        const formatMoney = (value) => value === null || value === undefined || value === ''
-                          ? '-'
-                          : Number(value).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-                        return (
-                          <tr key={row.id} className="hover:bg-blue-50/40 transition-colors">
-                            <td className="px-4 py-3 whitespace-nowrap font-bold text-slate-700">{row.numero_ordre || '-'}</td>
-                            <td className="px-4 py-3 whitespace-nowrap font-bold text-blue-700">{row.numero_rubrique || '-'}</td>
-                            <td className="px-4 py-3 whitespace-nowrap">{formatDate(row.date_engagement)}</td>
-                            <td className="px-4 py-3 whitespace-nowrap font-semibold">{row.mode_engagement || '-'}</td>
-                            <td className="px-4 py-3 whitespace-nowrap font-bold text-blue-700">{row.reference || '-'}</td>
-                            <td className="px-4 py-3 whitespace-nowrap">{row.reference_2 || '-'}</td>
-                            <td className="px-4 py-3 whitespace-nowrap">{row.budget || '-'}</td>
-                            <td className="px-4 py-3 whitespace-nowrap">{row.code || '-'}</td>
-                            <td className="px-3 py-3">{row.art || '-'}</td>
-                            <td className="px-3 py-3">{row.par || '-'}</td>
-                            <td className="px-3 py-3">{row.lig || '-'}</td>
-                            <td className="px-3 py-3">{row.s_lig || '-'}</td>
-                            <td className="px-4 py-3 min-w-[320px] max-w-[440px] whitespace-normal break-words leading-relaxed" title={row.intitule || ''}>{row.intitule || '-'}</td>
-                            <td className="px-4 py-3 text-right whitespace-nowrap">{formatMoney(row.credit_ouvert_cp)}</td>
-                            <td className="px-4 py-3 text-right whitespace-nowrap">{formatMoney(row.credit_ouvert_ce)}</td>
-                            <td className="px-4 py-3 text-right whitespace-nowrap">{formatMoney(row.depenses_anterieures_ce)}</td>
-                            <td className="px-4 py-3 text-right whitespace-nowrap">{formatMoney(row.depenses_anterieures_cp)}</td>
-                            <td className="px-4 py-3 text-right whitespace-nowrap">{formatMoney(row.depenses_credits_engagement)}</td>
-                            <td className="px-4 py-3 text-right whitespace-nowrap">{formatMoney(row.depenses_credits_consolides)}</td>
-                            <td className="px-4 py-3 text-right whitespace-nowrap">{formatMoney(row.depenses_rap)}</td>
-                            <td className="px-4 py-3 text-right whitespace-nowrap">{formatMoney(row.montant_depense_neuf)}</td>
-                            <td className="px-4 py-3 text-right whitespace-nowrap">{formatMoney(row.interets_moratoires)}</td>
-                            <td className="px-4 py-3 text-right whitespace-nowrap">{formatMoney(row.montant_engager_neuf)}</td>
-                            <td className="px-4 py-3 max-w-[240px] truncate" title={row.objet || ''}>{row.objet || '-'}</td>
-                            <td className="px-4 py-3 max-w-[180px] truncate" title={row.beneficiaire || ''}>{row.beneficiaire || '-'}</td>
-                            <td className="px-4 py-3 text-right whitespace-nowrap">
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  selectConsultation(consultation);
-                                  setActivePhase('engagement');
-                                  setSelectedDocumentId('fiche_engagement');
-                                }}
-                                className="px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold inline-flex items-center gap-1.5"
-                              >
-                                <Eye size={14} /> Voir la fiche
-                              </button>
-                            </td>
+                    {registreBudget === 'Fonctionnement' ? (
+                      <RegistreFonctionnement rows={consultationsList.filter((c) => c.registre_engagement && c.type_budget === registreBudget).map((c) => fonctionnementRow(c.registre_engagement, c))} onOpen={(row) => {
+                        const consultation = consultationsList.find((c) => c.registre_engagement?.id === row.id);
+                        if (consultation) {
+                          selectConsultation(consultation);
+                          setActivePhase('engagement');
+                          setSelectedDocumentId('fiche_engagement');
+                        }
+                      }} />
+                    ) : (
+                      <table className="min-w-[2450px] w-full text-left border-collapse text-xs">
+                        <thead>
+                          <tr className="border-b border-blue-700 bg-blue-700 text-[11px] font-semibold uppercase tracking-wide text-white">
+                            <th className="border-r border-blue-600 px-4 py-4">N° d’ordre général</th>
+                            <th className="border-r border-blue-600 px-4 py-4">N° d’ordre dans la rubrique</th>
+                            <th className="border-r border-blue-600 px-4 py-4">Date d’engagement</th>
+                            <th className="border-r border-blue-600 px-4 py-4">Mode d’engagement</th>
+                            <th className="border-r border-blue-600 px-4 py-4">Référence</th>
+                            <th className="border-r border-blue-600 px-4 py-4">Référence 2</th>
+                            <th className="border-r border-blue-600 px-4 py-4">Budget</th>
+                            <th className="border-r border-blue-600 px-4 py-4">Code</th>
+                            <th className="border-r border-blue-600 px-3 py-4">ART</th>
+                            <th className="border-r border-blue-600 px-3 py-4">PAR</th>
+                            <th className="border-r border-blue-600 px-3 py-4">LIG</th>
+                            <th className="border-r border-blue-600 px-3 py-4">S/LIG</th>
+                            <th className="min-w-[320px] border-r border-blue-600 px-4 py-4">Intitulé</th>
+                            <th className="border-r border-blue-600 px-4 py-4">Crédit ouvert CP</th>
+                            <th className="border-r border-blue-600 px-4 py-4">Crédit ouvert CE</th>
+                            <th className="border-r border-blue-600 px-4 py-4">Dépenses engagées antérieurement CE</th>
+                            <th className="border-r border-blue-600 px-4 py-4">Dépenses engagées antérieurement CP</th>
+                            <th className="border-r border-blue-600 px-4 py-4">Dépenses sur crédits d’engagement</th>
+                            <th className="border-r border-blue-600 px-4 py-4">Dépenses sur crédits consolidés</th>
+                            <th className="border-r border-blue-600 px-4 py-4">Dépenses sur reste à payer</th>
+                            <th className="border-r border-blue-600 px-4 py-4">Montant de la dépense neuve</th>
+                            <th className="border-r border-blue-600 px-4 py-4">Intérêts moratoires 1 %</th>
+                            <th className="border-r border-blue-600 px-4 py-4">Montant à engager neuf</th>
+                            <th className="border-r border-blue-600 px-4 py-4">Objet</th>
+                            <th className="border-r border-blue-600 px-4 py-4">Bénéficiaire</th>
+                            <th className="px-4 py-4 text-right">Action</th>
                           </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-)}
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {consultationsList.filter((consultation) => consultation.registre_engagement && consultation.type_budget === registreBudget).map((consultation) => {
+                            const row = consultation.registre_engagement;
+                            const formatDate = (value) => value ? new Date(value).toLocaleDateString('fr-FR') : '-';
+                            const formatMoney = (value) => value === null || value === undefined || value === ''
+                              ? '-'
+                              : Number(value).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                            return (
+                              <tr key={row.id} className="hover:bg-blue-50/40 transition-colors">
+                                <td className="px-4 py-3 whitespace-nowrap font-bold text-slate-700">{row.numero_ordre || '-'}</td>
+                                <td className="px-4 py-3 whitespace-nowrap font-bold text-blue-700">{row.numero_rubrique || '-'}</td>
+                                <td className="px-4 py-3 whitespace-nowrap">{formatDate(row.date_engagement)}</td>
+                                <td className="px-4 py-3 whitespace-nowrap font-semibold">{row.mode_engagement || '-'}</td>
+                                <td className="px-4 py-3 whitespace-nowrap font-bold text-blue-700">{row.reference || '-'}</td>
+                                <td className="px-4 py-3 whitespace-nowrap">{row.reference_2 || '-'}</td>
+                                <td className="px-4 py-3 whitespace-nowrap">{row.budget || '-'}</td>
+                                <td className="px-4 py-3 whitespace-nowrap">{row.code || '-'}</td>
+                                <td className="px-3 py-3">{row.art || '-'}</td>
+                                <td className="px-3 py-3">{row.par || '-'}</td>
+                                <td className="px-3 py-3">{row.lig || '-'}</td>
+                                <td className="px-3 py-3">{row.s_lig || '-'}</td>
+                                <td className="px-4 py-3 min-w-[320px] max-w-[440px] whitespace-normal break-words leading-relaxed" title={row.intitule || ''}>{row.intitule || '-'}</td>
+                                <td className="px-4 py-3 text-right whitespace-nowrap">{formatMoney(row.credit_ouvert_cp)}</td>
+                                <td className="px-4 py-3 text-right whitespace-nowrap">{formatMoney(row.credit_ouvert_ce)}</td>
+                                <td className="px-4 py-3 text-right whitespace-nowrap">{formatMoney(row.depenses_anterieures_ce)}</td>
+                                <td className="px-4 py-3 text-right whitespace-nowrap">{formatMoney(row.depenses_anterieures_cp)}</td>
+                                <td className="px-4 py-3 text-right whitespace-nowrap">{formatMoney(row.depenses_credits_engagement)}</td>
+                                <td className="px-4 py-3 text-right whitespace-nowrap">{formatMoney(row.depenses_credits_consolides)}</td>
+                                <td className="px-4 py-3 text-right whitespace-nowrap">{formatMoney(row.depenses_rap)}</td>
+                                <td className="px-4 py-3 text-right whitespace-nowrap">{formatMoney(row.montant_depense_neuf)}</td>
+                                <td className="px-4 py-3 text-right whitespace-nowrap">{formatMoney(row.interets_moratoires)}</td>
+                                <td className="px-4 py-3 text-right whitespace-nowrap">{formatMoney(row.montant_engager_neuf)}</td>
+                                <td className="px-4 py-3 max-w-[240px] truncate" title={row.objet || ''}>{row.objet || '-'}</td>
+                                <td className="px-4 py-3 max-w-[180px] truncate" title={row.beneficiaire || ''}>{row.beneficiaire || '-'}</td>
+                                <td className="px-4 py-3 text-right whitespace-nowrap">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      selectConsultation(consultation);
+                                      setActivePhase('engagement');
+                                      setSelectedDocumentId('fiche_engagement');
+                                    }}
+                                    className="px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold inline-flex items-center gap-1.5"
+                                  >
+                                    <Eye size={14} /> Voir la fiche
+                                  </button>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    )}
                   </RegistreScroll>
                   <div className="flex items-center justify-between border-t border-slate-200 bg-slate-50 px-5 py-3 text-xs text-slate-500">
                     <span>Affichage de {consultationsList.filter((consultation) => consultation.registre_engagement && consultation.type_budget === registreBudget).length} ligne(s) d’engagement</span>
@@ -2135,8 +2113,6 @@ const BonCommandePlateforme = () => {
 
           {activePhase === 'consultation' && !selectedDocument && (
             <div>
-
-
               <div className="bc-section-heading flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
                 <div>
                   <h3 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
@@ -2480,1054 +2456,1049 @@ const BonCommandePlateforme = () => {
                       </div>
                     </div>
                     <div className="bc-fields grid grid-cols-1 md:grid-cols-2 gap-5">
-                {section.fields.map((field) => {
-                  if (field.condition && !field.condition(documentForms[selectedDocument.id])) {
-                    return null;
-                  }
-
-                  if (field.name === 'motif_ajournement') {
-                    const currentNature = documentForms[selectedDocument.id]?.nature_os || "Commencement de l'exécution";
-                    if (currentNature !== "Ajournement de l'exécution") {
-                      return null;
-                    }
-                  }
-
-                  const hasError = !!formErrors[selectedDocument.id]?.[field.name];
-
-                  if (field.type === 'prestations_partielles_table') {
-                    const srcPrestations = (savedConsultation?.prestations && savedConsultation.prestations.length > 0)
-                      ? savedConsultation.prestations
-                      : (prestations && prestations.filter((p) => p.designation?.trim()).length > 0 ? prestations.filter((p) => p.designation?.trim()) : []);
-
-                    const currentList = Array.isArray(documentForms[selectedDocument.id]?.prestations_receptionnees) && documentForms[selectedDocument.id].prestations_receptionnees.length > 0
-                      ? documentForms[selectedDocument.id].prestations_receptionnees
-                      : srcPrestations.map((p, idx) => ({
-                        id: p.id || idx,
-                        receptionne: true,
-                        numero_prix: p.numero_prix || (idx + 1),
-                        designation: p.designation || 'Prestation',
-                        unite: p.unite || p.unite_mesure || 'Unité',
-                        quantite: Number(p.quantite) || 1,
-                        quantite_receptionnee: Number(p.quantite) || 1,
-                      }));
-
-                    const updateItem = (idx, key, val) => {
-                      const updated = currentList.map((item, i) => (i === idx ? { ...item, [key]: val } : item));
-                      handleDocumentFieldChange(selectedDocument.id, field.name, updated);
-                    };
-
-                    return (
-                      <div key={`${selectedDocument.id}-${field.name}`} className="col-span-full bg-slate-50 border border-slate-200 rounded-2xl p-5 shadow-sm">
-                        <div className="flex items-center justify-between mb-3">
-                          <div>
-                            <label className="block text-xs font-semibold text-slate-800 uppercase tracking-wider flex items-center gap-2">
-                              📦 {field.label} {field.required && !field.fromDb && <span className="text-red-600 font-bold ml-0.5">*</span>}
-                            </label>
-                            <p className="text-xs text-slate-500 mt-0.5">
-                              Cochez les désignations réceptionnées et ajustez la quantité réceptionnée (≤ quantité commandée).
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="overflow-x-auto">
-                          <table className="w-full bg-white border border-slate-200 rounded-xl overflow-hidden text-xs">
-                            <thead>
-                              <tr className="bg-slate-100 border-b border-slate-200 text-slate-700 font-bold uppercase tracking-wider">
-                                <th className="py-2.5 px-3 text-center w-16">Réceptionné</th>
-                                <th className="py-2.5 px-3 text-center w-28">N° de prix</th>
-                                <th className="py-2.5 px-3 text-left">Désignation des prestations</th>
-                                <th className="py-2.5 px-3 text-center w-28">Unité de compte</th>
-                                <th className="py-2.5 px-3 text-center w-24">Qté commandée</th>
-                                <th className="py-2.5 px-3 text-center w-32">Qté réceptionnée</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {currentList.map((item, idx) => (
-                                <tr key={idx} className={`border-b border-slate-100 transition-all ${item.receptionne ? 'hover:bg-slate-50' : 'bg-slate-50/70 opacity-60'}`}>
-                                  <td className="py-2 px-3 text-center">
-                                    <input
-                                      type="checkbox"
-                                      checked={!!item.receptionne}
-                                      onChange={(e) => updateItem(idx, 'receptionne', e.target.checked)}
-                                      className="w-4 h-4 text-blue-600 rounded focus:ring-emerald-500 cursor-pointer"
-                                    />
-                                  </td>
-                                  <td className="py-2 px-3 text-center font-bold text-slate-700">
-                                    <input
-                                      type="text"
-                                      value={item.numero_prix !== undefined ? item.numero_prix : (idx + 1)}
-                                      disabled={!item.receptionne}
-                                      onChange={(e) => updateItem(idx, 'numero_prix', e.target.value)}
-                                      className="w-full px-2 py-1.5 rounded border border-slate-200 text-center text-xs font-bold text-slate-800 outline-none focus:border-blue-500 bg-white"
-                                    />
-                                  </td>
-                                  <td className="py-2 px-3 font-semibold text-slate-800">
-                                    {item.designation}
-                                  </td>
-                                  <td className="py-2 px-3 text-center font-medium text-slate-600">
-                                    {item.unite || 'Unité'}
-                                  </td>
-                                  <td className="py-2 px-3 text-center font-bold text-slate-700">
-                                    {item.quantite}
-                                  </td>
-                                  <td className="py-2 px-3 text-center">
-                                    <input
-                                      type="number"
-                                      min="0"
-                                      max={item.quantite}
-                                      disabled={!item.receptionne}
-                                      value={item.quantite_receptionnee !== undefined ? item.quantite_receptionnee : item.quantite}
-                                      onChange={(e) => {
-                                        const val = Math.min(Number(item.quantite) || 0, Math.max(0, Number(e.target.value) || 0));
-                                        updateItem(idx, 'quantite_receptionnee', val);
-                                      }}
-                                      className="w-20 px-2 py-1.5 rounded border border-slate-200 text-center text-xs font-bold text-blue-700 outline-none focus:border-blue-500 bg-white"
-                                    />
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      </div>
-                    );
-                  }
-
-                  if (field.type === 'consistance_table') {
-                    const rawLignes = documentForms[selectedDocument.id]?.[field.name] || documentForms['avis_achat']?.[field.name] || documentForms['bon_commande']?.[field.name];
-                    const srcPrestations = savedConsultation?.prestations?.length > 0
-                      ? savedConsultation.prestations
-                      : prestations.filter(p => p.designation?.trim());
-
-                    const initialLignes = srcPrestations.length > 0
-                      ? srcPrestations.map((p, i) => ({
-                        numero_prix: p.numero_prix || String(i + 1),
-                        designation: p.designation || '',
-                        specification: p.specification || p.designation || '',
-                        unite_mesure: p.unite || p.unite_mesure || 'Unite',
-                        quantite: String(p.quantite || 1),
-                        prix_unitaire_ht: String(p.prix_unitaire_ht || 0),
-                        tva: String(p.tva || 20),
-                        garantie_exigee: p.garantie_exigee || '',
-                      }))
-                      : [{ numero_prix: '1', designation: '', specification: '', unite_mesure: 'Unite', quantite: '1', prix_unitaire_ht: '0', tva: '20', garantie_exigee: '' }];
-
-                    const lignes = Array.isArray(rawLignes) && rawLignes.length > 0 ? rawLignes : initialLignes;
-
-                    const updateLigne = (idx, key, val) => {
-                      const updated = lignes.map((l, i) => {
-                        if (key === 'tva' && idx === 0) {
-                          return { ...l, tva: val };
+                      {section.fields.map((field) => {
+                        if (field.condition && !field.condition(documentForms[selectedDocument.id])) {
+                          return null;
                         }
-                        return i === idx ? { ...l, [key]: val } : l;
-                      });
-                      handleDocumentFieldChange(selectedDocument.id, field.name, updated);
-                      if (selectedDocument.id !== 'avis_achat') handleDocumentFieldChange('avis_achat', field.name, updated);
-                      if (selectedDocument.id !== 'bon_commande') handleDocumentFieldChange('bon_commande', field.name, updated);
-                    };
-                    const addLigne = () => {
-                      const firstTva = lignes[0]?.tva ?? '20';
-                      const updated = [
-                        ...lignes,
-                        { numero_prix: String(lignes.length + 1), designation: '', specification: '', unite_mesure: 'Unite', quantite: '1', prix_unitaire_ht: '0', tva: String(firstTva), garantie_exigee: '' },
-                      ];
-                      handleDocumentFieldChange(selectedDocument.id, field.name, updated);
-                      if (selectedDocument.id !== 'avis_achat') handleDocumentFieldChange('avis_achat', field.name, updated);
-                      if (selectedDocument.id !== 'bon_commande') handleDocumentFieldChange('bon_commande', field.name, updated);
-                    };
-                    const removeLigne = (idx) => {
-                      if (lignes.length <= 1) return;
-                      const updated = lignes.filter((_, i) => i !== idx);
-                      handleDocumentFieldChange(selectedDocument.id, field.name, updated);
-                      if (selectedDocument.id !== 'avis_achat') handleDocumentFieldChange('avis_achat', field.name, updated);
-                      if (selectedDocument.id !== 'bon_commande') handleDocumentFieldChange('bon_commande', field.name, updated);
-                    };
 
-                    const colStyle = { fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px', display: 'block' };
-
-                    const isAvisAchat = selectedDocument.id === 'avis_achat';
-                    const showPrices = selectedDocument.id !== 'avis_achat';
-                    const gridCols = isAvisAchat
-                      ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-8'
-                      : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-9';
-
-                    const isCellBlank = (v) => v === undefined || v === null || String(v).trim() === '';
-                    const getCellInputCls = (v) => `w-full px-2 py-2 rounded-lg border ${hasError && isCellBlank(v)
-                      ? 'border-red-500 bg-red-50/40 text-red-900 focus:ring-1 focus:ring-red-300'
-                      : 'border-slate-200 bg-white text-slate-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-100'
-                      } text-xs font-semibold outline-none transition-all`;
-
-                    return (
-                      <div key={`${selectedDocument.id}-${field.name}`} className="col-span-full">
-                        <div className="flex items-center justify-between mb-3">
-                          <span className="text-xs font-semibold text-slate-800 uppercase tracking-wider flex items-center gap-2">
-                            📋 {field.label} {field.required && !field.fromDb && <span className="text-red-600 font-bold ml-0.5">*</span>}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={addLigne}
-                            className="px-3 py-1.5 bg-blue-700 hover:bg-blue-800 text-white font-bold text-xs rounded-lg inline-flex items-center gap-1 shadow-sm transition-all"
-                          >
-                            <Plus size={14} /> Ajouter une ligne
-                          </button>
-                        </div>
-
-                        <div className="space-y-3">
-                          {lignes.map((ligne, idx) => (
-                            <div key={idx} className="bg-slate-50 border border-slate-200 rounded-xl p-4 relative">
-                              <div className="absolute top-3 right-3 flex items-center gap-1">
-                                <span className="text-xs font-bold text-slate-400 mr-1">#{idx + 1}</span>
-                                {lignes.length > 1 && (
-                                  <button
-                                    type="button"
-                                    onClick={() => removeLigne(idx)}
-                                    className="p-1 text-red-500 hover:bg-red-50 rounded-lg transition-all"
-                                    title="Supprimer cette ligne"
-                                  >
-                                    <Trash2 size={14} />
-                                  </button>
-                                )}
-                              </div>
-                              <div className={`grid ${gridCols} gap-3 pr-8`}>
-                                <div>
-                                  <span style={colStyle}>N° Prix</span>
-                                  <input type="text" value={ligne.numero_prix} onChange={e => updateLigne(idx, 'numero_prix', e.target.value)} className={getCellInputCls(ligne.numero_prix)} placeholder="1" />
-                                </div>
-                                <div className="col-span-2">
-                                  <span style={colStyle}>Désignation</span>
-                                  <input type="text" value={ligne.designation} onChange={e => updateLigne(idx, 'designation', e.target.value)} className={getCellInputCls(ligne.designation)} placeholder="Soudeuse à pédale" />
-                                </div>
-                                <div>
-                                  <span style={colStyle}>Unité</span>
-                                  <input type="text" value={ligne.unite_mesure} onChange={e => updateLigne(idx, 'unite_mesure', e.target.value)} className={getCellInputCls(ligne.unite_mesure)} placeholder="Unite, Forfait" />
-                                </div>
-                                <div>
-                                  <span style={colStyle}>Quantité</span>
-                                  <input type="number" value={ligne.quantite} onChange={e => updateLigne(idx, 'quantite', e.target.value)} className={getCellInputCls(ligne.quantite)} placeholder="1" min="1" />
-                                </div>
-                                {isAvisAchat && (
-                                  <div>
-                                    <span style={colStyle}>TVA (%)</span>
-                                    <input
-                                      type="number"
-                                      value={idx === 0 ? (ligne.tva ?? '20') : (lignes[0]?.tva ?? '20')}
-                                      onChange={e => updateLigne(0, 'tva', e.target.value)}
-                                      disabled={idx > 0}
-                                      className={`${getCellInputCls(ligne.tva)} ${idx > 0 ? 'bg-slate-100/90 text-slate-500 cursor-not-allowed border-slate-200' : ''}`}
-                                      placeholder="20"
-                                      min="0"
-                                      max="100"
-                                      title={idx > 0 ? "La TVA est identique pour toutes les lignes (définie par la 1ère ligne)" : ""}
-                                    />
-                                  </div>
-                                )}
-                                {showPrices && (
-                                  <>
-                                    <div>
-                                      <span style={colStyle}>P.U HT (DH)</span>
-                                      <input type="number" value={ligne.prix_unitaire_ht || ''} onChange={e => updateLigne(idx, 'prix_unitaire_ht', e.target.value)} className={getCellInputCls(ligne.prix_unitaire_ht)} placeholder="0.00" step="0.01" />
-                                    </div>
-                                    <div>
-                                      <span style={colStyle}>Montant HT</span>
-                                      <input type="text" value={(Number(ligne.quantite || 0) * Number(ligne.prix_unitaire_ht || 0)).toFixed(2)} readOnly className="w-full px-2 py-2 rounded-lg border border-slate-200 bg-slate-100 font-bold text-blue-700 text-xs cursor-not-allowed outline-none" />
-                                    </div>
-                                  </>
-                                )}
-                                <div className="col-span-2">
-                                  <span style={colStyle}>Garantie Exigée</span>
-                                  <input type="text" value={ligne.garantie_exigee || ''} onChange={e => updateLigne(idx, 'garantie_exigee', e.target.value)} className={getCellInputCls(ligne.garantie_exigee)} placeholder="Facultative (ex: 12 mois...)" />
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  }
-
-                  if (field.type === 'concurrents_table') {
-                    const list = Array.isArray(documentForms[selectedDocument.id]?.[field.name])
-                      ? documentForms[selectedDocument.id][field.name]
-                      : [
-                        { nom: 'TOPOGRAPHY CONSULTING', montant: 30240 },
-                        { nom: 'LANDMAP SURVEY', montant: 36360 },
-                        { nom: 'BUREAU ALAOUI TOPO', montant: 39060 },
-                        { nom: 'BAJITOP', montant: 45240 },
-                        { nom: 'GOLDEN GEO', montant: 47520 },
-                      ];
-
-                    const currentAttr = documentForms[selectedDocument.id]?.attributaire || '';
-                    const syncRefusedWithAttr = (updatedList) => {
-                      if (currentAttr) {
-                        const foundIndex = updatedList.findIndex((c) => c.nom === currentAttr);
-                        if (foundIndex !== -1) {
-                          const refusedCompanies = updatedList.slice(0, foundIndex).map((c) => ({
-                            nom: c.nom,
-                            motif: "Refus d'invitation du maître d'ouvrage",
-                          }));
-                          handleDocumentFieldChange(selectedDocument.id, 'societes_refusees', refusedCompanies);
+                        if (field.name === 'motif_ajournement') {
+                          const currentNature = documentForms[selectedDocument.id]?.nature_os || "Commencement de l'exécution";
+                          if (currentNature !== "Ajournement de l'exécution") {
+                            return null;
+                          }
                         }
-                      }
-                    };
 
-                    const updateConcurrent = (idx, key, val) => {
-                      const updated = list.map((c, i) => (i === idx ? { ...c, [key]: val } : c));
-                      handleDocumentFieldChange(selectedDocument.id, field.name, updated);
-                      syncRefusedWithAttr(updated);
-                    };
-                    const addConcurrent = () => {
-                      const updated = [
-                        ...list,
-                        { nom: '', montant: '' },
-                      ];
-                      handleDocumentFieldChange(selectedDocument.id, field.name, updated);
-                      syncRefusedWithAttr(updated);
-                    };
-                    const removeConcurrent = (idx) => {
-                      if (list.length <= 1) return;
-                      const updated = list.filter((_, i) => i !== idx);
-                      handleDocumentFieldChange(selectedDocument.id, field.name, updated);
-                      syncRefusedWithAttr(updated);
-                    };
+                        const hasError = !!formErrors[selectedDocument.id]?.[field.name];
 
-                    const handleExcelImport = (e) => {
-                      const file = e.target.files?.[0];
-                      if (!file) return;
+                        if (field.type === 'prestations_partielles_table') {
+                          const srcPrestations = (savedConsultation?.prestations && savedConsultation.prestations.length > 0)
+                            ? savedConsultation.prestations
+                            : (prestations && prestations.filter((p) => p.designation?.trim()).length > 0 ? prestations.filter((p) => p.designation?.trim()) : []);
 
-                      const reader = new FileReader();
+                          const currentList = Array.isArray(documentForms[selectedDocument.id]?.prestations_receptionnees) && documentForms[selectedDocument.id].prestations_receptionnees.length > 0
+                            ? documentForms[selectedDocument.id].prestations_receptionnees
+                            : srcPrestations.map((p, idx) => ({
+                              id: p.id || idx,
+                              receptionne: true,
+                              numero_prix: p.numero_prix || (idx + 1),
+                              designation: p.designation || 'Prestation',
+                              unite: p.unite || p.unite_mesure || 'Unité',
+                              quantite: Number(p.quantite) || 1,
+                              quantite_receptionnee: Number(p.quantite) || 1,
+                            }));
 
-                      reader.onload = (evt) => {
-                        try {
-                          let rows = [];
-                          const fileName = file.name.toLowerCase();
-
-                          if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
-                            const data = new Uint8Array(evt.target.result);
-                            const wb = XLSX.read(data, { type: 'array' });
-                            const wsName = wb.SheetNames[0];
-                            const ws = wb.Sheets[wsName];
-                            rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
-                          } else {
-                            let text = '';
-                            if (typeof evt.target.result === 'string') {
-                              text = evt.target.result;
-                            } else {
-                              const decoder = new TextDecoder('utf-8', { fatal: false });
-                              text = decoder.decode(evt.target.result);
-                            }
-
-                            const lines = text.split(/\r\n|\n|\r/);
-                            rows = lines
-                              .filter((line) => line.trim() !== '')
-                              .map((line) => {
-                                let delimiter = ';';
-                                if (line.includes(';')) delimiter = ';';
-                                else if (line.includes('\t')) delimiter = '\t';
-                                else if (line.includes(',')) delimiter = ',';
-                                return line.split(delimiter).map((c) => c.trim().replace(/^["']|["']$/g, ''));
-                              });
-                          }
-
-                          if (!rows || rows.length === 0) {
-                            alert("Le fichier sélectionné est vide.");
-                            return;
-                          }
-
-                          let extractedRef = '';
-                          let extractedObjet = '';
-
-                          for (let i = 0; i < Math.min(rows.length, 7); i++) {
-                            const rowStr = (rows[i] || []).map((c) => String(c).toLowerCase()).join(' ');
-                            if (rowStr.includes('référence') || rowStr.includes('reference')) {
-                              const valCol = (rows[i] || []).find((c, idx) => idx > 0 && String(c).trim() !== '');
-                              if (valCol) extractedRef = String(valCol).trim();
-                            }
-                            if (rowStr.includes('objet')) {
-                              const valCol = (rows[i] || []).find((c, idx) => idx > 0 && String(c).trim() !== '');
-                              if (valCol) extractedObjet = String(valCol).trim();
-                            }
-                          }
-
-                          let headerRowIndex = -1;
-                          let colClassement = -1;
-                          let colNom = -1;
-                          let colMontant = -1;
-
-                          for (let i = 0; i < rows.length; i++) {
-                            const row = rows[i];
-                            if (!Array.isArray(row)) continue;
-
-                            let hasNameCol = false;
-                            let hasAmountCol = false;
-                            let cIdx = -1, nIdx = -1, mIdx = -1;
-
-                            row.forEach((cell, colIdx) => {
-                              const s = String(cell).toLowerCase().trim();
-                              if (s.includes('classement') || s.includes('rang') || s === 'n°' || s === 'no' || s === '#') {
-                                cIdx = colIdx;
-                              }
-                              if (s.includes('entreprise') || s.includes('société') || s.includes('societe') || s.includes('concurrent') || s.includes('dépositaire') || s.includes('fournisseur') || s === 'nom') {
-                                nIdx = colIdx;
-                                hasNameCol = true;
-                              }
-                              if (s.includes('total') || s.includes('ttc') || s.includes('ht') || s.includes('montant') || s.includes('prix') || s.includes('offre')) {
-                                mIdx = colIdx;
-                                hasAmountCol = true;
-                              }
-                            });
-
-                            if (hasNameCol || (cIdx !== -1 && mIdx !== -1) || (hasAmountCol && nIdx !== -1)) {
-                              headerRowIndex = i;
-                              colClassement = cIdx;
-                              colNom = nIdx;
-                              colMontant = mIdx;
-                              break;
-                            }
-                          }
-
-                          const parseMoney = (val) => {
-                            if (typeof val === 'number') return val;
-                            if (!val) return 0;
-                            const clean = String(val).replace(/\s+/g, '').replace(/DH|MAD/gi, '').replace(/,/g, '.').replace(/[^\d.-]/g, '');
-                            const parsed = parseFloat(clean);
-                            return isNaN(parsed) ? 0 : parsed;
+                          const updateItem = (idx, key, val) => {
+                            const updated = currentList.map((item, i) => (i === idx ? { ...item, [key]: val } : item));
+                            handleDocumentFieldChange(selectedDocument.id, field.name, updated);
                           };
 
-                          const imported = [];
-                          const startRow = headerRowIndex !== -1 ? headerRowIndex + 1 : 0;
+                          return (
+                            <div key={`${selectedDocument.id}-${field.name}`} className="col-span-full bg-slate-50 border border-slate-200 rounded-2xl p-5 shadow-sm">
+                              <div className="flex items-center justify-between mb-3">
+                                <div>
+                                  <label className="block text-xs font-semibold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                                    📦 {field.label} {field.required && !field.fromDb && <span className="text-red-600 font-bold ml-0.5">*</span>}
+                                  </label>
+                                  <p className="text-xs text-slate-500 mt-0.5">
+                                    Cochez les désignations réceptionnées et ajustez la quantité réceptionnée (≤ quantité commandée).
+                                  </p>
+                                </div>
+                              </div>
 
-                          for (let i = startRow; i < rows.length; i++) {
-                            const row = rows[i];
-                            if (!row || row.length === 0) continue;
-
-                            let rank = '';
-                            let nom = '';
-                            let montant = 0;
-
-                            if (headerRowIndex !== -1) {
-                              if (colClassement !== -1) rank = row[colClassement];
-                              if (colNom !== -1) nom = row[colNom];
-                              if (colMontant !== -1) montant = parseMoney(row[colMontant]);
-                            }
-
-                            if (!nom || String(nom).trim() === '') {
-                              if (row.length >= 3 && (typeof row[0] === 'number' || /^\d+$/.test(String(row[0]).trim()))) {
-                                rank = row[0];
-                                nom = String(row[1] || '').trim();
-                                montant = parseMoney(row[2]);
-                              } else if (row.length >= 2) {
-                                nom = String(row[0] || '').trim();
-                                montant = parseMoney(row[1]);
-                              }
-                            }
-
-                            nom = String(nom || '').trim();
-                            if (
-                              !nom ||
-                              nom.toLowerCase().includes('synthèse') ||
-                              nom.toLowerCase().includes('entreprise') ||
-                              nom.toLowerCase().includes('nom des concurrents') ||
-                              nom.toLowerCase().includes('total') ||
-                              nom.toLowerCase().includes('direction régionale') ||
-                              nom.toLowerCase() === 'référence' ||
-                              nom.toLowerCase() === 'objet'
-                            ) {
-                              continue;
-                            }
-
-                            const parsedRank = parseInt(rank, 10);
-                            imported.push({
-                              nom: nom,
-                              montant: montant || 0,
-                              classement: !isNaN(parsedRank) && parsedRank > 0 ? parsedRank : null
-                            });
-                          }
-
-                          if (imported.length === 0) {
-                            alert("Aucun concurrent valide n'a été trouvé dans le fichier. Veuillez vérifier la structure (colonnes: Classement, Entreprise, Montant TTC).");
-                            return;
-                          }
-
-                          imported.sort((a, b) => {
-                            if (a.classement && b.classement) return a.classement - b.classement;
-                            if (a.montant > 0 && b.montant > 0) return a.montant - b.montant;
-                            return 0;
-                          });
-
-                          imported.forEach((item, index) => {
-                            if (!item.classement) {
-                              item.classement = index + 1;
-                            }
-                          });
-
-                          handleDocumentFieldChange(selectedDocument.id, field.name, imported);
-                          syncRefusedWithAttr(imported);
-
-                          const winner = imported.find((c) => c.classement === 1) || imported[0];
-                          if (winner && winner.nom) {
-                            handleDocumentFieldChange(selectedDocument.id, 'attributaire', winner.nom);
-                            handleDocumentFieldChange(selectedDocument.id, 'montant_apres_verification', winner.montant);
-                            handleDocumentFieldChange('bon_commande', 'titulaire_nom', winner.nom);
-                            handleDocumentFieldChange('bon_commande', 'societe', winner.nom);
-                            handleDocumentFieldChange('ordre_commande', 'societe', winner.nom);
-                          }
-
-                          if (extractedRef && !documentForms[selectedDocument.id]?.numero_consultation) {
-                            handleDocumentFieldChange(selectedDocument.id, 'numero_consultation', extractedRef);
-                          }
-                          if (extractedObjet && !documentForms[selectedDocument.id]?.objet) {
-                            handleDocumentFieldChange(selectedDocument.id, 'objet', extractedObjet);
-                          }
-
-                          setMessage(`${imported.length} concurrent(s) importé(s) avec classement ! Offre retenue : ${winner.nom} (${winner.montant ? winner.montant.toLocaleString('fr-FR') : 0} DH TTC).`);
-                        } catch (err) {
-                          console.error(err);
-                          alert("Erreur lors de la lecture du fichier Excel.");
+                              <div className="overflow-x-auto">
+                                <table className="w-full bg-white border border-slate-200 rounded-xl overflow-hidden text-xs">
+                                  <thead>
+                                    <tr className="bg-slate-100 border-b border-slate-200 text-slate-700 font-bold uppercase tracking-wider">
+                                      <th className="py-2.5 px-3 text-center w-16">Réceptionné</th>
+                                      <th className="py-2.5 px-3 text-center w-28">N° de prix</th>
+                                      <th className="py-2.5 px-3 text-left">Désignation des prestations</th>
+                                      <th className="py-2.5 px-3 text-center w-28">Unité de compte</th>
+                                      <th className="py-2.5 px-3 text-center w-24">Qté commandée</th>
+                                      <th className="py-2.5 px-3 text-center w-32">Qté réceptionnée</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {currentList.map((item, idx) => (
+                                      <tr key={idx} className={`border-b border-slate-100 transition-all ${item.receptionne ? 'hover:bg-slate-50' : 'bg-slate-50/70 opacity-60'}`}>
+                                        <td className="py-2 px-3 text-center">
+                                          <input
+                                            type="checkbox"
+                                            checked={!!item.receptionne}
+                                            onChange={(e) => updateItem(idx, 'receptionne', e.target.checked)}
+                                            className="w-4 h-4 text-blue-600 rounded focus:ring-emerald-500 cursor-pointer"
+                                          />
+                                        </td>
+                                        <td className="py-2 px-3 text-center font-bold text-slate-700">
+                                          <input
+                                            type="text"
+                                            value={item.numero_prix !== undefined ? item.numero_prix : (idx + 1)}
+                                            disabled={!item.receptionne}
+                                            onChange={(e) => updateItem(idx, 'numero_prix', e.target.value)}
+                                            className="w-full px-2 py-1.5 rounded border border-slate-200 text-center text-xs font-bold text-slate-800 outline-none focus:border-blue-500 bg-white"
+                                          />
+                                        </td>
+                                        <td className="py-2 px-3 font-semibold text-slate-800">
+                                          {item.designation}
+                                        </td>
+                                        <td className="py-2 px-3 text-center font-medium text-slate-600">
+                                          {item.unite || 'Unité'}
+                                        </td>
+                                        <td className="py-2 px-3 text-center font-bold text-slate-700">
+                                          {item.quantite}
+                                        </td>
+                                        <td className="py-2 px-3 text-center">
+                                          <input
+                                            type="number"
+                                            min="0"
+                                            max={item.quantite}
+                                            disabled={!item.receptionne}
+                                            value={item.quantite_receptionnee !== undefined ? item.quantite_receptionnee : item.quantite}
+                                            onChange={(e) => {
+                                              const val = Math.min(Number(item.quantite) || 0, Math.max(0, Number(e.target.value) || 0));
+                                              updateItem(idx, 'quantite_receptionnee', val);
+                                            }}
+                                            className="w-20 px-2 py-1.5 rounded border border-slate-200 text-center text-xs font-bold text-blue-700 outline-none focus:border-blue-500 bg-white"
+                                          />
+                                        </td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            </div>
+                          );
                         }
-                      };
 
-                      if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
-                        reader.readAsArrayBuffer(file);
-                      } else {
-                        reader.readAsText(file);
-                      }
-                      e.target.value = '';
-                    };
+                        if (field.type === 'consistance_table') {
+                          const rawLignes = documentForms[selectedDocument.id]?.[field.name] || documentForms['avis_achat']?.[field.name] || documentForms['bon_commande']?.[field.name];
+                          const srcPrestations = savedConsultation?.prestations?.length > 0
+                            ? savedConsultation.prestations
+                            : prestations.filter(p => p.designation?.trim());
 
-                    return (
-                      <div key={`${selectedDocument.id}-${field.name}`} className="col-span-full bg-slate-50 border border-slate-200 rounded-2xl p-5 shadow-sm">
-                        <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
-                          <label className="block text-xs font-semibold text-slate-800 uppercase tracking-wider flex items-center gap-2">
-                            🏢 {field.label} {field.required && !field.fromDb && <span className="text-red-600 font-bold ml-0.5">*</span>}
-                          </label>
+                          const initialLignes = srcPrestations.length > 0
+                            ? srcPrestations.map((p, i) => ({
+                              numero_prix: p.numero_prix || String(i + 1),
+                              designation: p.designation || '',
+                              specification: p.specification || p.designation || '',
+                              unite_mesure: p.unite || p.unite_mesure || 'Unite',
+                              quantite: String(p.quantite || 1),
+                              prix_unitaire_ht: String(p.prix_unitaire_ht || 0),
+                              tva: String(p.tva || 20),
+                              garantie_exigee: p.garantie_exigee || '',
+                            }))
+                            : [{ numero_prix: '1', designation: '', specification: '', unite_mesure: 'Unite', quantite: '1', prix_unitaire_ht: '0', tva: '20', garantie_exigee: '' }];
 
-                          <div className="flex flex-wrap items-center gap-2">
-                            <label className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-lg inline-flex items-center gap-1.5 shadow-sm transition-all cursor-pointer">
-                              <FileSpreadsheet size={14} /> Importer Excel / CSV
-                              <input
-                                type="file"
-                                accept=".xlsx, .xls, .csv, .tsv, .txt"
-                                onChange={handleExcelImport}
-                                className="hidden"
-                              />
-                            </label>
+                          const lignes = Array.isArray(rawLignes) && rawLignes.length > 0 ? rawLignes : initialLignes;
 
-                            <button
-                              type="button"
-                              onClick={addConcurrent}
-                              className="px-3 py-1.5 bg-blue-700 hover:bg-blue-800 text-white font-bold text-xs rounded-lg inline-flex items-center gap-1 shadow-sm transition-all"
-                            >
-                              <Plus size={14} /> Ajouter un concurrent
-                            </button>
-                          </div>
-                        </div>
+                          const updateLigne = (idx, key, val) => {
+                            const updated = lignes.map((l, i) => {
+                              if (key === 'tva' && idx === 0) {
+                                return { ...l, tva: val };
+                              }
+                              return i === idx ? { ...l, [key]: val } : l;
+                            });
+                            handleDocumentFieldChange(selectedDocument.id, field.name, updated);
+                            if (selectedDocument.id !== 'avis_achat') handleDocumentFieldChange('avis_achat', field.name, updated);
+                            if (selectedDocument.id !== 'bon_commande') handleDocumentFieldChange('bon_commande', field.name, updated);
+                          };
+                          const addLigne = () => {
+                            const firstTva = lignes[0]?.tva ?? '20';
+                            const updated = [
+                              ...lignes,
+                              { numero_prix: String(lignes.length + 1), designation: '', specification: '', unite_mesure: 'Unite', quantite: '1', prix_unitaire_ht: '0', tva: String(firstTva), garantie_exigee: '' },
+                            ];
+                            handleDocumentFieldChange(selectedDocument.id, field.name, updated);
+                            if (selectedDocument.id !== 'avis_achat') handleDocumentFieldChange('avis_achat', field.name, updated);
+                            if (selectedDocument.id !== 'bon_commande') handleDocumentFieldChange('bon_commande', field.name, updated);
+                          };
+                          const removeLigne = (idx) => {
+                            if (lignes.length <= 1) return;
+                            const updated = lignes.filter((_, i) => i !== idx);
+                            handleDocumentFieldChange(selectedDocument.id, field.name, updated);
+                            if (selectedDocument.id !== 'avis_achat') handleDocumentFieldChange('avis_achat', field.name, updated);
+                            if (selectedDocument.id !== 'bon_commande') handleDocumentFieldChange('bon_commande', field.name, updated);
+                          };
 
-                        <div className="overflow-x-auto">
-                          <table className="w-full bg-white border border-slate-200 rounded-xl overflow-hidden text-xs">
-                            <thead>
-                              <tr className="bg-slate-100 border-b border-slate-200 text-slate-700 font-bold uppercase tracking-wider">
-                                <th className="py-2.5 px-3 text-center w-36">Classement</th>
-                                <th className="py-2.5 px-3 text-left">Nom des concurrents / Société</th>
-                                <th className="py-2.5 px-3 text-right w-48">Montant de l'offre (TTC)</th>
-                                <th className="py-2.5 px-3 text-center w-12"></th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {list.map((c, idx) => {
-                                const rank = c.classement || idx + 1;
-                                const isWinner = rank === 1;
-                                return (
-                                  <tr key={idx} className={`border-b border-slate-100 hover:bg-slate-50 transition-all ${isWinner ? 'bg-blue-50/50' : ''}`}>
-                                    <td className="py-2 px-3 text-center font-bold">
-                                      <span className={`px-2.5 py-1 rounded-full text-[11px] font-semibold inline-block ${isWinner
-                                        ? 'bg-blue-100 text-blue-800 border border-blue-300 shadow-sm'
-                                        : 'bg-slate-100 text-slate-700 border border-slate-200'
-                                        }`}>
-                                        {rank === 1 ? '🥇 1er (Moins-disant)' : `${rank}ème`}
-                                      </span>
-                                    </td>
-                                    <td className="py-2 px-3">
-                                      <input
-                                        type="text"
-                                        value={c.nom}
-                                        onChange={(e) => updateConcurrent(idx, 'nom', e.target.value)}
-                                        placeholder="Ex: CATALYSSIA BUSINESS COMPANY SARL"
-                                        className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white font-semibold text-slate-800 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-100"
-                                      />
-                                    </td>
-                                    <td className="py-2 px-3">
-                                      <input
-                                        type="number"
-                                        value={c.montant}
-                                        onChange={(e) => updateConcurrent(idx, 'montant', e.target.value)}
-                                        placeholder="45313.4"
-                                        className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white font-semibold text-slate-800 text-right outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-100"
-                                      />
-                                    </td>
-                                    <td className="py-2 px-3 text-center">
-                                      {list.length > 1 && (
+                          const colStyle = { fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px', display: 'block' };
+
+                          const isAvisAchat = selectedDocument.id === 'avis_achat';
+                          const showPrices = selectedDocument.id !== 'avis_achat';
+                          const gridCols = isAvisAchat
+                            ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-8'
+                            : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-9';
+
+                          const isCellBlank = (v) => v === undefined || v === null || String(v).trim() === '';
+                          const getCellInputCls = (v) => `w-full px-2 py-2 rounded-lg border ${hasError && isCellBlank(v)
+                            ? 'border-red-500 bg-red-50/40 text-red-900 focus:ring-1 focus:ring-red-300'
+                            : 'border-slate-200 bg-white text-slate-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-100'
+                            } text-xs font-semibold outline-none transition-all`;
+
+                          return (
+                            <div key={`${selectedDocument.id}-${field.name}`} className="col-span-full">
+                              <div className="flex items-center justify-between mb-3">
+                                <span className="text-xs font-semibold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                                  📋 {field.label} {field.required && !field.fromDb && <span className="text-red-600 font-bold ml-0.5">*</span>}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={addLigne}
+                                  className="px-3 py-1.5 bg-blue-700 hover:bg-blue-800 text-white font-bold text-xs rounded-lg inline-flex items-center gap-1 shadow-sm transition-all"
+                                >
+                                  <Plus size={14} /> Ajouter une ligne
+                                </button>
+                              </div>
+
+                              <div className="space-y-3">
+                                {lignes.map((ligne, idx) => (
+                                  <div key={idx} className="bg-slate-50 border border-slate-200 rounded-xl p-4 relative">
+                                    <div className="absolute top-3 right-3 flex items-center gap-1">
+                                      <span className="text-xs font-bold text-slate-400 mr-1">#{idx + 1}</span>
+                                      {lignes.length > 1 && (
                                         <button
                                           type="button"
-                                          onClick={() => removeConcurrent(idx)}
-                                          className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-all"
-                                          title="Supprimer ce concurrent"
+                                          onClick={() => removeLigne(idx)}
+                                          className="p-1 text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                                          title="Supprimer cette ligne"
                                         >
                                           <Trash2 size={14} />
                                         </button>
                                       )}
-                                    </td>
-                                  </tr>
-                                );
-                              })}
-                            </tbody>
-                          </table>
-                        </div>
-                      </div>
-                    );
-                  }
-
-                  if (field.type === 'societes_refusees_input') {
-                    const rawVal = documentForms[selectedDocument.id]?.[field.name];
-                    const currentList = Array.isArray(rawVal)
-                      ? rawVal
-                      : typeof rawVal === 'string' && rawVal.trim() !== ''
-                        ? rawVal.split(',').map((s) => ({ nom: s.trim(), motif: "Refus d'invitation du maître d'ouvrage" }))
-                        : [];
-
-                    const concurrentsList = Array.isArray(documentForms[selectedDocument.id]?.concurrents)
-                      ? documentForms[selectedDocument.id].concurrents
-                      : [];
-
-                    const standardMotifs = [
-                      "Refus d'invitation du maître d'ouvrage",
-                      "Offre supérieure au budget estimatif",
-                      "Offre financière non conforme / Erreur de calcul",
-                      "Dossier administratif ou technique incomplet",
-                      "Non-respect des spécifications du cahier des charges",
-                      "Abandon ou retrait de l'offre par le concurrent",
-                      "Autre motif (à préciser ci-dessous)"
-                    ];
-
-                    const syncAutoAttributaire = (updatedRefusedList) => {
-                      if (!concurrentsList || concurrentsList.length === 0) return;
-
-                      const refusedNames = updatedRefusedList.map((r) => String(r.nom || '').trim().toLowerCase());
-                      const eligible = concurrentsList.find((c) => !refusedNames.includes(String(c.nom || '').trim().toLowerCase()));
-
-                      if (eligible && eligible.nom) {
-                        handleDocumentFieldChange(selectedDocument.id, 'attributaire', eligible.nom);
-                        if (eligible.montant) {
-                          handleDocumentFieldChange(selectedDocument.id, 'montant_apres_verification', eligible.montant);
-                        }
-                        const rank = eligible.classement || (concurrentsList.findIndex((c) => c.nom === eligible.nom) + 1);
-                        handleDocumentFieldChange(
-                          selectedDocument.id,
-                          'motif_attribution',
-                          `Offre la moins disante conforme (classée N°${rank}) après examen des devis reçus`
-                        );
-                        handleDocumentFieldChange('bon_commande', 'titulaire_nom', eligible.nom);
-                        handleDocumentFieldChange('bon_commande', 'societe', eligible.nom);
-                        handleDocumentFieldChange('ordre_commande', 'societe', eligible.nom);
-                      }
-                    };
-
-                    const addRefusedCompany = (companyName = '') => {
-                      const defaultMotif = "Refus d'invitation du maître d'ouvrage";
-                      let targetName = companyName;
-                      if (!targetName && concurrentsList && concurrentsList.length > 0) {
-                        const existingRefusedNames = currentList.map((r) => String(r.nom || '').trim().toLowerCase());
-                        const firstUnused = concurrentsList.find((c) => !existingRefusedNames.includes(String(c.nom || '').trim().toLowerCase()));
-                        if (firstUnused) {
-                          targetName = firstUnused.nom;
-                        }
-                      }
-                      const updated = [...currentList, { nom: targetName, motif: defaultMotif }];
-                      handleDocumentFieldChange(selectedDocument.id, field.name, updated);
-                      syncAutoAttributaire(updated);
-                    };
-
-                    const updateRefused = (idx, key, value) => {
-                      const updated = currentList.map((item, i) => (i === idx ? { ...item, [key]: value } : item));
-                      handleDocumentFieldChange(selectedDocument.id, field.name, updated);
-                      if (key === 'nom') {
-                        syncAutoAttributaire(updated);
-                      }
-                    };
-
-                    const removeRefused = (idx) => {
-                      const updated = currentList.filter((_, i) => i !== idx);
-                      handleDocumentFieldChange(selectedDocument.id, field.name, updated);
-                      syncAutoAttributaire(updated);
-                    };
-
-                    return (
-                      <div key={`${selectedDocument.id}-${field.name}`} className="col-span-full bg-slate-50 border border-slate-200 rounded-2xl p-5 shadow-sm">
-                        <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
-                          <label className="block text-xs font-semibold text-slate-800 uppercase tracking-wider flex items-center gap-2">
-                            ❌ {field.label} {field.required && !field.fromDb && <span className="text-red-600 font-bold ml-0.5">*</span>}
-                          </label>
-
-                          <div className="flex flex-wrap items-center gap-2">
-                            <button
-                              type="button"
-                              onClick={() => addRefusedCompany('')}
-                              className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white font-bold text-xs rounded-lg inline-flex items-center gap-1 shadow-sm transition-all"
-                            >
-                              <Plus size={14} /> Ajouter manuellement
-                            </button>
-                          </div>
-                        </div>
-
-                        <div className="space-y-3">
-                          {currentList.map((item, idx) => {
-                            const takenByOthers = currentList
-                              .filter((_, i) => i !== idx)
-                              .map((r) => String(r.nom || '').trim().toLowerCase());
-
-                            const availableOptions = concurrentsList.filter((c) => {
-                              const normName = String(c.nom || '').trim().toLowerCase();
-                              const isSelf = normName === String(item.nom || '').trim().toLowerCase();
-                              return isSelf || !takenByOthers.includes(normName);
-                            });
-
-                            return (
-                              <div key={idx} className="flex flex-col sm:flex-row items-start sm:items-center gap-3 bg-white p-3.5 border border-slate-200 rounded-xl shadow-sm">
-                                <div className="w-full sm:w-1/3">
-                                  <span className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Société écartée</span>
-                                  {concurrentsList.length > 0 ? (
-                                    <select
-                                      value={item.nom}
-                                      onChange={(e) => updateRefused(idx, 'nom', e.target.value)}
-                                      className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs font-bold text-slate-800 bg-slate-50 outline-none focus:border-red-500 focus:bg-white"
-                                    >
-                                      <option value="">-- Choisir la société --</option>
-                                      {availableOptions.map((c, i) => (
-                                        <option key={i} value={c.nom}>
-                                          {c.nom}
-                                        </option>
-                                      ))}
-                                      {!availableOptions.some((c) => c.nom === item.nom) && item.nom && (
-                                        <option value={item.nom}>{item.nom}</option>
+                                    </div>
+                                    <div className={`grid ${gridCols} gap-3 pr-8`}>
+                                      <div>
+                                        <span style={colStyle}>N° Prix</span>
+                                        <input type="text" value={ligne.numero_prix} onChange={e => updateLigne(idx, 'numero_prix', e.target.value)} className={getCellInputCls(ligne.numero_prix)} placeholder="1" />
+                                      </div>
+                                      <div className="col-span-2">
+                                        <span style={colStyle}>Désignation</span>
+                                        <input type="text" value={ligne.designation} onChange={e => updateLigne(idx, 'designation', e.target.value)} className={getCellInputCls(ligne.designation)} placeholder="Soudeuse à pédale" />
+                                      </div>
+                                      <div>
+                                        <span style={colStyle}>Unité</span>
+                                        <input type="text" value={ligne.unite_mesure} onChange={e => updateLigne(idx, 'unite_mesure', e.target.value)} className={getCellInputCls(ligne.unite_mesure)} placeholder="Unite, Forfait" />
+                                      </div>
+                                      <div>
+                                        <span style={colStyle}>Quantité</span>
+                                        <input type="number" value={ligne.quantite} onChange={e => updateLigne(idx, 'quantite', e.target.value)} className={getCellInputCls(ligne.quantite)} placeholder="1" min="1" />
+                                      </div>
+                                      {isAvisAchat && (
+                                        <div>
+                                          <span style={colStyle}>TVA (%)</span>
+                                          <input
+                                            type="number"
+                                            value={idx === 0 ? (ligne.tva ?? '20') : (lignes[0]?.tva ?? '20')}
+                                            onChange={e => updateLigne(0, 'tva', e.target.value)}
+                                            disabled={idx > 0}
+                                            className={`${getCellInputCls(ligne.tva)} ${idx > 0 ? 'bg-slate-100/90 text-slate-500 cursor-not-allowed border-slate-200' : ''}`}
+                                            placeholder="20"
+                                            min="0"
+                                            max="100"
+                                            title={idx > 0 ? "La TVA est identique pour toutes les lignes (définie par la 1ère ligne)" : ""}
+                                          />
+                                        </div>
                                       )}
-                                    </select>
-                                  ) : (
-                                    <input
-                                      type="text"
-                                      value={item.nom}
-                                      onChange={(e) => updateRefused(idx, 'nom', e.target.value)}
-                                      placeholder="Ex: TOPOGRAPHY CONSULTING"
-                                      className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold text-slate-800 outline-none focus:border-red-500"
-                                    />
-                                  )}
-                                </div>
-
-                                <div className="w-full sm:w-2/3 flex items-center gap-2">
-                                  <div className="flex-1 space-y-1">
-                                    <span className="block text-[10px] font-bold text-slate-500 uppercase">Motif d'écartement</span>
-                                    <input
-                                      type="text"
-                                      list={`standard-motifs-list-${idx}`}
-                                      value={item.motif}
-                                      onChange={(e) => updateRefused(idx, 'motif', e.target.value)}
-                                      placeholder="Ex: Refus d'invitation du maître d'ouvrage"
-                                      className="w-full px-3 py-2 rounded-lg border border-slate-200 text-xs font-semibold text-slate-800 outline-none focus:border-red-500 bg-white"
-                                    />
-                                    <datalist id={`standard-motifs-list-${idx}`}>
-                                      {standardMotifs.map((m, i) => (
-                                        <option key={i} value={m} />
-                                      ))}
-                                    </datalist>
+                                      {showPrices && (
+                                        <>
+                                          <div>
+                                            <span style={colStyle}>P.U HT (DH)</span>
+                                            <input type="number" value={ligne.prix_unitaire_ht || ''} onChange={e => updateLigne(idx, 'prix_unitaire_ht', e.target.value)} className={getCellInputCls(ligne.prix_unitaire_ht)} placeholder="0.00" step="0.01" />
+                                          </div>
+                                          <div>
+                                            <span style={colStyle}>Montant HT</span>
+                                            <input type="text" value={(Number(ligne.quantite || 0) * Number(ligne.prix_unitaire_ht || 0)).toFixed(2)} readOnly className="w-full px-2 py-2 rounded-lg border border-slate-200 bg-slate-100 font-bold text-blue-700 text-xs cursor-not-allowed outline-none" />
+                                          </div>
+                                        </>
+                                      )}
+                                      <div className="col-span-2">
+                                        <span style={colStyle}>Garantie Exigée</span>
+                                        <input type="text" value={ligne.garantie_exigee || ''} onChange={e => updateLigne(idx, 'garantie_exigee', e.target.value)} className={getCellInputCls(ligne.garantie_exigee)} placeholder="Facultative (ex: 12 mois...)" />
+                                      </div>
+                                    </div>
                                   </div>
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        }
+
+                        if (field.type === 'concurrents_table') {
+                          const list = Array.isArray(documentForms[selectedDocument.id]?.[field.name])
+                            ? documentForms[selectedDocument.id][field.name]
+                            : [
+                              { nom: 'TOPOGRAPHY CONSULTING', montant: 30240 },
+                              { nom: 'LANDMAP SURVEY', montant: 36360 },
+                              { nom: 'BUREAU ALAOUI TOPO', montant: 39060 },
+                              { nom: 'BAJITOP', montant: 45240 },
+                              { nom: 'GOLDEN GEO', montant: 47520 },
+                            ];
+
+                          const currentAttr = documentForms[selectedDocument.id]?.attributaire || '';
+                          const syncRefusedWithAttr = (updatedList) => {
+                            if (currentAttr) {
+                              const foundIndex = updatedList.findIndex((c) => c.nom === currentAttr);
+                              if (foundIndex !== -1) {
+                                const refusedCompanies = updatedList.slice(0, foundIndex).map((c) => ({
+                                  nom: c.nom,
+                                  motif: "Refus d'invitation du maître d'ouvrage",
+                                }));
+                                handleDocumentFieldChange(selectedDocument.id, 'societes_refusees', refusedCompanies);
+                              }
+                            }
+                          };
+
+                          const updateConcurrent = (idx, key, val) => {
+                            const updated = list.map((c, i) => (i === idx ? { ...c, [key]: val } : c));
+                            handleDocumentFieldChange(selectedDocument.id, field.name, updated);
+                            syncRefusedWithAttr(updated);
+                          };
+                          const addConcurrent = () => {
+                            const updated = [
+                              ...list,
+                              { nom: '', montant: '' },
+                            ];
+                            handleDocumentFieldChange(selectedDocument.id, field.name, updated);
+                            syncRefusedWithAttr(updated);
+                          };
+                          const removeConcurrent = (idx) => {
+                            if (list.length <= 1) return;
+                            const updated = list.filter((_, i) => i !== idx);
+                            handleDocumentFieldChange(selectedDocument.id, field.name, updated);
+                            syncRefusedWithAttr(updated);
+                          };
+
+                          const handleExcelImport = (e) => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+
+                            const reader = new FileReader();
+
+                            reader.onload = (evt) => {
+                              try {
+                                let rows = [];
+                                const fileName = file.name.toLowerCase();
+
+                                if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
+                                  const data = new Uint8Array(evt.target.result);
+                                  const wb = XLSX.read(data, { type: 'array' });
+                                  const wsName = wb.SheetNames[0];
+                                  const ws = wb.Sheets[wsName];
+                                  rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+                                } else {
+                                  let text = '';
+                                  if (typeof evt.target.result === 'string') {
+                                    text = evt.target.result;
+                                  } else {
+                                    const decoder = new TextDecoder('utf-8', { fatal: false });
+                                    text = decoder.decode(evt.target.result);
+                                  }
+
+                                  const lines = text.split(/\r\n|\n|\r/);
+                                  rows = lines
+                                    .filter((line) => line.trim() !== '')
+                                    .map((line) => {
+                                      let delimiter = ';';
+                                      if (line.includes(';')) delimiter = ';';
+                                      else if (line.includes('\t')) delimiter = '\t';
+                                      else if (line.includes(',')) delimiter = ',';
+                                      return line.split(delimiter).map((c) => c.trim().replace(/^["']|["']$/g, ''));
+                                    });
+                                }
+
+                                if (!rows || rows.length === 0) {
+                                  alert("Le fichier sélectionné est vide.");
+                                  return;
+                                }
+
+                                let extractedRef = '';
+                                let extractedObjet = '';
+
+                                for (let i = 0; i < Math.min(rows.length, 7); i++) {
+                                  const rowStr = (rows[i] || []).map((c) => String(c).toLowerCase()).join(' ');
+                                  if (rowStr.includes('référence') || rowStr.includes('reference')) {
+                                    const valCol = (rows[i] || []).find((c, idx) => idx > 0 && String(c).trim() !== '');
+                                    if (valCol) extractedRef = String(valCol).trim();
+                                  }
+                                  if (rowStr.includes('objet')) {
+                                    const valCol = (rows[i] || []).find((c, idx) => idx > 0 && String(c).trim() !== '');
+                                    if (valCol) extractedObjet = String(valCol).trim();
+                                  }
+                                }
+
+                                let headerRowIndex = -1;
+                                let colClassement = -1;
+                                let colNom = -1;
+                                let colMontant = -1;
+
+                                for (let i = 0; i < rows.length; i++) {
+                                  const row = rows[i];
+                                  if (!Array.isArray(row)) continue;
+
+                                  let hasNameCol = false;
+                                  let hasAmountCol = false;
+                                  let cIdx = -1, nIdx = -1, mIdx = -1;
+
+                                  row.forEach((cell, colIdx) => {
+                                    const s = String(cell).toLowerCase().trim();
+                                    if (s.includes('classement') || s.includes('rang') || s === 'n°' || s === 'no' || s === '#') {
+                                      cIdx = colIdx;
+                                    }
+                                    if (s.includes('entreprise') || s.includes('société') || s.includes('societe') || s.includes('concurrent') || s.includes('dépositaire') || s.includes('fournisseur') || s === 'nom') {
+                                      nIdx = colIdx;
+                                      hasNameCol = true;
+                                    }
+                                    if (s.includes('total') || s.includes('ttc') || s.includes('ht') || s.includes('montant') || s.includes('prix') || s.includes('offre')) {
+                                      mIdx = colIdx;
+                                      hasAmountCol = true;
+                                    }
+                                  });
+
+                                  if (hasNameCol || (cIdx !== -1 && mIdx !== -1) || (hasAmountCol && nIdx !== -1)) {
+                                    headerRowIndex = i;
+                                    colClassement = cIdx;
+                                    colNom = nIdx;
+                                    colMontant = mIdx;
+                                    break;
+                                  }
+                                }
+
+                                const parseMoney = (val) => {
+                                  if (typeof val === 'number') return val;
+                                  if (!val) return 0;
+                                  const clean = String(val).replace(/\s+/g, '').replace(/DH|MAD/gi, '').replace(/,/g, '.').replace(/[^\d.-]/g, '');
+                                  const parsed = parseFloat(clean);
+                                  return isNaN(parsed) ? 0 : parsed;
+                                };
+
+                                const imported = [];
+                                const startRow = headerRowIndex !== -1 ? headerRowIndex + 1 : 0;
+
+                                for (let i = startRow; i < rows.length; i++) {
+                                  const row = rows[i];
+                                  if (!row || row.length === 0) continue;
+
+                                  let rank = '';
+                                  let nom = '';
+                                  let montant = 0;
+
+                                  if (headerRowIndex !== -1) {
+                                    if (colClassement !== -1) rank = row[colClassement];
+                                    if (colNom !== -1) nom = row[colNom];
+                                    if (colMontant !== -1) montant = parseMoney(row[colMontant]);
+                                  }
+
+                                  if (!nom || String(nom).trim() === '') {
+                                    if (row.length >= 3 && (typeof row[0] === 'number' || /^\d+$/.test(String(row[0]).trim()))) {
+                                      rank = row[0];
+                                      nom = String(row[1] || '').trim();
+                                      montant = parseMoney(row[2]);
+                                    } else if (row.length >= 2) {
+                                      nom = String(row[0] || '').trim();
+                                      montant = parseMoney(row[1]);
+                                    }
+                                  }
+
+                                  nom = String(nom || '').trim();
+                                  if (
+                                    !nom ||
+                                    nom.toLowerCase().includes('synthèse') ||
+                                    nom.toLowerCase().includes('entreprise') ||
+                                    nom.toLowerCase().includes('nom des concurrents') ||
+                                    nom.toLowerCase().includes('total') ||
+                                    nom.toLowerCase().includes('direction régionale') ||
+                                    nom.toLowerCase() === 'référence' ||
+                                    nom.toLowerCase() === 'objet'
+                                  ) {
+                                    continue;
+                                  }
+
+                                  const parsedRank = parseInt(rank, 10);
+                                  imported.push({
+                                    nom: nom,
+                                    montant: montant || 0,
+                                    classement: !isNaN(parsedRank) && parsedRank > 0 ? parsedRank : null
+                                  });
+                                }
+
+                                if (imported.length === 0) {
+                                  alert("Aucun concurrent valide n'a été trouvé dans le fichier. Veuillez vérifier la structure (colonnes: Classement, Entreprise, Montant TTC).");
+                                  return;
+                                }
+
+                                imported.sort((a, b) => {
+                                  if (a.classement && b.classement) return a.classement - b.classement;
+                                  if (a.montant > 0 && b.montant > 0) return a.montant - b.montant;
+                                  return 0;
+                                });
+
+                                imported.forEach((item, index) => {
+                                  if (!item.classement) {
+                                    item.classement = index + 1;
+                                  }
+                                });
+
+                                handleDocumentFieldChange(selectedDocument.id, field.name, imported);
+                                syncRefusedWithAttr(imported);
+
+                                const winner = imported.find((c) => c.classement === 1) || imported[0];
+                                if (winner && winner.nom) {
+                                  handleDocumentFieldChange(selectedDocument.id, 'attributaire', winner.nom);
+                                  handleDocumentFieldChange(selectedDocument.id, 'montant_apres_verification', winner.montant);
+                                  handleDocumentFieldChange('bon_commande', 'titulaire_nom', winner.nom);
+                                  handleDocumentFieldChange('bon_commande', 'societe', winner.nom);
+                                  handleDocumentFieldChange('ordre_commande', 'societe', winner.nom);
+                                }
+
+                                if (extractedRef && !documentForms[selectedDocument.id]?.numero_consultation) {
+                                  handleDocumentFieldChange(selectedDocument.id, 'numero_consultation', extractedRef);
+                                }
+                                if (extractedObjet && !documentForms[selectedDocument.id]?.objet) {
+                                  handleDocumentFieldChange(selectedDocument.id, 'objet', extractedObjet);
+                                }
+
+                                setMessage(`${imported.length} concurrent(s) importé(s) avec classement ! Offre retenue : ${winner.nom} (${winner.montant ? winner.montant.toLocaleString('fr-FR') : 0} DH TTC).`);
+                              } catch (err) {
+                                console.error(err);
+                                alert("Erreur lors de la lecture du fichier Excel.");
+                              }
+                            };
+
+                            if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
+                              reader.readAsArrayBuffer(file);
+                            } else {
+                              reader.readAsText(file);
+                            }
+                            e.target.value = '';
+                          };
+
+                          return (
+                            <div key={`${selectedDocument.id}-${field.name}`} className="col-span-full bg-slate-50 border border-slate-200 rounded-2xl p-5 shadow-sm">
+                              <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+                                <label className="block text-xs font-semibold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                                  🏢 {field.label} {field.required && !field.fromDb && <span className="text-red-600 font-bold ml-0.5">*</span>}
+                                </label>
+
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <label className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-lg inline-flex items-center gap-1.5 shadow-sm transition-all cursor-pointer">
+                                    <FileSpreadsheet size={14} /> Importer Excel / CSV
+                                    <input
+                                      type="file"
+                                      accept=".xlsx, .xls, .csv, .tsv, .txt"
+                                      onChange={handleExcelImport}
+                                      className="hidden"
+                                    />
+                                  </label>
 
                                   <button
                                     type="button"
-                                    onClick={() => removeRefused(idx)}
-                                    className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-all shrink-0 self-end mb-1"
-                                    title="Annuler l'écartement de cette société"
+                                    onClick={addConcurrent}
+                                    className="px-3 py-1.5 bg-blue-700 hover:bg-blue-800 text-white font-bold text-xs rounded-lg inline-flex items-center gap-1 shadow-sm transition-all"
                                   >
-                                    <Trash2 size={15} />
+                                    <Plus size={14} /> Ajouter un concurrent
                                   </button>
                                 </div>
                               </div>
-                            );
-                          })}
 
-                          {currentList.length === 0 && (
-                            <div className="p-4 border border-dashed border-slate-300 rounded-xl text-center text-xs text-slate-500 bg-white">
-                              Aucune société refusée enregistrée (Néant).
+                              <div className="overflow-x-auto">
+                                <table className="w-full bg-white border border-slate-200 rounded-xl overflow-hidden text-xs">
+                                  <thead>
+                                    <tr className="bg-slate-100 border-b border-slate-200 text-slate-700 font-bold uppercase tracking-wider">
+                                      <th className="py-2.5 px-3 text-center w-36">Classement</th>
+                                      <th className="py-2.5 px-3 text-left">Nom des concurrents / Société</th>
+                                      <th className="py-2.5 px-3 text-right w-48">Montant de l'offre (TTC)</th>
+                                      <th className="py-2.5 px-3 text-center w-12"></th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {list.map((c, idx) => {
+                                      const rank = c.classement || idx + 1;
+                                      const isWinner = rank === 1;
+                                      return (
+                                        <tr key={idx} className={`border-b border-slate-100 hover:bg-slate-50 transition-all ${isWinner ? 'bg-blue-50/50' : ''}`}>
+                                          <td className="py-2 px-3 text-center font-bold">
+                                            <span className={`px-2.5 py-1 rounded-full text-[11px] font-semibold inline-block ${isWinner
+                                              ? 'bg-blue-100 text-blue-800 border border-blue-300 shadow-sm'
+                                              : 'bg-slate-100 text-slate-700 border border-slate-200'
+                                              }`}>
+                                              {rank === 1 ? '🥇 1er (Moins-disant)' : `${rank}ème`}
+                                            </span>
+                                          </td>
+                                          <td className="py-2 px-3">
+                                            <input
+                                              type="text"
+                                              value={c.nom}
+                                              onChange={(e) => updateConcurrent(idx, 'nom', e.target.value)}
+                                              placeholder="Ex: CATALYSSIA BUSINESS COMPANY SARL"
+                                              className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white font-semibold text-slate-800 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-100"
+                                            />
+                                          </td>
+                                          <td className="py-2 px-3">
+                                            <input
+                                              type="number"
+                                              value={c.montant}
+                                              onChange={(e) => updateConcurrent(idx, 'montant', e.target.value)}
+                                              placeholder="45313.4"
+                                              className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white font-semibold text-slate-800 text-right outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-100"
+                                            />
+                                          </td>
+                                          <td className="py-2 px-3 text-center">
+                                            {list.length > 1 && (
+                                              <button
+                                                type="button"
+                                                onClick={() => removeConcurrent(idx)}
+                                                className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                                                title="Supprimer ce concurrent"
+                                              >
+                                                <Trash2 size={14} />
+                                              </button>
+                                            )}
+                                          </td>
+                                        </tr>
+                                      );
+                                    })}
+                                  </tbody>
+                                </table>
+                              </div>
                             </div>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  }
-
-                  if (field.type === 'attributaire_selector') {
-                    const concurrentsList = Array.isArray(documentForms[selectedDocument.id]?.concurrents)
-                      ? documentForms[selectedDocument.id].concurrents
-                      : [];
-                    const selectedAttr = documentForms[selectedDocument.id]?.[field.name] || '';
-                    const motifAttr = documentForms[selectedDocument.id]?.motif_attribution || '';
-
-                    const handleSelectAttr = (e) => {
-                      const selectedNom = e.target.value;
-                      handleDocumentFieldChange(selectedDocument.id, field.name, selectedNom);
-
-                      if (!selectedNom) return;
-
-                      const foundIndex = concurrentsList.findIndex((c) => c.nom === selectedNom);
-                      if (foundIndex !== -1) {
-                        const found = concurrentsList[foundIndex];
-                        if (found && found.montant) {
-                          handleDocumentFieldChange(selectedDocument.id, 'montant_apres_verification', found.montant);
+                          );
                         }
 
-                        const rank = found.classement || (foundIndex + 1);
-                        handleDocumentFieldChange(
-                          selectedDocument.id,
-                          'motif_attribution',
-                          `Offre la moins disante conforme (classée N°${rank}) retenue par le maître d'ouvrage`
-                        );
-                      }
+                        if (field.type === 'societes_refusees_input') {
+                          const rawVal = documentForms[selectedDocument.id]?.[field.name];
+                          const currentList = Array.isArray(rawVal)
+                            ? rawVal
+                            : typeof rawVal === 'string' && rawVal.trim() !== ''
+                              ? rawVal.split(',').map((s) => ({ nom: s.trim(), motif: "Refus d'invitation du maître d'ouvrage" }))
+                              : [];
 
-                      handleDocumentFieldChange('bon_commande', 'titulaire_nom', selectedNom);
-                      handleDocumentFieldChange('bon_commande', 'societe', selectedNom);
-                      handleDocumentFieldChange('ordre_commande', 'societe', selectedNom);
-                    };
+                          const concurrentsList = Array.isArray(documentForms[selectedDocument.id]?.concurrents)
+                            ? documentForms[selectedDocument.id].concurrents
+                            : [];
 
-                    return (
-                      <div key={`${selectedDocument.id}-${field.name}`} className="col-span-full bg-slate-50 border border-slate-200 rounded-2xl p-5 shadow-sm space-y-3">
-                        <div className="flex items-center justify-between">
-                          <label className="block text-xs font-semibold text-slate-800 uppercase tracking-wider flex items-center gap-2">
-                            🏆 {field.label} {field.required && !field.fromDb && <span className="text-red-600 font-bold ml-0.5">*</span>}
-                          </label>
-                          {selectedAttr && (
-                            <span className="px-2.5 py-1 bg-blue-100 text-blue-800 border border-blue-300 rounded-full text-[11px] font-semibold">
-                              Société retenue : {selectedAttr}
-                            </span>
-                          )}
-                        </div>
+                          const standardMotifs = [
+                            "Refus d'invitation du maître d'ouvrage",
+                            "Offre supérieure au budget estimatif",
+                            "Offre financière non conforme / Erreur de calcul",
+                            "Dossier administratif ou technique incomplet",
+                            "Non-respect des spécifications du cahier des charges",
+                            "Abandon ou retrait de l'offre par le concurrent",
+                            "Autre motif (à préciser ci-dessous)"
+                          ];
 
-                        <select
-                          value={selectedAttr}
-                          onChange={handleSelectAttr}
-                          className="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-800 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                        >
-                          <option value="">-- Sélectionner la société retenue parmi les concurrents --</option>
-                          {concurrentsList.map((c, i) => (
-                            <option key={i} value={c.nom}>
-                              {c.classement || i + 1}. {c.nom} {c.montant ? `(${Number(c.montant).toLocaleString('fr-FR')} DH TTC)` : ''}
-                            </option>
-                          ))}
-                        </select>
+                          const syncAutoAttributaire = (updatedRefusedList) => {
+                            if (!concurrentsList || concurrentsList.length === 0) return;
 
-                        <div className="pt-2">
-                          <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1 flex items-center gap-1.5">
-                            📝 Motif du choix de l'offre retenue
-                          </label>
-                          <input
-                            type="text"
-                            value={motifAttr}
-                            onChange={(e) => handleDocumentFieldChange(selectedDocument.id, 'motif_attribution', e.target.value)}
-                            placeholder="Ex: Offre la moins disante conforme retenue par le maître d'ouvrage"
-                            className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-semibold text-slate-800 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                          />
-                        </div>
+                            const refusedNames = updatedRefusedList.map((r) => String(r.nom || '').trim().toLowerCase());
+                            const eligible = concurrentsList.find((c) => !refusedNames.includes(String(c.nom || '').trim().toLowerCase()));
 
-                      </div>
-                    );
-                  }
+                            if (eligible && eligible.nom) {
+                              handleDocumentFieldChange(selectedDocument.id, 'attributaire', eligible.nom);
+                              if (eligible.montant) {
+                                handleDocumentFieldChange(selectedDocument.id, 'montant_apres_verification', eligible.montant);
+                              }
+                              const rank = eligible.classement || (concurrentsList.findIndex((c) => c.nom === eligible.nom) + 1);
+                              handleDocumentFieldChange(
+                                selectedDocument.id,
+                                'motif_attribution',
+                                `Offre la moins disante conforme (classée N°${rank}) après examen des devis reçus`
+                              );
+                              handleDocumentFieldChange('bon_commande', 'titulaire_nom', eligible.nom);
+                              handleDocumentFieldChange('bon_commande', 'societe', eligible.nom);
+                              handleDocumentFieldChange('ordre_commande', 'societe', eligible.nom);
+                            }
+                          };
 
-                  if (field.type === 'commission_selector') {
-                    const isPV = selectedDocument.id === 'pv_ouverture_attribution' || selectedDocument.id === 'pv_reception';
-                    const decMembres = selectedDocument.id === 'pv_reception'
-                      ? (documentForms.decision_commission_reception?.membres_commission || savedConsultation?.reception_commission?.membres_commission || savedConsultation?.receptionCommission?.membres_commission)
-                      : documentForms.decision_commission_ouverture?.membres_commission;
-                    const currentCommissionList = isPV && Array.isArray(decMembres) && decMembres.length > 0
-                      ? decMembres
-                      : (Array.isArray(documentForms[selectedDocument.id]?.[field.name])
-                        ? documentForms[selectedDocument.id][field.name]
-                        : []);
+                          const addRefusedCompany = (companyName = '') => {
+                            const defaultMotif = "Refus d'invitation du maître d'ouvrage";
+                            let targetName = companyName;
+                            if (!targetName && concurrentsList && concurrentsList.length > 0) {
+                              const existingRefusedNames = currentList.map((r) => String(r.nom || '').trim().toLowerCase());
+                              const firstUnused = concurrentsList.find((c) => !existingRefusedNames.includes(String(c.nom || '').trim().toLowerCase()));
+                              if (firstUnused) {
+                                targetName = firstUnused.nom;
+                              }
+                            }
+                            const updated = [...currentList, { nom: targetName, motif: defaultMotif }];
+                            handleDocumentFieldChange(selectedDocument.id, field.name, updated);
+                            syncAutoAttributaire(updated);
+                          };
 
-                    return (
-                      <div key={`${selectedDocument.id}-${field.name}`} className="col-span-full bg-slate-50 border border-slate-200 rounded-2xl p-5 shadow-sm">
-                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-3">
-                          <label className="block text-xs font-semibold text-slate-800 uppercase tracking-wider flex items-center gap-2">
-                            <Users size={16} className="text-blue-700" />
-                            {field.label} {field.required && !field.fromDb && <span className="text-red-600 font-bold ml-0.5">*</span>}
-                          </label>
+                          const updateRefused = (idx, key, value) => {
+                            const updated = currentList.map((item, i) => (i === idx ? { ...item, [key]: value } : item));
+                            handleDocumentFieldChange(selectedDocument.id, field.name, updated);
+                            if (key === 'nom') {
+                              syncAutoAttributaire(updated);
+                            }
+                          };
 
-                        </div>
+                          const removeRefused = (idx) => {
+                            const updated = currentList.filter((_, i) => i !== idx);
+                            handleDocumentFieldChange(selectedDocument.id, field.name, updated);
+                            syncAutoAttributaire(updated);
+                          };
 
-                        {!isPV && (
-                          /* Barre d'ajout d'un membre au document */
-                          <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 mb-4">
-                            <div className="sm:col-span-6 flex gap-2">
+                          return (
+                            <div key={`${selectedDocument.id}-${field.name}`} className="col-span-full bg-slate-50 border border-slate-200 rounded-2xl p-5 shadow-sm">
+                              <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+                                <label className="block text-xs font-semibold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                                  ❌ {field.label} {field.required && !field.fromDb && <span className="text-red-600 font-bold ml-0.5">*</span>}
+                                </label>
+
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => addRefusedCompany('')}
+                                    className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white font-bold text-xs rounded-lg inline-flex items-center gap-1 shadow-sm transition-all"
+                                  >
+                                    <Plus size={14} /> Ajouter manuellement
+                                  </button>
+                                </div>
+                              </div>
+
+                              <div className="space-y-3">
+                                {currentList.map((item, idx) => {
+                                  const takenByOthers = currentList
+                                    .filter((_, i) => i !== idx)
+                                    .map((r) => String(r.nom || '').trim().toLowerCase());
+
+                                  const availableOptions = concurrentsList.filter((c) => {
+                                    const normName = String(c.nom || '').trim().toLowerCase();
+                                    const isSelf = normName === String(item.nom || '').trim().toLowerCase();
+                                    return isSelf || !takenByOthers.includes(normName);
+                                  });
+
+                                  return (
+                                    <div key={idx} className="flex flex-col sm:flex-row items-start sm:items-center gap-3 bg-white p-3.5 border border-slate-200 rounded-xl shadow-sm">
+                                      <div className="w-full sm:w-1/3">
+                                        <span className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Société écartée</span>
+                                        {concurrentsList.length > 0 ? (
+                                          <select
+                                            value={item.nom}
+                                            onChange={(e) => updateRefused(idx, 'nom', e.target.value)}
+                                            className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs font-bold text-slate-800 bg-slate-50 outline-none focus:border-red-500 focus:bg-white"
+                                          >
+                                            <option value="">-- Choisir la société --</option>
+                                            {availableOptions.map((c, i) => (
+                                              <option key={i} value={c.nom}>
+                                                {c.nom}
+                                              </option>
+                                            ))}
+                                            {!availableOptions.some((c) => c.nom === item.nom) && item.nom && (
+                                              <option value={item.nom}>{item.nom}</option>
+                                            )}
+                                          </select>
+                                        ) : (
+                                          <input
+                                            type="text"
+                                            value={item.nom}
+                                            onChange={(e) => updateRefused(idx, 'nom', e.target.value)}
+                                            placeholder="Ex: TOPOGRAPHY CONSULTING"
+                                            className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold text-slate-800 outline-none focus:border-red-500"
+                                          />
+                                        )}
+                                      </div>
+
+                                      <div className="w-full sm:w-2/3 flex items-center gap-2">
+                                        <div className="flex-1 space-y-1">
+                                          <span className="block text-[10px] font-bold text-slate-500 uppercase">Motif d'écartement</span>
+                                          <input
+                                            type="text"
+                                            list={`standard-motifs-list-${idx}`}
+                                            value={item.motif}
+                                            onChange={(e) => updateRefused(idx, 'motif', e.target.value)}
+                                            placeholder="Ex: Refus d'invitation du maître d'ouvrage"
+                                            className="w-full px-3 py-2 rounded-lg border border-slate-200 text-xs font-semibold text-slate-800 outline-none focus:border-red-500 bg-white"
+                                          />
+                                          <datalist id={`standard-motifs-list-${idx}`}>
+                                            {standardMotifs.map((m, i) => (
+                                              <option key={i} value={m} />
+                                            ))}
+                                          </datalist>
+                                        </div>
+
+                                        <button
+                                          type="button"
+                                          onClick={() => removeRefused(idx)}
+                                          className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-all shrink-0 self-end mb-1"
+                                          title="Annuler l'écartement de cette société"
+                                        >
+                                          <Trash2 size={15} />
+                                        </button>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+
+                                {currentList.length === 0 && (
+                                  <div className="p-4 border border-dashed border-slate-300 rounded-xl text-center text-xs text-slate-500 bg-white">
+                                    Aucune société refusée enregistrée (Néant).
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        }
+
+                        if (field.type === 'attributaire_selector') {
+                          const concurrentsList = Array.isArray(documentForms[selectedDocument.id]?.concurrents)
+                            ? documentForms[selectedDocument.id].concurrents
+                            : [];
+                          const selectedAttr = documentForms[selectedDocument.id]?.[field.name] || '';
+                          const motifAttr = documentForms[selectedDocument.id]?.motif_attribution || '';
+
+                          const handleSelectAttr = (e) => {
+                            const selectedNom = e.target.value;
+                            handleDocumentFieldChange(selectedDocument.id, field.name, selectedNom);
+
+                            if (!selectedNom) return;
+
+                            const foundIndex = concurrentsList.findIndex((c) => c.nom === selectedNom);
+                            if (foundIndex !== -1) {
+                              const found = concurrentsList[foundIndex];
+                              if (found && found.montant) {
+                                handleDocumentFieldChange(selectedDocument.id, 'montant_apres_verification', found.montant);
+                              }
+
+                              const rank = found.classement || (foundIndex + 1);
+                              handleDocumentFieldChange(
+                                selectedDocument.id,
+                                'motif_attribution',
+                                `Offre la moins disante conforme (classée N°${rank}) retenue par le maître d'ouvrage`
+                              );
+                            }
+
+                            handleDocumentFieldChange('bon_commande', 'titulaire_nom', selectedNom);
+                            handleDocumentFieldChange('bon_commande', 'societe', selectedNom);
+                            handleDocumentFieldChange('ordre_commande', 'societe', selectedNom);
+                          };
+
+                          return (
+                            <div key={`${selectedDocument.id}-${field.name}`} className="col-span-full bg-slate-50 border border-slate-200 rounded-2xl p-5 shadow-sm space-y-3">
+                              <div className="flex items-center justify-between">
+                                <label className="block text-xs font-semibold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                                  🏆 {field.label} {field.required && !field.fromDb && <span className="text-red-600 font-bold ml-0.5">*</span>}
+                                </label>
+                                {selectedAttr && (
+                                  <span className="px-2.5 py-1 bg-blue-100 text-blue-800 border border-blue-300 rounded-full text-[11px] font-semibold">
+                                    Société retenue : {selectedAttr}
+                                  </span>
+                                )}
+                              </div>
+
                               <select
-                                value={nouveauMembreForm.membre_id}
-                                onChange={(e) => setNouveauMembreForm({ ...nouveauMembreForm, membre_id: e.target.value })}
-                                className="flex-1 px-3 py-2.5 bg-white border border-slate-300 rounded-xl text-xs font-semibold text-slate-800 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                                value={selectedAttr}
+                                onChange={handleSelectAttr}
+                                className="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-800 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                               >
-                                <option value="">-- Choisir un membre depuis la base --</option>
-                                {membresCatalog.map((m) => (
-                                  <option key={m.id} value={m.id}>
-                                    {m.nom_prenom} ({m.fonction || 'Membre'})
+                                <option value="">-- Sélectionner la société retenue parmi les concurrents --</option>
+                                {concurrentsList.map((c, i) => (
+                                  <option key={i} value={c.nom}>
+                                    {c.classement || i + 1}. {c.nom} {c.montant ? `(${Number(c.montant).toLocaleString('fr-FR')} DH TTC)` : ''}
                                   </option>
                                 ))}
                               </select>
-                              <button
-                                type="button"
-                                onClick={() => setIsQuickMembreModalOpen(true)}
-                                className="px-3 py-2.5 bg-blue-700 hover:bg-blue-800 text-white rounded-xl text-xs font-bold shrink-0 inline-flex items-center gap-1 shadow-sm transition-all"
-                                title="Créer un nouveau membre dans le répertoire"
-                              >
-                                <Plus size={16} /> Nouveau
-                              </button>
+
+                              <div className="pt-2">
+                                <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1 flex items-center gap-1.5">
+                                  📝 Motif du choix de l'offre retenue
+                                </label>
+                                <input
+                                  type="text"
+                                  value={motifAttr}
+                                  onChange={(e) => handleDocumentFieldChange(selectedDocument.id, 'motif_attribution', e.target.value)}
+                                  placeholder="Ex: Offre la moins disante conforme retenue par le maître d'ouvrage"
+                                  className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-semibold text-slate-800 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                                />
+                              </div>
+
                             </div>
+                          );
+                        }
 
-                            <div className="sm:col-span-4">
-                              <select
-                                value={nouveauMembreForm.qualite}
-                                onChange={(e) => setNouveauMembreForm({ ...nouveauMembreForm, qualite: e.target.value })}
-                                className="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-xl text-xs font-semibold text-slate-800 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                              >
-                                <option value="Président">Président(e)</option>
-                                <option value="Membre">Membre1</option>
-                                <option value="Membre">Membre2</option>
+                        if (field.type === 'commission_selector') {
+                          const isPV = selectedDocument.id === 'pv_ouverture_attribution' || selectedDocument.id === 'pv_reception';
+                          const decMembres = selectedDocument.id === 'pv_reception'
+                            ? (documentForms.decision_commission_reception?.membres_commission || savedConsultation?.reception_commission?.membres_commission || savedConsultation?.receptionCommission?.membres_commission)
+                            : documentForms.decision_commission_ouverture?.membres_commission;
+                          const currentCommissionList = isPV && Array.isArray(decMembres) && decMembres.length > 0
+                            ? decMembres
+                            : (Array.isArray(documentForms[selectedDocument.id]?.[field.name])
+                              ? documentForms[selectedDocument.id][field.name]
+                              : []);
 
-                              </select>
-                            </div>
+                          return (
+                            <div key={`${selectedDocument.id}-${field.name}`} className="col-span-full bg-slate-50 border border-slate-200 rounded-2xl p-5 shadow-sm">
+                              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-3">
+                                <label className="block text-xs font-semibold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                                  <Users size={16} className="text-blue-700" />
+                                  {field.label} {field.required && !field.fromDb && <span className="text-red-600 font-bold ml-0.5">*</span>}
+                                </label>
+                              </div>
 
-                            <div className="sm:col-span-2">
-                              <button
-                                type="button"
-                                disabled={!nouveauMembreForm.membre_id}
-                                onClick={() => addMembreToDocumentCommission(selectedDocument.id, field.name)}
-                                className="w-full h-full py-2.5 bg-blue-700 hover:bg-blue-800 disabled:opacity-50 text-white font-bold text-xs rounded-xl inline-flex items-center justify-center gap-1 shadow-sm transition-all"
-                              >
-                                <Plus size={14} /> Ajouter
-                              </button>
-                            </div>
-                          </div>
-                        )}
+                              {!isPV && (
+                                <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 mb-4">
+                                  <div className="sm:col-span-6 flex gap-2">
+                                    <select
+                                      value={nouveauMembreForm.membre_id}
+                                      onChange={(e) => setNouveauMembreForm({ ...nouveauMembreForm, membre_id: e.target.value })}
+                                      className="flex-1 px-3 py-2.5 bg-white border border-slate-300 rounded-xl text-xs font-semibold text-slate-800 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                                    >
+                                      <option value="">-- Choisir un membre depuis la base --</option>
+                                      {membresCatalog.map((m) => (
+                                        <option key={m.id} value={m.id}>
+                                          {m.nom_prenom} ({m.fonction || 'Membre'})
+                                        </option>
+                                      ))}
+                                    </select>
+                                    <button
+                                      type="button"
+                                      onClick={() => setIsQuickMembreModalOpen(true)}
+                                      className="px-3 py-2.5 bg-blue-700 hover:bg-blue-800 text-white rounded-xl text-xs font-bold shrink-0 inline-flex items-center gap-1 shadow-sm transition-all"
+                                      title="Créer un nouveau membre dans le répertoire"
+                                    >
+                                      <Plus size={16} /> Nouveau
+                                    </button>
+                                  </div>
 
-                        {/* Liste des membres ajoutés */}
-                        {currentCommissionList.length > 0 ? (
-                          <div className="space-y-2">
-                            {currentCommissionList.map((m, idx) => (
-                              <div key={idx} className="flex items-center justify-between p-3.5 bg-white border border-slate-200 rounded-xl shadow-sm hover:border-slate-300 transition-all">
-                                <div className="flex items-center gap-3">
-                                  <span className={`px-3 py-1 rounded-lg text-xs font-semibold tracking-wide uppercase ${m.qualite === 'Président' ? 'bg-blue-100 text-blue-800 border border-blue-200' :
-                                    m.qualite === 'Rapporteur' ? 'bg-slate-100 text-slate-800 border border-slate-200' :
-                                      'bg-blue-100 text-blue-800 border border-blue-200'
-                                    }`}>
-                                    {m.qualite}
-                                  </span>
-                                  <div>
-                                    <p className="text-sm font-semibold text-slate-900">{m.nom || m.nom_prenom}</p>
-                                    <p className="text-xs font-medium text-slate-500">{m.fonction || 'Membre de commission'}</p>
+                                  <div className="sm:col-span-4">
+                                    <select
+                                      value={nouveauMembreForm.qualite}
+                                      onChange={(e) => setNouveauMembreForm({ ...nouveauMembreForm, qualite: e.target.value })}
+                                      className="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-xl text-xs font-semibold text-slate-800 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                                    >
+                                      <option value="Président">Président(e)</option>
+                                      <option value="Membre">Membre1</option>
+                                      <option value="Membre">Membre2</option>
+                                    </select>
+                                  </div>
+
+                                  <div className="sm:col-span-2">
+                                    <button
+                                      type="button"
+                                      disabled={!nouveauMembreForm.membre_id}
+                                      onClick={() => addMembreToDocumentCommission(selectedDocument.id, field.name)}
+                                      className="w-full h-full py-2.5 bg-blue-700 hover:bg-blue-800 disabled:opacity-50 text-white font-bold text-xs rounded-xl inline-flex items-center justify-center gap-1 shadow-sm transition-all"
+                                    >
+                                      <Plus size={14} /> Ajouter
+                                    </button>
                                   </div>
                                 </div>
-                                {!isPV && (
-                                  <button
-                                    type="button"
-                                    onClick={() => removeMembreFromDocumentCommission(selectedDocument.id, field.name, idx)}
-                                    className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-all"
-                                    title="Retirer ce membre de la commission"
-                                  >
-                                    <Trash2 size={16} />
-                                  </button>
-                                )}
-                              </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <div className="p-4 border border-dashed border-slate-300 rounded-xl text-center text-xs font-semibold text-slate-500 bg-white">
-                            Aucun membre sélectionné pour cette commission. Choisissez un membre ci-dessus et cliquez sur « Ajouter ».
-                          </div>
-                        )}
-                      </div>
-                    );
-                  }
+                              )}
 
-                  const fieldClass = `w-full px-4 py-3 rounded-lg border outline-none transition-all ${hasError
-                    ? 'border-red-400 bg-red-50/30 text-slate-900 focus:border-red-500 focus:ring-2 focus:ring-red-100'
-                    : 'border-slate-200 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-50/80 hover:border-slate-300'
-                    }`;
+                              {currentCommissionList.length > 0 ? (
+                                <div className="space-y-2">
+                                  {currentCommissionList.map((m, idx) => (
+                                    <div key={idx} className="flex items-center justify-between p-3.5 bg-white border border-slate-200 rounded-xl shadow-sm hover:border-slate-300 transition-all">
+                                      <div className="flex items-center gap-3">
+                                        <span className={`px-3 py-1 rounded-lg text-xs font-semibold tracking-wide uppercase ${m.qualite === 'Président' ? 'bg-blue-100 text-blue-800 border border-blue-200' :
+                                          m.qualite === 'Rapporteur' ? 'bg-slate-100 text-slate-800 border border-slate-200' :
+                                            'bg-blue-100 text-blue-800 border border-blue-200'
+                                          }`}>
+                                          {m.qualite}
+                                        </span>
+                                        <div>
+                                          <p className="text-sm font-semibold text-slate-900">{m.nom || m.nom_prenom}</p>
+                                          <p className="text-xs font-medium text-slate-500">{m.fonction || 'Membre de commission'}</p>
+                                        </div>
+                                      </div>
+                                      {!isPV && (
+                                        <button
+                                          type="button"
+                                          onClick={() => removeMembreFromDocumentCommission(selectedDocument.id, field.name, idx)}
+                                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                                          title="Retirer ce membre de la commission"
+                                        >
+                                          <Trash2 size={16} />
+                                        </button>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                              ) : (
+                                <div className="p-4 border border-dashed border-slate-300 rounded-xl text-center text-xs font-semibold text-slate-500 bg-white">
+                                  Aucun membre sélectionné pour cette commission. Choisissez un membre ci-dessus et cliquez sur « Ajouter ».
+                                </div>
+                              )}
+                            </div>
+                          );
+                        }
 
-                  const maxLen = fieldMaxLengthMap[field.name];
-                  const currentVal = (documentForms[selectedDocument.id]?.[field.name] !== undefined &&
-                    documentForms[selectedDocument.id]?.[field.name] !== null)
-                    ? documentForms[selectedDocument.id][field.name]
-                    : '';
-                  const displayedVal = selectedDocument.id === 'fiche_engagement' && field.name === 'interets_moratoires'
-                    ? ((Number(documentForms.fiche_engagement?.montant_depense_neuf) || 0) * 0.01).toFixed(2)
-                    : selectedDocument.id === 'fiche_engagement' && field.name === 'montant_engager_neuf'
-                      ? ((Number(documentForms.fiche_engagement?.montant_depense_neuf) || 0) * 1.01).toFixed(2)
-                      : currentVal;
-                  const currentLen = String(displayedVal || '').length;
+                        const fieldClass = `w-full px-4 py-3 rounded-lg border outline-none transition-all ${hasError
+                          ? 'border-red-400 bg-red-50/30 text-slate-900 focus:border-red-500 focus:ring-2 focus:ring-red-100'
+                          : 'border-slate-200 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-50/80 hover:border-slate-300'
+                          }`;
 
-                  return (
-                    <label key={`${selectedDocument.id}-${field.name}`} className={`bc-field block ${['objet', 'intitule', 'adresse_societe', 'motif_ajournement'].includes(field.name) ? 'md:col-span-2' : ''}`}>
-                      <span className="block text-xs font-bold text-slate-700 mb-1.5 flex items-center justify-between">
-                        <span>
-                          {field.label} {field.required && !field.fromDb && <span className="text-red-600 font-bold ml-0.5">*</span>}
-                        </span>
-                        {maxLen && (
-                          <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full font-bold transition-all ${currentLen === maxLen
-                            ? 'bg-slate-100 text-slate-800 border border-slate-300 font-semibold'
-                            : 'text-slate-400 bg-slate-100'
-                            }`}>
-                            {currentLen} / {maxLen} chiffres max
-                          </span>
-                        )}
-                      </span>
+                        const maxLen = fieldMaxLengthMap[field.name];
+                        const currentVal = (documentForms[selectedDocument.id]?.[field.name] !== undefined &&
+                          documentForms[selectedDocument.id]?.[field.name] !== null)
+                          ? documentForms[selectedDocument.id][field.name]
+                          : '';
+                        const displayedVal = selectedDocument.id === 'fiche_engagement' && field.name === 'interets_moratoires'
+                          ? ((Number(documentForms.fiche_engagement?.montant_depense_neuf) || 0) * 0.01).toFixed(2)
+                          : selectedDocument.id === 'fiche_engagement' && field.name === 'montant_engager_neuf'
+                            ? ((Number(documentForms.fiche_engagement?.montant_depense_neuf) || 0) * 1.01).toFixed(2)
+                            : currentVal;
+                        const currentLen = String(displayedVal || '').length;
 
-                      {field.readOnly && <span className="bc-field-hint">Calculé automatiquement</span>}
-                      {field.type === 'select' ? (
-                        <select
-                          value={documentForms[selectedDocument.id]?.[field.name] || field.options?.[0] || ''}
-                          onChange={(event) => handleDocumentFieldChange(selectedDocument.id, field.name, event.target.value)}
-                          disabled={field.readOnly}
-                          aria-invalid={hasError || undefined}
-                          className={fieldClass}
-                        >
-                          {(field.options || []).map((opt) => (
-                            <option key={opt} value={opt}>
-                              {opt}
-                            </option>
-                          ))}
-                        </select>
-                      ) : (
-                        <input
-                          type={field.type || 'text'}
-                          maxLength={maxLen || undefined}
-                          inputMode={maxLen ? 'numeric' : undefined}
-                          value={displayedVal}
-                          readOnly={field.readOnly}
-                          aria-invalid={hasError || undefined}
-                          onChange={(event) => {
-                            let val = event.target.value;
-                            if (maxLen) {
-                              val = val.replace(/\D/g, '').slice(0, maxLen);
-                            }
-                            handleDocumentFieldChange(selectedDocument.id, field.name, val);
-                          }}
-                          placeholder={field.placeholder || ''}
-                          className={`${fieldClass} ${field.readOnly ? 'bg-slate-100 text-slate-600 cursor-not-allowed' : ''}`}
-                        />
-                      )}
-                      {hasError && <span role="alert" className="mt-2 block text-xs text-red-700">{formErrors[selectedDocument.id][field.name]}</span>}
-                    </label>
-                  );
-                })}
+                        return (
+                          <label key={`${selectedDocument.id}-${field.name}`} className={`bc-field block ${['objet', 'intitule', 'adresse_societe', 'motif_ajournement'].includes(field.name) ? 'md:col-span-2' : ''}`}>
+                            <span className="block text-xs font-bold text-slate-700 mb-1.5 flex items-center justify-between">
+                              <span>
+                                {field.label} {field.required && !field.fromDb && <span className="text-red-600 font-bold ml-0.5">*</span>}
+                              </span>
+                              {maxLen && (
+                                <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full font-bold transition-all ${currentLen === maxLen
+                                  ? 'bg-slate-100 text-slate-800 border border-slate-300 font-semibold'
+                                  : 'text-slate-400 bg-slate-100'
+                                  }`}>
+                                  {currentLen} / {maxLen} chiffres max
+                                </span>
+                              )}
+                            </span>
+
+                            {field.readOnly && <span className="bc-field-hint">Calculé automatiquement</span>}
+                            {field.type === 'select' ? (
+                              <select
+                                value={documentForms[selectedDocument.id]?.[field.name] || field.options?.[0] || ''}
+                                onChange={(event) => handleDocumentFieldChange(selectedDocument.id, field.name, event.target.value)}
+                                disabled={field.readOnly}
+                                aria-invalid={hasError || undefined}
+                                className={fieldClass}
+                              >
+                                {(field.options || []).map((opt) => (
+                                  <option key={opt} value={opt}>
+                                    {opt}
+                                  </option>
+                                ))}
+                              </select>
+                            ) : (
+                              <input
+                                type={field.type || 'text'}
+                                maxLength={maxLen || undefined}
+                                inputMode={maxLen ? 'numeric' : undefined}
+                                value={displayedVal}
+                                readOnly={field.readOnly}
+                                aria-invalid={hasError || undefined}
+                                onChange={(event) => {
+                                  let val = event.target.value;
+                                  if (maxLen) {
+                                    val = val.replace(/\D/g, '').slice(0, maxLen);
+                                  }
+                                  handleDocumentFieldChange(selectedDocument.id, field.name, val);
+                                }}
+                                placeholder={field.placeholder || ''}
+                                className={`${fieldClass} ${field.readOnly ? 'bg-slate-100 text-slate-600 cursor-not-allowed' : ''}`}
+                              />
+                            )}
+                            {hasError && <span role="alert" className="mt-2 block text-xs text-red-700">{formErrors[selectedDocument.id][field.name]}</span>}
+                          </label>
+                        );
+                      })}
                     </div>
                   </section>
                 ))}
               </div>
 
               <div className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-slate-100 pt-6">
-
                 <div className="flex items-center gap-3">
                   <button
                     type="button"
@@ -3550,7 +3521,6 @@ const BonCommandePlateforme = () => {
                   </button>
                 </div>
 
-                {/* Bouton Suivant → document suivant dans la phase */}
                 {(() => {
                   const phaseDocs = documentsByPhase[activePhase] || [];
                   const currentIdx = phaseDocs.findIndex((d) => d.id === selectedDocument.id);
@@ -3566,7 +3536,7 @@ const BonCommandePlateforme = () => {
                         ? 'bg-blue-600 hover:bg-blue-700 hover:shadow-lg text-white cursor-pointer'
                         : 'bg-slate-200 text-slate-400 cursor-not-allowed'
                         }`}
-                      title={isSaved ? `Aller au document suivant : ${nextDoc.title}` : 'Veuillez d’abord cliquer sur « Enregistrer en BD » pour continuer'}
+                      title={isSaved ? `Aller au document suivant : ${nextDoc.title}` : 'Veuillez d’abord cliquer sur « Enregistrer en BD » pour continuer'}
                     >
                       {nextDoc.title}
                       <ArrowRight size={18} />
@@ -3604,7 +3574,26 @@ const BonCommandePlateforme = () => {
             )}
 
             <form onSubmit={handleQuickMembreSubmit} className="space-y-4">
- 
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Nom et prénom <span className="text-red-500">*</span></label>
+                <input
+                  type="text"
+                  required
+                  value={quickMembreData.nom_prenom}
+                  onChange={(e) => setQuickMembreData({ ...quickMembreData, nom_prenom: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Fonction / Qualité <span className="text-red-500">*</span></label>
+                <input
+                  type="text"
+                  required
+                  value={quickMembreData.fonction}
+                  onChange={(e) => setQuickMembreData({ ...quickMembreData, fonction: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
+                />
+              </div>
 
               <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
                 <button
@@ -3833,9 +3822,32 @@ const BonCommandePlateforme = () => {
               </div>
 
               {/* Section Budgétaire */}
-              <div className="pt-3 border-t border-slate-100">
-                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">Imputation Budgétaires</p>
-                <div className="grid grid-cols-3 gap-3 mb-3">
+              <div className="pt-4 border-t border-slate-100 space-y-4">
+                <p className="text-xs font-extrabold uppercase tracking-wider text-slate-500">Imputation Budgétaire</p>
+                <LigneBudgetaireSelector
+                  selectedCode={editingConsultationData.code_imputation}
+                  selectedArt={editingConsultationData.art}
+                  selectedPar={editingConsultationData.par}
+                  selectedLig={editingConsultationData.lig}
+                  typeBudget={editingConsultationData.type_budget}
+                  onSelect={(ligne) => {
+                    const art = ligne.article || editingConsultationData.art || '415';
+                    const par = ligne.paragraphe || editingConsultationData.par || '';
+                    const lig = ligne.ligne || editingConsultationData.lig || '';
+                    const code = ligne.code_imputation || `${art}${par}${lig}`;
+                    setEditingConsultationData({
+                      ...editingConsultationData,
+                      type_budget: ligne.type_budget || editingConsultationData.type_budget,
+                      art,
+                      par,
+                      lig,
+                      code_imputation: code,
+                      intitule: ligne.intitule || editingConsultationData.intitule,
+                    });
+                  }}
+                />
+
+                <div className="grid grid-cols-3 gap-3">
                   <div>
                     <label className="block text-[11px] font-bold text-slate-600 mb-1">ART</label>
                     <input
@@ -3879,6 +3891,7 @@ const BonCommandePlateforme = () => {
                     />
                   </div>
                 </div>
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-[11px] font-bold text-slate-600 mb-1">Code d'imputation</label>
@@ -3903,8 +3916,6 @@ const BonCommandePlateforme = () => {
                   </div>
                 </div>
               </div>
-
-
 
               <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
                 <button

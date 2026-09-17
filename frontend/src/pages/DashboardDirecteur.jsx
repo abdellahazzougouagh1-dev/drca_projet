@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { Users } from 'lucide-react';
+import GestionUtilisateursModal from '../components/GestionUtilisateursModal';
 import api from '../api/axios';
 import {
   BarChart3, Bell, Building2, CalendarDays, CheckCircle2, ChevronRight,
@@ -221,6 +223,7 @@ export default function DashboardDirecteur() {
   const [selected, setSelected] = useState(null);
   const [store, setStore] = useState({ consultations: [], aoos: [], notifications: [], lines: [], budget: {} });
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [isUserModalOpen, setIsUserModalOpen] = useState(false);
 
   const logout = () => {
     localStorage.removeItem('token');
@@ -331,10 +334,8 @@ export default function DashboardDirecteur() {
 
   const realRows = useMemo(() => {
     const map = new Map();
-    // API and notification lines may format the same imputation with different spacing.
     const getLineKey = (dom, imp) => `${String(dom || 'INVESTISSEMENT').trim().toUpperCase()}_${String(imp || '').replace(/\s+/g, '')}`;
 
-    // 1. Process backend budget lines
     if (store.budget?.lignes && Array.isArray(store.budget.lignes)) {
       store.budget.lignes.forEach((line) => {
         const lineDom = String(line.domaine || 'INVESTISSEMENT').toUpperCase();
@@ -357,7 +358,6 @@ export default function DashboardDirecteur() {
       });
     }
 
-    // 1b. Process ordonnancements directly from Registre to ensure all 5 column sums are included
     if (store.ordonnancements && Array.isArray(store.ordonnancements) && store.ordonnancements.length > 0) {
       store.ordonnancements.forEach((ord) => {
         const dom = String(ord.budget_type || ord.domaine || 'INVESTISSEMENT').toUpperCase().includes('FONCT') ? 'FONCTIONNEMENT' : 'INVESTISSEMENT';
@@ -366,10 +366,7 @@ export default function DashboardDirecteur() {
         const lig = ord.ligne || ord.ligne_budgetaire || ord.lig || '';
         const imp = (art && par && lig) ? `${art} / ${par} / ${lig}` : null;
 
-        // Calcul de la somme des colonnes du registre d'ordonnancement
         let sumOrd = 0;
-        let isPaye = ['payé', 'paye', 'clôturé', 'cloture'].includes(String(ord.statut || '').toLowerCase());
-
         if (ord.ordres && Array.isArray(ord.ordres) && ord.ordres.length > 0) {
           sumOrd = ord.ordres.reduce((s, o) => s + Number(o.montant || 0), 0);
         } else {
@@ -394,7 +391,6 @@ export default function DashboardDirecteur() {
       });
     }
 
-    // 2. Process store.lines if any lines are missing or have additional credits
     if (store.lines && Array.isArray(store.lines)) {
       store.lines.forEach((line) => {
         const lineDom = String(line.domaine || line.notification?.domaine || 'INVESTISSEMENT').toUpperCase();
@@ -430,7 +426,6 @@ export default function DashboardDirecteur() {
       });
     }
 
-    // 3. Process store.notifications (in case there are notifications with lines or total amount)
     if (store.notifications && Array.isArray(store.notifications)) {
       store.notifications.forEach((notif) => {
         const notifDom = getNotifDomaine(notif);
@@ -467,7 +462,6 @@ export default function DashboardDirecteur() {
       });
     }
 
-    // If map is empty but notifications exist, create summary row from notifications
     if (map.size === 0 && store.notifications && store.notifications.length > 0) {
       store.notifications.forEach((notif) => {
         const notifDom = getNotifDomaine(notif);
@@ -570,12 +564,6 @@ export default function DashboardDirecteur() {
   }, [store.notifications, domaine]);
 
   const shownDossiers = dashboard.dossiers.filter((item) => `${item.ref || ''} ${item.title || ''} ${item.type}`.toLowerCase().includes(search.toLowerCase()));
-  const exportReport = () => {
-    const rows = [['Référence', 'Type de budget', 'Type', 'Objet', 'Statut', 'Phase', 'Avancement'], ...dashboard.dossiers.map((item) => { const [label, progress] = phase(item); return [item.ref || '', getDossierDomaine(item), item.type, item.title || '', item.statut_dossier || item.statut || '', label, `${progress}%`]; })];
-    const csv = rows.map((row) => row.map((cell) => `"${String(cell).replaceAll('"', '""')}"`).join(';')).join('\n');
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' }); const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob); link.download = `rapport-directeur-${year}-${domaine.toLowerCase()}.csv`; link.click(); URL.revokeObjectURL(link.href);
-  };
 
   if (loading) return <div className="grid min-h-screen place-items-center bg-slate-50 text-slate-600"><span className="flex items-center gap-3"><Loader2 className="animate-spin text-blue-700" /> Chargement du tableau de pilotage…</span></div>;
 
@@ -603,6 +591,16 @@ export default function DashboardDirecteur() {
               <Icon size={18} />{label}
             </button>
           ))}
+
+          {/* Bouton Gestion des Utilisateurs */}
+          <button
+            type="button"
+            onClick={() => setIsUserModalOpen(true)}
+            className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-slate-300 hover:bg-slate-800 hover:text-white transition"
+          >
+            <Users size={18} />
+            <span>Utilisateurs</span>
+          </button>
         </nav>
         <div className="mt-auto rounded-2xl border border-slate-700 bg-slate-800/60 p-3">
           <div className="flex items-center gap-3">
@@ -664,6 +662,13 @@ export default function DashboardDirecteur() {
                   <Icon size={18} />{label}
                 </button>
               ))}
+              <button
+                type="button"
+                onClick={() => { setIsUserModalOpen(true); setMobileNavOpen(false); }}
+                className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-slate-700 hover:bg-blue-50 hover:text-blue-700"
+              >
+                <Users size={18} /> Utilisateurs
+              </button>
               <Link to="/bons-commande" onClick={() => setMobileNavOpen(false)} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-slate-700 hover:bg-blue-50 hover:text-blue-700">
                 <Receipt size={18} /> Bons de commande
               </Link>
@@ -1079,7 +1084,6 @@ export default function DashboardDirecteur() {
                 />
               </div>
 
-              {/* Si Domaine === ALL, affichage comparatif synthétique INVESTISSEMENT vs FONCTIONNEMENT */}
               {domaine === 'ALL' && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="p-4 bg-indigo-50/50 border border-indigo-200 rounded-2xl">
@@ -1270,6 +1274,12 @@ export default function DashboardDirecteur() {
             </div>
           </div>
         )}
+
+        {/* Modal de Gestion des Utilisateurs */}
+        <GestionUtilisateursModal
+          isOpen={isUserModalOpen}
+          onClose={() => setIsUserModalOpen(false)}
+        />
       </div>
     </div>
   );
