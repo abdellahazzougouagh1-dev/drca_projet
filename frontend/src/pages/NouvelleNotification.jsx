@@ -1319,62 +1319,62 @@ export default function NouvelleNotification() {
                                     )}
                                   </select>
                                 </div>
-                              <div className="md:col-span-6">
-                                <div className="flex items-center justify-between mb-1">
-                                  <label className="block text-[10px] font-bold text-slate-600 uppercase">
-                                    Montant (DH) *
-                                  </label>
-                                  <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-200">
-                                    1% automatique
-                                  </span>
+                                <div className="md:col-span-6">
+                                  <div className="flex items-center justify-between mb-1">
+                                    <label className="block text-[10px] font-bold text-slate-600 uppercase">
+                                      Montant (DH) *
+                                    </label>
+                                    <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-200">
+                                      1% automatique
+                                    </span>
+                                  </div>
+                                  <input
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    placeholder="Auto 1% du crédit"
+                                    value={l.domaine === 'FONCTIONNEMENT' ? getCalculatedDiminutionAmount(l, dim.type_diminution) : dim.montant}
+                                    readOnly={l.domaine === 'FONCTIONNEMENT'}
+                                    onChange={(e) =>
+                                      updateDiminution(l.id, dim.id, 'montant', e.target.value)
+                                    }
+                                    className="w-full p-2 text-xs border rounded-lg text-right font-bold text-amber-800 bg-amber-50/40 focus:ring-1 focus:ring-blue-500"
+                                  />
+                                  {l.domaine === 'FONCTIONNEMENT' && (
+                                    <p className="mt-1 text-[11px] text-slate-500">
+                                      {dim.type_diminution === 'REPORT' ? '1 % du reste à payer saisi.' : '1 % de la somme des crédits neufs saisis.'}
+                                    </p>
+                                  )}
                                 </div>
+                                <div className="md:col-span-1 flex justify-end pt-3 md:pt-4">
+                                  <button
+                                    type="button"
+                                    onClick={() => removeDiminution(l.id, dim.id)}
+                                    className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition"
+                                    title="Supprimer ce mouvement"
+                                  >
+                                    <Trash2 size={16} />
+                                  </button>
+                                </div>
+                              </div>
+                              <div>
+                                <label className="block text-[10px] font-bold text-slate-600 mb-1 uppercase">
+                                  Motif de la Diminution * (Obligatoire)
+                                </label>
                                 <input
-                                  type="number"
-                                  step="0.01"
-                                  min="0"
-                                  placeholder="Auto 1% du crédit"
-                                  value={l.domaine === 'FONCTIONNEMENT' ? getCalculatedDiminutionAmount(l, dim.type_diminution) : dim.montant}
-                                  readOnly={l.domaine === 'FONCTIONNEMENT'}
+                                  required
+                                  type="text"
+                                  placeholder="Indiquez le motif précis de la réduction..."
+                                  value={dim.motif}
                                   onChange={(e) =>
-                                    updateDiminution(l.id, dim.id, 'montant', e.target.value)
+                                    updateDiminution(l.id, dim.id, 'motif', e.target.value)
                                   }
-                                  className="w-full p-2 text-xs border rounded-lg text-right font-bold text-amber-800 bg-amber-50/40 focus:ring-1 focus:ring-blue-500"
+                                  className="w-full p-2 text-xs border rounded-lg focus:ring-1 focus:ring-blue-500 bg-slate-50/50"
                                 />
-                                {l.domaine === 'FONCTIONNEMENT' && (
-                                  <p className="mt-1 text-[11px] text-slate-500">
-                                    {dim.type_diminution === 'REPORT' ? '1 % du reste à payer saisi.' : '1 % de la somme des crédits neufs saisis.'}
-                                  </p>
-                                )}
-                              </div>
-                              <div className="md:col-span-1 flex justify-end pt-3 md:pt-4">
-                                <button
-                                  type="button"
-                                  onClick={() => removeDiminution(l.id, dim.id)}
-                                  className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition"
-                                  title="Supprimer ce mouvement"
-                                >
-                                  <Trash2 size={16} />
-                                </button>
                               </div>
                             </div>
-                            <div>
-                              <label className="block text-[10px] font-bold text-slate-600 mb-1 uppercase">
-                                Motif de la Diminution * (Obligatoire)
-                              </label>
-                              <input
-                                required
-                                type="text"
-                                placeholder="Indiquez le motif précis de la réduction..."
-                                value={dim.motif}
-                                onChange={(e) =>
-                                  updateDiminution(l.id, dim.id, 'motif', e.target.value)
-                                }
-                                className="w-full p-2 text-xs border rounded-lg focus:ring-1 focus:ring-blue-500 bg-slate-50/50"
-                              />
-                            </div>
-                          </div>
-                        );
-                      })}
+                          );
+                        })}
                       </div>
                     </div>
                   )}

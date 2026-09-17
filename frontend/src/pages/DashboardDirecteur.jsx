@@ -3,6 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Users } from 'lucide-react';
 import GestionUtilisateursModal from '../components/GestionUtilisateursModal';
 import api from '../api/axios';
+import { useAuth } from '../context/AuthContext';
+import UserMenu from '../components/UserMenu';
 import {
   BarChart3, Bell, Building2, CalendarDays, CheckCircle2, ChevronRight,
   CircleDollarSign, ClipboardList, Download, Eye, FileCheck2, FileText,
@@ -137,6 +139,11 @@ function CircularProgress({ percentage = 0, color = '#2563eb', trackColor = '#f1
   const circumference = 2 * Math.PI * radius;
   const numericVal = Math.max(0, Math.min(100, Number(percentage) || 0));
   const strokeDashoffset = circumference - (numericVal / 100) * circumference;
+  const formattedDisplay = numericVal === 0
+    ? '0%'
+    : numericVal > 0 && numericVal < 1
+      ? `${numericVal.toFixed(1)}%`
+      : `${Math.round(numericVal)}%`;
 
   return (
     <div className="relative flex items-center justify-center shrink-0" style={{ width: size, height: size }}>
@@ -165,7 +172,7 @@ function CircularProgress({ percentage = 0, color = '#2563eb', trackColor = '#f1
         )}
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-        <span className="text-sm font-black text-slate-900 leading-none">{Math.round(numericVal)}%</span>
+        <span className="text-sm font-black text-slate-900 leading-none">{formattedDisplay}</span>
       </div>
     </div>
   );
@@ -211,6 +218,7 @@ function Kpi({ label, value, icon: Icon, tone = 'blue', detail }) {
 
 export default function DashboardDirecteur() {
   const navigate = useNavigate();
+  const { currentUser, logout, openLoginModal } = useAuth();
   const currentYear = new Date().getFullYear();
   const [year, setYear] = useState(String(currentYear));
   const [month, setMonth] = useState('');
@@ -225,11 +233,15 @@ export default function DashboardDirecteur() {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [isUserModalOpen, setIsUserModalOpen] = useState(false);
 
-  const logout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    navigate('/login');
-  };
+  const userName = currentUser?.name || "Directeur Régional";
+  const userRole = currentUser?.role === 'directeur' ? 'Directeur Régional' : (currentUser?.role ? (currentUser.role.charAt(0).toUpperCase() + currentUser.role.slice(1)) : 'Accès décisionnel');
+  const userInitials = userName
+    .split(' ')
+    .filter(Boolean)
+    .map((w) => w[0])
+    .slice(0, 2)
+    .join('')
+    .toUpperCase() || 'DR';
 
   const getNotifDomaine = (notif) => {
     if (notif.domaine) return notif.domaine;
@@ -513,8 +525,20 @@ export default function DashboardDirecteur() {
   const dashboard = useMemo(() => {
     const matchYear = (item) => !year || String(item.annee || item.exercice || new Date(item.date_consultation || item.date_lancement || item.created_at || 0).getFullYear()) === String(year);
     const rawDossiers = [
-      ...store.consultations.map((item) => ({ ...item, type: 'Consultation', ref: item.numero_consultation, title: item.objet_consultation, route: `/consultations/${item.id}` })),
-      ...store.aoos.map((item) => ({ ...item, type: 'Appel d’offres', ref: item.num_aoo, title: item.objet, route: `/aoos/${item.id}` })),
+      ...store.consultations.map((item) => {
+        const isAo = item.mode_engagement === 'AO' || item.mode_engagement === "Appel d'offres" || item.mode_engagement === "Appel d'Offres" || item.mode_engagement === "Appel d'offre";
+        const matchingAoo = store.aoos.find(a => a.num_aoo && item.numero_consultation && a.num_aoo.trim().toLowerCase() === item.numero_consultation.trim().toLowerCase());
+        return {
+          ...item,
+          type: isAo ? "Appel d'offres" : 'Bon de commande',
+          ref: item.numero_consultation,
+          title: item.objet_consultation,
+          route: isAo ? (matchingAoo ? `/aoos/${matchingAoo.id}` : `/aoos/nouveau?consultation_id=${item.id}`) : `/consultations/${item.id}`,
+        };
+      }),
+      ...store.aoos
+        .filter(a => !store.consultations.some(c => (c.mode_engagement === 'AO' || c.mode_engagement === "Appel d'offres") && c.numero_consultation && a.num_aoo && c.numero_consultation.trim().toLowerCase() === a.num_aoo.trim().toLowerCase()))
+        .map((item) => ({ ...item, type: 'Appel d’offres', ref: item.num_aoo, title: item.objet, route: `/aoos/${item.id}` })),
     ].filter(matchYear);
     const filteredByMonth = month ? rawDossiers.filter((item) => new Date(item.created_at || item.date_consultation || item.date_preparation).getMonth() + 1 === Number(month)) : rawDossiers;
     const filtered = domaine === 'ALL'
@@ -602,14 +626,8 @@ export default function DashboardDirecteur() {
             <span>Utilisateurs</span>
           </button>
         </nav>
-        <div className="mt-auto rounded-2xl border border-slate-700 bg-slate-800/60 p-3">
-          <div className="flex items-center gap-3">
-            <span className="grid h-9 w-9 place-items-center rounded-full bg-blue-500 text-xs font-bold text-white">DR</span>
-            <span className="min-w-0"><b className="block truncate text-sm text-white">Directeur Régional</b><small className="block truncate text-xs text-slate-400">Accès décisionnel</small></span>
-          </div>
-          <button onClick={logout} className="mt-3 flex w-full items-center gap-2 rounded-lg px-2 py-2 text-xs font-semibold text-slate-400 hover:bg-slate-700 hover:text-white">
-            <LogOut size={15} /> Se déconnecter
-          </button>
+        <div className="mt-auto pt-4">
+          <UserMenu />
         </div>
       </aside>
 
@@ -627,22 +645,24 @@ export default function DashboardDirecteur() {
               </div>
             </div>
             <div className="flex items-center gap-2.5">
-              <Link
-                to="/bons-commande"
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs font-bold rounded-xl shadow-xs transition transform active:scale-98"
+              <button
+                type="button"
+                onClick={() => navigate('/login', { state: { redirect: '/bons-commande', title: 'Bons de commande' } })}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs font-bold rounded-xl shadow-xs transition transform active:scale-98 cursor-pointer"
                 title="Accéder aux Bons de commande"
               >
                 <Receipt size={15} />
                 <span>Bons de commande</span>
-              </Link>
-              <Link
-                to="/dashboard"
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs font-bold rounded-xl shadow-xs transition transform active:scale-98"
+              </button>
+              <button
+                type="button"
+                onClick={() => navigate('/login', { state: { redirect: '/dashboard', title: 'Appels d’offres' } })}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs font-bold rounded-xl shadow-xs transition transform active:scale-98 cursor-pointer"
                 title="Accéder aux Appels d'offres"
               >
                 <FileText size={15} />
                 <span>Appels d'offres</span>
-              </Link>
+              </button>
               <button onClick={() => setMobileNavOpen(!mobileNavOpen)} className="grid h-9 w-9 place-items-center rounded-lg border border-slate-200 text-slate-600 lg:hidden">
                 <Menu size={18} />
               </button>
@@ -669,12 +689,20 @@ export default function DashboardDirecteur() {
               >
                 <Users size={18} /> Utilisateurs
               </button>
-              <Link to="/bons-commande" onClick={() => setMobileNavOpen(false)} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-slate-700 hover:bg-blue-50 hover:text-blue-700">
+              <button
+                type="button"
+                onClick={() => { setMobileNavOpen(false); navigate('/login', { state: { redirect: '/bons-commande', title: 'Bons de commande' } }); }}
+                className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-slate-700 hover:bg-blue-50 hover:text-blue-700"
+              >
                 <Receipt size={18} /> Bons de commande
-              </Link>
-              <Link to="/dashboard" onClick={() => setMobileNavOpen(false)} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-slate-700 hover:bg-blue-50 hover:text-blue-700">
+              </button>
+              <button
+                type="button"
+                onClick={() => { setMobileNavOpen(false); navigate('/login', { state: { redirect: '/dashboard', title: 'Appels d’offres' } }); }}
+                className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-slate-700 hover:bg-blue-50 hover:text-blue-700"
+              >
                 <FileText size={18} /> Appels d'offres
-              </Link>
+              </button>
             </div>
             <button onClick={logout} className="mt-2 flex w-full items-center gap-3 rounded-xl border-t border-slate-100 px-3 py-3 text-left text-sm font-semibold text-rose-600">
               <LogOut size={18} /> Se déconnecter
@@ -695,8 +723,8 @@ export default function DashboardDirecteur() {
                   type="button"
                   onClick={() => setDomaine('INVESTISSEMENT')}
                   className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${domaine === 'INVESTISSEMENT'
-                      ? 'bg-indigo-600 text-white shadow-xs'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                    ? 'bg-indigo-600 text-white shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                     }`}
                 >
                   Investissement
@@ -705,8 +733,8 @@ export default function DashboardDirecteur() {
                   type="button"
                   onClick={() => setDomaine('FONCTIONNEMENT')}
                   className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${domaine === 'FONCTIONNEMENT'
-                      ? 'bg-blue-500 text-white shadow-xs'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                    ? 'bg-blue-500 text-white shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                     }`}
                 >
                   Fonctionnement
@@ -981,7 +1009,6 @@ export default function DashboardDirecteur() {
                         <th className="px-5 py-3">Objet</th>
                         <th className="px-5 py-3">Lancement</th>
                         <th className="px-5 py-3 text-center">Phase / Statut</th>
-                        <th className="px-5 py-3 text-right"></th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
@@ -1019,16 +1046,11 @@ export default function DashboardDirecteur() {
                                 {phaseInfo.label}
                               </span>
                             </td>
-                            <td className="px-5 py-4 text-right">
-                              <button onClick={() => setSelected(item)} className="inline-flex items-center gap-1 font-semibold text-blue-700 hover:underline">
-                                <Eye size={16} /> Détail
-                              </button>
-                            </td>
                           </tr>
                         );
                       })}
                       {!shownDossiers.length && (
-                        <tr><td colSpan="8" className="px-5 py-12 text-center text-slate-500">Aucun dossier ne correspond aux filtres ({domaine !== 'ALL' ? domaine : 'Tous'}).</td></tr>
+                        <tr><td colSpan="7" className="px-5 py-12 text-center text-slate-500">Aucun dossier ne correspond aux filtres ({domaine !== 'ALL' ? domaine : 'Tous'}).</td></tr>
                       )}
                     </tbody>
                   </table>
@@ -1046,7 +1068,7 @@ export default function DashboardDirecteur() {
                   value={budgetSummary?.total_notifie}
                   percentage={Number(budgetSummary?.total_notifie || 0) > 0 ? 100 : 0}
                   rateValue={Number(budgetSummary?.total_notifie || 0) > 0 ? "Taux : 100 %" : "Taux : 0 %"}
-                  detail={Number(budgetSummary?.total_notifie || 0) > 0 ? "Base de calcul" : "Aucun crédit notifié"}
+                  detail={Number(budgetSummary?.total_notifie || 0) > 0 ? "Base Notifiée (100 %)" : "Aucun crédit notifié"}
                   Icon={BarChart3}
                   color="#2563eb"
                 />
@@ -1064,10 +1086,10 @@ export default function DashboardDirecteur() {
                   step="3"
                   label={`Ordonnancement (${domaine === 'ALL' ? 'Total' : domaine})`}
                   value={budgetSummary?.total_ordonnance}
-                  percentage={budgetSummary?.taux_ordonnancement ?? pct(budgetSummary?.total_ordonnance, budgetSummary?.total_engage)}
+                  percentage={budgetSummary?.taux_ordonnancement_notifie ?? pct(budgetSummary?.total_ordonnance, budgetSummary?.total_notifie)}
                   rateValue={`Taux / notifié : ${rate(budgetSummary?.taux_ordonnancement_notifie || pct(budgetSummary?.total_ordonnance, budgetSummary?.total_notifie))}`}
                   secondaryRate={`Taux / engagé : ${rate(budgetSummary?.taux_ordonnancement || pct(budgetSummary?.total_ordonnance, budgetSummary?.total_engage))}`}
-                  detail="Ordonnancé / notifié & engagé"
+                  detail="Ordonnancé / notifié"
                   Icon={FileText}
                   color="#8b5cf6"
                 />
@@ -1075,7 +1097,7 @@ export default function DashboardDirecteur() {
                   step="4"
                   label={`Paiement (${domaine === 'ALL' ? 'Total' : domaine})`}
                   value={budgetSummary?.total_paiement}
-                  percentage={budgetSummary?.taux_paiement_ordonnancement ?? pct(budgetSummary?.total_paiement, budgetSummary?.total_ordonnance)}
+                  percentage={budgetSummary?.taux_paiement_notifie ?? pct(budgetSummary?.total_paiement, budgetSummary?.total_notifie)}
                   rateValue={`Taux / notifié : ${rate(budgetSummary?.taux_paiement_notifie || pct(budgetSummary?.total_paiement, budgetSummary?.total_notifie))}`}
                   secondaryRate={`Taux / ordonnancé : ${rate(budgetSummary?.taux_paiement_ordonnancement || pct(budgetSummary?.total_paiement, budgetSummary?.total_ordonnance))}`}
                   detail={`Payé / notifié · ${rate(budgetSummary?.taux_paiement_engagement || pct(budgetSummary?.total_paiement, budgetSummary?.total_engage))} de l'engagé`}

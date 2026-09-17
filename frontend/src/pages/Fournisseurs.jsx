@@ -1,11 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import api from '../api/axios';
-import { ArrowLeft, Loader2, Plus, Search, Edit, Trash2, X, AlertCircle, Building2, Home, Users, FileText, DollarSign, Briefcase, ClipboardList, Archive, Eye, MapPin, Phone, Mail, Briefcase as BriefcaseIcon, User, Zap } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import UserMenu from '../components/UserMenu';
+import { ArrowLeft, Loader2, Plus, Search, Edit, Trash2, X, AlertCircle, Building2, Home, Users, FileText, DollarSign, Briefcase, ClipboardList, Archive, Eye, MapPin, Phone, Mail, Briefcase as BriefcaseIcon, User, Zap, LogOut } from 'lucide-react';
 
 const Fournisseurs = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { currentUser, logout } = useAuth();
   const [fournisseurs, setFournisseurs] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -114,7 +117,7 @@ const Fournisseurs = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    
+
     // Filtre spécifique pour le RIB : uniquement des chiffres, max 24
     if (name === 'rib') {
       const numericValue = value.replace(/\D/g, '');
@@ -184,49 +187,43 @@ const Fournisseurs = () => {
         <nav className="flex-1 mt-4 overflow-y-auto">
           <ul className="space-y-1">
             <li>
-              <Link to="/" className={`flex items-center space-x-3 px-6 py-4 text-slate-100 font-medium transition-all duration-200 rounded-xl mx-2 my-1 ${
-                location.pathname === '/' ? 'bg-blue-900/80 text-white border-l-4 border-cyan-400 font-bold' : 'hover:bg-blue-800/50'
-              }`}>
+              <Link to="/" className={`flex items-center space-x-3 px-6 py-4 text-slate-100 font-medium transition-all duration-200 rounded-xl mx-2 my-1 ${location.pathname === '/' ? 'bg-blue-900/80 text-white border-l-4 border-cyan-400 font-bold' : 'hover:bg-blue-800/50'
+                }`}>
                 <Home size={18} />
                 <span>Tableau de Bord</span>
               </Link>
             </li>
             <li>
-              <Link to="/fournisseurs" className={`flex items-center space-x-3 px-6 py-4 text-slate-100 font-medium transition-all duration-200 rounded-xl mx-2 my-1 ${
-                location.pathname === '/fournisseurs' ? 'bg-blue-900/80 text-white border-l-4 border-cyan-400 font-bold' : 'hover:bg-blue-800/50'
-              }`}>
+              <Link to="/fournisseurs" className={`flex items-center space-x-3 px-6 py-4 text-slate-100 font-medium transition-all duration-200 rounded-xl mx-2 my-1 ${location.pathname === '/fournisseurs' ? 'bg-blue-900/80 text-white border-l-4 border-cyan-400 font-bold' : 'hover:bg-blue-800/50'
+                }`}>
                 <Users size={18} />
                 <span>Fournisseurs</span>
               </Link>
             </li>
             <li>
-              <Link to="/commission-membres" className={`flex items-center space-x-3 px-6 py-4 text-slate-100 font-medium transition-all duration-200 rounded-xl mx-2 my-1 ${
-                location.pathname === '/commission-membres' ? 'bg-blue-900/80 text-white border-l-4 border-cyan-400 font-bold' : 'hover:bg-blue-800/50'
-              }`}>
+              <Link to="/commission-membres" className={`flex items-center space-x-3 px-6 py-4 text-slate-100 font-medium transition-all duration-200 rounded-xl mx-2 my-1 ${location.pathname === '/commission-membres' ? 'bg-blue-900/80 text-white border-l-4 border-cyan-400 font-bold' : 'hover:bg-blue-800/50'
+                }`}>
                 <ClipboardList size={18} />
                 <span>Commission</span>
               </Link>
             </li>
             <li>
-              <Link to="/consultations" className={`flex items-center space-x-3 px-6 py-4 text-slate-100 font-medium transition-all duration-200 rounded-xl mx-2 my-1 ${
-                location.pathname === '/consultations' ? 'bg-blue-900/80 text-white border-l-4 border-cyan-400 font-bold' : 'hover:bg-blue-800/50'
-              }`}>
+              <Link to="/consultations" className={`flex items-center space-x-3 px-6 py-4 text-slate-100 font-medium transition-all duration-200 rounded-xl mx-2 my-1 ${location.pathname === '/consultations' ? 'bg-blue-900/80 text-white border-l-4 border-cyan-400 font-bold' : 'hover:bg-blue-800/50'
+                }`}>
                 <FileText size={18} />
                 <span>Consultations</span>
               </Link>
             </li>
             <li>
-              <Link to="/aoos/nouveau" className={`flex items-center space-x-3 px-6 py-4 text-slate-100 font-medium transition-all duration-200 rounded-xl mx-2 my-1 ${
-                location.pathname === '/aoos/nouveau' ? 'bg-blue-900/80 text-white border-l-4 border-cyan-400 font-bold' : 'hover:bg-blue-800/50'
-              }`}>
+              <Link to="/aoos/nouveau" className={`flex items-center space-x-3 px-6 py-4 text-slate-100 font-medium transition-all duration-200 rounded-xl mx-2 my-1 ${location.pathname === '/aoos/nouveau' ? 'bg-blue-900/80 text-white border-l-4 border-cyan-400 font-bold' : 'hover:bg-blue-800/50'
+                }`}>
                 <Archive size={18} />
                 <span>Appels d'Offres</span>
               </Link>
             </li>
             <li>
-              <Link to="/engagements" className={`flex items-center space-x-3 px-6 py-4 text-slate-100 font-medium transition-all duration-200 rounded-xl mx-2 my-1 ${
-                location.pathname.startsWith('/engagements') ? 'bg-blue-900/80 text-white border-l-4 border-cyan-400 font-bold' : 'hover:bg-blue-800/50'
-              }`}>
+              <Link to="/engagements" className={`flex items-center space-x-3 px-6 py-4 text-slate-100 font-medium transition-all duration-200 rounded-xl mx-2 my-1 ${location.pathname.startsWith('/engagements') ? 'bg-blue-900/80 text-white border-l-4 border-cyan-400 font-bold' : 'hover:bg-blue-800/50'
+                }`}>
                 <Briefcase size={18} />
                 <span>Engagements</span>
               </Link>
@@ -234,13 +231,8 @@ const Fournisseurs = () => {
           </ul>
         </nav>
 
-        <div className="px-6 py-4 border-t border-blue-800 mb-6">
-          <button
-            onClick={() => { localStorage.removeItem('token'); window.location.href = '/login'; }}
-            className="w-full text-left px-4 py-3 mx-3 bg-white/10 hover:bg-white/20 rounded-lg transition-colors text-sm"
-          >
-            Se déconnecter
-          </button>
+        <div className="mt-auto px-4 py-4 border-t border-blue-800/60">
+          <UserMenu />
         </div>
       </aside>
 
@@ -563,7 +555,7 @@ const Fournisseurs = () => {
                 </div>
 
                 <div className="p-8 overflow-y-auto flex-1 space-y-8">
-                  
+
                   {/* Informations Entreprise */}
                   <div>
                     <h3 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">

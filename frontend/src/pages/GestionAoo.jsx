@@ -1,7 +1,7 @@
 import RegistreScroll from '../components/RegistreScroll';
 import RegistreFonctionnement, { fonctionnementRow } from '../components/RegistreFonctionnement';
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import api from '../api/axios';
 
 import CommissionOuvertureStep from '../components/CommissionOuvertureStep';
@@ -193,15 +193,105 @@ const GestionAoo = () => {
   const [lotDecisionsState, setLotDecisionsState] = useState({});
 
   const [activePreparationLotTab, setActivePreparationLotTab] = useState(0);
+  const location = useLocation();
+
+  const populateFromConsultation = (cons) => {
+    if (!cons) return;
+    const budgetVal = cons.budget?.montant_ttc 
+      ? String(cons.budget.montant_ttc) 
+      : (cons.montant_estimatif_ht ? String(cons.montant_estimatif_ht) : '');
+    
+    const artVal = cons.art || cons.budget?.art || '';
+    const parVal = cons.par || cons.budget?.par || '';
+    const ligVal = cons.lig || cons.budget?.lig || '';
+    const codeImputation = cons.code_imputation || cons.budget?.code_imputation || `${artVal}${parVal}${ligVal}`;
+    const notifLigneId = cons.notification_ligne_id || cons.budget?.notification_ligne_id || null;
+    const dateOuv = cons.date_limite_devis || cons.date_consultation || '';
+    const heureOuv = cons.heure_limite_devis || '10:00';
+    const lieuOuv = cons.lieu_execution || 'Siège de la direction régionale du conseil agricole Rabat-Salé-Kénitra sis à angle avenue Mohamed V et Rue Sebta Kenitra';
+    const numDec = cons.numero_decision || '';
+    const typeBudget = cons.type_budget || 'Investissement';
+
+    setFormData(prev => {
+      const initialLots = [
+        {
+          num_lot: 'LOT 1',
+          objet_lot: cons.objet_consultation || '',
+          estimation: budgetVal,
+          cautionnement_provisoire: '',
+          art: artVal,
+          par: parVal,
+          lig: ligVal,
+          imputation: codeImputation,
+          notification_ligne_id: notifLigneId,
+          items: [],
+        }
+      ];
+
+      const cascaded = applyEstimationCascade(initialLots, 1);
+
+      return {
+        ...prev,
+        num_aoo: cons.numero_consultation || prev.num_aoo || '',
+        objet: cons.objet_consultation || prev.objet || '',
+        date_ouverture: dateOuv || prev.date_ouverture || '',
+        heure_ouverture: heureOuv || prev.heure_ouverture || '',
+        lieu_ouverture: lieuOuv || prev.lieu_ouverture || '',
+        num_decision_nomination: numDec || prev.num_decision_nomination || '',
+        type_budget: typeBudget || prev.type_budget || 'Investissement',
+        budget: cascaded.budget || budgetVal || prev.budget || '',
+        art: artVal || prev.art || '',
+        par: parVal || prev.par || '',
+        lig: ligVal || prev.lig || '',
+        imputation: codeImputation || prev.imputation || '',
+        notification_ligne_id: notifLigneId || prev.notification_ligne_id || null,
+        consultation_id: cons.id,
+        lots_details: cascaded.lots_details,
+      };
+    });
+  };
 
   useEffect(() => {
     fetchFournisseurs();
     fetchLignesBudgetaires();
     fetchMembresCommission();
-    if (id && id !== 'nouveau') {
-      fetchDossier();
-    }
-  }, [id]);
+
+    const loadData = async () => {
+      const searchParams = new URLSearchParams(location.search);
+      const consultationId = searchParams.get('consultation_id') || location.state?.consultation_id || location.state?.autoSelectId;
+      const passedConsultation = location.state?.createdConsultation || location.state?.consultation;
+
+      if (id && id !== 'nouveau') {
+        fetchDossier();
+      } else if (passedConsultation) {
+        populateFromConsultation(passedConsultation);
+      } else if (consultationId) {
+        try {
+          setLoading(true);
+          const [aoosRes, consRes] = await Promise.all([
+            api.get('/aoos'),
+            api.get(`/consultations/${consultationId}`)
+          ]);
+          const cons = consRes.data;
+          const matchingAoo = aoosRes.data?.find(a => 
+            (a.num_aoo && cons.numero_consultation && a.num_aoo.trim().toLowerCase() === cons.numero_consultation.trim().toLowerCase()) ||
+            (String(a.id) === String(cons.aoo_id))
+          );
+          if (matchingAoo) {
+            navigate(`/aoos/${matchingAoo.id}`, { replace: true });
+          } else {
+            populateFromConsultation(cons);
+          }
+        } catch (err) {
+          console.error("Erreur lors de la récupération de la consultation:", err);
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadData();
+  }, [id, location.search, location.state]);
 
   useEffect(() => {
     if (activeTab !== 'analyse' || fournisseurs.length === 0) return;

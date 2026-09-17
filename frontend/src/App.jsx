@@ -29,6 +29,9 @@ import RegistreOrdonnancements from './pages/RegistreOrdonnancements';
 import DossierOrdonnancement from './pages/DossierOrdonnancement';
 import SuiviBudgetDirecteur from './pages/SuiviBudgetDirecteur';
 import DashboardDirecteur from './pages/DashboardDirecteur';
+import { AuthProvider } from './context/AuthContext';
+import LoginModal from './components/LoginModal';
+
 function App() {
   const isAuthenticated = !!localStorage.getItem('token');
   let storedUser = null;
@@ -40,241 +43,244 @@ function App() {
   const homePath = storedUser?.role === 'directeur' ? '/directeur' : '/dashboard';
 
   return (
-    <Router>
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="/register" element={<Register />} />
+    <AuthProvider>
+      <Router>
+        <LoginModal />
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/register" element={<Register />} />
 
-        <Route
-          path="/dashboard"
-          element={
-            <ProtectedRoute>
-              <Dashboard mode="aoo" />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/dashbord"
-          element={
-            <ProtectedRoute>
-              <Dashboard mode="aoo" />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/directeur"
-          element={
-            <DirectorRoute>
-              <DashboardDirecteur />
-            </DirectorRoute>
-          }
-        />
-        <Route
-          path="/directeur/suivi-budget"
-          element={
-            <DirectorRoute>
-              <SuiviBudgetDirecteur />
-            </DirectorRoute>
-          }
-        />
-        <Route
-          path="/notifications"
-          element={
-            <ProtectedRoute>
-              <ListeNotifications />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/notifications/nouvelle"
-          element={
-            <ProtectedRoute>
-              <NouvelleNotification />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/notifications/:id"
-          element={
-            <ProtectedRoute>
-              <DetailsNotification />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/fournisseurs"
-          element={
-            <ProtectedRoute>
-              <Fournisseurs />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/commission-membres"
-          element={
-            <ProtectedRoute>
-              <MembresCommission />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/consultations"
-          element={
-            <ProtectedRoute>
-              <ListeConsultations />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/consultations/nouvelle"
-          element={
-            <ProtectedRoute>
-              <NouvelleConsultation />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/consultations/:id"
-          element={
-            <ProtectedRoute>
-              <DetailsConsultation />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/aoos"
-          element={
-            <ProtectedRoute>
-              <ListeAoo />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/aoos/:id"
-          element={
-            <ProtectedRoute>
-              <GestionAoo />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/bons-commande"
-          element={
-            <ProtectedRoute>
-              <BonCommandePlateforme />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/bon-de-commande"
-          element={
-            <ProtectedRoute>
-              <BonCommandePlateforme />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/bons-de-commande"
-          element={
-            <ProtectedRoute>
-              <BonCommandePlateforme />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/conventions"
-          element={
-            <ProtectedRoute>
-              <GestionConvention />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/marches"
-          element={
-            <ProtectedRoute>
-              <ListeMarche />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/engagements"
-          element={
-            <ProtectedRoute>
-              <ListeEngagements />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/engagements/nouveau"
-          element={
-            <ProtectedRoute>
-              <TraitementEngagement />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/engagements/:id"
-          element={
-            <ProtectedRoute>
-              <TraitementEngagement />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/liquidations"
-          element={
-            <ProtectedRoute>
-              <ListeLiquidations />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/liquidations/marches/:id"
-          element={
-            <ProtectedRoute>
-              <DossierLiquidation />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/ordonnancements"
-          element={
-            <ProtectedRoute>
-              <RegistreOrdonnancements />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/ordonnancements/:id"
-          element={
-            <ProtectedRoute>
-              <DossierOrdonnancement />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/marches/:id"
-          element={
-            <ProtectedRoute>
-              <GestionMarches />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/marches/:id/cloture"
-          element={
-            <ProtectedRoute>
-              <DossierCloture />
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <Dashboard mode="aoo" />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashbord"
+            element={
+              <ProtectedRoute>
+                <Dashboard mode="aoo" />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/directeur"
+            element={
+              <DirectorRoute>
+                <DashboardDirecteur />
+              </DirectorRoute>
+            }
+          />
+          <Route
+            path="/directeur/suivi-budget"
+            element={
+              <DirectorRoute>
+                <SuiviBudgetDirecteur />
+              </DirectorRoute>
+            }
+          />
+          <Route
+            path="/notifications"
+            element={
+              <ProtectedRoute>
+                <ListeNotifications />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/notifications/nouvelle"
+            element={
+              <ProtectedRoute>
+                <NouvelleNotification />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/notifications/:id"
+            element={
+              <ProtectedRoute>
+                <DetailsNotification />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/fournisseurs"
+            element={
+              <ProtectedRoute>
+                <Fournisseurs />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/commission-membres"
+            element={
+              <ProtectedRoute>
+                <MembresCommission />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/consultations"
+            element={
+              <ProtectedRoute>
+                <ListeConsultations />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/consultations/nouvelle"
+            element={
+              <ProtectedRoute>
+                <NouvelleConsultation />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/consultations/:id"
+            element={
+              <ProtectedRoute>
+                <DetailsConsultation />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/aoos"
+            element={
+              <ProtectedRoute>
+                <ListeAoo />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/aoos/:id"
+            element={
+              <ProtectedRoute>
+                <GestionAoo />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/bons-commande"
+            element={
+              <ProtectedRoute>
+                <BonCommandePlateforme />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/bon-de-commande"
+            element={
+              <ProtectedRoute>
+                <BonCommandePlateforme />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/bons-de-commande"
+            element={
+              <ProtectedRoute>
+                <BonCommandePlateforme />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/conventions"
+            element={
+              <ProtectedRoute>
+                <GestionConvention />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/marches"
+            element={
+              <ProtectedRoute>
+                <ListeMarche />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/engagements"
+            element={
+              <ProtectedRoute>
+                <ListeEngagements />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/engagements/nouveau"
+            element={
+              <ProtectedRoute>
+                <TraitementEngagement />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/engagements/:id"
+            element={
+              <ProtectedRoute>
+                <TraitementEngagement />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/liquidations"
+            element={
+              <ProtectedRoute>
+                <ListeLiquidations />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/liquidations/marches/:id"
+            element={
+              <ProtectedRoute>
+                <DossierLiquidation />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/ordonnancements"
+            element={
+              <ProtectedRoute>
+                <RegistreOrdonnancements />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/ordonnancements/:id"
+            element={
+              <ProtectedRoute>
+                <DossierOrdonnancement />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/marches/:id"
+            element={
+              <ProtectedRoute>
+                <GestionMarches />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/marches/:id/cloture"
+            element={
+              <ProtectedRoute>
+                <DossierCloture />
+              </ProtectedRoute>
+            }
+          />
 
-        <Route path="/" element={<Navigate to={isAuthenticated ? homePath : '/login'} replace />} />
-        <Route path="*" element={<Navigate to={isAuthenticated ? homePath : '/login'} replace />} />
-      </Routes>
-    </Router>
+          <Route path="/" element={<Navigate to={isAuthenticated ? homePath : '/login'} replace />} />
+          <Route path="*" element={<Navigate to={isAuthenticated ? homePath : '/login'} replace />} />
+        </Routes>
+      </Router>
+    </AuthProvider>
   );
 }
 

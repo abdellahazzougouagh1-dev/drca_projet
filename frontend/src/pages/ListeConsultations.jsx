@@ -36,27 +36,52 @@ const ListeConsultations = () => {
           api.get('/aoos')
         ]);
 
-        const formattedCons = consRes.data.map(c => ({
-          ...c,
-          global_id: `cons_${c.id}`,
-          global_type: c.mode_engagement || 'Convention',
-          global_numero: c.numero_consultation,
-          global_objet: c.objet_consultation,
-          global_budget: c.budget ? c.budget.montant_ttc : null,
-          global_statut: c.statut_dossier,
-          route: `/consultations/${c.id}`
-        }));
+        const formattedCons = consRes.data.map(c => {
+          const isAo = c.mode_engagement === 'AO' || c.mode_engagement === "Appel d'offres" || c.mode_engagement === "Appel d'Offres" || c.mode_engagement === "Appel d'offre";
+          const matchingAoo = aooRes.data.find(a => 
+            (a.num_aoo && c.numero_consultation && a.num_aoo.trim().toLowerCase() === c.numero_consultation.trim().toLowerCase()) ||
+            (a.id && c.aoo_id && String(a.id) === String(c.aoo_id))
+          );
 
-        const formattedAoos = aooRes.data.map(a => ({
-          ...a,
-          global_id: `aoo_${a.id}`,
-          global_type: "Appel d'Offres",
-          global_numero: a.num_aoo,
-          global_objet: a.objet,
-          global_budget: a.budget,
-          global_statut: a.statut,
-          route: `/aoos/${a.id}`
-        }));
+          let targetRoute = `/consultations/${c.id}`;
+          if (isAo) {
+            targetRoute = matchingAoo ? `/aoos/${matchingAoo.id}` : `/aoos/nouveau?consultation_id=${c.id}`;
+          }
+
+          return {
+            ...c,
+            global_id: `cons_${c.id}`,
+            global_type: isAo ? "Appel d'offres" : (c.mode_engagement || 'Bon de commande'),
+            global_numero: c.numero_consultation,
+            global_objet: c.objet_consultation,
+            global_budget: c.budget ? c.budget.montant_ttc : (c.montant_estimatif_ht || null),
+            global_statut: c.statut_dossier,
+            is_ao: isAo,
+            matching_aoo_id: matchingAoo?.id,
+            route: targetRoute
+          };
+        });
+
+        // Filter out AOOs that already match a consultation to avoid visual duplicates in list
+        const consAoNumbers = new Set(
+          formattedCons
+            .filter(c => c.is_ao && c.global_numero)
+            .map(c => c.global_numero.trim().toLowerCase())
+        );
+
+        const formattedAoos = aooRes.data
+          .filter(a => !a.num_aoo || !consAoNumbers.has(a.num_aoo.trim().toLowerCase()))
+          .map(a => ({
+            ...a,
+            global_id: `aoo_${a.id}`,
+            global_type: "Appel d'Offres",
+            global_numero: a.num_aoo,
+            global_objet: a.objet,
+            global_budget: a.budget,
+            global_statut: a.statut,
+            is_ao: true,
+            route: `/aoos/${a.id}`
+          }));
 
         const merged = [...formattedCons, ...formattedAoos].sort((a, b) => {
           const dateA = new Date(a.created_at || a.date_consultation || a.date_preparation || 0);
@@ -209,24 +234,46 @@ const ListeConsultations = () => {
                       </td>
                       <td className="px-6 py-5 whitespace-nowrap text-right">
                         <div className="flex items-center justify-end gap-2">
-                          <Link 
-                            to={consultation.route}
-                            className="inline-flex items-center justify-center h-9 w-9 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50 transition-colors"
-                            title="Voir détails"
+                          <button
+                            onClick={() => {
+                              if (consultation.is_ao || consultation.global_id?.startsWith('aoo_')) {
+                                navigate(consultation.route, {
+                                  state: {
+                                    createdConsultation: consultation,
+                                    autoSelectId: consultation.id,
+                                    consultation_id: consultation.id,
+                                  },
+                                });
+                              } else {
+                                navigate(consultation.route);
+                              }
+                            }}
+                            className="inline-flex items-center justify-center h-9 w-9 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50 transition-colors cursor-pointer"
+                            title="Aperçu / Voir détails"
                           >
                             <Eye size={18} />
-                          </Link>
-                          {!consultation.global_id.startsWith('aoo_') && (
-                            <button
-                              onClick={() => navigate(`/bons-commande?consultation_id=${consultation.id}&edit=1`, {
-                                state: { autoSelectId: consultation.id, autoEditId: consultation.id },
-                              })}
-                              className="inline-flex items-center justify-center h-9 w-9 rounded-lg bg-amber-50 text-amber-600 hover:bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400 dark:hover:bg-amber-900/50 transition-colors"
-                              title="Modifier la consultation"
-                            >
-                              <Edit3 size={18} />
-                            </button>
-                          )}
+                          </button>
+                          <button
+                            onClick={() => {
+                              if (consultation.is_ao || consultation.global_id?.startsWith('aoo_')) {
+                                navigate(consultation.route, {
+                                  state: {
+                                    createdConsultation: consultation,
+                                    autoSelectId: consultation.id,
+                                    consultation_id: consultation.id,
+                                  },
+                                });
+                              } else {
+                                navigate(`/bons-commande?consultation_id=${consultation.id}&edit=1`, {
+                                  state: { autoSelectId: consultation.id, autoEditId: consultation.id },
+                                });
+                              }
+                            }}
+                            className="inline-flex items-center justify-center h-9 w-9 rounded-lg bg-amber-50 text-amber-600 hover:bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400 dark:hover:bg-amber-900/50 transition-colors cursor-pointer"
+                            title="Modifier"
+                          >
+                            <Edit3 size={18} />
+                          </button>
                           <button
                             onClick={() => handleDelete(consultation)}
                             className="inline-flex items-center justify-center h-9 w-9 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50 transition-colors cursor-pointer"

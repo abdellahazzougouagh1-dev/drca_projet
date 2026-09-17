@@ -1,12 +1,22 @@
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { CheckCircle2 } from 'lucide-react';
 import api from '../api/axios';
+import { useAuth } from '../context/AuthContext';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const { setCurrentUser } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+
+  const redirectTarget = location.state?.redirect || searchParams.get('redirect');
+  const requiredRole = location.state?.requiredRole || searchParams.get('requiredRole');
+  const targetTitle = location.state?.title || searchParams.get('title');
+  const successMessage = location.state?.message;
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -14,12 +24,34 @@ export default function Login() {
 
     try {
       const response = await api.post('/login', { email, password });
-      localStorage.setItem('token', response.data.token);
-      localStorage.setItem('user', JSON.stringify(response.data.user));
-      api.defaults.headers.common.Authorization = `Bearer ${response.data.token}`;
-      navigate(response.data.user?.role === 'directeur' ? '/directeur' : '/dashboard', { replace: true });
+      const { token, user } = response.data;
+
+      // Vérification du rôle si requis pour la section cible
+      if (requiredRole && user.role !== requiredRole) {
+        setError(
+          requiredRole === 'directeur'
+            ? "Accès refusé : Seul le compte Directeur est autorisé à accéder à cet espace."
+            : `Accès refusé : Rôle '${requiredRole}' requis pour cette section.`
+        );
+        return;
+      }
+
+      localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(user));
+      setCurrentUser(user);
+      api.defaults.headers.common.Authorization = `Bearer ${token}`;
+
+      if (redirectTarget) {
+        navigate(redirectTarget, { replace: true });
+      } else {
+        navigate(user?.role === 'directeur' ? '/directeur' : '/dashboard', { replace: true });
+      }
     } catch (err) {
-      setError(err.response?.data?.message || 'Email ou mot de passe incorrect');
+      setError(
+        err.response?.data?.message ||
+        err.response?.data?.errors?.email?.[0] ||
+        'Email ou mot de passe incorrect'
+      );
     }
   };
 
@@ -39,6 +71,19 @@ export default function Login() {
             Portail d'authentification
           </p>
         </div>
+
+        {targetTitle && (
+          <div className="mb-6 rounded-2xl bg-blue-600/20 border border-blue-500/40 px-5 py-3 text-blue-200 text-sm text-center font-medium">
+            Authentification requise pour accéder à : <strong className="text-white">{targetTitle}</strong>
+          </div>
+        )}
+
+        {successMessage && !error && (
+          <div className="mb-6 rounded-2xl bg-emerald-600/15 border border-emerald-500/30 px-5 py-4 text-emerald-200 text-sm flex items-start gap-3">
+            <CheckCircle2 size={18} className="shrink-0 mt-0.5 text-emerald-400" />
+            <span>{successMessage}</span>
+          </div>
+        )}
 
         {error && (
           <div className="mb-6 rounded-2xl bg-red-600/10 border border-red-500/20 px-5 py-4 text-red-200 text-sm text-center">

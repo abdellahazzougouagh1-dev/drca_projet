@@ -23,15 +23,13 @@ class AuthController extends Controller
             'name' => $validated['name'],
             'email' => $validated['email'],
             'password' => $validated['password'],
-            'is_admin' => $validated['is_admin'] ?? true,
+            'is_admin' => $validated['is_admin'] ?? false,
+            'is_active' => false,
             'role' => 'gestionnaire',
         ]);
 
-        $token = $user->createToken('api-token')->plainTextToken;
-
         return response()->json([
-            'message' => 'Utilisateur créé avec succès.',
-            'token' => $token,
+            'message' => 'Compte créé avec succès. Votre compte est actuellement désactivé en attente de validation par le Directeur.',
             'user' => $user,
         ], 201);
     }
@@ -51,6 +49,13 @@ class AuthController extends Controller
             ]);
         }
 
+        // Bloquer la connexion si le compte n'est pas encore activé par le directeur
+        if (! $user->is_active && $user->role !== 'directeur') {
+            throw ValidationException::withMessages([
+                'email' => ['Votre compte est actuellement désactivé ou en attente d\'approbation par le Directeur.'],
+            ]);
+        }
+
         $token = $user->createToken('api-token')->plainTextToken;
 
         return response()->json([
@@ -60,6 +65,7 @@ class AuthController extends Controller
                 'name' => $user->name,
                 'email' => $user->email,
                 'role' => $user->role ?? 'gestionnaire',
+                'is_active' => (bool) $user->is_active,
             ],
         ]);
     }

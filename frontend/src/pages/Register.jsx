@@ -28,7 +28,7 @@ export default function Register() {
       localStorage.removeItem('token');
       delete api.defaults.headers.common.Authorization;
       navigate('/login', {
-        state: { message: 'Compte créé avec succès. Veuillez vous connecter.' },
+        state: { message: "Compte créé avec succès ! Votre compte est actuellement en attente d'activation par le Directeur." },
       });
     } catch (err) {
       console.error('Register error:', err.response || err);

@@ -1787,9 +1787,9 @@ const BonCommandePlateforme = () => {
         && ['credit_ouvert_ce', 'depenses_anterieures_ce', 'depenses_credits_engagement'].includes(field.name)) return false;
       const group = /table|selector|societes_refusees_input/.test(field.type || '') ? 'details'
         : /^(titulaire_nom|societe|adresse_societe|ville_societe|patente|cnss|ice|if|rib)$/.test(field.name) ? 'supplier'
-        : /^(art|par|lig|s_lig|intitule|credit_|depenses_|montant_|interets_)/.test(field.name) ? 'finance'
-        : /^(date_|heure_|lieu_|delai_|periode_)/.test(field.name) ? 'schedule'
-        : 'references';
+          : /^(art|par|lig|s_lig|intitule|credit_|depenses_|montant_|interets_)/.test(field.name) ? 'finance'
+            : /^(date_|heure_|lieu_|delai_|periode_)/.test(field.name) ? 'schedule'
+              : 'references';
       return group === section.id;
     }),
   })).filter((section) => section.fields.length > 0);
@@ -1908,22 +1908,24 @@ const BonCommandePlateforme = () => {
               </div>
             )}
             <div className="flex items-center gap-2">
-              <Link
-                to="/directeur"
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white text-xs font-bold rounded-xl shadow-xs transition transform active:scale-98"
+              <button
+                type="button"
+                onClick={() => navigate('/login', { state: { redirect: '/directeur', requiredRole: 'directeur', title: 'Espace Directeur' } })}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white text-xs font-bold rounded-xl shadow-xs transition transform active:scale-98 cursor-pointer"
                 title="Accéder à l'Espace Directeur"
               >
                 <ShieldCheck size={15} />
                 <span>Directeur</span>
-              </Link>
-              <Link
-                to="/dashboard"
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs font-bold rounded-xl shadow-xs transition transform active:scale-98"
+              </button>
+              <button
+                type="button"
+                onClick={() => navigate('/login', { state: { redirect: '/dashboard', title: 'Appels d’offres' } })}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs font-bold rounded-xl shadow-xs transition transform active:scale-98 cursor-pointer"
                 title="Accéder aux Appels d'offres"
               >
                 <FileText size={15} />
                 <span>Appels d'offres</span>
-              </Link>
+              </button>
               {savedConsultation && (
                 <div className="hidden sm:flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2">
                   <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
