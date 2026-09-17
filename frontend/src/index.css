@@ -55,7 +55,6 @@ button {
 }
 
 @media (max-width: 639px) {
-
   input,
   select,
   textarea {
@@ -99,25 +98,6 @@ button {
     opacity: 1;
     transform: translateY(0) scale(1);
   }
-}
-
-@keyframes fadeIn {
-  0% {
-    opacity: 0;
-  }
-
-  100% {
-    opacity: 1;
-  }
-}
-
-.animate-scaleUp {
-  animation: scaleUp 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-.animate-fadeIn {
-  animation: fadeIn 0.18s ease-out forwards;
-}
 }
 
 @keyframes fadeIn {
