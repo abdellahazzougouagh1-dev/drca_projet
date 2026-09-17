@@ -434,96 +434,144 @@ const DossierLiquidation = () => {
       <main className="flex-1 w-full max-w-[1920px] mx-auto space-y-6">
         
         {/* Header */}
-        <div className="flex items-center gap-4 bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
-          <button onClick={() => navigate('/liquidations')} className="p-2 hover:bg-slate-100 rounded-xl transition-colors">
-            <ArrowLeft size={24} className="text-slate-600" />
-          </button>
-          <div>
-            <h1 className="text-2xl font-extrabold text-slate-900 flex items-center gap-2">
-              Dossier de Liquidation <span className="text-indigo-600 bg-indigo-50 px-3 py-1 rounded-lg text-lg border border-indigo-100">{marche.num_marche}</span>
-            </h1>
-            <p className="text-sm text-slate-500 mt-1 line-clamp-1">{marche.objet_marche}</p>
+        <div className="flex flex-wrap items-center justify-between gap-4 bg-gradient-to-r from-blue-50/90 via-indigo-50/50 to-blue-50/70 p-5 rounded-2xl shadow-sm border border-blue-100">
+          <div className="flex items-center gap-4">
+            <button onClick={() => navigate('/liquidations')} className="p-2.5 bg-white text-slate-600 hover:text-slate-900 rounded-xl shadow-xs border border-blue-100 transition-colors">
+              <ArrowLeft size={20} />
+            </button>
+            <div>
+              <div className="flex flex-wrap items-center gap-2.5">
+                <div className="p-2 bg-blue-600 text-white rounded-lg shadow-sm">
+                  <Calculator size={18} />
+                </div>
+                <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">
+                  Dossier de Liquidation
+                </h1>
+                <span className="text-blue-700 bg-white px-3 py-1 rounded-lg text-sm font-bold border border-blue-200/80 shadow-xs font-mono">
+                  {marche.num_marche}
+                </span>
+              </div>
+              <p className="text-sm text-slate-600 mt-1 line-clamp-1">{marche.objet_marche}</p>
+            </div>
           </div>
         </div>
 
         {/* Info Marché (Lecture Seule) & Finances */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-             <h2 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2"><FileText className="text-indigo-600" size={20}/> Informations du Marché (Source : Engagement)</h2>
-             <div className="grid grid-cols-2 gap-4 text-sm">
-                <div className="col-span-2 p-3 bg-slate-50 rounded-xl border border-slate-100 flex justify-between items-center">
+          <div className="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4">
+             <div className="flex items-center gap-2.5 pb-3 border-b border-slate-100">
+               <div className="p-2 bg-blue-50 text-blue-600 rounded-lg border border-blue-100">
+                 <FileText size={18} />
+               </div>
+               <h2 className="text-base sm:text-lg font-bold text-slate-800">
+                 Informations du Marché (Source : Engagement)
+               </h2>
+             </div>
+
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                <div className="md:col-span-2 p-3.5 bg-slate-50/80 rounded-xl border border-slate-200/80 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 shadow-xs">
                   <div>
-                    <span className="text-slate-500 block mb-1 text-xs uppercase font-bold">Titulaire</span>
-                    <span className="font-semibold text-slate-800">{marche.fournisseur?.raison_sociale}</span>
+                    <span className="text-slate-500 block mb-0.5 text-[11px] uppercase font-semibold tracking-wider">Titulaire</span>
+                    <span className="font-bold text-slate-900 text-sm">{marche.fournisseur?.raison_sociale || '-'}</span>
                   </div>
-                  <div className="text-right">
-                    <span className="text-slate-500 block mb-1 text-xs uppercase font-bold">ICE / RC</span>
-                    <span className="font-semibold text-slate-800 text-xs">
-                      {marche.fournisseur?.ice ? `ICE: ${marche.fournisseur.ice}` : 'ICE: N/A'} | {marche.fournisseur?.rc ? `RC: ${marche.fournisseur.rc}` : 'RC: N/A'}
+                  <div className="sm:text-right">
+                    <span className="text-slate-500 block mb-0.5 text-[11px] uppercase font-semibold tracking-wider">ICE / RC</span>
+                    <span className="font-semibold text-slate-700 text-xs font-mono">
+                      {marche.fournisseur?.ice ? `ICE : ${marche.fournisseur.ice}` : 'ICE : N/A'} {marche.fournisseur?.rc ? `| RC : ${marche.fournisseur.rc}` : ''}
                     </span>
                   </div>
                 </div>
-                <div className="col-span-2 p-3 bg-indigo-50 rounded-xl border border-indigo-100">
-                  <span className="text-indigo-600 block mb-1 text-xs uppercase font-bold">Banque & RIB (pour l'Ordonnancement)</span>
-                  <div className="flex justify-between items-center">
-                    <span className="font-semibold text-indigo-900">{marche.fournisseur?.banque || 'Non renseignée'}</span>
-                    <span className="font-mono font-bold tracking-wider text-indigo-900 text-xs">{marche.fournisseur?.rib || 'Non renseigné'}</span>
+
+                <div className="md:col-span-2 p-3.5 bg-blue-50/70 rounded-xl border border-blue-200/80 shadow-xs">
+                  <span className="text-blue-800 block mb-1 text-[11px] uppercase font-bold tracking-wider">Banque & RIB (pour l'Ordonnancement)</span>
+                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1">
+                    <span className="font-bold text-blue-950 text-sm">{marche.fournisseur?.banque || 'Non renseignée'}</span>
+                    <span className="font-mono font-bold tracking-wider text-blue-900 text-xs">{marche.fournisseur?.rib || 'Non renseigné'}</span>
                   </div>
                 </div>
-                <div className="p-3 bg-slate-50 rounded-xl border border-slate-100"><span className="text-slate-500 block mb-1 text-xs uppercase font-bold">N° AOO</span><span className="font-semibold text-slate-800">{marche.aoo?.num_aoo}</span></div>
-                <div className="p-3 bg-slate-50 rounded-xl border border-slate-100"><span className="text-slate-500 block mb-1 text-xs uppercase font-bold">Délai d'exécution</span><span className="font-semibold text-slate-800">{marche.delai_execution} jours</span></div>
-                <div className="p-3 bg-slate-50 rounded-xl border border-slate-100"><span className="text-slate-500 block mb-1 text-xs uppercase font-bold">Imputation Budgétaire</span><span className="font-semibold text-slate-800 line-clamp-1">{marche.imputation_budgetaire || 'N/A'}</span></div>
+
+                <div className="p-3.5 bg-slate-50/80 rounded-xl border border-slate-200/80 shadow-xs">
+                  <span className="text-slate-500 block mb-0.5 text-[11px] uppercase font-semibold tracking-wider">N° AOO</span>
+                  <span className="font-bold text-slate-900">{marche.aoo?.num_aoo || '-'}</span>
+                </div>
+                <div className="p-3.5 bg-slate-50/80 rounded-xl border border-slate-200/80 shadow-xs">
+                  <span className="text-slate-500 block mb-0.5 text-[11px] uppercase font-semibold tracking-wider">Délai d'exécution</span>
+                  <span className="font-bold text-slate-900">{marche.delai_execution ? `${marche.delai_execution} jours` : '-'}</span>
+                </div>
+                <div className="md:col-span-2 p-3.5 bg-slate-50/80 rounded-xl border border-slate-200/80 shadow-xs">
+                  <span className="text-slate-500 block mb-0.5 text-[11px] uppercase font-semibold tracking-wider">Imputation Budgétaire</span>
+                  <span className="font-semibold text-slate-800 line-clamp-1">{marche.imputation_budgetaire || 'Non renseignée'}</span>
+                </div>
              </div>
              
-             <div className="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between bg-gradient-to-r from-slate-50 to-white p-4 rounded-xl border border-slate-200 shadow-sm">
-                <span className="text-sm font-bold text-slate-700 flex items-center gap-2">
-                  <FileDown size={18} className="text-slate-400" /> Documents globaux du marché
+             <div className="pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3 bg-gradient-to-r from-blue-50/40 to-white p-3.5 rounded-xl border border-blue-100 shadow-xs">
+                <span className="text-xs sm:text-sm font-bold text-slate-700 flex items-center gap-2">
+                  <FileDown size={18} className="text-blue-600" /> Documents globaux du marché
                 </span>
                 <div className="flex items-center gap-2">
                   <button 
                     type="button"
                     onClick={() => previewMarcheGlobalDoc('decision_commission')} 
-                    className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-sm font-bold flex items-center gap-1.5 shadow-sm transition-all duration-300"
+                    className="px-3.5 py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-xs transition-all"
                     title="Aperçu du document"
                   >
-                    <Eye size={16} className="text-indigo-600" />
+                    <Eye size={15} className="text-blue-600" />
                     <span>Aperçu</span>
                   </button>
                   <button 
                     type="button"
                     onClick={() => generateMarcheGlobalDoc('decision_commission')} 
-                    className="px-5 py-2.5 bg-white border-2 border-indigo-100 hover:border-indigo-300 hover:bg-indigo-50 text-indigo-700 rounded-xl text-sm font-extrabold flex items-center gap-2 shadow-sm transition-all duration-300 group"
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold flex items-center gap-2 shadow-xs transition-all group"
                   >
-                    <FileDown size={16} className="group-hover:-translate-y-0.5 transition-transform" />
+                    <FileDown size={15} className="group-hover:-translate-y-0.5 transition-transform" />
                     <span>Télécharger Décision Commission</span>
                   </button>
                 </div>
              </div>
           </div>
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-            <h2 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
-              <Banknote className="text-indigo-600" size={20} /> Suivi Financier
-            </h2>
-            <div className="w-full bg-slate-100 rounded-full h-3 mb-4 overflow-hidden">
-              <div className="bg-emerald-500 h-3 rounded-full transition-all duration-1000" style={{ width: `${Math.min(progressPercent, 100)}%` }}></div>
-            </div>
-            <div className="space-y-3">
-              <div className="flex justify-between items-center text-sm"><span className="text-slate-500 font-semibold">Marché Initial (TTC)</span><span className="font-bold">{new Intl.NumberFormat('fr-MA', { style: 'currency', currency: 'MAD' }).format(finances.montant_marche).replace('MAD', 'dh')}</span></div>
-              <div className="flex justify-between items-center text-sm"><span className="text-emerald-600 font-semibold">Cumul Validé</span><span className="font-bold text-emerald-700">{new Intl.NumberFormat('fr-MA', { style: 'currency', currency: 'MAD' }).format(finances.total_liquide).replace('MAD', 'dh')}</span></div>
-              <div className="pt-3 border-t border-slate-100 flex justify-between items-center text-sm"><span className="text-amber-600 font-bold">Reste à Liquider</span><span className="font-black text-amber-700 text-lg">{new Intl.NumberFormat('fr-MA', { style: 'currency', currency: 'MAD' }).format(finances.reste_a_liquider).replace('MAD', 'dh')}</span></div>
-              
-              {finances.reste_a_liquider <= 0 && (
-                <div className="mt-4 p-3 bg-red-50 border border-red-200 text-red-700 text-sm font-bold text-center rounded-xl">
-                  Le marché est entièrement liquidé.
+
+          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-between space-y-4">
+            <div>
+              <div className="flex items-center gap-2.5 pb-3 border-b border-slate-100 mb-4">
+                <div className="p-2 bg-blue-50 text-blue-600 rounded-lg border border-blue-100">
+                  <Banknote size={18} />
                 </div>
-              )}
+                <h2 className="text-base sm:text-lg font-bold text-slate-800">
+                  Suivi Financier
+                </h2>
+              </div>
+              
+              <div className="w-full bg-slate-100 rounded-full h-2.5 mb-4 overflow-hidden">
+                <div className="bg-emerald-500 h-2.5 rounded-full transition-all duration-1000" style={{ width: `${Math.min(progressPercent, 100)}%` }}></div>
+              </div>
+
+              <div className="space-y-2.5">
+                <div className="p-3 bg-slate-50/80 rounded-xl border border-slate-200/80 flex justify-between items-center text-sm shadow-xs">
+                  <span className="text-slate-500 font-semibold text-xs uppercase tracking-wider">Marché Initial (TTC)</span>
+                  <span className="font-bold text-slate-900">{new Intl.NumberFormat('fr-MA', { style: 'currency', currency: 'MAD' }).format(finances.montant_marche).replace('MAD', 'dh')}</span>
+                </div>
+                <div className="p-3 bg-emerald-50/70 rounded-xl border border-emerald-200/80 flex justify-between items-center text-sm shadow-xs">
+                  <span className="text-emerald-800 font-semibold text-xs uppercase tracking-wider">Cumul Validé</span>
+                  <span className="font-bold text-emerald-900">{new Intl.NumberFormat('fr-MA', { style: 'currency', currency: 'MAD' }).format(finances.total_liquide).replace('MAD', 'dh')}</span>
+                </div>
+                <div className="p-3 bg-amber-50/70 rounded-xl border border-amber-200/80 flex justify-between items-center text-sm shadow-xs">
+                  <span className="text-amber-800 font-bold text-xs uppercase tracking-wider">Reste à Liquider</span>
+                  <span className="font-black text-amber-900 text-base">{new Intl.NumberFormat('fr-MA', { style: 'currency', currency: 'MAD' }).format(finances.reste_a_liquider).replace('MAD', 'dh')}</span>
+                </div>
+                
+                {finances.reste_a_liquider <= 0 && (
+                  <div className="mt-4 p-3 bg-red-50 border border-red-200 text-red-700 text-xs font-bold text-center rounded-xl">
+                    Le marché est entièrement liquidé.
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
 
         {/* Tabs */}
         <div className="flex gap-2 border-b border-slate-200 mb-6">
-          <button onClick={() => setActiveTab('historique')} className={`px-4 py-3 text-sm font-bold border-b-2 transition-colors ${activeTab === 'historique' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}>Historique des Liquidations</button>
+          <button onClick={() => setActiveTab('historique')} className={`px-4 py-3 text-sm font-bold border-b-2 transition-colors ${activeTab === 'historique' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}>Historique des Liquidations</button>
           
           <button 
             onClick={() => {
@@ -534,7 +582,7 @@ const DossierLiquidation = () => {
               }
               handleStartNewLiquidation();
             }} 
-            className={`px-4 py-3 text-sm font-bold border-b-2 transition-colors ${activeTab === 'saisie' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-700'} ${finances.reste_a_liquider <= 0 && !editMode ? 'opacity-50 cursor-not-allowed' : ''}`}
+            className={`px-4 py-3 text-sm font-bold border-b-2 transition-colors ${activeTab === 'saisie' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700'} ${finances.reste_a_liquider <= 0 && !editMode ? 'opacity-50 cursor-not-allowed' : ''}`}
             disabled={finances.reste_a_liquider <= 0 && !editMode}
           >
             {editMode ? 'Modifier la Liquidation' : 'Nouvelle Liquidation'}
@@ -557,7 +605,7 @@ const DossierLiquidation = () => {
                      handleStartNewLiquidation();
                    }} 
                    disabled={finances.reste_a_liquider <= 0}
-                   className={`mt-4 px-6 py-2 text-white rounded-xl font-bold transition-colors ${finances.reste_a_liquider <= 0 ? 'bg-slate-400 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700'}`}
+                   className={`mt-4 px-6 py-2.5 text-white rounded-xl font-bold transition-colors shadow-sm ${finances.reste_a_liquider <= 0 ? 'bg-slate-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`}
                  >
                    Créer le 1er décompte
                  </button>
