@@ -209,7 +209,7 @@
     $budgetType = $ordonnancement->budget_type ?? 'Investissement';
     $exercice   = $ordonnancement->exercice ?? date('Y');
     
-    // Détermination de la nature de la RAS (IS ou TVA)
+    // Détermination de la nature de la RAS (IAC ou TVA)
     $typeMvt = $ordre?->type_mouvement ?? '';
     $creance = $ordre?->creance ?? '';
     $reqNature = request('nature') ?: request('type_ras');
@@ -217,7 +217,7 @@
         $natureRas = 'RAS / TVA';
         $isTva = true;
     } else {
-        $natureRas = 'RAS / IS';
+        $natureRas = 'RAS / IAC';
         $isTva = false;
     }
 

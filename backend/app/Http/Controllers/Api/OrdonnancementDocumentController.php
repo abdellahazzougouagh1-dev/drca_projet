@@ -94,19 +94,22 @@ class OrdonnancementDocumentController extends Controller
         switch ($type) {
             case 'op_ras':
             case 'op_ras_is':
+            case 'op_ras_iac':
                 $ordreIs = $ordonnancement->ordres()->where(function($q) {
                     $q->where('type_mouvement', 'like', '%ias%')
                       ->orWhere('type_mouvement', 'like', '%is%')
-                      ->orWhere('creance', 'like', '%ias%');
+                      ->orWhere('type_mouvement', 'like', '%iac%')
+                      ->orWhere('creance', 'like', '%ias%')
+                      ->orWhere('creance', 'like', '%iac%');
                 })->first() ?: $ordre;
                 if ($ordreIs && !$ordre) {
                     $data['ordre'] = $ordreIs;
                     $data['montant'] = (float)$ordreIs->montant;
                     $data['montant_lettres'] = NumberToWordsHelper::toFrenchWords((float)$ordreIs->montant);
                 }
-                request()->merge(['nature' => 'is']);
+                request()->merge(['nature' => 'iac']);
                 $pdf = Pdf::loadView('pdf.ordonnancement.op_ras', $data);
-                $filename = $this->safeFileName('Ordre_Paiement_RAS_IS', ($data['ordre']?->num_ordre ?? 'OP_RAS_IS') . '_' . $ordonnancement->num_ordonnancement);
+                $filename = $this->safeFileName('Ordre_Paiement_RAS_IAC', ($data['ordre']?->num_ordre ?? 'OP_RAS_IAC') . '_' . $ordonnancement->num_ordonnancement);
                 return $isPreview ? $pdf->stream($filename) : $pdf->download($filename);
 
             case 'op_ras_tva':

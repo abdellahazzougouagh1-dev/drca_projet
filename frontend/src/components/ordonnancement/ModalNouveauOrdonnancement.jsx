@@ -153,19 +153,19 @@ export default function ModalNouveauOrdonnancement({ isOpen, onClose, onSuccess 
       });
     }
 
-    // 3. Retenue IS (SEULEMENT si sélectionnée par l'utilisateur et > 0)
+    // 3. Retenue IAC (SEULEMENT si sélectionnée par l'utilisateur et > 0)
     if (isIas && validIas > 0) {
       newOrdres.push({
         num_ordre: `OP N°${38 + newOrdres.length}`,
-        type_mouvement: 'Retenue à la source IS/IAC',
+        type_mouvement: 'Retenue à la source IAC',
         mode_paiement: 'Virement',
         beneficiaire: 'TRÉSOR PUBLIC',
         rib_compte: '225 330 000 706 918 851 021 328',
         banque_agence: 'TRÉSORERIE PROVINCIALE DE KÉNITRA',
-        creance: 'Retenue IS/IAC',
+        creance: 'Retenue IAC',
         montant: validIas,
         statut: 'À payer',
-        observations: 'Retenue à la source IS/IAC au profit du Trésor Public'
+        observations: 'Retenue à la source IAC au profit du Trésor Public'
       });
     }
 
@@ -660,7 +660,7 @@ export default function ModalNouveauOrdonnancement({ isOpen, onClose, onSuccess 
                             )}
                           </div>
 
-                          {/* 2. Case à cocher IS */}
+                          {/* 2. Case à cocher IAC */}
                           <div className="space-y-2 pt-2 border-t border-slate-200/60">
                             <label className="flex items-center gap-2.5 cursor-pointer select-none">
                               <input
@@ -670,15 +670,15 @@ export default function ModalNouveauOrdonnancement({ isOpen, onClose, onSuccess 
                                 className="w-4 h-4 rounded text-blue-600 border-slate-300 focus:ring-blue-500 cursor-pointer"
                               />
                               <span className={`text-xs font-bold ${applyIas ? 'text-blue-700' : 'text-slate-700'}`}>
-                                Appliquer une retenue IS
+                                Appliquer une retenue IAC
                               </span>
                             </label>
 
-                            {/* Dynamic field IS if checked */}
+                            {/* Dynamic field IAC if checked */}
                             {applyIas && (
                               <div className="pl-6 pt-1 animate-in fade-in slide-in-from-top-1 duration-150">
                                 <label className="block text-[11px] font-semibold text-slate-600 mb-1">
-                                  Montant de la retenue IS *
+                                  Montant de la retenue IAC *
                                 </label>
                                 <div className="relative max-w-xs">
                                   <input
@@ -715,7 +715,7 @@ export default function ModalNouveauOrdonnancement({ isOpen, onClose, onSuccess 
                           <div className="text-[11px] text-blue-700 mt-1 font-medium">
                             {(!applyTva && !applyIas)
                               ? 'Net à payer = Montant brut'
-                              : `Formule : Montant brut (${formatDH(formData.montant_brut)})${applyTva ? ` - TVA (${formatDH(formData.retenue_tva)})` : ''}${applyIas ? ` - IS (${formatDH(formData.retenue_ias)})` : ''}`}
+                              : `Formule : Montant brut (${formatDH(formData.montant_brut)})${applyTva ? ` - TVA (${formatDH(formData.retenue_tva)})` : ''}${applyIas ? ` - IAC (${formatDH(formData.retenue_ias)})` : ''}`}
                           </div>
                         </div>
                       </div>

@@ -178,7 +178,7 @@ const ListeLiquidations = () => {
                           <td className="p-4 text-center">
                             <Link
                               to={`/liquidations/marches/${marche.id}`}
-                              className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-700 hover:bg-indigo-600 hover:text-white rounded-xl text-sm font-bold transition-all shadow-sm"
+                              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 hover:bg-blue-600 hover:text-white rounded-xl text-sm font-bold transition-all shadow-xs"
                             >
                               Gérer <ChevronRight size={16} />
                             </Link>
@@ -191,7 +191,6 @@ const ListeLiquidations = () => {
               </div>
             </div>
 
-          </div>
         </main>
     </div>
   );
