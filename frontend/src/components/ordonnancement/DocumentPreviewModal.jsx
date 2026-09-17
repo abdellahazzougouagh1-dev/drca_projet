@@ -8,20 +8,20 @@ export default function DocumentPreviewModal({ isOpen, onClose, ordonnancement, 
   const [downloading, setDownloading] = useState(false);
   if (!isOpen || !ordonnancement) return null;
 
-  const isRas = docType === 'op_ras' || docType === 'op_ras_is' || docType === 'op_ras_tva' || (docType === 'op' && (ordre?.type_mouvement?.toLowerCase().includes('retenue') || ordre?.creance?.toLowerCase().includes('retenue')));
+  const isRas = docType === 'op_ras' || docType === 'op_ras_iac' || docType === 'op_ras_is' || docType === 'op_ras_tva' || (docType === 'op' && (ordre?.type_mouvement?.toLowerCase().includes('retenue') || ordre?.creance?.toLowerCase().includes('retenue')));
 
   const currentOrdre = ordre || (
     docType === 'op_ras_tva'
       ? ordonnancement.ordres?.find(o => o.type_mouvement?.toLowerCase().includes('tva') || o.creance?.toLowerCase().includes('tva')) || ordonnancement.ordres?.[0]
-      : docType === 'op_ras_is'
-        ? ordonnancement.ordres?.find(o => o.type_mouvement?.toLowerCase().includes('ias') || o.type_mouvement?.toLowerCase().includes('is') || o.creance?.toLowerCase().includes('ias')) || ordonnancement.ordres?.[0]
+      : (docType === 'op_ras_iac' || docType === 'op_ras_is')
+        ? ordonnancement.ordres?.find(o => o.type_mouvement?.toLowerCase().includes('ias') || o.type_mouvement?.toLowerCase().includes('iac') || o.type_mouvement?.toLowerCase().includes('is') || o.creance?.toLowerCase().includes('ias') || o.creance?.toLowerCase().includes('iac')) || ordonnancement.ordres?.[0]
         : docType === 'op_ras'
-          ? ordonnancement.ordres?.find(o => o.type_mouvement?.toLowerCase().includes('ias') || o.type_mouvement?.toLowerCase().includes('tva') || o.type_mouvement?.toLowerCase().includes('retenue')) || ordonnancement.ordres?.[0]
+          ? ordonnancement.ordres?.find(o => o.type_mouvement?.toLowerCase().includes('ias') || o.type_mouvement?.toLowerCase().includes('iac') || o.type_mouvement?.toLowerCase().includes('tva') || o.type_mouvement?.toLowerCase().includes('retenue')) || ordonnancement.ordres?.[0]
           : docType === 'op'
             ? ordonnancement.ordres?.find(o => o.type_mouvement?.toLowerCase().includes('fournisseur')) || ordonnancement.ordres?.[0]
             : docType === 'ov'
               ? ordonnancement.ordres?.find(o => o.type_mouvement?.toLowerCase().includes('tva')) || ordonnancement.ordres?.[1] || ordonnancement.ordres?.[0]
-              : ordonnancement.ordres?.find(o => o.type_mouvement?.toLowerCase().includes('ias')) || ordonnancement.ordres?.[2] || ordonnancement.ordres?.[0]
+              : ordonnancement.ordres?.find(o => o.type_mouvement?.toLowerCase().includes('ias') || o.type_mouvement?.toLowerCase().includes('iac')) || ordonnancement.ordres?.[2] || ordonnancement.ordres?.[0]
   );
 
   const docInfo = resolveOrdreDocument(currentOrdre);
@@ -47,7 +47,7 @@ export default function DocumentPreviewModal({ isOpen, onClose, ordonnancement, 
       const fileUrl = window.URL.createObjectURL(new Blob([res.data], { type: mimeType }));
       const link = document.createElement('a');
       link.href = fileUrl;
-      const docLabel = docType === 'etat_liquidation' ? 'Etat_Liquidation' : (docType === 'op_ras_is' ? 'OP_RAS_IS' : (docType === 'op_ras_tva' ? 'OP_RAS_TVA' : (docType === 'op_ras' ? 'OP_RAS' : docType.toUpperCase())));
+      const docLabel = docType === 'etat_liquidation' ? 'Etat_Liquidation' : (docType === 'op_ras_iac' || docType === 'op_ras_is' ? 'OP_RAS_IAC' : (docType === 'op_ras_tva' ? 'OP_RAS_TVA' : (docType === 'op_ras' ? 'OP_RAS' : docType.toUpperCase())));
       const safeNum = String(currentOrdre?.num_ordre || ordonnancement.num_ordonnancement || ordonnancement.id).replace(/[^a-zA-Z0-9_\-]/g, '_');
       link.setAttribute('download', `${docLabel}_${safeNum}.pdf`);
       document.body.appendChild(link);
@@ -161,13 +161,13 @@ export default function DocumentPreviewModal({ isOpen, onClose, ordonnancement, 
               </div>
             </div>
 
-            {/* 1. ORDRE DE PAIEMENT - RETENUE À LA SOURCE (RAS / IS & RAS / TVA) */}
-            {(docType === 'op_ras' || docType === 'op_ras_is' || docType === 'op_ras_tva' || (docType === 'op' && isRas)) && (() => {
+            {/* 1. ORDRE DE PAIEMENT - RETENUE À LA SOURCE (RAS / IAC & RAS / TVA) */}
+            {(docType === 'op_ras' || docType === 'op_ras_iac' || docType === 'op_ras_is' || docType === 'op_ras_tva' || (docType === 'op' && isRas)) && (() => {
               const isTva = (
                 docType === 'op_ras_tva' ||
-                (docType !== 'op_ras_is' && (currentOrdre?.type_mouvement?.toLowerCase().includes('tva') || currentOrdre?.creance?.toLowerCase().includes('tva')))
+                (docType !== 'op_ras_iac' && docType !== 'op_ras_is' && (currentOrdre?.type_mouvement?.toLowerCase().includes('tva') || currentOrdre?.creance?.toLowerCase().includes('tva')))
               );
-              const natureRas = isTva ? 'RAS / TVA' : 'RAS / IS';
+              const natureRas = isTva ? 'RAS / TVA' : 'RAS / IAC';
               const montantRas = Number(montant || (isTva ? (ordonnancement.retenue_tva || 2730) : (ordonnancement.retenue_ias || 4420)));
               const montantTtc = Number(ordonnancement.liquidation?.montant_brut_ttc || ordonnancement.montant_brut || (montantRas * 5));
               const montantHt = Number(ordonnancement.liquidation?.montant_brut_ht || (montantTtc / 1.2));

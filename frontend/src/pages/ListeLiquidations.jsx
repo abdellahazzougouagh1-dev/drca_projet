@@ -62,51 +62,54 @@ const ListeLiquidations = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans flex flex-col p-4 sm:p-6 lg:p-8">
-        <main className="flex-1 w-full max-w-[1920px] mx-auto">
-          <div className="mb-4">
-             <Link to="/dashboard" className="text-sm font-semibold text-indigo-600 hover:underline">
+        <main className="flex-1 w-full max-w-[1920px] mx-auto space-y-6">
+          <div className="mb-2">
+             <Link to="/dashboard" className="text-sm font-semibold text-blue-600 hover:text-blue-800 transition-colors">
                ← Retour au tableau de bord
              </Link>
           </div>
-          <div className="space-y-6">
-            
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+
+          <div className="flex flex-wrap items-center justify-between gap-4 bg-gradient-to-r from-blue-50/90 via-indigo-50/50 to-blue-50/70 p-5 rounded-2xl shadow-sm border border-blue-100">
+            <div className="flex items-center gap-3.5">
+              <div className="p-2.5 bg-blue-600 text-white rounded-xl shadow-sm">
+                <Calculator size={24} />
+              </div>
               <div>
-                <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight flex items-center gap-3">
-                  <Calculator className="text-indigo-600" size={32} />
+                <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">
                   Liquidations
                 </h1>
-                <p className="text-slate-500 mt-2">Gérez les services faits, factures et décomptes des marchés engagés.</p>
+                <p className="text-sm text-slate-600 mt-0.5">Gérez les services faits, factures et décomptes des marchés engagés.</p>
               </div>
             </div>
+          </div>
 
-            <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col md:flex-row gap-4 items-center justify-between">
-              <div className="relative w-full md:w-96">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
-                <input
-                  type="text"
-                  placeholder="Rechercher (N° Marché, Titulaire, Objet)..."
-                  className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all text-sm"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-              
-              <div className="flex items-center gap-2 w-full md:w-auto overflow-x-auto pb-2 md:pb-0 hide-scrollbar">
-                <Filter className="text-slate-400 ml-2" size={18} />
-                <span className="text-sm text-slate-500 font-medium whitespace-nowrap">Filtrer par statut:</span>
-                <select
-                  className="bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                >
-                  <option value="ALL">Tous les marchés</option>
-                  <option value="PENDING">À liquider</option>
-                  <option value="PARTIAL">Partiellement liquidés</option>
-                  <option value="COMPLETE">Totalement liquidés</option>
-                </select>
-              </div>
+          <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col md:flex-row gap-4 items-center justify-between">
+            <div className="relative w-full md:w-96">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+              <input
+                type="text"
+                placeholder="Rechercher (N° Marché, Titulaire, Objet)..."
+                className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-sm"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
             </div>
+            
+            <div className="flex items-center gap-2 w-full md:w-auto overflow-x-auto pb-2 md:pb-0 hide-scrollbar">
+              <Filter className="text-slate-400 ml-2" size={18} />
+              <span className="text-sm text-slate-500 font-medium whitespace-nowrap">Filtrer par statut :</span>
+              <select
+                className="bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+              >
+                <option value="ALL">Tous les marchés</option>
+                <option value="PENDING">À liquider</option>
+                <option value="PARTIAL">Partiellement liquidés</option>
+                <option value="COMPLETE">Totalement liquidés</option>
+              </select>
+            </div>
+          </div>
 
             <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
               <div className="overflow-x-auto">
@@ -175,7 +178,7 @@ const ListeLiquidations = () => {
                           <td className="p-4 text-center">
                             <Link
                               to={`/liquidations/marches/${marche.id}`}
-                              className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-700 hover:bg-indigo-600 hover:text-white rounded-xl text-sm font-bold transition-all shadow-sm"
+                              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 hover:bg-blue-600 hover:text-white rounded-xl text-sm font-bold transition-all shadow-xs"
                             >
                               Gérer <ChevronRight size={16} />
                             </Link>
@@ -188,7 +191,6 @@ const ListeLiquidations = () => {
               </div>
             </div>
 
-          </div>
         </main>
     </div>
   );

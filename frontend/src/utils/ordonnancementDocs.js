@@ -2,7 +2,7 @@
  * Helper to determine the specific document associated with an payment order (OP).
  * Rules:
  * - Retenue à la source TVA -> Ordre de paiement — RAS TVA (docType: op_ras_tva)
- * - Retenue à la source IS / IAS / IAC -> Ordre de paiement — RAS IS/IAC (docType: op_ras_is)
+ * - Retenue à la source IAC -> Ordre de paiement — RAS IAC (docType: op_ras_iac)
  * - Ordre de virement (OV) -> Ordre de virement (OV) (docType: ov)
  * - Ordre d'imputation (OI) -> Ordre d'imputation (OI) (docType: oi)
  * - Paiement fournisseur / Standard:
@@ -40,15 +40,15 @@ export function resolveOrdreDocument(ordre) {
     };
   }
 
-  // 2. Retenue à la source IS / IAS / IAC
-  if (typeMouv.includes('ias') || typeMouv.includes('is') || typeMouv.includes('iac') || (typeMouv.includes('retenue') && (creance.includes('ias') || creance.includes('is')))) {
+  // 2. Retenue à la source IAC
+  if (typeMouv.includes('ias') || typeMouv.includes('is') || typeMouv.includes('iac') || (typeMouv.includes('retenue') && (creance.includes('ias') || creance.includes('is') || creance.includes('iac')))) {
     return {
-      docType: 'op_ras_is',
-      title: 'Ordre de paiement (OP) — Retenue à la source IS/IAC',
-      shortTitle: `OP RAS IS/IAC (${numOrdre})`,
-      category: 'Retenue IS/IAC',
+      docType: 'op_ras_iac',
+      title: 'Ordre de paiement (OP) — Retenue à la source IAC',
+      shortTitle: `OP RAS IAC (${numOrdre})`,
+      category: 'Retenue IAC',
       badgeColor: 'amber',
-      description: 'Document officiel de retenue à la source IS/IAC pour l’administration fiscale.'
+      description: 'Document officiel de retenue à la source IAC pour l’administration fiscale.'
     };
   }
 

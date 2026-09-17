@@ -599,71 +599,66 @@ const TraitementEngagement = () => {
         )}
 
         {/* RÉSUMÉ DU DOSSIER */}
-        <div className="bg-gradient-to-br from-blue-900 via-blue-800 to-indigo-900 rounded-[1.5rem] p-6 shadow-xl shadow-blue-900/20 mb-6 relative overflow-hidden border border-white/10 space-y-4">
-          <div className="absolute top-0 right-0 p-4 opacity-[0.03] pointer-events-none transform translate-x-5 -translate-y-5">
-            <Briefcase size={120} />
-          </div>
-          <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_top_right,_rgba(255,255,255,0.1),_transparent_40%)] pointer-events-none" />
-
-          <div className="flex items-center justify-between relative z-10">
-            <h3 className="text-lg font-black text-white flex items-center gap-2">
-              <div className="p-2 bg-white/10 rounded-lg backdrop-blur-sm border border-white/10 shadow-inner">
-                <Briefcase size={18} className="text-blue-200" />
+        <div className="bg-gradient-to-r from-blue-50/90 via-indigo-50/50 to-blue-50/70 rounded-2xl p-5 sm:p-6 shadow-sm border border-blue-100 mb-6 space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-blue-200/50">
+            <h3 className="text-base sm:text-lg font-bold text-slate-800 flex items-center gap-2.5">
+              <div className="p-2 bg-blue-600 text-white rounded-lg shadow-sm">
+                <Briefcase size={18} />
               </div>
               Registre des Ordres de service & Engagement
             </h3>
             <div className="flex items-center gap-2">
-              <span className="px-3 py-1 bg-blue-500/20 text-blue-200 border border-blue-400/30 rounded-lg text-xs font-bold font-mono">
-                Nature: {formData.forme_engagement || 'Marché'}
+              <span className="px-3 py-1 bg-white text-slate-700 border border-blue-200/70 rounded-lg text-xs font-semibold shadow-xs">
+                Nature : <span className="text-blue-700 font-bold">{formData.forme_engagement || 'Marché'}</span>
               </span>
-              <span className="px-3 py-1 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-lg text-xs font-bold font-mono">
-                Budget: {formData.type_budget || 'Investissement'}
+              <span className="px-3 py-1 bg-white text-emerald-700 border border-emerald-200 rounded-lg text-xs font-semibold shadow-xs">
+                Budget : <span className="text-emerald-800 font-bold">{formData.type_budget || 'Investissement'}</span>
               </span>
             </div>
           </div>
 
           {/* Ligne 1 : Attributaire, Code Ste, N° Marché / CV, AOO /consult, date OA */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 relative z-10">
-            <div className="lg:col-span-2 bg-black/20 rounded-xl p-3 border border-white/5 backdrop-blur-sm hover:bg-black/30 transition-colors">
-              <p className="text-[10px] font-bold text-blue-300/80 uppercase tracking-widest mb-1">Attributaire & Code Ste</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="lg:col-span-2 bg-white rounded-xl p-3.5 border border-blue-100 shadow-xs">
+              <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Attributaire & Code Ste</p>
               <div className="flex flex-col">
-                <span className="text-sm font-bold text-white truncate max-w-full" title={formData.fournisseur?.raison_sociale || formData.titulaire}>
+                <span className="text-sm font-bold text-slate-900 truncate max-w-full" title={formData.fournisseur?.raison_sociale || formData.titulaire}>
                   {formData.fournisseur?.raison_sociale || formData.titulaire || '-'}
                 </span>
-                <span className="text-[10px] text-blue-200/80 font-mono mt-0.5">
-                  Code Ste: {formData.code_ste || formData.fournisseur_id || '-'} {formData.fournisseur?.ice ? `| ICE: ${formData.fournisseur.ice}` : ''}
+                <span className="text-xs text-slate-500 font-mono mt-0.5">
+                  Code Ste : {formData.code_ste || formData.fournisseur_id || '-'} {formData.fournisseur?.ice ? `| ICE : ${formData.fournisseur.ice}` : ''}
                 </span>
               </div>
             </div>
-            <div className="bg-black/20 rounded-xl p-3 border border-white/5 backdrop-blur-sm hover:bg-black/30 transition-colors">
-              <p className="text-[10px] font-bold text-blue-300/80 uppercase tracking-widest mb-1">N° de Marché / CV</p>
-              <p className="text-sm font-bold text-white font-mono">{formData.num_marche || '-'}</p>
-              <p className="text-[10px] text-blue-300 mt-0.5 truncate">{getLotText(formData.lot)}</p>
+            <div className="bg-white rounded-xl p-3.5 border border-blue-100 shadow-xs">
+              <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">N° de Marché / CV</p>
+              <p className="text-sm font-bold text-slate-900 font-mono">{formData.num_marche || '-'}</p>
+              <p className="text-xs text-slate-500 mt-0.5 truncate">{getLotText(formData.lot)}</p>
             </div>
-            <div className="bg-black/20 rounded-xl p-3 border border-white/5 backdrop-blur-sm hover:bg-black/30 transition-colors">
-              <p className="text-[10px] font-bold text-blue-300/80 uppercase tracking-widest mb-1">AOO /consult & date OA</p>
-              <p className="text-xs font-bold text-white font-mono">{formData.aoo?.num_aoo || formData.num_aoo || '-'}</p>
-              <p className="text-[10px] text-blue-300 mt-0.5">
-                date OA: {formData.date_oa || formData.aoo?.date_ouverture || '-'}
+            <div className="bg-white rounded-xl p-3.5 border border-blue-100 shadow-xs">
+              <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">AOO / Consult & Date OA</p>
+              <p className="text-sm font-bold text-slate-900 font-mono">{formData.aoo?.num_aoo || formData.num_aoo || '-'}</p>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Date OA : {formData.date_oa || formData.aoo?.date_ouverture || '-'}
               </p>
             </div>
           </div>
 
           {/* Ligne 2 : Dépense, Intérêt moratoire 1% et Montant Total Engagé */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 relative z-10">
-            <div className="bg-white/10 rounded-xl p-3 border border-white/10 backdrop-blur-sm">
-              <p className="text-[10px] font-bold text-blue-200 uppercase tracking-wider">Montant de la Dépense (DH)</p>
-              <p className="text-base font-black text-white mt-1">{formatMoney(formData.montant)}</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            <div className="bg-white rounded-xl p-3.5 border border-blue-100 shadow-xs">
+              <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Montant de la Dépense (DH)</p>
+              <p className="text-lg font-bold text-slate-900 mt-1">{formatMoney(formData.montant)}</p>
             </div>
-            <div className="bg-amber-500/20 rounded-xl p-3 border border-amber-400/30 backdrop-blur-sm">
-              <p className="text-[10px] font-bold text-amber-300 uppercase tracking-wider">Intérêt Moratoire (1%)</p>
-              <p className="text-base font-black text-amber-200 mt-1">
+            <div className="bg-amber-50/70 rounded-xl p-3.5 border border-amber-200/80 shadow-xs">
+              <p className="text-[11px] font-semibold text-amber-800 uppercase tracking-wider">Intérêt Moratoire (1%)</p>
+              <p className="text-lg font-bold text-amber-900 mt-1">
                 {formData.montant ? formatMoney(Number(formData.montant) * 0.01) : '-'}
               </p>
             </div>
-            <div className="bg-gradient-to-br from-emerald-600/60 to-emerald-800/40 rounded-xl p-3 border border-emerald-400/30 backdrop-blur-sm shadow-md">
-              <p className="text-[10px] font-bold text-emerald-200 uppercase tracking-wider">Montant Total Engagement</p>
-              <p className="text-lg font-black text-white mt-0.5 drop-shadow">
+            <div className="bg-blue-600 text-white rounded-xl p-3.5 shadow-sm border border-blue-600">
+              <p className="text-[11px] font-semibold text-blue-100 uppercase tracking-wider">Montant Total Engagement</p>
+              <p className="text-lg font-black text-white mt-1">
                 {formData.montant ? formatMoney(Number(formData.montant) * 1.01) : '-'}
               </p>
             </div>
