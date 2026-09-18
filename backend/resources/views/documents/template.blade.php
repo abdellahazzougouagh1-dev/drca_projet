@@ -146,9 +146,7 @@
         <p>Signature & Cachet :</p>
     </div>
 
-    <div class="footer">
-        Dossier Administratif - ONCA ERP - Document de travail interne
-    </div>
+    @include('documents.partials.bc_footer')
 
 </body>
 </html>

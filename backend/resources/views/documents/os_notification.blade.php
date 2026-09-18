@@ -212,5 +212,7 @@
         </div>
     </div>
 
+    @include('documents.partials.bc_footer')
+
 </body>
 </html>

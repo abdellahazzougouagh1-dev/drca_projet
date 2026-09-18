@@ -189,6 +189,7 @@
             </ul>
         </div>
         
+        @include('documents.partials.bc_footer')
     </div>
 @endforeach
 

@@ -197,5 +197,7 @@
         &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;En lettre <span class="long-dots"></span>
     </div>
 
+    @include('documents.partials.bc_footer')
+
 </body>
 </html>

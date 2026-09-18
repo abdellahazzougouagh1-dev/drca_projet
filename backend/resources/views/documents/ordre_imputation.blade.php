@@ -209,5 +209,7 @@
     <tr><td style="height:80px;"></td></tr>
 </table>
 
+@include('documents.partials.bc_footer')
+
 </body>
 </html>

@@ -179,5 +179,7 @@
     </tr>
 </table>
 
+@include('documents.partials.bc_footer')
+
 </body>
 </html>

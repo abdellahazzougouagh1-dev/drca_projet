@@ -223,5 +223,7 @@
         Le Maitre d'ouvrage
     </div>
 
+    @include('documents.partials.bc_footer')
+
 </body>
 </html>
