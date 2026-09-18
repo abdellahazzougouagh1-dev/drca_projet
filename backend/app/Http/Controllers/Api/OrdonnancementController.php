@@ -91,10 +91,10 @@ class OrdonnancementController extends Controller
 
         foreach ($liquidationsMarches as $liq) {
             $marche = $liq->marche;
-            $fournisseur = $marche->fournisseur ?? null;
-            $notifLigne = $marche->notificationLigne ?? null;
+            $fournisseur = $marche?->fournisseur ?? null;
+            $notifLigne = $marche?->notificationLigne ?? null;
 
-            $montantLiquidation = (float) ($liq->montant_brut_ttc ?: $liq->montant_ttc ?: 0);
+            $montantLiquidation = (float) ($liq->montant_brut_ttc ?: $liq->montant_ttc ?: $liq->net_a_payer ?: 0);
             $montantHt = (float) ($liq->montant_brut_ht ?: $liq->montant_ht ?: 0);
             $montantTva = (float) ($liq->montant_tva ?: ($montantLiquidation - $montantHt));
 
@@ -102,7 +102,7 @@ class OrdonnancementController extends Controller
             $dejaOrdonnance = 0;
             if ($liq->ordonnancements) {
                 foreach ($liq->ordonnancements as $ord) {
-                    $dejaOrdonnance += (float) ($ord->ordres->sum('montant') ?: $ord->montant_brut ?: 0);
+                    $dejaOrdonnance += (float) ($ord->ordres?->sum('montant') ?: $ord->montant_brut ?: 0);
                 }
             }
 
@@ -115,54 +115,57 @@ class OrdonnancementController extends Controller
 
             // Default suggested retenues if user decides to apply them
             $suggestedTva = round($montantTva > 0 ? $montantTva : ($resteDisponible * 0.20 / 1.20), 2);
-            $suggestedIas = round($liq->autres_deductions > 0 ? $liq->autres_deductions : ($montantHt * 0.05), 2);
+            $suggestedIas = round(($liq->autres_deductions ?? $liq->retenues ?? 0) > 0 ? ($liq->autres_deductions ?? $liq->retenues) : ($montantHt * 0.05), 2);
 
             // Extract budget imputation
-            $art = $marche->article_budget ?? $notifLigne->article ?? '415';
-            $par = $marche->paragraphe_budget ?? $notifLigne->paragraphe ?? '20';
-            $lig = $marche->ligne_budget ?? $notifLigne->ligne_budgetaire ?? '13';
+            $art = $marche?->article_budget ?? $notifLigne?->article ?? '415';
+            $par = $marche?->paragraphe_budget ?? $notifLigne?->paragraphe ?? '20';
+            $lig = $marche?->ligne_budget ?? $notifLigne?->ligne_budgetaire ?? '13';
             $sLig = '0';
-            $code = $marche->code_budget ?? '225320';
+            $code = $marche?->code_budget ?? '225320';
 
             // Procedure detection
             $typeProcedure = 'Marché';
-            $ref = $marche->num_marche ?? 'Marché';
-            if (stripos($ref, 'BC') !== false || stripos($ref, 'Bon') !== false) {
+            $ref = $marche?->num_marche ?? ($liq->num_decompte ?: ($liq->num_facture ?: 'Marché'));
+            if (stripos((string)$ref, 'BC') !== false || stripos((string)$ref, 'Bon') !== false) {
                 $typeProcedure = 'Bon de commande';
-            } elseif (stripos($ref, 'CONV') !== false) {
+            } elseif (stripos((string)$ref, 'CONV') !== false) {
                 $typeProcedure = 'Convention';
             }
+
+            $numLiq = $liq->num_liquidation ?: ($liq->num_decompte ?: ($liq->num_facture ?: "LIQ-".($liq->exercice_budgetaire ?: date('Y'))."-".str_pad((string)$liq->id, 3, '0', STR_PAD_LEFT)));
+            $dateLiq = $liq->date_decompte ?: $liq->date_service_fait ?: ($liq->date_facture ?: ($liq->created_at ? $liq->created_at->format('Y-m-d') : date('Y-m-d')));
 
             $disponibles[] = [
                 'type_source' => 'marche_liquidation',
                 'liquidation_id' => $liq->id,
-                'marche_id' => $marche->id ?? null,
+                'marche_id' => $marche?->id ?? null,
                 'consultation_id' => null,
-                'fournisseur_id' => $fournisseur->id ?? null,
-                'notification_ligne_id' => $notifLigne->id ?? null,
-                'num_liquidation' => $liq->num_liquidation ?: "LIQ-".($liq->exercice_budgetaire ?: date('Y'))."-".str_pad($liq->id, 3, '0', STR_PAD_LEFT),
-                'date_liquidation' => $liq->date_decompte ?: $liq->date_service_fait ?: $liq->created_at->format('Y-m-d'),
+                'fournisseur_id' => $fournisseur?->id ?? null,
+                'notification_ligne_id' => $notifLigne?->id ?? null,
+                'num_liquidation' => $numLiq,
+                'date_liquidation' => $dateLiq,
                 'reference' => $ref,
                 'type_procedure' => $typeProcedure,
-                'beneficiaire' => $fournisseur->raison_sociale ?? $marche->titulaire ?? 'Fournisseur non spécifié',
-                'rib' => $fournisseur->rib ?? $fournisseur->compte_bancaire ?? '',
-                'banque' => $fournisseur->banque ?? '',
-                'budget_type' => $marche->type_budget ?? $notifLigne->type_budget ?? 'Investissement',
+                'beneficiaire' => $fournisseur?->raison_sociale ?? $marche?->titulaire ?? ($liq->agent_responsable ?: 'Fournisseur non spécifié'),
+                'rib' => $fournisseur?->rib ?? $fournisseur?->compte_bancaire ?? '',
+                'banque' => $fournisseur?->banque ?? '',
+                'budget_type' => $marche?->type_budget ?? $notifLigne?->type_budget ?? 'Investissement',
                 'creance' => 'Reste à payer',
                 'code_imputation' => $code,
                 'article' => $art,
                 'paragraphe' => $par,
                 'ligne' => $lig,
                 'sous_ligne' => $sLig,
-                'intitule_depense' => $liq->objet_liquidation ?: $marche->objet_marche ?: ($notifLigne->libelle ?? 'Dépense d\'investissement'),
+                'intitule_depense' => $liq->objet_liquidation ?: ($marche?->objet_marche ?: ($notifLigne?->libelle ?? ($liq->reference_service_fait ?: 'Dépense d\'investissement'))),
                 'montant_brut' => $montantLiquidation,
                 'montant_ht' => $montantHt,
                 'deja_ordonnance' => $dejaOrdonnance,
                 'reste_disponible' => $resteDisponible,
                 'suggested_tva' => $suggestedTva,
                 'suggested_ias' => $suggestedIas,
-                'credit_consolide' => (float) ($marche->depenses_credits_consolides ?? $notifLigne->reports ?? 0),
-                'credit_neuf' => (float) ($marche->montant_engager_neuf ?? $notifLigne->credits_neufs ?? 0),
+                'credit_consolide' => (float) ($marche?->depenses_credits_consolides ?? $notifLigne?->reports ?? 0),
+                'credit_neuf' => (float) ($marche?->montant_engager_neuf ?? $notifLigne?->credits_neufs ?? 0),
                 'statut_liquidation' => $liq->statut,
             ];
         }
