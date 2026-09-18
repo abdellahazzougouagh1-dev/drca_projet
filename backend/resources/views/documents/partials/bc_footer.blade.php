@@ -24,9 +24,9 @@
             <td style="width: 30%; vertical-align: middle; text-align: center;">
             </td>
 
-            <td style="width: 30%; vertical-align: middle; text-align: right;">
+            <td style="width: 40%; vertical-align: middle; text-align: right;">
                 @if($sceauMaroc)
-                    <img src="{{ $sceauMaroc }}" alt="Sceau Maroc" class="header-logo" style="max-height: 55px; height: 55px; width: auto;">
+                    <img src="{{ $sceauMaroc }}" alt="Sceau Maroc" class="header-logo" style="max-height: 70px; height: 55px; width: auto;">
                 @endif
             </td>
         </tr>

@@ -1634,7 +1634,7 @@ const BonCommandePlateforme = () => {
 
       if (isExplicitSave) {
         setSavedDocumentIds((prev) => new Set([...prev, documentId]));
-        setMessage('Toutes les informations ont été enregistrées avec succès en base de données !');
+        setMessage('Toutes les informations ont été enregistrées avec succès !');
         setError('');
       }
     } catch (err) {
