@@ -580,23 +580,10 @@ export default function NouvelleNotification() {
       let hasAnyNotifier = false;
       let reportLinesCount = 0;
 
-      // RÈGLE MÉTIER STRICTE : 1 seul REPORT au total par EXERCICE
       for (const l of lignes) {
         if (Number(l.report_amount) > 0) {
           reportLinesCount++;
         }
-      }
-
-      if (reportLinesCount > 1) {
-        throw new Error(
-          `⚠️ Un seul crédit de REPORT peut être saisi au total pour l'exercice ${generalInfo.exercice}. Vous avez saisi un report sur ${reportLinesCount} lignes distinctes.`
-        );
-      }
-
-      if (reportLinesCount > 0 && exerciseReportStatus?.has_report) {
-        throw new Error(
-          `⚠️ Un REPORT existe déjà pour l'exercice ${generalInfo.exercice} (Notification : ${exerciseReportStatus.notification_numero || 'existante'}, Ligne : ${exerciseReportStatus.ligne_budgetaire || '-'}, Montant : ${formatMoney(exerciseReportStatus.report_montant)}). Le REPORT ne peut être saisi qu'une seule fois par exercice, quelle que soit la ligne budgétaire ou la notification.`
-        );
       }
 
       for (let i = 0; i < lignes.length; i++) {
@@ -1021,44 +1008,28 @@ export default function NouvelleNotification() {
                         </span>
                       </div>
 
-                      {domainReportStatus.has_report ? (
-                        <div className="p-3.5 bg-amber-50 border border-amber-200 rounded-xl text-amber-900 text-xs font-medium flex items-center gap-2">
-                          <Info size={18} className="text-amber-600 flex-shrink-0" />
-                          <span>
-                            ⚠️ Un {labelReportType.toLowerCase()} de <strong>{formatMoney(domainReportStatus.report_montant)}</strong> existe déjà pour l&apos;exercice {generalInfo.exercice} (Notification : <strong>{domainReportStatus.notification_numero || 'existante'}</strong>, Ligne : <strong>{domainReportStatus.ligne_budgetaire || '-'}</strong>). Le {labelReportType} ne peut être saisi qu&apos;une seule fois par exercice pour le domaine {l.domaine}.
+                      <div className="max-w-sm pt-2">
+                        <label className="block text-xs font-bold text-purple-900 mb-1.5 uppercase">
+                          {isFonctionnement
+                            ? `RESTES À PAYER ${generalInfo.exercice - 2}/${generalInfo.exercice - 1} (DH) *`
+                            : 'MONTANT DU REPORT (DH) *'}
+                        </label>
+                        <div className="relative">
+                          <input
+                            required={l.type_ligne === 'REPORT'}
+                            type="number"
+                            step="0.01"
+                            min="0.01"
+                            placeholder="Ex: 50 000"
+                            value={l.report_amount}
+                            onChange={(e) => updateLigne(l.id, 'report_amount', e.target.value)}
+                            className="w-full p-2.5 pr-12 border border-purple-300 rounded-xl focus:ring-2 focus:ring-purple-500 text-sm font-bold text-purple-950 bg-white"
+                          />
+                          <span className="absolute right-4 top-2.5 text-xs font-bold text-slate-400">
+                            DH
                           </span>
                         </div>
-                      ) : otherLineHasReport ? (
-                        <div className="p-3.5 bg-slate-100 border border-slate-200 rounded-xl text-slate-700 text-xs font-medium flex items-center gap-2">
-                          <Info size={18} className="text-slate-500 flex-shrink-0" />
-                          <span>
-                            Un montant de {labelReportType.toLowerCase()} est déjà renseigné sur une autre ligne de cette notification. Un seul {labelReportType.toLowerCase()} est autorisé par exercice pour le domaine {l.domaine}.
-                          </span>
-                        </div>
-                      ) : (
-                        <div className="max-w-sm pt-2">
-                          <label className="block text-xs font-bold text-purple-900 mb-1.5 uppercase">
-                            {isFonctionnement
-                              ? `RESTES À PAYER ${generalInfo.exercice - 2}/${generalInfo.exercice - 1} (DH) *`
-                              : 'MONTANT DU REPORT (DH) *'}
-                          </label>
-                          <div className="relative">
-                            <input
-                              required={l.type_ligne === 'REPORT'}
-                              type="number"
-                              step="0.01"
-                              min="0.01"
-                              placeholder="Ex: 50 000"
-                              value={l.report_amount}
-                              onChange={(e) => updateLigne(l.id, 'report_amount', e.target.value)}
-                              className="w-full p-2.5 pr-12 border border-purple-300 rounded-xl focus:ring-2 focus:ring-purple-500 text-sm font-bold text-purple-950 bg-white"
-                            />
-                            <span className="absolute right-4 top-2.5 text-xs font-bold text-slate-400">
-                              DH
-                            </span>
-                          </div>
-                        </div>
-                      )}
+                      </div>
                     </div>
                   )}
 
