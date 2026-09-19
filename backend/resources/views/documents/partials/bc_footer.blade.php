@@ -13,11 +13,9 @@
     padding-top: 4px;
     text-align: center;
 ">
-<<<<<<< HEAD
     @if($footerBanner)
         <img src="{{ $footerBanner }}" style="width: 100%; height: auto; max-height: 52px; display: block;" alt="ONCA DRCA">
     @endif
-=======
     <table style="width: 100%; border-collapse: collapse; table-layout: fixed;">
         <tr>
             <td style="width: 40%; vertical-align: middle; text-align: left;">
@@ -36,6 +34,5 @@
             </td>
         </tr>
     </table>
->>>>>>> a83e21666c1ccf5615f3290e03345bb6041685a7
 </div>
 
