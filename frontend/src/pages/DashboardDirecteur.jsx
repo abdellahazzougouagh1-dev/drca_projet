@@ -1,18 +1,19 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Users } from 'lucide-react';
 import GestionUtilisateursModal from '../components/GestionUtilisateursModal';
 import api from '../api/axios';
+import * as XLSX from 'xlsx';
 import { useAuth } from '../context/AuthContext';
 import UserMenu from '../components/UserMenu';
 import {
   BarChart3, Bell, Building2, CalendarDays, CheckCircle2, ChevronRight,
   CircleDollarSign, ClipboardList, Download, Eye, FileCheck2, FileText,
-  Gauge, Landmark, Loader2, Search, SlidersHorizontal, TrendingUp,
+  Gauge, Landmark, Loader2, Search, SlidersHorizontal,
   WalletCards, X, ArrowUpRight, Clock3, LayoutDashboard, FolderKanban,
   CreditCard, Settings, LogOut, Menu, ShieldCheck, ArrowLeft, Receipt, Plus,
 } from 'lucide-react';
-import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
 const months = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc'];
 const money = (value) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'MAD', maximumFractionDigits: 0 }).format(Number(value) || 0).replace('MAD', 'DH');
@@ -509,6 +510,35 @@ export default function DashboardDirecteur() {
     }));
   }, [store.budget, store.lines, store.notifications]);
 
+  const budgetTableRef = useRef(null);
+  const downloadBudgetExcel = () => {
+    const table = budgetTableRef.current.cloneNode(true);
+    table.querySelectorAll('tbody tr').forEach((row) => {
+      if (row.cells.length !== 13) row.remove();
+    });
+    const sheet = XLSX.utils.table_to_sheet(table, { raw: true });
+    const range = XLSX.utils.decode_range(sheet['!ref']);
+    for (let row = 1; row <= range.e.r; row += 1) {
+      for (let column = 2; column <= range.e.c; column += 1) {
+        const cell = sheet[XLSX.utils.encode_cell({ r: row, c: column })];
+        if (!cell || cell.v === '') continue;
+        const value = String(cell.v);
+        const number = Number(value.replace(/\s/g, '').replace(/DH|%/g, '').replace(',', '.'));
+        if (!Number.isFinite(number)) continue;
+        const isRate = value.includes('%');
+        cell.t = 'n';
+        cell.v = isRate ? number / 100 : number;
+        cell.z = isRate ? '0.00%' : '#,##0.00';
+        delete cell.w;
+      }
+    }
+    sheet['!cols'] = budgetColumns.map((label, index) => ({ wch: index === 1 ? 60 : Math.max(18, label.length + 2) }));
+    sheet['!autofilter'] = { ref: `A1:M${budgetRows.length + 1}` };
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, sheet, 'Synthèse budgétaire');
+    XLSX.writeFile(workbook, `Synthese_budgetaire_${year}_${domaine}.xlsx`);
+  };
+
   const budgetColumns = ['DOMAINE', 'LIGNE BUDGÉTAIRE', 'NOTIFIÉ', 'TOTAL ENGAGEMENTS', 'TAUX ENG.', 'DISPONIBLE', 'TOTAL ORDONNANCEMENT', 'TAUX ORD./ENG.', 'TAUX ORD./NOT.', 'TOTAL PAIEMENTS', 'TAUX PAI./ORD.', 'TAUX PAI./ENG.', 'TAUX PAI./NOT.'];
 
   const budgetRows = useMemo(() => {
@@ -551,16 +581,6 @@ export default function DashboardDirecteur() {
     const paid = budgetSummary.total_paiement;
 
     const count = (keywords) => filtered.filter((item) => keywords.some((word) => String(item.statut_dossier || item.statut || '').toLowerCase().includes(word))).length;
-    const trends = months.map((name, index) => {
-      const notifications = store.notifications.filter((item) => {
-        const notifMonth = new Date(item.date_notification || item.created_at).getMonth() === index;
-        if (!notifMonth) return false;
-        if (domaine === 'ALL') return true;
-        const d = getNotifDomaine(item);
-        return d === domaine || d === 'MIXTE';
-      });
-      return { name, Nombre: notifications.length, Montant: notifications.reduce((sum, item) => sum + Number(item.montant || item.montant_total || 0), 0) };
-    });
 
     return {
       dossiers: filtered,
@@ -575,7 +595,6 @@ export default function DashboardDirecteur() {
       completed: count(['termin', 'clôtur', 'valid']),
       active: count(['cours', 'lanc', 'analyse']),
       planned: count(['programm', 'prépar']),
-      trends,
     };
   }, [store, month, year, domaine, budgetSummary]);
 
@@ -942,32 +961,6 @@ export default function DashboardDirecteur() {
                     </table>
                   </div>
                 </div>
-                <div className="w-full rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h2 className="font-bold">Évolution des notifications</h2>
-                      <p className="mt-1 text-sm text-slate-500">Nombre de notifications par mois {domaine !== 'ALL' ? `(${domaine})` : ''}.</p>
-                    </div>
-                    <TrendingUp className="text-blue-600" size={20} />
-                  </div>
-                  <div className="mt-5 h-72">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <AreaChart data={dashboard.trends}>
-                        <defs>
-                          <linearGradient id="notificationFill" x1="0" x2="0" y1="0" y2="1">
-                            <stop offset="0%" stopColor="#2563eb" stopOpacity=".28" />
-                            <stop offset="100%" stopColor="#2563eb" stopOpacity="0" />
-                          </linearGradient>
-                        </defs>
-                        <CartesianGrid vertical={false} stroke="#e2e8f0" />
-                        <XAxis dataKey="name" axisLine={false} tickLine={false} fontSize={11} />
-                        <YAxis allowDecimals={false} axisLine={false} tickLine={false} fontSize={11} />
-                        <Tooltip contentStyle={{ borderRadius: 12, border: '1px solid #e2e8f0' }} />
-                        <Area type="monotone" dataKey="Nombre" stroke="#2563eb" strokeWidth={3} fill="url(#notificationFill)" />
-                      </AreaChart>
-                    </ResponsiveContainer>
-                  </div>
-                </div>
               </div>
             </section>
           )}
@@ -1086,10 +1079,9 @@ export default function DashboardDirecteur() {
                   step="3"
                   label={`Ordonnancement (${domaine === 'ALL' ? 'Total' : domaine})`}
                   value={budgetSummary?.total_ordonnance}
-                  percentage={budgetSummary?.taux_ordonnancement_notifie ?? pct(budgetSummary?.total_ordonnance, budgetSummary?.total_notifie)}
-                  rateValue={`Taux / notifié : ${rate(budgetSummary?.taux_ordonnancement_notifie || pct(budgetSummary?.total_ordonnance, budgetSummary?.total_notifie))}`}
-                  secondaryRate={`Taux / engagé : ${rate(budgetSummary?.taux_ordonnancement || pct(budgetSummary?.total_ordonnance, budgetSummary?.total_engage))}`}
-                  detail="Ordonnancé / notifié"
+                  percentage={budgetSummary?.taux_ordonnancement ?? pct(budgetSummary?.total_ordonnance, budgetSummary?.total_engage)}
+                  rateValue={`Taux / engagé : ${rate(budgetSummary?.taux_ordonnancement ?? pct(budgetSummary?.total_ordonnance, budgetSummary?.total_engage))}`}
+                  detail="Ordonnancé / engagé"
                   Icon={FileText}
                   color="#8b5cf6"
                 />
@@ -1097,10 +1089,9 @@ export default function DashboardDirecteur() {
                   step="4"
                   label={`Paiement (${domaine === 'ALL' ? 'Total' : domaine})`}
                   value={budgetSummary?.total_paiement}
-                  percentage={budgetSummary?.taux_paiement_notifie ?? pct(budgetSummary?.total_paiement, budgetSummary?.total_notifie)}
-                  rateValue={`Taux / notifié : ${rate(budgetSummary?.taux_paiement_notifie || pct(budgetSummary?.total_paiement, budgetSummary?.total_notifie))}`}
-                  secondaryRate={`Taux / ordonnancé : ${rate(budgetSummary?.taux_paiement_ordonnancement || pct(budgetSummary?.total_paiement, budgetSummary?.total_ordonnance))}`}
-                  detail={`Payé / notifié · ${rate(budgetSummary?.taux_paiement_engagement || pct(budgetSummary?.total_paiement, budgetSummary?.total_engage))} de l'engagé`}
+                  percentage={budgetSummary?.taux_paiement_ordonnancement ?? pct(budgetSummary?.total_paiement, budgetSummary?.total_ordonnance)}
+                  rateValue={`Taux / ordonnancé : ${rate(budgetSummary?.taux_paiement_ordonnancement ?? pct(budgetSummary?.total_paiement, budgetSummary?.total_ordonnance))}`}
+                  detail={`Payé / ordonnancé · ${rate(budgetSummary?.taux_paiement_engagement || pct(budgetSummary?.total_paiement, budgetSummary?.total_engage))} de l'engagé`}
                   Icon={CircleDollarSign}
                   color="#f59e0b"
                 />
@@ -1178,15 +1169,20 @@ export default function DashboardDirecteur() {
                     <h2 className="font-black text-slate-900">Synthèse par ligne budgétaire</h2>
                     <p className="mt-1 text-xs text-slate-500">Montants totaux et taux de passage pour {domaine === 'ALL' ? 'Investissement et Fonctionnement' : `le domaine ${domaine}`}.</p>
                   </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button type="button" onClick={downloadBudgetExcel} disabled={loading} className="inline-flex items-center gap-2 rounded-xl bg-emerald-700 px-4 py-2 text-sm font-bold text-white hover:bg-emerald-800 disabled:opacity-40">
+                      <Download size={16} /> Télécharger Excel
+                    </button>
                   <span className={`text-xs px-3 py-1 rounded-full font-bold self-start sm:self-auto ${domaine === 'FONCTIONNEMENT' ? 'bg-blue-100 text-blue-800' :
                     domaine === 'INVESTISSEMENT' ? 'bg-indigo-100 text-indigo-800' :
                       'bg-slate-100 text-slate-700'
                     }`}>
                     {domaine === 'ALL' ? 'Tous les domaines' : domaine}
                   </span>
+                  </div>
                 </div>
                 <div className="overflow-x-auto">
-                  <table className="min-w-[1650px] w-full border-collapse text-xs">
+                  <table ref={budgetTableRef} className="min-w-[1650px] w-full border-collapse text-xs">
                     <thead className="bg-emerald-700 text-left font-extrabold uppercase tracking-wide text-white">
                       <tr>
                         {budgetColumns.map((c) => (

@@ -263,17 +263,7 @@
         </tr>
     </table>
 
-    <!-- SECTION 7: MAITRE D'OUVRAGE SIGNATURE -->
-    <table style="width: 100%; border: 1.5px solid #000; border-collapse: collapse; page-break-inside: avoid; font-size: 9.5px;">
-        <tr style="background: #f8fafc;">
-            <td style="border: 1px solid #000; padding: 4px; text-align: center; font-weight: bold;">
-                Le maitre d'ouvrage
-            </td>
-        </tr>
-        <tr>
-            <td style="border: 1px solid #000; height: 48px;"></td>
-        </tr>
-    </table>
+ 
 </div>
 </body>
 </html>

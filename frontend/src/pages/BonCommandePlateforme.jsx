@@ -1901,12 +1901,6 @@ const BonCommandePlateforme = () => {
                 </h1>
               </div>
             </div>
-            {savedConsultation && (
-              <div className="hidden sm:flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2">
-                <div className="w-2 h-2 rounded-full bg-blue-600" />
-                <span className="text-xs font-semibold text-slate-600 max-w-xs truncate">{savedConsultation.objet_consultation}</span>
-              </div>
-            )}
             <div className="flex items-center gap-2">
               <button
                 type="button"
@@ -1926,12 +1920,6 @@ const BonCommandePlateforme = () => {
                 <FileText size={15} />
                 <span>Appels d'offres</span>
               </button>
-              {savedConsultation && (
-                <div className="hidden sm:flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2">
-                  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                  <span className="text-xs font-semibold text-slate-600 max-w-xs truncate">{savedConsultation.objet_consultation}</span>
-                </div>
-              )}
             </div>
           </div>
 

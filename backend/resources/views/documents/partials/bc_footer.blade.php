@@ -1,6 +1,15 @@
 @php
+    // Bannière de pied de page
     $footerBanner = \App\Support\AooDocumentHelper::embedImage('images/info_DRCA.png')
         ?? (file_exists(public_path('images/info_DRCA.png')) ? 'data:image/png;base64,' . base64_encode(file_get_contents(public_path('images/info_DRCA.png'))) : null);
+
+    // Définition et encodage du logo ONCA
+    $logoOncaPath = public_path('images/logo-onca.png');
+    $logoOnca = \App\Support\AooDocumentHelper::embedImage('images/logo-onca.png')
+        ?? (file_exists($logoOncaPath) ? 'data:image/png;base64,' . base64_encode(file_get_contents($logoOncaPath)) : null);
+
+    // Sécurité pour le sceau au cas où il n'est pas injecté par le contrôleur
+    $sceauMaroc = $sceauMaroc ?? null;
 @endphp
 
 <div id="bc-footer" style="
@@ -16,15 +25,12 @@
     @if($footerBanner)
         <img src="{{ $footerBanner }}" style="width: 100%; height: auto; max-height: 52px; display: block;" alt="ONCA DRCA">
     @endif
+
     <table style="width: 100%; border-collapse: collapse; table-layout: fixed;">
         <tr>
-            <td style="width: 40%; vertical-align: middle; text-align: left;">
-                @if($logoOnca)
-                    <img src="{{ $logoOnca }}" alt="Logo ONCA" class="header-logo" style="max-height: 60px; height: 60px; width: auto;">
-                @endif
-            </td>
+          
 
-            <td style="width: 30%; vertical-align: middle; text-align: center;">
+            <td style="width: 20%; vertical-align: middle; text-align: center;">
             </td>
 
             <td style="width: 40%; vertical-align: middle; text-align: right;">
@@ -35,4 +41,3 @@
         </tr>
     </table>
 </div>
-
