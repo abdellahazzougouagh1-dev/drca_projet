@@ -27,7 +27,7 @@ export default function NouvelleNotification() {
   const [error, setError] = useState(null);
 
   // 1. CHOIX DU TYPE DE BUDGET AU PREMIER NIVEAU : 'REPORT' ou 'NOTIFIER'
-  const [typeBudget, setTypeBudget] = useState('NOTIFIER'); // 'REPORT' | 'NOTIFIER'
+  const [typeBudget, setTypeBudget] = useState(null); // Choix préalable : 'REPORT' | 'NOTIFIER'
 
   // Informations Générales (Exercice sélectionnable)
   const [generalInfo, setGeneralInfo] = useState({
@@ -568,8 +568,14 @@ export default function NouvelleNotification() {
     setLoading(true);
 
     try {
-      let extractedNumero = generalInfo.numero?.trim() || '';
-      let extractedDate = generalInfo.date_notification || new Date().toISOString().split('T')[0];
+      // Le stockage existant exige une référence et une date, même pour un report.
+      // Elles sont automatiques et indépendantes des champs de notification.
+      const extractedNumero = typeBudget === 'REPORT'
+        ? `REPORT-${generalInfo.exercice}-${crypto.randomUUID()}`
+        : generalInfo.numero?.trim() || '';
+      const extractedDate = typeBudget === 'REPORT'
+        ? new Date().toISOString().split('T')[0]
+        : generalInfo.date_notification || new Date().toISOString().split('T')[0];
 
       if (!extractedNumero) {
         throw new Error("Veuillez renseigner le N° de Notification en haut.");
@@ -766,7 +772,7 @@ export default function NouvelleNotification() {
             </Link>
             <div>
               <h1 className="text-3xl font-black text-[#1e3a8a] tracking-tight">
-                Nouvelle Notification Budgétaire
+                {typeBudget === 'REPORT' ? 'Saisie du crédit de report' : 'Nouvelle Notification Budgétaire'}
               </h1>
               <p className="text-sm text-slate-500 mt-0.5">
                 Exercice {generalInfo.exercice} • Saisie et mouvements budgétaires
@@ -799,8 +805,32 @@ export default function NouvelleNotification() {
           </div>
         )}
 
+        <div className="mb-6 bg-white p-6 rounded-2xl border border-slate-200 space-y-3">
+          <h2 className="font-bold text-[#1e3a8a]">Choisir le type de saisie</h2>
+          <p className="text-sm text-slate-500">Le crédit de report est saisi séparément des nouvelles notifications.</p>
+          <div className="flex flex-wrap gap-3">
+            {[['REPORT', 'Crédit de report / Reste à payer'], ['NOTIFIER', 'Nouvelle notification']].map(([type, label]) => (
+              <button key={type} type="button" disabled={typeBudget === type} aria-pressed={typeBudget === type}
+                onClick={() => {
+                  setTypeBudget(type);
+                  setError(null);
+                  setLignes((prev) => prev.map((ligne) => ({
+                    ...ligne, type_ligne: type, report_amount: '',
+                    credits_engagement: ligne.credits_engagement.map((c) => ({ ...c, montant: '' })),
+                    credits_neufs: ligne.credits_neufs.map((c) => ({ ...c, montant: '' })),
+                    diminutions: ligne.diminutions.map((d) => ({ ...d, montant: '', motif: '' })),
+                  })));
+                }}
+                className={`px-4 py-3 rounded-xl text-sm font-bold border ${typeBudget === type ? 'bg-[#1e40af] text-white' : 'bg-white text-slate-700 hover:bg-blue-50'}`}>
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+        {typeBudget && (
         <form onSubmit={handleSubmit} className="space-y-8">
           {/* SECTION 1 : INFORMATIONS GÉNÉRALES DE LA NOTIFICATION */}
+          {typeBudget === 'NOTIFIER' && (
           <div className="bg-white p-7 rounded-2xl shadow-sm border border-slate-200 space-y-4">
             <div className="flex items-center justify-between border-b pb-3">
               <h2 className="text-base font-bold text-[#1e3a8a] flex items-center gap-2">
@@ -843,17 +873,12 @@ export default function NouvelleNotification() {
             </div>
           </div>
 
+          )}
+
           {/* LIGNES BUDGÉTAIRES DE LA NOTIFICATION */}
           <section className="space-y-6">
             {lignes.map((l, index) => {
               const isFonctionnement = l.domaine === 'FONCTIONNEMENT';
-              const domainReportStatus = isFonctionnement
-                ? (exerciseReportStatus.fonctionnement || { has_report: false })
-                : (exerciseReportStatus.investissement || exerciseReportStatus || { has_report: false });
-              const otherLineHasReport = lignes.some(
-                (ol) => ol.id !== l.id && ol.domaine === l.domaine && Number(ol.report_amount) > 0
-              );
-              const labelReportType = isFonctionnement ? 'RESTE À PAYER' : 'REPORT';
 
               return (
                 <div
@@ -872,30 +897,6 @@ export default function NouvelleNotification() {
                     </div>
 
                     <div className="flex items-center gap-2 flex-wrap">
-                      {/* Choix du type pour cette ligne : NOTIFIER ou REPORT/RESTE À PAYER + NOTIFIER */}
-                      <div className="flex bg-slate-100 p-1 rounded-xl text-xs font-bold items-center gap-1">
-                        <button
-                          type="button"
-                          onClick={() => updateLigne(l.id, 'type_ligne', 'NOTIFIER')}
-                          className={`px-3.5 py-1.5 rounded-lg transition flex items-center gap-1.5 ${l.type_ligne === 'NOTIFIER'
-                            ? 'bg-[#1e40af] text-white shadow-xs'
-                            : 'text-slate-600 hover:text-slate-900'
-                            }`}
-                        >
-                          <Receipt size={14} /> NOTIFIER
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => updateLigne(l.id, 'type_ligne', 'BOTH')}
-                          className={`px-3.5 py-1.5 rounded-lg transition flex items-center gap-1.5 ${l.type_ligne === 'BOTH'
-                            ? 'bg-indigo-700 text-white shadow-xs'
-                            : 'text-slate-600 hover:text-slate-900'
-                            }`}
-                        >
-                          <Sparkles size={14} /> {labelReportType} + NOTIFIER
-                        </button>
-                      </div>
-
                       {lignes.length > 1 && (
                         <button
                           type="button"
@@ -989,8 +990,37 @@ export default function NouvelleNotification() {
                     </div>
                   </div>
 
+                      {/* Domaine */}
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase">
+                          Domaine du Budget *
+                        </label>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <label
+                            onClick={() => updateLigne(l.id, 'domaine', 'FONCTIONNEMENT')}
+                            className={`p-3 rounded-xl border cursor-pointer flex items-center justify-between transition ${l.domaine === 'FONCTIONNEMENT'
+                              ? 'border-[#1e40af] bg-blue-50 text-[#1e3a8a] font-bold ring-1 ring-blue-500/20'
+                              : 'border-slate-200 hover:border-slate-300 text-slate-700 bg-white'
+                              }`}
+                          >
+                            <span className="text-xs">FONCTIONNEMENT</span>
+                            <span className="text-[10px] text-slate-500">Dépenses courantes (Reste à payer, Crédit neuf)</span>
+                          </label>
+                          <label
+                            onClick={() => updateLigne(l.id, 'domaine', 'INVESTISSEMENT')}
+                            className={`p-3 rounded-xl border cursor-pointer flex items-center justify-between transition ${l.domaine === 'INVESTISSEMENT'
+                              ? 'border-[#1e40af] bg-blue-50 text-[#1e3a8a] font-bold ring-1 ring-blue-500/20'
+                              : 'border-slate-200 hover:border-slate-300 text-slate-700 bg-white'
+                              }`}
+                          >
+                            <span className="text-xs">INVESTISSEMENT</span>
+                            <span className="text-[10px] text-slate-500">Équipements & Projets</span>
+                          </label>
+                        </div>
+                      </div>
+
                   {/* CAS 1 : SI TYPE = REPORT ou BOTH */}
-                  {(l.type_ligne === 'REPORT' || l.type_ligne === 'BOTH') && (
+                  {l.type_ligne === 'REPORT' && (
                     <div className="border border-purple-200 bg-purple-50/40 rounded-xl p-5 space-y-4">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2.5 font-bold text-sm text-purple-950">
@@ -1034,37 +1064,8 @@ export default function NouvelleNotification() {
                   )}
 
                   {/* CAS 2 : SI TYPE = NOTIFIER ou BOTH */}
-                  {(l.type_ligne === 'NOTIFIER' || l.type_ligne === 'BOTH') && (
+                  {l.type_ligne === 'NOTIFIER' && (
                     <div className="border border-blue-200 bg-blue-50/20 rounded-xl p-5 space-y-5">
-                      {/* Domaine */}
-                      <div>
-                        <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase">
-                          Domaine du Budget *
-                        </label>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                          <label
-                            onClick={() => updateLigne(l.id, 'domaine', 'FONCTIONNEMENT')}
-                            className={`p-3 rounded-xl border cursor-pointer flex items-center justify-between transition ${l.domaine === 'FONCTIONNEMENT'
-                              ? 'border-[#1e40af] bg-blue-50 text-[#1e3a8a] font-bold ring-1 ring-blue-500/20'
-                              : 'border-slate-200 hover:border-slate-300 text-slate-700 bg-white'
-                              }`}
-                          >
-                            <span className="text-xs">FONCTIONNEMENT</span>
-                            <span className="text-[10px] text-slate-500">Dépenses courantes (Reste à payer, Crédit neuf)</span>
-                          </label>
-                          <label
-                            onClick={() => updateLigne(l.id, 'domaine', 'INVESTISSEMENT')}
-                            className={`p-3 rounded-xl border cursor-pointer flex items-center justify-between transition ${l.domaine === 'INVESTISSEMENT'
-                              ? 'border-[#1e40af] bg-blue-50 text-[#1e3a8a] font-bold ring-1 ring-blue-500/20'
-                              : 'border-slate-200 hover:border-slate-300 text-slate-700 bg-white'
-                              }`}
-                          >
-                            <span className="text-xs">INVESTISSEMENT</span>
-                            <span className="text-[10px] text-slate-500">Équipements & Projets</span>
-                          </label>
-                        </div>
-                      </div>
-
                       {/* ALIMENTATION */}
                       <div className="space-y-5">
                         {/* Crédits d'engagement (Uniquement pour INVESTISSEMENT) */}
@@ -1356,7 +1357,7 @@ export default function NouvelleNotification() {
             <div className="flex justify-center pt-2">
               <button
                 type="button"
-                onClick={() => addLigneWithType('NOTIFIER')}
+                onClick={() => addLigneWithType(typeBudget)}
                 className="text-xs font-bold bg-[#1e40af] text-white px-5 py-3 rounded-xl flex items-center gap-2 hover:bg-[#1e3a8a] transition shadow-xs"
               >
                 <Plus size={16} /> + Ajouter une Ligne Budgétaire
@@ -1897,10 +1898,11 @@ export default function NouvelleNotification() {
               ) : (
                 <Save size={18} />
               )}{' '}
-              Enregistrer la Notification
+              {typeBudget === 'REPORT' ? 'Enregistrer le crédit de report' : 'Enregistrer la Notification'}
             </button>
           </div>
         </form>
+        )}
       </div>
     </div>
   );
