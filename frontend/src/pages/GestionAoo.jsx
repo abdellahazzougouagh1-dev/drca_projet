@@ -1,3 +1,4 @@
+import { creditDisponible } from '../utils/creditDisponible';
 import RegistreScroll from '../components/RegistreScroll';
 import RegistreFonctionnement, { fonctionnementRow } from '../components/RegistreFonctionnement';
 import React, { useState, useEffect } from 'react';
@@ -1881,22 +1882,24 @@ const GestionAoo = () => {
                 ['credit_ouvert_ce', 'Crédit ouvert CE', 'number'],
                 ['depenses_anterieures_cp', 'Dépenses antérieures CP', 'number'],
                 ['depenses_anterieures_ce', 'Dépenses antérieures CE', 'number'],
+                ['disponible_cp', 'Disponible CP (DH)', 'number'],
+                ['disponible_ce', 'Disponible CE (DH)', 'number'],
                 ['depenses_credits_engagement', "Dépenses sur crédits d'engagement", 'number'],
                 ['montant_depense_neuf', 'Montant de la dépense neuve', 'number'],
                 ['interets_moratoires', 'Intérêts moratoires 1 %', 'number'],
                 ['montant_engager_neuf', 'Montant à engager neuf', 'number'],
               ].filter(([name]) => {
                 if (String(formData.type_budget || '').toLowerCase() !== 'fonctionnement') return true;
-                return !['credit_ouvert_ce', 'depenses_anterieures_ce', 'depenses_credits_engagement'].includes(name);
+                return !['credit_ouvert_ce', 'depenses_anterieures_ce', 'depenses_credits_engagement', 'disponible_ce'].includes(name);
               }).map(([name, label, type]) => (
                 <label key={name} className="block text-xs font-bold text-slate-700">
                   {label}
                   <input
                     name={name}
                     type={type}
-                    value={formData[name] ?? ''}
+                    value={name.startsWith('disponible_') ? creditDisponible(formData[`credit_ouvert_${name.slice(-2)}`], formData[`depenses_anterieures_${name.slice(-2)}`]) : formData[name] ?? ''}
                     onChange={handleChange}
-                    readOnly={name === 'interets_moratoires' || name === 'montant_engager_neuf'}
+                    readOnly={name.startsWith('disponible_') || name === 'interets_moratoires' || name === 'montant_engager_neuf'}
                     className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-normal outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 read-only:bg-slate-100"
                   />
                 </label>

@@ -1,3 +1,4 @@
+import { creditDisponible } from '../utils/creditDisponible';
 import RegistreScroll from '../components/RegistreScroll';
 import RegistreFonctionnement, { fonctionnementRow } from '../components/RegistreFonctionnement';
 import { useMemo, useState, useEffect } from 'react';
@@ -202,6 +203,8 @@ const documentFieldGroups = {
     { name: 'credit_ouvert_ce', label: 'Crédit ouvert CE', type: 'number', required: false },
     { name: 'depenses_anterieures_ce', label: 'Dépenses engagées antérieurement CE', type: 'number', required: false },
     { name: 'depenses_anterieures_cp', label: 'Dépenses engagées antérieurement CP', type: 'number', required: false },
+    { name: 'disponible_cp', label: 'Disponible CP (DH)', type: 'number', required: false, readOnly: true },
+    { name: 'disponible_ce', label: 'Disponible CE (DH)', type: 'number', required: false, readOnly: true },
     { name: 'depenses_credits_engagement', label: "Dépenses sur crédits d'engagements", type: 'number', required: false },
     { name: 'montant_depense_neuf', label: 'Montant de la dépense neuf', type: 'number', required: false },
     { name: 'interets_moratoires', label: 'Intérêts moratoires 1 %', type: 'number', required: false, readOnly: true },
@@ -692,6 +695,7 @@ const BonCommandePlateforme = () => {
   };
 
   const addMembreToDocumentCommission = (documentId, fieldName) => {
+    if (documentId === 'pv_ouverture_attribution') documentId = 'decision_commission_ouverture';
     if (!nouveauMembreForm.membre_id) return;
     const selectedMembreObj = membresCatalog.find((m) => String(m.id) === String(nouveauMembreForm.membre_id));
     if (!selectedMembreObj) return;
@@ -717,6 +721,7 @@ const BonCommandePlateforme = () => {
   };
 
   const removeMembreFromDocumentCommission = (documentId, fieldName, indexToRemove) => {
+    if (documentId === 'pv_ouverture_attribution') documentId = 'decision_commission_ouverture';
     const currentList = Array.isArray(documentForms[documentId]?.[fieldName])
       ? [...documentForms[documentId][fieldName]]
       : [];
@@ -1034,7 +1039,9 @@ const BonCommandePlateforme = () => {
         } else if (documentId === 'pv_ouverture_attribution' && Array.isArray(documentForms.decision_commission_ouverture?.membres_commission) && documentForms.decision_commission_ouverture.membres_commission.length > 0) {
           defaults[field.name] = documentForms.decision_commission_ouverture.membres_commission;
         } else {
-          defaults[field.name] = [];
+          defaults[field.name] = Array.isArray(savedConsultation?.membres_commission)
+            ? savedConsultation.membres_commission
+            : [];
         }
       }
       else if (field.name === 'specification') defaults.specification = prestations[0]?.designation || 'Soudeuse à pédale 30 cm';
@@ -1071,26 +1078,14 @@ const BonCommandePlateforme = () => {
             montant: o.montant_apres_verification || o.montant_propose || 0,
           }));
         } else {
-          defaults.concurrents = [
-            { nom: 'TOPOGRAPHY CONSULTING', montant: 30240 },
-            { nom: 'LANDMAP SURVEY', montant: 36360 },
-            { nom: 'BUREAU ALAOUI TOPO', montant: 39060 },
-            { nom: 'BAJITOP', montant: 45240 },
-            { nom: 'GOLDEN GEO', montant: 47520 },
-          ];
+          defaults.concurrents = [];
         }
       }
       else if (field.name === 'attributaire') {
-        const attrNom = savedConsultation?.fournisseur?.raison_sociale || savedConsultation?.engagement?.fournisseur?.raison_sociale || 'BUREAU ALAOUI TOPO';
+        const attrNom = savedConsultation?.fournisseur?.raison_sociale || savedConsultation?.engagement?.fournisseur?.raison_sociale || '';
         defaults.attributaire = attrNom;
 
-        const concs = defaults.concurrents || [
-          { nom: 'TOPOGRAPHY CONSULTING', montant: 30240 },
-          { nom: 'LANDMAP SURVEY', montant: 36360 },
-          { nom: 'BUREAU ALAOUI TOPO', montant: 39060 },
-          { nom: 'BAJITOP', montant: 45240 },
-          { nom: 'GOLDEN GEO', montant: 47520 },
-        ];
+        const concs = defaults.concurrents || [];
         const foundIdx = concs.findIndex((c) => c.nom === attrNom);
         if (foundIdx > 0) {
           defaults.societes_refusees = concs.slice(0, foundIdx).map((c) => ({
@@ -1382,7 +1377,7 @@ const BonCommandePlateforme = () => {
         ville: values.ville_1 || values.ville_societe || '',
         montant: Number(values.montant_apres_verification || values.montant_1) || totalTTC,
       }];
-      data.attributaire = values.attributaire || values.participant_1 || values.societe || 'BUREAU ALAOUI TOPO';
+      data.attributaire = values.attributaire || values.participant_1 || values.societe || '';
     }
 
     return data;
@@ -1784,10 +1779,10 @@ const BonCommandePlateforme = () => {
     fields: selectedFields.filter((field) => {
       if (field.condition && !field.condition(documentForms[selectedDocument.id])) return false;
       if (selectedDocument.id === 'fiche_engagement' && String(savedConsultation?.type_budget || '').toLowerCase() === 'fonctionnement'
-        && ['credit_ouvert_ce', 'depenses_anterieures_ce', 'depenses_credits_engagement'].includes(field.name)) return false;
+        && ['credit_ouvert_ce', 'depenses_anterieures_ce', 'depenses_credits_engagement', 'disponible_ce'].includes(field.name)) return false;
       const group = /table|selector|societes_refusees_input/.test(field.type || '') ? 'details'
         : /^(titulaire_nom|societe|adresse_societe|ville_societe|patente|cnss|ice|if|rib)$/.test(field.name) ? 'supplier'
-          : /^(art|par|lig|s_lig|intitule|credit_|depenses_|montant_|interets_)/.test(field.name) ? 'finance'
+          : /^(art|par|lig|s_lig|intitule|credit_|depenses_|disponible_|montant_|interets_)/.test(field.name) ? 'finance'
             : /^(date_|heure_|lieu_|delai_|periode_)/.test(field.name) ? 'schedule'
               : 'references';
       return group === section.id;
@@ -2714,13 +2709,7 @@ const BonCommandePlateforme = () => {
                         if (field.type === 'concurrents_table') {
                           const list = Array.isArray(documentForms[selectedDocument.id]?.[field.name])
                             ? documentForms[selectedDocument.id][field.name]
-                            : [
-                              { nom: 'TOPOGRAPHY CONSULTING', montant: 30240 },
-                              { nom: 'LANDMAP SURVEY', montant: 36360 },
-                              { nom: 'BUREAU ALAOUI TOPO', montant: 39060 },
-                              { nom: 'BAJITOP', montant: 45240 },
-                              { nom: 'GOLDEN GEO', montant: 47520 },
-                            ];
+                            : [];
 
                           const currentAttr = documentForms[selectedDocument.id]?.attributaire || '';
                           const syncRefusedWithAttr = (updatedList) => {
@@ -2750,7 +2739,6 @@ const BonCommandePlateforme = () => {
                             syncRefusedWithAttr(updated);
                           };
                           const removeConcurrent = (idx) => {
-                            if (list.length <= 1) return;
                             const updated = list.filter((_, i) => i !== idx);
                             handleDocumentFieldChange(selectedDocument.id, field.name, updated);
                             syncRefusedWithAttr(updated);
@@ -3031,7 +3019,7 @@ const BonCommandePlateforme = () => {
                                             />
                                           </td>
                                           <td className="py-2 px-3 text-center">
-                                            {list.length > 1 && (
+                                            {list.length > 0 && (
                                               <button
                                                 type="button"
                                                 onClick={() => removeConcurrent(idx)}
@@ -3324,7 +3312,7 @@ const BonCommandePlateforme = () => {
                                 </label>
                               </div>
 
-                              {!isPV && (
+                              {(!isPV || selectedDocument.id === 'pv_ouverture_attribution') && (
                                 <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 mb-4">
                                   <div className="sm:col-span-6 flex gap-2">
                                     <select
@@ -3390,7 +3378,7 @@ const BonCommandePlateforme = () => {
                                           <p className="text-xs font-medium text-slate-500">{m.fonction || 'Membre de commission'}</p>
                                         </div>
                                       </div>
-                                      {!isPV && (
+                                      {(!isPV || selectedDocument.id === 'pv_ouverture_attribution') && (
                                         <button
                                           type="button"
                                           onClick={() => removeMembreFromDocumentCommission(selectedDocument.id, field.name, idx)}
@@ -3426,7 +3414,9 @@ const BonCommandePlateforme = () => {
                           ? ((Number(documentForms.fiche_engagement?.montant_depense_neuf) || 0) * 0.01).toFixed(2)
                           : selectedDocument.id === 'fiche_engagement' && field.name === 'montant_engager_neuf'
                             ? ((Number(documentForms.fiche_engagement?.montant_depense_neuf) || 0) * 1.01).toFixed(2)
-                            : currentVal;
+                            : selectedDocument.id === 'fiche_engagement' && field.name.startsWith('disponible_')
+                              ? creditDisponible(documentForms.fiche_engagement?.[`credit_ouvert_${field.name.slice(-2)}`], documentForms.fiche_engagement?.[`depenses_anterieures_${field.name.slice(-2)}`])
+                              : currentVal;
                         const currentLen = String(displayedVal || '').length;
 
                         return (

@@ -117,6 +117,7 @@
                 <td class="center">{{ data_get($membre, 'qualite') }}</td>
             </tr>
         @endforeach
+    </table>
     <p><span class="section">Article 3 :</span><br>
         La-dite commission se réunira le <span class="bold">{{ $doc['date_reunion'] }}</span>
         à <span class="bold">{{ $doc['heure_reunion'] }}</span> au siège de la DRCA-RSK pour procéder à l’ouverture des plis.

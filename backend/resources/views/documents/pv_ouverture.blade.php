@@ -304,7 +304,7 @@
         @endif
         Pour un montant global (TTC) de <div class="amount-box">{{ number_format($gagnant->montant_apres_verification ?? data_get($doc ?? [], 'montant_retenu', 0), 2, ',', ' ') }}</div> DH<br>
         <div style="margin-top: 5px;">
-            En lettres : <span class="border-cell" style="display:inline-block; padding: 2px 10px; min-width: 50%;">{{ $montantGagnantEnLettres ?? data_get($doc ?? [], 'montant_en_lettres', '#NOM?') }}</span>
+            En lettres : <span class="border-cell" style="display:inline-block; padding: 2px 10px; min-width: 50%;">{{ \App\Support\MontantEnLettres::convert((float) ($gagnant->montant_apres_verification ?? data_get($doc ?? [], 'montant_retenu', 0))) }}</span>
         </div>
     </div>
 

@@ -49,7 +49,10 @@ class BonCommandeDocumentHelper
         $societesInvitees = self::societesInvitees($documentData, $concurrents, $attributaire);
         $societesRefusees = self::societesRefusees($documentData, $societesInvitees, $attributaire);
 
-        $txtLettres = $montantEnLettres ?: MontantEnLettres::convert($montantRetenu);
+        // Les PV doivent écrire l'offre retenue, et non le budget estimatif, en lettres.
+        $txtLettres = in_array($documentType, ['pv_ouverture', 'pv_ouverture_attribution'], true)
+            ? MontantEnLettres::convert($montantRetenu)
+            : ($montantEnLettres ?: MontantEnLettres::convert($montantRetenu));
 
         if ($isReceptionDoc) {
             $numeroDecision = self::value($documentData, 'numero_decision', $consultation->receptionCommission->numero_decision ?? '');
@@ -244,7 +247,7 @@ class BonCommandeDocumentHelper
     private static function concurrents(Consultation $consultation, array $data, float $totalTtc): array
     {
         $custom = self::value($data, 'concurrents', null);
-        if (is_array($custom) && !empty($custom)) {
+        if (is_array($custom)) {
             return array_map(function ($c) {
                 return [
                     'nom' => is_array($c) ? ($c['nom'] ?? $c['raison_sociale'] ?? '') : (string) $c,
@@ -265,13 +268,7 @@ class BonCommandeDocumentHelper
             return $mapped;
         }
 
-        return [
-            ['nom' => 'TOPOGRAPHY CONSULTING', 'montant' => 30240.00],
-            ['nom' => 'LANDMAP SURVEY', 'montant' => 36360.00],
-            ['nom' => 'BUREAU ALAOUI TOPO', 'montant' => 39060.00],
-            ['nom' => 'BAJITOP', 'montant' => 45240.00],
-            ['nom' => 'GOLDEN GEO', 'montant' => 47520.00],
-        ];
+        return [];
     }
 
     private static function societesInvitees(array $data, array $concurrents, string $attributaire = ''): array
