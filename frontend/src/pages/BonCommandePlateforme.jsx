@@ -33,6 +33,7 @@ import {
   Menu,
   FolderKanban,
   LayoutDashboard,
+  Handshake,
   ShieldCheck,
 } from 'lucide-react';
 
@@ -145,6 +146,18 @@ const documentsByPhase = {
 };
 
 const documentFieldGroups = {
+  lettre_consultation: [
+    { name: 'numero_lettre', label: 'Numéro de la lettre de consultation', placeholder: '15/2024/DRCA-RSK', required: true, fromDb: true, readOnly: true },
+    { name: 'date_document', label: 'Date de la lettre', type: 'date', required: true },
+    { name: 'destinataire_nom', label: 'Destinataire', placeholder: 'Mr Le Gérant de la Société', required: true },
+    { name: 'destinataire_adresse', label: 'Adresse du destinataire', placeholder: 'Adresse de la société', required: true },
+    { name: 'numero_consultation', label: 'Référence de la consultation', placeholder: '05/2024/DRCA-RSK', required: true, fromDb: true },
+    { name: 'objet', label: 'Objet de la consultation', placeholder: 'Prestations à réaliser', required: true, fromDb: true },
+    { name: 'date_limite', label: 'Date limite de réception des offres', type: 'date', required: true, fromDb: true, readOnly: true },
+    { name: 'heure_limite', label: 'Heure limite de réception des offres', type: 'time', required: true, fromDb: true, readOnly: true },
+    { name: 'pieces_jointes', label: 'Pièces jointes', type: 'textarea', required: true, placeholder: 'Modèle de projet de convention\nBordereau des prix' },
+    { name: 'societe', label: 'Nom de la société', placeholder: 'Saisir le nom de la société', required: true },
+  ],
   avis_achat: [
     { name: 'numero_consultation', label: "Numéro d'avis d'achat / Consultation", placeholder: '04/2024/DRCA-RSK', required: true, fromDb: true },
     { name: 'numero_bc', label: 'Numéro de bon de commande', placeholder: '04/2024/DRCA-RSK', required: true, fromDb: true },
@@ -353,6 +366,22 @@ const allDocuments = Object.values(documentsByPhase).flat();
 const BonCommandePlateforme = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const isConventionRoute = location.pathname === '/convention';
+  const engagementLabel = isConventionRoute ? 'Convention' : 'Bon de commande';
+  const engagementLabelLower = isConventionRoute ? 'convention' : 'bon de commande';
+  const isConventionConsultation = (consultation) => String(consultation?.mode_engagement || '').trim().toLowerCase() === 'convention';
+  const isBonCommandeConsultation = (consultation) => ['bc', 'bon de commande'].includes(String(consultation?.mode_engagement || '').trim().toLowerCase());
+  const isVisibleConsultation = (consultation) => isConventionRoute
+    ? isConventionConsultation(consultation)
+    : isBonCommandeConsultation(consultation);
+  const adaptEngagementText = (text) => (isConventionRoute && typeof text === 'string'
+    ? text
+      .replace(/bons? de commande/gi, (match) => match[0] === 'B' ? 'Convention' : 'convention')
+      .replace(/avis d'achat/gi, 'Lettre de consultation')
+    : text);
+  const documentFieldsId = (documentId) => isConventionRoute && documentId === 'avis_achat'
+    ? 'lettre_consultation'
+    : documentId;
   const currentYear = new Date().getFullYear();
 
   const [activePhase, setActivePhase] = useState(() => {
@@ -491,7 +520,9 @@ const BonCommandePlateforme = () => {
       setConsultationsLoading(true);
       try {
         const res = await api.get('/consultations');
-        const sorted = Array.isArray(res.data) ? [...res.data].sort((a, b) => b.id - a.id) : [];
+        const allConsultations = Array.isArray(res.data) ? res.data : [];
+        const visibleConsultations = allConsultations.filter(isVisibleConsultation);
+        const sorted = [...visibleConsultations].sort((a, b) => b.id - a.id);
         setConsultationsList(sorted);
         setConsultationsError('');
 
@@ -502,7 +533,7 @@ const BonCommandePlateforme = () => {
 
         if (targetId) {
           const found = sorted.find((c) => String(c.id) === String(targetId));
-          if (found) {
+          if (found && isVisibleConsultation(found)) {
             setSavedConsultation(found);
             localStorage.setItem('drca_selected_consultation_id', String(found.id));
             const retrievedIntitule = found.intitule || found.type_prestation || found.objet_consultation;
@@ -652,7 +683,9 @@ const BonCommandePlateforme = () => {
       }
 
       const listRes = await api.get('/consultations');
-      const sorted = Array.isArray(listRes.data) ? [...listRes.data].sort((a, b) => b.id - a.id) : [];
+      const allConsultations = Array.isArray(listRes.data) ? listRes.data : [];
+      const visibleConsultations = allConsultations.filter(isVisibleConsultation);
+      const sorted = [...visibleConsultations].sort((a, b) => b.id - a.id);
       setConsultationsList(sorted);
 
       if (savedConsultation?.id === editingConsultationData.id) {
@@ -858,11 +891,16 @@ const BonCommandePlateforme = () => {
   };
 
   const autoFillDocument = (documentId) => {
-    const fields = documentFieldGroups[documentId] || [];
+    const fields = documentFieldGroups[documentFieldsId(documentId)] || [];
     const defaults = {};
 
     fields.forEach((field) => {
-      if (field.name === 'numero_consultation') defaults.numero_consultation = savedConsultation?.numero_consultation || formData.numero_consultation || '04/2024/DRCA-RSK';
+      if (field.name === 'numero_lettre') defaults.numero_lettre = savedConsultation?.numero_avis || savedConsultation?.numero_consultation || `15/${savedConsultation?.annee || new Date().getFullYear()}/DRCA-RSK`;
+      else if (field.name === 'destinataire_nom') defaults.destinataire_nom = 'Mr Le Gérant de la Société';
+      else if (field.name === 'societe') defaults.societe = documentForms[documentId]?.societe || '';
+      else if (field.name === 'destinataire_adresse') defaults.destinataire_adresse = savedConsultation?.fournisseur?.adresse || savedConsultation?.offres?.find((offre) => offre.retenu)?.fournisseur?.adresse || '';
+      else if (field.name === 'pieces_jointes') defaults.pieces_jointes = 'Modèle de projet de convention\nBordereau des prix';
+      else if (field.name === 'numero_consultation') defaults.numero_consultation = savedConsultation?.numero_consultation || formData.numero_consultation || '04/2024/DRCA-RSK';
       else if (field.name === 'numero_bc') {
         let rawBc;
         if (documentId === 'decision_commission_reception' || documentId === 'pv_reception') {
@@ -958,7 +996,7 @@ const BonCommandePlateforme = () => {
         defaults.engagement_propose_cp = ttc > 0 ? (ttc * 1.01).toFixed(2) : '';
       }
       else if (field.name === 'pieces_jointes' && documentId === 'fiche_engagement') {
-        defaults.pieces_jointes = savedConsultation?.numero_bc ? `Bon de commande N° ${savedConsultation.numero_bc}` : '';
+        defaults.pieces_jointes = savedConsultation?.numero_bc ? `${engagementLabel} N° ${savedConsultation.numero_bc}` : '';
       }
       else if (field.name === 'numero_lettre') defaults.numero_lettre = `${new Date().getFullYear()}/DRCA-RSK/SOS`;
       else if (field.name === 'nature_os') defaults.nature_os = "Commencement de l'exécution";
@@ -1016,6 +1054,8 @@ const BonCommandePlateforme = () => {
       else if ((field.name === 'date_document' || field.name === 'date_decision' || field.name === 'date_os' || field.name === 'date_reception' || field.name === 'date_bon_payer') && documentId !== 'fiche_engagement') {
         if (documentId === 'decision_commission_reception' || documentId === 'pv_reception') {
           defaults[field.name] = savedConsultation?.reception_commission?.date_decision || documentForms.decision_commission_reception?.date_document || '';
+        } else if (isConventionRoute && documentId === 'avis_achat') {
+          defaults[field.name] = savedConsultation?.date_consultation || formData.date_consultation || '';
         } else {
           defaults[field.name] = '';
         }
@@ -1048,7 +1088,7 @@ const BonCommandePlateforme = () => {
       else if (field.name === 'conformite') defaults.conformite = 'Conforme sur le plan administratif et technique';
       else if (field.name === 'justification') defaults.justification = 'Offre la moins disante et techniquement conforme';
       else if (field.name === 'visa_controleur') defaults.visa_controleur = 'Visé par le Contrôleur Financier SAF/DRCA';
-      else if (field.name === 'nature_engagement') defaults.nature_engagement = 'Bon de commande';
+      else if (field.name === 'nature_engagement') defaults.nature_engagement = engagementLabel;
       else if (field.name === 'numero_prix') defaults.numero_prix = '1';
       else if (field.name === 'designation') defaults.designation = prestations[0]?.designation || savedConsultation?.prestations?.[0]?.designation || '';
       else if (field.name === 'unite_mesure') defaults.unite_mesure = prestations[0]?.unite || savedConsultation?.prestations?.[0]?.unite || 'Unite';
@@ -1103,7 +1143,7 @@ const BonCommandePlateforme = () => {
       }
       else if (field.name === 'annee') defaults.annee = formData.exercice_budgetaire || currentYear;
       else if (field.name === 'observation') defaults.observation = 'Démarrage immédiat des prestations après notification';
-      else if (field.name === 'constat_service_fait') defaults.constat_service_fait = 'Prestations exécutées conformément aux clauses du Bon de Commande';
+      else if (field.name === 'constat_service_fait') defaults.constat_service_fait = `Prestations exécutées conformément aux clauses de la ${engagementLabelLower}`;
       else if (field.name === 'direction') defaults.direction = 'Direction Régionale du Conseil Agricole Rabat-Salé-Kénitra';
       // ── Champs OI / OP / OV ────────────────────────────────────────────────
       else if (field.name === 'numero_oi') defaults.numero_oi = '';
@@ -1114,11 +1154,11 @@ const BonCommandePlateforme = () => {
       else if (field.name === 'annee_origine') defaults.annee_origine = savedConsultation?.annee || currentYear;
       else if (field.name === 'exercice_origine') defaults.exercice_origine = (savedConsultation?.annee || currentYear) - 1;
       else if (field.name === 'credit_type') defaults.credit_type = 'Crédit Consolidés';
-      else if (field.name === 'forme_engagement') defaults.forme_engagement = 'Bon de commande';
+      else if (field.name === 'forme_engagement') defaults.forme_engagement = engagementLabel;
       else if (field.name === 'reference_bc') {
         defaults.reference_bc = savedConsultation?.numero_bc
-          ? `Bon de commande N° ${savedConsultation.numero_bc}`
-          : (savedConsultation?.numero_consultation ? `Bon de commande N° ${savedConsultation.numero_consultation}` : '');
+          ? `${engagementLabel} N° ${savedConsultation.numero_bc}`
+          : (savedConsultation?.numero_consultation ? `${engagementLabel} N° ${savedConsultation.numero_consultation}` : '');
       }
       else if (field.name === 'montant_oi' || field.name === 'montant_op' || field.name === 'montant_ov') {
         const srcP = savedConsultation?.prestations?.length > 0 ? savedConsultation.prestations : prestations.filter(p => p.designation?.trim());
@@ -1176,7 +1216,7 @@ const BonCommandePlateforme = () => {
   }, [savedConsultation?.id]);
 
   const validateDocumentForm = (documentId) => {
-    const fields = documentFieldGroups[documentId] || [];
+    const fields = documentFieldGroups[documentFieldsId(documentId)] || [];
     const values = documentForms[documentId] || {};
     const errors = {};
     const missingLabels = [];
@@ -1448,6 +1488,12 @@ const BonCommandePlateforme = () => {
   };
 
   const selectConsultation = (consultation) => {
+    if (!isVisibleConsultation(consultation)) {
+      setError(isConventionRoute
+        ? 'Cette consultation n’appartient pas au parcours Convention.'
+        : 'Cette consultation n’appartient pas au parcours Bon de commande.');
+      return;
+    }
     setSavedConsultation(consultation);
     const budget = String(consultation.type_budget || '').trim().toLowerCase();
     setConsultationBudget(budget === 'investissement' ? 'Investissement' : budget === 'fonctionnement' ? 'Fonctionnement' : 'Non renseigné');
@@ -1465,7 +1511,7 @@ const BonCommandePlateforme = () => {
   const findBonCommande = async () => {
     const numeroBc = String(documentForms.fiche_engagement?.numero_bc || '').trim();
     if (!numeroBc) {
-      setError('Veuillez saisir le numéro du bon de commande.');
+      setError(`Veuillez saisir le numéro de la ${engagementLabelLower}.`);
       return;
     }
 
@@ -1473,11 +1519,17 @@ const BonCommandePlateforme = () => {
     setError('');
     try {
       const response = await api.get(`/consultations/by-bon-commande/${encodeURIComponent(numeroBc)}`);
+      if (!isVisibleConsultation(response.data)) {
+        setError(isConventionRoute
+          ? 'Cette référence n’appartient pas au parcours Convention.'
+          : 'Cette référence n’appartient pas au parcours Bon de commande.');
+        return;
+      }
       setSavedConsultation(response.data);
       setConsultationsList((prev) => [response.data, ...prev.filter((item) => item.id !== response.data.id)]);
-      setMessage('Bon de commande trouvé. Les informations générales ont été pré-remplies.');
+      setMessage(`${engagementLabel} trouvé(e). Les informations générales ont été pré-remplies.`);
     } catch (err) {
-      setError(err.response?.data?.message || 'Bon de commande introuvable.');
+      setError(err.response?.data?.message || `${engagementLabel} introuvable.`);
     } finally {
       setSearchingBonCommande(false);
     }
@@ -1660,12 +1712,13 @@ const BonCommandePlateforme = () => {
       setError('');
       await saveDocumentDataToDatabase(document.id, false);
       const payload = { document_data: buildDocumentData(document.id) };
-      const endpoint = `/consultations/${savedConsultation.id}/documents/${document.id}`;
+      const documentType = isConventionRoute && document.id === 'avis_achat' ? 'lettre_consultation' : document.id;
+      const endpoint = `/consultations/${savedConsultation.id}/documents/${documentType}`;
       const response = await api.post(endpoint, payload, { responseType: 'blob' });
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = window.document.createElement('a');
       link.href = url;
-      link.setAttribute('download', `${String(document.step).padStart(2, '0')}_${document.id}.pdf`);
+      link.setAttribute('download', `${String(document.step).padStart(2, '0')}_${documentType}.pdf`);
       window.document.body.appendChild(link);
       link.click();
       link.remove();
@@ -1766,7 +1819,7 @@ const BonCommandePlateforme = () => {
   const selectedDocument = selectedDocumentId
     ? allDocuments.find((d) => d.id === selectedDocumentId)
     : null;
-  const selectedFields = selectedDocument ? documentFieldGroups[selectedDocument.id] || [] : [];
+  const selectedFields = selectedDocument ? documentFieldGroups[documentFieldsId(selectedDocument.id)] || [] : [];
 
   const fieldSections = [
     { id: 'references', title: 'Références du document', description: 'Identifiez la commande et précisez son objet.' },
@@ -1780,7 +1833,8 @@ const BonCommandePlateforme = () => {
       if (field.condition && !field.condition(documentForms[selectedDocument.id])) return false;
       if (selectedDocument.id === 'fiche_engagement' && String(savedConsultation?.type_budget || '').toLowerCase() === 'fonctionnement'
         && ['credit_ouvert_ce', 'depenses_anterieures_ce', 'depenses_credits_engagement', 'disponible_ce'].includes(field.name)) return false;
-      const group = /table|selector|societes_refusees_input/.test(field.type || '') ? 'details'
+      const group = isConventionRoute && ['pieces_jointes', 'societe'].includes(field.name) ? 'supplier'
+        : /table|selector|societes_refusees_input/.test(field.type || '') ? 'details'
         : /^(titulaire_nom|societe|adresse_societe|ville_societe|patente|cnss|ice|if|rib)$/.test(field.name) ? 'supplier'
           : /^(art|par|lig|s_lig|intitule|credit_|depenses_|disponible_|montant_|interets_)/.test(field.name) ? 'finance'
             : /^(date_|heure_|lieu_|delai_|periode_)/.test(field.name) ? 'schedule'
@@ -1806,17 +1860,17 @@ const BonCommandePlateforme = () => {
       {/* Sidebar */}
       <aside className={`fixed inset-y-0 left-0 z-50 flex h-dvh w-72 shrink-0 flex-col bg-[#0f172a] text-white transition-transform duration-300 lg:sticky lg:top-0 lg:h-screen lg:w-64 lg:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="px-5 py-5 border-b border-white/10">
-          <Link to="/bons-commande" className="flex items-center gap-3">
+          <Link to={isConventionRoute ? '/convention' : '/bons-commande'} className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl border border-white/20 bg-white/10 flex items-center justify-center font-bold text-white text-xs">ON</div>
             <div>
               <p className="text-sm font-semibold text-white tracking-wide">ERP ONCA</p>
-              <p className="text-xs text-slate-400 font-medium">Bon de commande</p>
+              <p className="text-xs text-slate-400 font-medium">{engagementLabel}</p>
             </div>
           </Link>
         </div>
 
         <nav className="flex-1 px-3 py-4 overflow-y-auto">
-          <p className="px-4 pb-4 pt-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">Parcours de la commande</p>
+          <p className="px-4 pb-4 pt-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">Parcours de la {engagementLabelLower}</p>
           <ul className="space-y-1.5">
             {sidebarNav.map((item) => {
               const Icon = item.icon;
@@ -1882,7 +1936,7 @@ const BonCommandePlateforme = () => {
               <div className="h-5 w-px bg-slate-200" />
               <div>
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-[0.18em]">Bon de commande</span>
+                  <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-[0.18em]">{engagementLabel}</span>
                   {savedConsultation && (
                     <span className="px-2 py-0.5 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-[10px] font-semibold">
                       N° {savedConsultation.numero_consultation}
@@ -1915,10 +1969,31 @@ const BonCommandePlateforme = () => {
                 <FileText size={15} />
                 <span>Appels d'offres</span>
               </button>
+              {isConventionRoute ? (
+                <button
+                  type="button"
+                  onClick={() => navigate('/bons-commande')}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs font-bold rounded-xl shadow-xs transition transform active:scale-98 cursor-pointer"
+                  title="Accéder aux bons de commande"
+                >
+                  <ClipboardList size={15} />
+                  <span>Bon de commande</span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => navigate('/convention')}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-xs font-bold rounded-xl shadow-xs transition transform active:scale-98 cursor-pointer"
+                  title="Accéder aux conventions"
+                >
+                  <Handshake size={15} />
+                  <span>Convention</span>
+                </button>
+              )}
             </div>
           </div>
 
-          <nav className="bc-phase-steps" aria-label="Phases du bon de commande">
+          <nav className="bc-phase-steps" aria-label={`Phases de la ${engagementLabelLower}`}>
             {phases.map((phase, index) => (
               <button key={phase.id} type="button" aria-current={activePhase === phase.id ? 'step' : undefined}
                 onClick={() => { setSelectedDocumentId(null); goToPhase(phase.id); }}>
@@ -2211,7 +2286,7 @@ const BonCommandePlateforme = () => {
                                     </span>
                                   ) : (
                                     <span className="inline-block rounded-full bg-slate-100 px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-slate-800">
-                                      Bon de commande
+                                      {engagementLabel}
                                     </span>
                                   )}
                                 </td>
@@ -2312,7 +2387,7 @@ const BonCommandePlateforme = () => {
                       <div className="text-xs font-semibold text-blue-700 uppercase tracking-wide">
                         {String(doc.step).padStart(2, '0')} - {phases.find((p) => p.id === activePhase)?.label}
                       </div>
-                      <h3 className="text-base font-semibold text-slate-900 mt-1">{doc.title}</h3>
+                      <h3 className="text-base font-semibold text-slate-900 mt-1">{adaptEngagementText(doc.title)}</h3>
                       <p className="text-sm text-slate-600 mt-2">{doc.role}</p>
                     </div>
                     <button
@@ -2326,7 +2401,7 @@ const BonCommandePlateforme = () => {
                   <div className="mt-3 flex flex-wrap gap-2">
                     {doc.data?.map((item) => (
                       <span key={item} className="px-2.5 py-1 rounded-md bg-slate-100 text-slate-600 text-xs font-semibold">
-                        {item}
+                        {adaptEngagementText(item)}
                       </span>
                     ))}
                   </div>
@@ -2377,7 +2452,7 @@ const BonCommandePlateforme = () => {
                       Document {selectedDocument.step}
                     </span>
                   </div>
-                  <h2 className="text-2xl font-semibold text-slate-900 mt-1">{selectedDocument.title}</h2>
+                  <h2 className="text-2xl font-semibold text-slate-900 mt-1">{adaptEngagementText(selectedDocument.title)}</h2>
                   <p className="text-sm text-slate-600 mt-1">{selectedDocument.role}</p>
                 </div>
                 <div className="flex items-center gap-3">
@@ -2398,7 +2473,7 @@ const BonCommandePlateforme = () => {
               {selectedDocument.id === 'fiche_engagement' && (
                 <div className="mb-6 rounded-2xl border border-blue-200 bg-blue-50/60 p-5">
                   <label className="block text-xs font-semibold uppercase tracking-wide text-blue-900 mb-2">
-                    Numéro du bon de commande
+                    Numéro de la {engagementLabelLower}
                   </label>
                   <div className="flex flex-col sm:flex-row gap-3">
                     <input
@@ -2411,7 +2486,7 @@ const BonCommandePlateforme = () => {
                           findBonCommande();
                         }
                       }}
-                      placeholder="BC-2026-00125"
+                      placeholder={isConventionRoute ? 'CONV-2026-00125' : 'BC-2026-00125'}
                       className="flex-1 px-4 py-3 rounded-lg border border-blue-200 bg-white outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                     />
                     <button
@@ -2425,7 +2500,7 @@ const BonCommandePlateforme = () => {
                     </button>
                   </div>
                   {savedConsultation?.numero_bc && (
-                    <p className="mt-2 text-xs font-semibold text-blue-700">Bon de commande trouvé et associé.</p>
+                    <p className="mt-2 text-xs font-semibold text-blue-700">{engagementLabel} trouvé(e) et associé(e).</p>
                   )}
                 </div>
               )}
@@ -2482,7 +2557,7 @@ const BonCommandePlateforme = () => {
                               <div className="flex items-center justify-between mb-3">
                                 <div>
                                   <label className="block text-xs font-semibold text-slate-800 uppercase tracking-wider flex items-center gap-2">
-                                    📦 {field.label} {field.required && !field.fromDb && <span className="text-red-600 font-bold ml-0.5">*</span>}
+                                    📦 {adaptEngagementText(field.label)} {field.required && !field.fromDb && <span className="text-red-600 font-bold ml-0.5">*</span>}
                                   </label>
                                   <p className="text-xs text-slate-500 mt-0.5">
                                     Cochez les désignations réceptionnées et ajustez la quantité réceptionnée (≤ quantité commandée).
@@ -2622,7 +2697,7 @@ const BonCommandePlateforme = () => {
                             <div key={`${selectedDocument.id}-${field.name}`} className="col-span-full">
                               <div className="flex items-center justify-between mb-3">
                                 <span className="text-xs font-semibold text-slate-800 uppercase tracking-wider flex items-center gap-2">
-                                  📋 {field.label} {field.required && !field.fromDb && <span className="text-red-600 font-bold ml-0.5">*</span>}
+                                  📋 {adaptEngagementText(field.label)} {field.required && !field.fromDb && <span className="text-red-600 font-bold ml-0.5">*</span>}
                                 </span>
                                 <button
                                   type="button"
@@ -2952,7 +3027,7 @@ const BonCommandePlateforme = () => {
                             <div key={`${selectedDocument.id}-${field.name}`} className="col-span-full bg-slate-50 border border-slate-200 rounded-2xl p-5 shadow-sm">
                               <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
                                 <label className="block text-xs font-semibold text-slate-800 uppercase tracking-wider flex items-center gap-2">
-                                  🏢 {field.label} {field.required && !field.fromDb && <span className="text-red-600 font-bold ml-0.5">*</span>}
+                                  🏢 {adaptEngagementText(field.label)} {field.required && !field.fromDb && <span className="text-red-600 font-bold ml-0.5">*</span>}
                                 </label>
 
                                 <div className="flex flex-wrap items-center gap-2">
@@ -3118,7 +3193,7 @@ const BonCommandePlateforme = () => {
                             <div key={`${selectedDocument.id}-${field.name}`} className="col-span-full bg-slate-50 border border-slate-200 rounded-2xl p-5 shadow-sm">
                               <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
                                 <label className="block text-xs font-semibold text-slate-800 uppercase tracking-wider flex items-center gap-2">
-                                  ❌ {field.label} {field.required && !field.fromDb && <span className="text-red-600 font-bold ml-0.5">*</span>}
+                                  ❌ {adaptEngagementText(field.label)} {field.required && !field.fromDb && <span className="text-red-600 font-bold ml-0.5">*</span>}
                                 </label>
 
                                 <div className="flex flex-wrap items-center gap-2">
@@ -3253,7 +3328,7 @@ const BonCommandePlateforme = () => {
                             <div key={`${selectedDocument.id}-${field.name}`} className="col-span-full bg-slate-50 border border-slate-200 rounded-2xl p-5 shadow-sm space-y-3">
                               <div className="flex items-center justify-between">
                                 <label className="block text-xs font-semibold text-slate-800 uppercase tracking-wider flex items-center gap-2">
-                                  🏆 {field.label} {field.required && !field.fromDb && <span className="text-red-600 font-bold ml-0.5">*</span>}
+                                  🏆 {adaptEngagementText(field.label)} {field.required && !field.fromDb && <span className="text-red-600 font-bold ml-0.5">*</span>}
                                 </label>
                                 {selectedAttr && (
                                   <span className="px-2.5 py-1 bg-blue-100 text-blue-800 border border-blue-300 rounded-full text-[11px] font-semibold">
@@ -3308,7 +3383,7 @@ const BonCommandePlateforme = () => {
                               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-3">
                                 <label className="block text-xs font-semibold text-slate-800 uppercase tracking-wider flex items-center gap-2">
                                   <Users size={16} className="text-blue-700" />
-                                  {field.label} {field.required && !field.fromDb && <span className="text-red-600 font-bold ml-0.5">*</span>}
+                                  {adaptEngagementText(field.label)} {field.required && !field.fromDb && <span className="text-red-600 font-bold ml-0.5">*</span>}
                                 </label>
                               </div>
 
@@ -3423,7 +3498,7 @@ const BonCommandePlateforme = () => {
                           <label key={`${selectedDocument.id}-${field.name}`} className={`bc-field block ${['objet', 'intitule', 'adresse_societe', 'motif_ajournement'].includes(field.name) ? 'md:col-span-2' : ''}`}>
                             <span className="block text-xs font-bold text-slate-700 mb-1.5 flex items-center justify-between">
                               <span>
-                                {field.label} {field.required && !field.fromDb && <span className="text-red-600 font-bold ml-0.5">*</span>}
+                                {adaptEngagementText(field.label)} {field.required && !field.fromDb && <span className="text-red-600 font-bold ml-0.5">*</span>}
                               </span>
                               {maxLen && (
                                 <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full font-bold transition-all ${currentLen === maxLen
@@ -3438,18 +3513,33 @@ const BonCommandePlateforme = () => {
                             {field.readOnly && <span className="bc-field-hint">Calculé automatiquement</span>}
                             {field.type === 'select' ? (
                               <select
-                                value={documentForms[selectedDocument.id]?.[field.name] || field.options?.[0] || ''}
+                                value={documentForms[selectedDocument.id]?.[field.name]
+                                  || (field.name === 'forme_engagement' && isConventionRoute ? engagementLabel : field.options?.[0])
+                                  || ''}
                                 onChange={(event) => handleDocumentFieldChange(selectedDocument.id, field.name, event.target.value)}
                                 disabled={field.readOnly}
                                 aria-invalid={hasError || undefined}
                                 className={fieldClass}
                               >
-                                {(field.options || []).map((opt) => (
-                                  <option key={opt} value={opt}>
-                                    {opt}
+                                {(field.options || []).map((opt) => {
+                                  const optionValue = opt === 'Bon de commande' && isConventionRoute ? engagementLabel : opt;
+                                  return (
+                                  <option key={optionValue} value={optionValue}>
+                                    {adaptEngagementText(opt)}
                                   </option>
-                                ))}
+                                  );
+                                })}
                               </select>
+                            ) : field.type === 'textarea' ? (
+                              <textarea
+                                rows={4}
+                                value={displayedVal}
+                                readOnly={field.readOnly}
+                                aria-invalid={hasError || undefined}
+                                onChange={(event) => handleDocumentFieldChange(selectedDocument.id, field.name, event.target.value)}
+                                placeholder={adaptEngagementText(field.placeholder || '')}
+                                className={`${fieldClass} resize-y ${field.readOnly ? 'bg-slate-100 text-slate-600 cursor-not-allowed' : ''}`}
+                              />
                             ) : (
                               <input
                                 type={field.type || 'text'}
@@ -3465,7 +3555,7 @@ const BonCommandePlateforme = () => {
                                   }
                                   handleDocumentFieldChange(selectedDocument.id, field.name, val);
                                 }}
-                                placeholder={field.placeholder || ''}
+                                placeholder={adaptEngagementText(field.placeholder || '')}
                                 className={`${fieldClass} ${field.readOnly ? 'bg-slate-100 text-slate-600 cursor-not-allowed' : ''}`}
                               />
                             )}
@@ -3516,9 +3606,9 @@ const BonCommandePlateforme = () => {
                         ? 'bg-blue-600 hover:bg-blue-700 hover:shadow-lg text-white cursor-pointer'
                         : 'bg-slate-200 text-slate-400 cursor-not-allowed'
                         }`}
-                      title={isSaved ? `Aller au document suivant : ${nextDoc.title}` : 'Veuillez d’abord cliquer sur « Enregistrer en BD » pour continuer'}
+                      title={isSaved ? `Aller au document suivant : ${adaptEngagementText(nextDoc.title)}` : 'Veuillez d’abord cliquer sur « Enregistrer en BD » pour continuer'}
                     >
-                      {nextDoc.title}
+                      {adaptEngagementText(nextDoc.title)}
                       <ArrowRight size={18} />
                     </button>
                   );
@@ -3671,7 +3761,7 @@ const BonCommandePlateforme = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">N° Bon de commande</label>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">N° {engagementLabel}</label>
                   <input
                     type="text"
                     value={editingConsultationData.numero_bc}
@@ -3783,7 +3873,7 @@ const BonCommandePlateforme = () => {
                     onChange={(e) => setEditingConsultationData({ ...editingConsultationData, mode_engagement: e.target.value })}
                     className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
                   >
-                    <option value="BC">BC (Bon de commande)</option>
+                    <option value="BC">BC ({engagementLabel})</option>
                     <option value="AO">AO (Appel d'offres)</option>
                     <option value="Convention">Convention</option>
                   </select>

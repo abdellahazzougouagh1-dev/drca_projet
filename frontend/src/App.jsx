@@ -196,6 +196,14 @@ function App() {
             }
           />
           <Route
+            path="/convention"
+            element={
+              <ProtectedRoute>
+                <BonCommandePlateforme />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/marches"
             element={
               <ProtectedRoute>

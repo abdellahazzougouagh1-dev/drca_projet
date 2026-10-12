@@ -113,6 +113,7 @@ class DocumentController extends Controller
     {
         $bonCommandeDocuments = [
             'avis_achat',
+            'lettre_consultation',
             'decision_commission_ouverture',
             'pv_ouverture_attribution',
             'bon_commande',

@@ -16,6 +16,7 @@ class DirecteurUserSeeder extends Seeder
                 'name' => 'Directeur Régional',
                 'password' => Hash::make('Directeur@2026'),
                 'is_admin' => true,
+                'is_active' => true,
                 'role' => 'directeur',
             ]
         );

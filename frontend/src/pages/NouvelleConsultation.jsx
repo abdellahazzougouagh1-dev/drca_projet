@@ -132,7 +132,7 @@ const NouvelleConsultation = () => {
     const fieldsToValidate = [
       { name: 'numero_consultation', label: 'Numéro de consultation' },
       { name: 'numero_decision', label: "Numéro de décision d'ouverture de commission" },
-      ...(formData.mode_engagement === 'BC' ? [{ name: 'numero_bc', label: 'Numéro de bon de commande' }] : []),
+      ...(formData.mode_engagement === 'BC' || formData.mode_engagement === 'Convention' ? [{ name: 'numero_bc', label: formData.mode_engagement === 'Convention' ? 'Numéro de convention' : 'Numéro de bon de commande' }] : []),
       { name: 'date_limite_devis', label: 'Date limite de réception des devis' },
       { name: 'heure_limite_devis', label: 'Heure limite' },
       { name: 'lieu_execution', label: "Lieu d'exécution" },
@@ -210,6 +210,8 @@ const NouvelleConsultation = () => {
       setTimeout(() => {
         if (formData.mode_engagement === 'AO' || formData.mode_engagement === 'Appel d\'offres' || formData.mode_engagement === 'Appel d\'offre') {
           navigate('/aoos/nouveau', { state: { autoSelectId: created?.id, createdConsultation: created } });
+        } else if (formData.mode_engagement === 'Convention') {
+          navigate('/convention', { state: { autoSelectId: created?.id, createdConsultation: created } });
         } else {
           navigate('/bons-commande', { state: { autoSelectId: created?.id } });
         }
@@ -292,6 +294,7 @@ const NouvelleConsultation = () => {
                 </label>
                 <select name="mode_engagement" value={formData.mode_engagement} onChange={handleChange} className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all dark:text-white font-semibold">
                   <option value="BC">Bon de commande</option>
+                  <option value="Convention">Convention</option>
                   <option value="AO">Appel d'offres</option>
                 </select>
               </div>
@@ -312,15 +315,15 @@ const NouvelleConsultation = () => {
 
               <div>
                 <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                  {formData.mode_engagement === 'AO' ? 'Numéro de marché' : 'Numéro de bon de commande'}{' '}
-                  {formData.mode_engagement === 'BC' && <span className="text-red-600 font-bold ml-0.5">*</span>}
+                  {formData.mode_engagement === 'AO' ? 'Numéro de marché' : formData.mode_engagement === 'Convention' ? 'Numéro de convention' : 'Numéro de bon de commande'}{' '}
+                  {(formData.mode_engagement === 'BC' || formData.mode_engagement === 'Convention') && <span className="text-red-600 font-bold ml-0.5">*</span>}
                 </label>
                 <input
                   type="text"
                   name="numero_bc"
                   value={formData.numero_bc}
                   onChange={handleChange}
-                  placeholder={formData.mode_engagement === 'AO' ? 'Ex: M-05/2026/DRCA-RSK' : 'Ex: BC CONS-2026-0001'}
+                  placeholder={formData.mode_engagement === 'AO' ? 'Ex: M-05/2026/DRCA-RSK' : formData.mode_engagement === 'Convention' ? 'Ex: CONV-05/2026/DRCA-RSK' : 'Ex: BC CONS-2026-0001'}
                   className={getInputClass('numero_bc')}
                 />
               </div>

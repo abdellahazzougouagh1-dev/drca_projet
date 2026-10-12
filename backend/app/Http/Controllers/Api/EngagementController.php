@@ -29,7 +29,7 @@ class EngagementController extends Controller
             'consultation' => $consultation,
             'fournisseur' => $offreRetenue->fournisseur,
             'montant_valide' => $offreRetenue->montant_apres_verification ?? $offreRetenue->montant_propose,
-            'type_engagement' => $consultation->mode_engagement === 'Bon de commande' ? 'BC' : 'Convention',
+            'type_engagement' => in_array($consultation->mode_engagement, ['BC', 'Bon de commande'], true) ? 'BC' : 'Convention',
             'ligne_budgetaire' => $ligneBudgetaire,
             'credit_disponible' => $creditDisponible,
         ]);

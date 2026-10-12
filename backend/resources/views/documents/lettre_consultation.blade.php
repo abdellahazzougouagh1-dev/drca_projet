@@ -116,6 +116,16 @@
 
 @foreach($offres as $offre)
     <div class="{{ !$loop->last ? 'page-break' : '' }}">
+        @php
+            $lettreNumero = data_get($documentData ?? [], 'numero_lettre', $doc['numero_lettre'] ?? '............');
+            $societe = data_get($documentData ?? [], 'societe', $offre->fournisseur->raison_sociale ?? '.........................');
+            $destinataireNom = data_get($documentData ?? [], 'destinataire_nom', 'Mr Le Gérant de la Société');
+            $destinataireAdresse = data_get($documentData ?? [], 'destinataire_adresse', $offre->fournisseur->adresse ?? '.........................');
+            $piecesJointes = data_get($documentData ?? [], 'pieces_jointes', "Modèle de projet de convention\nBordereau des prix");
+            $dateLettre = data_get($documentData ?? [], 'date_document', $consultation->date_consultation ?? now());
+            $dateLimite = data_get($documentData ?? [], 'date_limite', $consultation->date_limite_devis ?? now());
+            $heureLimite = data_get($documentData ?? [], 'heure_limite', $consultation->heure_limite_devis ?? '10:00');
+        @endphp
         
         <table class="header-table">
             <tr>
@@ -135,10 +145,10 @@
         <table class="top-info">
             <tr>
                 <td style="width: 50%;">
-                    N° : {{ $offre->id ?? "............" }}
+                    N° : {{ $lettreNumero }}
                 </td>
                 <td style="width: 50%; text-align: right;">
-                    Kénitra le: {{ $offre->date_envoi ? \Carbon\Carbon::parse($offre->date_envoi)->format('d/m/Y') : \Carbon\Carbon::parse($consultation->date_consultation ?? now())->format('d/m/Y') }}
+                    Kénitra le: {{ \Carbon\Carbon::parse($dateLettre)->format('d/m/Y') }}
                 </td>
             </tr>
         </table>
@@ -150,8 +160,8 @@
 
         <div class="recipient-box">
             <strong>A</strong><br>
-            <strong>Mr Le Gérant de la Société {{ $offre->fournisseur->raison_sociale ?? '.........................' }}</strong><br>
-            {{ $offre->fournisseur->adresse ?? '.........................' }}
+            <strong>{{ $destinataireNom }} {{ $societe }}</strong><br>
+            {{ $destinataireAdresse }}
         </div>
 
         <div class="subject-box">
@@ -178,14 +188,17 @@
         </div>
 
         <div class="deadline-text">
-            au plus tard le : <strong>{{ \Carbon\Carbon::parse($consultation->date_reunion ?? now())->format('d/m/Y') }}</strong> à <strong>{{ $consultation->heure_reunion ? \Carbon\Carbon::parse($consultation->heure_reunion)->format('H:i') : '10:00' }}</strong>.
+            au plus tard le : <strong>{{ \Carbon\Carbon::parse($dateLimite)->format('d/m/Y') }}</strong> à <strong>{{ $heureLimite }}</strong>.
         </div>
 
         <div class="attachments">
             Pièces Jointes :
             <ul>
-                <li>- Modele de Projet de Convention</li>
-                <li>- Bordereau des prix</li>
+                @foreach(preg_split('/\r\n|\r|\n/', $piecesJointes) as $piece)
+                    @if(trim($piece) !== '')
+                        <li>- {{ trim($piece) }}</li>
+                    @endif
+                @endforeach
             </ul>
         </div>
         
