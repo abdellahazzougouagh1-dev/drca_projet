@@ -975,8 +975,20 @@ const BonCommandePlateforme = () => {
         }, 0);
         defaults.montant_ttc = ttc > 0 ? ttc.toFixed(2) : (savedConsultation?.budget?.montant_ttc || '');
       }
-      else if (field.name === 'credit_ouvert_cp') defaults.credit_ouvert_cp = savedConsultation?.credit_ouvert_cp ?? '';
-      else if (field.name === 'credit_ouvert_ce') defaults.credit_ouvert_ce = savedConsultation?.credit_ouvert_ce ?? '';
+      else if (field.name === 'credit_ouvert_cp') {
+        const ligneBudget = savedConsultation?.notification_ligne || savedConsultation?.notificationLigne;
+        const cpValue = ligneBudget
+          ? Number(ligneBudget.credits_neufs || 0) - Number(ligneBudget.diminution_credit_neuf || 0)
+          : (savedConsultation?.credit_ouvert_cp ?? '');
+        defaults.credit_ouvert_cp = cpValue === '' ? '' : Number(Math.max(0, Number(cpValue))).toFixed(2);
+      }
+      else if (field.name === 'credit_ouvert_ce') {
+        const ligneBudget = savedConsultation?.notification_ligne || savedConsultation?.notificationLigne;
+        const ceValue = ligneBudget
+          ? Number(ligneBudget.credits_engagements || 0) - Number(ligneBudget.diminution_credit_engagement || 0)
+          : (savedConsultation?.credit_ouvert_ce ?? '');
+        defaults.credit_ouvert_ce = ceValue === '' ? '' : Number(Math.max(0, Number(ceValue))).toFixed(2);
+      }
       else if (field.name === 'depenses_anterieures_ce') defaults.depenses_anterieures_ce = savedConsultation?.depenses_anterieures_ce ?? '';
       else if (field.name === 'depenses_anterieures_cp') defaults.depenses_anterieures_cp = savedConsultation?.depenses_anterieures_cp ?? '';
       else if (field.name === 'depenses_credits_engagement') defaults.depenses_credits_engagement = savedConsultation?.depenses_credits_engagement ?? '';

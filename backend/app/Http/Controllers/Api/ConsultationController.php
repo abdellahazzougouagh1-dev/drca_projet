@@ -19,13 +19,19 @@ class ConsultationController extends Controller
 
     public function findByBonCommande(string $numeroBc)
     {
-        $consultation = Consultation::with(['fournisseur', 'budget', 'prestations', 'engagement', 'registreEngagement'])
+        $consultation = Consultation::with(['fournisseur', 'budget', 'notificationLigne', 'prestations', 'engagement', 'registreEngagement'])
             ->where('numero_bc', $numeroBc)
             ->orWhere('numero_consultation', $numeroBc)
             ->first();
 
         if (!$consultation) {
             return response()->json(['message' => 'Aucun bon de commande ne correspond à ce numéro.'], 404);
+        }
+
+        $ligne = $consultation->notificationLigne;
+        if ($ligne) {
+            $consultation->credit_ouvert_cp = max(0, (float) ($ligne->credits_neufs ?? 0) - (float) ($ligne->diminution_credit_neuf ?? 0));
+            $consultation->credit_ouvert_ce = max(0, (float) ($ligne->credits_engagements ?? 0) - (float) ($ligne->diminution_credit_engagement ?? 0));
         }
 
         return response()->json($consultation);
@@ -121,7 +127,15 @@ class ConsultationController extends Controller
 
     public function show(Consultation $consultation)
     {
-        return response()->json($consultation->load(['fournisseur', 'budget', 'prestations', 'engagement', 'registreEngagement', 'offres', 'receptionCommission']));
+        $consultation->load(['fournisseur', 'budget', 'notificationLigne', 'prestations', 'engagement', 'registreEngagement', 'offres', 'receptionCommission']);
+
+        $ligne = $consultation->notificationLigne;
+        if ($ligne) {
+            $consultation->credit_ouvert_cp = max(0, (float) ($ligne->credits_neufs ?? 0) - (float) ($ligne->diminution_credit_neuf ?? 0));
+            $consultation->credit_ouvert_ce = max(0, (float) ($ligne->credits_engagements ?? 0) - (float) ($ligne->diminution_credit_engagement ?? 0));
+        }
+
+        return response()->json($consultation);
     }
 
     public function destroy(Consultation $consultation)
