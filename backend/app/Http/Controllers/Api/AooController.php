@@ -241,6 +241,8 @@ class AooController extends Controller
                 ]);
             }
 
+            $aoo->refreshCreditsOuvertsDepuisNotifications();
+
             // La fiche est saisie au niveau de l'AOO : elle doit donc alimenter
             // le registre sans attendre la création d'un marché.
             if ($aoo->numero_engagement) {
@@ -258,8 +260,7 @@ class AooController extends Controller
 
     public function show($id)
     {
-        return response()->json(
-            Aoo::with([
+        $aoo = Aoo::with([
                 'registreEngagement',
                 'marches.fournisseur',
                 'marches.registreEngagement',
@@ -269,8 +270,11 @@ class AooController extends Controller
                 'lots.attributaire',
                 'lots.decisions.fournisseur',
                 'lots.notificationLigne',
-            ])->findOrFail($id)
-        );
+            ])->findOrFail($id);
+
+        $aoo->refreshCreditsOuvertsDepuisNotifications();
+
+        return response()->json($aoo);
     }
 
     private function syncRegistreEngagement(Aoo $aoo): void

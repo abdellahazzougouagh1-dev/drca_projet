@@ -3,7 +3,7 @@
 }
 
 .purchase-orders :is(button, a, input, select, textarea):focus-visible {
-  outline: 2px solid #0f766e;
+  outline: 2px solid #087F5B;
   outline-offset: 3px;
 }
 
@@ -51,7 +51,7 @@
   border: 1px solid #e2e8f0;
   border-radius: 1.5rem;
   background: #fff;
-  box-shadow: 0 8px 32px -24px #0f172a55;
+  box-shadow: 0 4px 20px -12px rgba(16, 27, 45, 0.1);
   overflow: hidden;
   animation: bc-reveal 450ms ease-out both;
 }
@@ -61,7 +61,7 @@
   position: absolute;
   inset: 0 auto 0 0;
   width: 4px;
-  background: #0f766e;
+  background: #087F5B;
 }
 
 .purchase-orders .bc-heading h1 {
@@ -95,16 +95,16 @@
 .purchase-orders main button[class*="bg-blue-6"],
 .purchase-orders main button[class*="bg-blue-7"] {
   border-radius: 10px;
-  background: #172033;
+  background: #101B2D;
   color: #fff;
-  box-shadow: 0 3px 6px #0f172a12;
+  box-shadow: 0 2px 6px rgba(16, 27, 45, 0.12);
   font-weight: 600;
 }
 
 .purchase-orders main button[class*="bg-blue-6"]:hover:not(:disabled),
 .purchase-orders main button[class*="bg-blue-7"]:hover:not(:disabled) {
-  background: #0f766e;
-  box-shadow: 0 6px 16px #0f766e25;
+  background: #087F5B;
+  box-shadow: 0 4px 14px rgba(8, 127, 91, 0.25);
 }
 
 .purchase-orders .bc-section-heading > button {
@@ -218,14 +218,14 @@
 
 .purchase-orders .bc-editor :is(input, select, textarea):focus {
   background-color: white;
-  border-color: #0f766e;
+  border-color: #087F5B;
 }
 
 @media (hover: hover) {
   .purchase-orders .bc-document-grid > div:hover {
     transform: translateY(-4px);
-    border-top-color: #0f766e;
-    box-shadow: 0 14px 28px -18px #0f172a40;
+    border-top-color: #087F5B;
+    box-shadow: 0 12px 24px -14px rgba(16, 27, 45, 0.15);
   }
 }
 
@@ -246,7 +246,7 @@
 .purchase-orders .bc-phase-steps {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 10px;
+  gap: 12px;
 }
 
 .purchase-orders .bc-phase-steps button {
@@ -257,18 +257,22 @@
   text-align: left;
   background: #fff;
   border: 1px solid #e2e8f0;
-  border-radius: 12px;
+  border-radius: 14px;
   color: #64748b;
+  transition: all 180ms ease;
+  box-shadow: 0 1px 3px rgba(16, 27, 45, 0.04);
 }
 
 .purchase-orders .bc-phase-steps button[aria-current="step"] {
-  border-color: #0f766e;
-  background: #f0fdf4;
-  color: #0f766e;
+  border-color: #087F5B;
+  background: #E7F5EF;
+  color: #087F5B;
+  box-shadow: 0 2px 8px rgba(8, 127, 91, 0.12);
 }
 
 .purchase-orders .bc-phase-steps button:hover {
-  border-color: #94a3b8;
+  border-color: #087F5B;
+  color: #172033;
 }
 
 .purchase-orders .bc-phase-number {
@@ -282,11 +286,13 @@
   color: #475569;
   font-size: 13px;
   font-weight: 700;
+  transition: all 180ms ease;
 }
 
 .purchase-orders [aria-current="step"] .bc-phase-number {
-  background: #0f766e;
+  background: #087F5B;
   color: white;
+  box-shadow: 0 2px 6px rgba(8, 127, 91, 0.3);
 }
 
 .purchase-orders .bc-phase-steps small {
@@ -320,12 +326,12 @@
 }
 
 .purchase-orders .bc-field-section-title {
-  border-left: 3px solid #0d9488;
+  border-left: 3px solid #087F5B;
   display: flex;
   align-items: flex-start;
   gap: 12px;
   padding: 20px 24px;
-  background: #f0fdf4;
+  background: #F2FAF6;
   border-bottom: 1px solid #e2e8f0;
 }
 
@@ -336,8 +342,8 @@
   height: 30px;
   flex-shrink: 0;
   border-radius: 9px;
-  background: #dcfce7;
-  color: #0f766e;
+  background: #E7F5EF;
+  color: #087F5B;
   font-size: 13px;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
@@ -345,7 +351,7 @@
 
 .purchase-orders .bc-field-section-title h3 {
   margin: 0;
-  color: #0f172a;
+  color: #101B2D;
   font-size: 15px;
   font-weight: 650;
 }
@@ -368,8 +374,8 @@
 }
 
 .purchase-orders .bc-field:focus-within {
-  border-color: #86efac;
-  background: #f0fdf4;
+  border-color: #087F5B;
+  background: #F2FAF6;
 }
 .purchase-orders .bc-field > span:first-child {
   font-size: 13px;
@@ -386,9 +392,9 @@
 }
 
 .purchase-orders .bc-field input[readonly] {
-  background: #f0fdfa;
-  border-color: #99d5cd;
-  color: #115e59;
+  background: #F2FAF6;
+  border-color: #A3D9C8;
+  color: #087F5B;
   border-style: dashed;
   font-weight: 600;
 }
@@ -398,8 +404,8 @@
   margin: 0 0 8px;
   padding: 3px 8px;
   border-radius: 6px;
-  background: #ccfbf1;
-  color: #115e59;
+  background: #E7F5EF;
+  color: #087F5B;
   font-size: 11px;
 }
 
@@ -437,10 +443,10 @@
 }
 
 .purchase-orders .bc-back-button:hover {
-  background: #f0fdf4;
-  border-color: #a7f3d0;
-  color: #0f766e;
-  box-shadow: 0 3px 8px #0f172a08;
+  background: #E7F5EF;
+  border-color: #A3D9C8;
+  color: #087F5B;
+  box-shadow: 0 3px 8px rgba(16, 27, 45, 0.06);
 }
 
 .purchase-orders .bc-back-button svg {
@@ -494,10 +500,10 @@
 }
 
 .purchase-orders .bc-budget-switch button[aria-pressed="true"] {
-  border-color: #0f766e;
-  background: #f0fdfa;
-  color: #115e59;
-  box-shadow: inset 0 -2px #0f766e;
+  border-color: #087F5B;
+  background: #E7F5EF;
+  color: #087F5B;
+  box-shadow: inset 0 -2px #087F5B;
 }
 
 .purchase-orders .bc-budget-count {
@@ -510,15 +516,15 @@
 }
 
 .purchase-orders [aria-pressed="true"] .bc-budget-count {
-  background: #ccfbf1;
-  color: #115e59;
+  background: #E7F5EF;
+  color: #087F5B;
 }
 
 /* Engagement register: match the payment register without altering its data. */
 .purchase-orders .bc-panel.bc-register {
   border-radius: 24px;
   border-color: #cbd5e1;
-  box-shadow: 0 1px 3px #0f172a14;
+  box-shadow: 0 1px 3px rgba(16, 27, 45, 0.08);
 }
 
 .purchase-orders .bc-register > div:first-child {
@@ -537,14 +543,14 @@
 
 .purchase-orders .bc-panel.bc-register thead,
 .purchase-orders .bc-panel.bc-register thead tr {
-  background: #047857;
-  border-bottom: 2px solid #065f46;
+  background: #101B2D;
+  border-bottom: 2px solid #087F5B;
   color: white;
 }
 
 .purchase-orders .bc-panel.bc-register thead th {
   padding: 18px 14px;
-  border-right: 1px solid #059669;
+  border-right: 1px solid #1E2E48;
   color: white;
   font-size: 11px;
   line-height: 1.45;
@@ -571,7 +577,7 @@
 }
 
 .purchase-orders .bc-panel.bc-register tbody tr:hover {
-  background: #ecfdf5;
+  background: #F2FAF6;
 }
 
 .purchase-orders .bc-register > div:last-child > div:last-child:not(.overflow-x-auto) {

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 import { Save, ArrowLeft, CheckCircle2, AlertCircle, FileText, Calculator, Loader2, BookOpen } from 'lucide-react';
 import LigneBudgetaireSelector from '../components/LigneBudgetaireSelector';
+import TopNavButtons from '../components/TopNavButtons';
 
 const NouvelleConsultation = () => {
   const navigate = useNavigate();
@@ -226,73 +227,82 @@ const NouvelleConsultation = () => {
     }
   };
 
-  const getInputClass = (fieldName) => `w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-gray-900 border ${fieldErrors[fieldName]
+  const getInputClass = (fieldName) => `w-full px-4 py-3 rounded-xl bg-white border ${fieldErrors[fieldName]
       ? 'border-red-500 bg-red-50/20 text-red-900 focus:ring-red-200'
-      : 'border-gray-200 dark:border-gray-700 focus:ring-primary'
-    } focus:ring-2 focus:border-transparent outline-none transition-all dark:text-white`;
+      : 'border-slate-200 text-slate-800 focus:border-[#087F5B] focus:ring-2 focus:ring-[#087F5B]/20'
+    } outline-none transition-all`;
 
   return (
-    <div className="p-3 sm:p-6 lg:p-8 bg-gray-50 dark:bg-gray-900 min-h-screen">
-      <div className="w-full">
-        <header className="mb-6 sm:mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-3 mb-2">
-              <button
-                type="button"
-                onClick={() => {
-                  if (window.history.length > 1) {
-                    navigate(-1);
-                  } else {
-                    navigate('/bons-commande');
-                  }
-                }}
-                className="p-2 hover:bg-gray-200 dark:hover:bg-gray-800 rounded-full transition-colors text-gray-500"
-                title="Retour à la plateforme"
-              >
-                <ArrowLeft size={20} />
-              </button>
-              <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">
+    <div className="p-4 sm:p-6 lg:p-8 bg-[#F5F7F5] min-h-screen text-[#172033]">
+      <div className="w-full max-w-[1500px] mx-auto space-y-6">
+        <header className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => {
+                if (window.history.length > 1) {
+                  navigate(-1);
+                } else {
+                  navigate('/bons-commande');
+                }
+              }}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-semibold transition cursor-pointer"
+              title="Retour à la plateforme"
+            >
+              <ArrowLeft size={16} />
+              <span>Retour</span>
+            </button>
+            <div className="h-6 w-px bg-slate-200 hidden sm:block" />
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-bold text-[#087F5B] bg-[#E7F5EF] px-2 py-0.5 rounded-full uppercase tracking-wider">DRCA · RSK</span>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Nouvel engagement</span>
+              </div>
+              <h1 className="mt-1 text-2xl sm:text-3xl font-extrabold text-[#172033] tracking-tight">
                 Nouvelle Consultation
               </h1>
             </div>
           </div>
+          <div className="flex items-center gap-2">
+            <TopNavButtons current="dashboard" />
+          </div>
         </header>
 
         {error && (
-          <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl flex items-center gap-3 text-red-600 dark:text-red-400 font-semibold">
+          <div className="p-4 bg-red-50 border border-red-200 rounded-xl flex items-center gap-3 text-red-600 font-semibold shadow-xs">
             <AlertCircle size={20} />
             <p>{error}</p>
           </div>
         )}
 
         {success && (
-          <div className="mb-6 p-4 bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 rounded-xl flex items-center gap-3 text-emerald-600 dark:text-emerald-400 font-semibold">
+          <div className="p-4 bg-[#E7F5EF] border border-[#087F5B]/30 rounded-xl flex items-center gap-3 text-[#087F5B] font-semibold shadow-xs">
             <CheckCircle2 size={20} />
             <p>Consultation créée avec succès ! Redirection en cours...</p>
           </div>
         )}
 
-        <div className="mb-6 flex items-center gap-1.5 text-xs font-semibold text-slate-600 dark:text-slate-300 bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-700 px-4 py-2.5 rounded-xl w-fit shadow-sm">
+        <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-600 bg-white border border-slate-200 px-4 py-2 rounded-xl w-fit shadow-xs">
           <span className="text-red-600 font-extrabold text-sm">*</span> : Les champs obligatoires
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-8" noValidate>
+        <form onSubmit={handleSubmit} className="space-y-6" noValidate>
 
           {/* BLOC 1 : Informations Générales */}
-          <section className="bg-white dark:bg-gray-800 p-4 sm:p-6 lg:p-8 rounded-2xl sm:rounded-3xl shadow-lg border border-gray-100 dark:border-gray-700">
-            <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-100 dark:border-gray-700">
-              <div className="p-2 bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 rounded-lg">
+          <section className="bg-white p-5 sm:p-7 rounded-2xl shadow-sm border border-slate-200">
+            <div className="flex items-center gap-3 mb-6 pb-4 border-b border-slate-100">
+              <div className="p-2 bg-[#E7F5EF] text-[#087F5B] rounded-xl">
                 <FileText size={20} />
               </div>
-              <h2 className="text-xl font-bold text-gray-800 dark:text-white">Informations Générales</h2>
+              <h2 className="text-lg font-bold text-[#172033]">Informations Générales</h2>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-sm font-semibold text-slate-700 mb-2">
                   Mode d'engagement <span className="text-red-600 font-bold ml-0.5">*</span>
                 </label>
-                <select name="mode_engagement" value={formData.mode_engagement} onChange={handleChange} className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all dark:text-white font-semibold">
+                <select name="mode_engagement" value={formData.mode_engagement} onChange={handleChange} className="w-full px-4 py-3 rounded-xl bg-white border border-slate-200 focus:ring-2 focus:ring-[#087F5B]/20 focus:border-[#087F5B] outline-none transition-all text-slate-800 font-semibold cursor-pointer">
                   <option value="BC">Bon de commande</option>
                   <option value="Convention">Convention</option>
                   <option value="AO">Appel d'offres</option>
@@ -477,7 +487,7 @@ const NouvelleConsultation = () => {
             </section>
           )}
 
-          <div className="flex items-center justify-end gap-4 pt-4">
+          <div className="flex items-center justify-end gap-3 pt-4">
             <button
               type="button"
               onClick={() => {
@@ -487,24 +497,24 @@ const NouvelleConsultation = () => {
                   navigate('/bons-commande');
                 }
               }}
-              className="px-6 py-4 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 font-bold rounded-xl hover:bg-gray-300 dark:hover:bg-gray-600 transition-all duration-200"
+              className="px-6 py-3 border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold rounded-xl shadow-xs transition cursor-pointer"
             >
               Annuler / Retour
             </button>
             <button
               type="submit"
               disabled={loading || success}
-              className="px-8 py-4 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/30 hover:shadow-xl hover:bg-primary-dark hover:-translate-y-1 transition-all duration-300 flex items-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+              className="px-7 py-3 bg-[#087F5B] hover:bg-[#06694A] text-white font-bold rounded-xl shadow-md shadow-[#087F5B]/25 transition transform active:scale-98 flex items-center gap-2.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none cursor-pointer"
             >
               {loading ? (
                 <>
-                  <Loader2 size={24} className="animate-spin" />
-                  Création en cours...
+                  <Loader2 size={18} className="animate-spin" />
+                  <span>Création en cours...</span>
                 </>
               ) : (
                 <>
-                  <Save size={24} />
-                  Enregistrer la consultation
+                  <Save size={18} />
+                  <span>Enregistrer la consultation</span>
                 </>
               )}
             </button>

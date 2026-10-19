@@ -15,27 +15,14 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // Appeler le seeder des fournisseurs
+        // Appeler les seeders de base et de données réelles
         $this->call([
+            LigneBudgetaireSeeder::class,
             FournisseurSeeder::class,
             AdminUserSeeder::class,
             DirecteurUserSeeder::class,
             WorkflowEngineSeeder::class,
+            ProductionRealisticDataSeeder::class,
         ]);
-
-        // Récupérer les fournisseurs créés
-        $fournisseurs = \App\Models\Fournisseur::all();
-
-        // Créer 5 consultations avec leurs budgets
-        \App\Models\Consultation::factory(5)->make()->each(function ($consultation) use ($fournisseurs) {
-            // Attribuer un fournisseur aléatoire
-            $consultation->fournisseur_id = $fournisseurs->random()->id;
-            $consultation->save();
-
-            // Créer un budget pour cette consultation
-            \App\Models\Budget::factory()->create([
-                'consultation_id' => $consultation->id,
-            ]);
-        });
     }
 }

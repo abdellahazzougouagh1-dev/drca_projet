@@ -29,7 +29,9 @@ class ConsultationController extends Controller
         }
 
         $ligne = $consultation->notificationLigne;
-        if ($ligne) {
+        if (in_array(strtoupper((string) $consultation->type_budget), ['INVESTISSEMENT', 'FONCTIONNEMENT'], true)) {
+            $consultation->refreshCreditsOuvertsDepuisNotifications();
+        } elseif ($ligne) {
             $consultation->credit_ouvert_cp = max(0, (float) ($ligne->credits_neufs ?? 0) - (float) ($ligne->diminution_credit_neuf ?? 0));
             $consultation->credit_ouvert_ce = max(0, (float) ($ligne->credits_engagements ?? 0) - (float) ($ligne->diminution_credit_engagement ?? 0));
         }
@@ -130,7 +132,9 @@ class ConsultationController extends Controller
         $consultation->load(['fournisseur', 'budget', 'notificationLigne', 'prestations', 'engagement', 'registreEngagement', 'offres', 'receptionCommission']);
 
         $ligne = $consultation->notificationLigne;
-        if ($ligne) {
+        if (in_array(strtoupper((string) $consultation->type_budget), ['INVESTISSEMENT', 'FONCTIONNEMENT'], true)) {
+            $consultation->refreshCreditsOuvertsDepuisNotifications();
+        } elseif ($ligne) {
             $consultation->credit_ouvert_cp = max(0, (float) ($ligne->credits_neufs ?? 0) - (float) ($ligne->diminution_credit_neuf ?? 0));
             $consultation->credit_ouvert_ce = max(0, (float) ($ligne->credits_engagements ?? 0) - (float) ($ligne->diminution_credit_engagement ?? 0));
         }
@@ -168,11 +172,16 @@ class ConsultationController extends Controller
     public function update(Request $request, Consultation $consultation)
     {
         $validated = $request->validate([
+            'numero_consultation' => 'sometimes|required|string|max:255|unique:consultations,numero_consultation,' . $consultation->id,
+            'annee' => 'sometimes|required|integer|min:2000|max:2099',
             'objet_consultation' => 'sometimes|required|string|max:65000',
             'objet_consultation_ar' => 'nullable|string|max:65000',
+            'categorie' => 'sometimes|required|string|max:255',
             'intitule' => 'nullable|string|max:65000',
             'type_prestation' => 'nullable|string|max:65000',
             'mode_engagement' => 'sometimes|required|in:BC,Convention,AO,Bon de commande,Appel d\'offres,Appel d\'offre',
+            'type_budget' => 'sometimes|required|in:Investissement,Fonctionnement',
+            'statut_dossier' => 'sometimes|required|string|max:255',
             'date_consultation' => 'sometimes|required|date',
             'date_limite_devis' => 'nullable|date',
             'heure_limite_devis' => 'nullable|string|max:50',
@@ -184,6 +193,7 @@ class ConsultationController extends Controller
             'budget_previsionnel' => 'nullable|numeric|min:0',
             'notes_programmation' => 'nullable|string',
             'numero_bc' => 'nullable|string|max:255|unique:consultations,numero_bc,' . $consultation->id,
+            'numero_decision' => 'nullable|string|max:255',
             'reference_2' => 'nullable|string|max:255',
             's_lig' => 'nullable|string|max:255',
             'numero_engagement' => 'nullable|string|max:255|unique:consultations,numero_engagement,' . $consultation->id,

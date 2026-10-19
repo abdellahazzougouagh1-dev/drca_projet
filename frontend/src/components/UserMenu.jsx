@@ -169,8 +169,8 @@ export default function UserMenu({ className = '' }) {
           aria-haspopup="true"
           aria-label="Menu de profil utilisateur"
           className={`group flex w-full items-center justify-between gap-3 rounded-2xl border p-2.5 sm:p-3 text-left transition-all duration-300 cursor-pointer select-none ${isOpen
-              ? 'border-blue-500/80 bg-slate-800/90 shadow-lg shadow-blue-950/40 ring-2 ring-blue-500/20'
-              : 'border-slate-700/70 bg-slate-800/60 hover:border-slate-600 hover:bg-slate-800/90 shadow-sm'
+              ? 'border-[#087F5B] bg-[#172B46] shadow-lg shadow-[#101B2D]/40 ring-2 ring-[#087F5B]/30'
+              : 'border-[#172B46] bg-[#172B46]/60 hover:border-[#087F5B]/50 hover:bg-[#172B46] shadow-xs'
             }`}
         >
           <div className="flex items-center gap-3 min-w-0 flex-1">
@@ -184,7 +184,7 @@ export default function UserMenu({ className = '' }) {
               {/* Point de statut */}
               <span
                 title={statusConfig[status].label}
-                className={`absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-2 border-[#101b33] ${statusConfig[status].color} ring-2 ${statusConfig[status].ring}`}
+                className={`absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-2 border-[#101B2D] ${statusConfig[status].color} ring-2 ${statusConfig[status].ring}`}
               />
             </div>
 
@@ -192,7 +192,7 @@ export default function UserMenu({ className = '' }) {
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-1.5">
                 <p
-                  className="truncate text-sm font-bold text-white transition-colors group-hover:text-blue-300"
+                  className="truncate text-sm font-bold text-white transition-colors group-hover:text-emerald-300"
                   title={userName}
                 >
                   {userName}

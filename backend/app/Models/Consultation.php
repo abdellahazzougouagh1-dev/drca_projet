@@ -135,6 +135,37 @@ class Consultation extends Model
         return $this->belongsTo(NotificationLigne::class);
     }
 
+    /**
+     * Show the accumulated new CP and CE credits for
+     * this exact budget line and fiscal year across all notifications.
+     */
+    public function refreshCreditsOuvertsDepuisNotifications(): self
+    {
+        $budget = $this->budget;
+        $domaineBudget = strtoupper((string) $this->type_budget);
+        if (!$budget || !$budget->art || !$budget->par || !$budget->lig) {
+            return $this;
+        }
+
+        $exercice = $budget->exercice_budgetaire ?: $this->annee;
+        $lignes = NotificationLigne::with('notification')
+            ->where('article', $budget->art)
+            ->where('paragraphe', $budget->par)
+            ->where('ligne_budgetaire', $budget->lig)
+            ->whereHas('notification', fn ($query) => $query->where('exercice', $exercice))
+            ->get();
+
+        $lignesMemeDomaine = $lignes->filter(function (NotificationLigne $ligne) use ($domaineBudget) {
+            $domaine = strtoupper((string) ($ligne->domaine ?: $ligne->notification?->domaine ?: 'INVESTISSEMENT'));
+            return $domaine === $domaineBudget;
+        });
+
+        $this->setAttribute('credit_ouvert_cp', round((float) $lignesMemeDomaine->sum('credits_neufs'), 2));
+        $this->setAttribute('credit_ouvert_ce', round((float) $lignesMemeDomaine->sum('credits_engagements'), 2));
+
+        return $this;
+    }
+
     public function ordonnancements()
     {
         return $this->hasMany(Ordonnancement::class);

@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/axios';
-import { Search, Plus, Eye, Edit2, Trash2, Calendar, DollarSign, FileText, AlertCircle, Loader2 } from 'lucide-react';
+import { Search, Plus, Eye, Edit2, Trash2, Calendar, DollarSign, FileText, AlertCircle, Loader2, ArrowLeft } from 'lucide-react';
+import TopNavButtons from '../components/TopNavButtons';
 
 const ListeAoo = () => {
   const navigate = useNavigate();
@@ -95,136 +96,161 @@ const ListeAoo = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-4 sm:p-6 lg:p-8">
-      <div className="w-full max-w-[1920px] mx-auto">
+    <div className="min-h-screen bg-[#F5F7F5] p-4 sm:p-6 lg:p-8 text-[#172033]">
+      <div className="w-full max-w-[1920px] mx-auto space-y-6">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-extrabold text-slate-800 mb-2">Appels d'Offres</h1>
-          <p className="text-slate-600">Gestion et suivi des appels d'offres</p>
-        </div>
+        <header className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div className="flex items-start sm:items-center gap-3">
+            <button
+              onClick={() => navigate('/dashboard')}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-semibold transition cursor-pointer shrink-0"
+              title="Retour au tableau de bord"
+            >
+              <ArrowLeft size={16} />
+              <span>Retour</span>
+            </button>
+            <div className="h-6 w-px bg-slate-200 hidden sm:block" />
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-[10px] font-bold text-[#087F5B] bg-[#E7F5EF] px-2 py-0.5 rounded-full uppercase tracking-wider">DRCA · RSK</span>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Marchés Publics</span>
+              </div>
+              <h1 className="mt-1 text-2xl sm:text-3xl font-extrabold text-[#172033] tracking-tight">
+                Appels d'Offres (AOO)
+              </h1>
+              <p className="mt-1 text-xs sm:text-sm text-slate-500">
+                Gestion et suivi des procédures d'appels d'offres ouverts.
+              </p>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-2.5">
+            <TopNavButtons current="dashboard" />
+            <button
+              onClick={() => navigate('/aoos/nouveau')}
+              className="inline-flex items-center gap-2 px-4 py-2 sm:px-5 sm:py-2.5 bg-[#087F5B] hover:bg-[#06694A] text-white text-xs sm:text-sm font-bold rounded-xl shadow-md shadow-[#087F5B]/20 transition transform active:scale-98 cursor-pointer"
+            >
+              <Plus size={18} />
+              <span>Nouvel AOO</span>
+            </button>
+          </div>
+        </header>
 
         {/* Messages */}
         {errorMessage && (
-          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-xl flex items-center gap-3 text-red-700">
+          <div className="p-4 bg-red-50 border border-red-200 rounded-xl flex items-center gap-3 text-red-700 shadow-xs">
             <AlertCircle size={20} />
-            {errorMessage}
+            <p className="font-semibold text-sm">{errorMessage}</p>
           </div>
         )}
         {successMessage && (
-          <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-xl flex items-center gap-3 text-green-700">
-            {successMessage}
+          <div className="p-4 bg-[#E7F5EF] border border-[#087F5B]/30 rounded-xl flex items-center gap-3 text-[#087F5B] shadow-xs">
+            <AlertCircle size={20} />
+            <p className="font-semibold text-sm">{successMessage}</p>
           </div>
         )}
 
         {!loading && (
-          <div role="group" aria-label="Type de budget des appels d’offres" className="mb-5 flex flex-wrap gap-2 rounded-2xl border border-slate-200 bg-white p-3">
+          <div role="group" aria-label="Type de budget des appels d’offres" className="flex flex-wrap gap-2 rounded-2xl border border-slate-200 bg-white p-3 shadow-xs">
             {Object.entries(aoosByBudget).filter(([budget, items]) => budget !== 'Non renseigné' || items.length > 0 || budgetType === budget).map(([budget, items]) => (
               <button key={budget} type="button" aria-pressed={budgetType === budget} onClick={() => setBudgetType(budget)}
-                className={`inline-flex items-center gap-3 rounded-xl border px-4 py-2.5 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 ${budgetType === budget ? 'border-teal-700 bg-teal-50 text-teal-800' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'}`}>
+                className={`inline-flex items-center gap-3 rounded-xl border px-4 py-2 text-sm font-semibold transition cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#087F5B] ${budgetType === budget ? 'border-[#087F5B] bg-[#E7F5EF] text-[#087F5B] shadow-xs' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'}`}>
                 {budget}
-                <span className={`min-w-6 rounded-md px-2 py-0.5 text-center text-xs ${budgetType === budget ? 'bg-teal-100 text-teal-800' : 'bg-slate-100 text-slate-600'}`}>{items.length}</span>
+                <span className={`min-w-6 rounded-md px-2 py-0.5 text-center text-xs font-bold ${budgetType === budget ? 'bg-white text-[#087F5B]' : 'bg-slate-100 text-slate-600'}`}>{items.length}</span>
               </button>
             ))}
           </div>
         )}
 
         {/* Controls */}
-        <div className="mb-6 flex flex-col md:flex-row gap-4 items-center justify-between">
-          <div className="flex-1 relative">
-            <Search size={20} className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400" />
+        <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+          <div className="flex-1 relative w-full">
+            <Search size={18} className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400" />
             <input
               type="text"
               aria-label="Rechercher un appel d’offres dans le budget sélectionné"
               placeholder="Rechercher par N° AOO, objet, statut..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 bg-white"
+              className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:border-[#087F5B] focus:ring-2 focus:ring-[#087F5B]/20 bg-white text-sm text-slate-800 shadow-xs"
             />
           </div>
-          <button
-            onClick={() => navigate('/aoos/nouveau')}
-            className="px-6 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 flex items-center gap-2 transition-all shadow-md"
-          >
-            <Plus size={20} />
-            Nouvel AOO
-          </button>
         </div>
 
         {/* Loading State */}
         {loading && (
           <div className="flex justify-center items-center h-64">
-            <Loader2 size={24} className="animate-spin text-blue-600" />
+            <Loader2 size={28} className="animate-spin text-[#087F5B]" />
           </div>
         )}
 
         {/* Table */}
         {!loading && (
-          <div className="bg-white rounded-2xl shadow-lg overflow-hidden border border-slate-200">
+          <div className="bg-white rounded-2xl shadow-sm overflow-hidden border border-slate-200">
             {filteredAoos.length > 0 ? (
               <div className="overflow-x-auto">
                 <table className="w-full">
-                  <thead className="bg-gradient-to-r from-blue-50 to-slate-100 border-b border-slate-200">
-                    <tr>
-                      <th className="px-6 py-4 text-left text-sm font-bold text-slate-700">N° AOO</th>
-                      <th className="px-6 py-4 text-left text-sm font-bold text-slate-700">Objet</th>
-                      <th className="px-6 py-4 text-left text-sm font-bold text-slate-700">Budget</th>
-                      <th className="px-6 py-4 text-left text-sm font-bold text-slate-700">Statut</th>
-                      <th className="px-6 py-4 text-left text-sm font-bold text-slate-700">État</th>
-                      <th className="px-6 py-4 text-left text-sm font-bold text-slate-700">Ouverture</th>
-                      <th className="px-6 py-4 text-center text-sm font-bold text-slate-700">Actions</th>
+                  <thead>
+                    <tr className="bg-[#101B2D] border-b-2 border-[#087F5B] text-white">
+                      <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">N° AOO</th>
+                      <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">Objet</th>
+                      <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">Budget</th>
+                      <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">Statut</th>
+                      <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">État</th>
+                      <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">Ouverture</th>
+                      <th className="px-6 py-4 text-center text-xs font-bold uppercase tracking-wider">Actions</th>
                     </tr>
                   </thead>
-                  <tbody>
-                    {filteredAoos.map((aoo, idx) => (
-                      <tr key={aoo.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-slate-50 hover:bg-slate-100'}>
+                  <tbody className="divide-y divide-slate-100">
+                    {filteredAoos.map((aoo) => (
+                      <tr key={aoo.id} className="hover:bg-[#F2FAF6] transition-colors">
                         <td className="px-6 py-4">
-                          <span className="font-bold text-blue-600">{aoo.num_aoo}</span>
+                          <span className="font-mono font-bold text-[#101B2D] text-sm">{aoo.num_aoo}</span>
                         </td>
-                        <td className="px-6 py-4">
-                          <div className="text-sm text-slate-800 line-clamp-2">{aoo.objet}</div>
+                        <td className="px-6 py-4 max-w-md">
+                          <p className="text-sm font-semibold text-slate-800 line-clamp-2">{aoo.objet}</p>
+                          <small className="text-xs text-slate-400">{aoo.structure_acheteuse || 'DRCA RSK'}</small>
                         </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-1 text-slate-800">
-                            <DollarSign size={16} className="text-emerald-600" />
-                            <span className="font-semibold">{formatMoney(aoo.budget)}</span>
-                          </div>
+                        <td className="px-6 py-4 font-mono font-bold text-slate-800 text-sm whitespace-nowrap">
+                          {formatMoney(aoo.budget)}
                         </td>
-                        <td className="px-6 py-4">
-                          <span className={`px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap inline-block ${getStatusBadgeColor(aoo.statut)}`}>
-                            {aoo.statut?.replace(/_/g, ' ').toUpperCase()}
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold ${getStatusClass(aoo.statut)}`}>
+                            {aoo.statut}
                           </span>
                         </td>
-                        <td className="px-6 py-4">
-                          <span className="text-sm text-slate-600">{aoo.etat_avancement}</span>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${getAvancementClass(aoo.etat_avancement)}`}>
+                            {aoo.etat_avancement || '-'}
+                          </span>
                         </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-1 text-slate-600">
-                            <Calendar size={16} className="text-amber-600" />
-                            <span className="text-sm">{formatDate(aoo.date_ouverture)}</span>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center gap-1.5 text-slate-600 text-xs">
+                            <Calendar size={14} className="text-[#087F5B]" />
+                            <span>{formatDate(aoo.date_ouverture)}</span>
                           </div>
                         </td>
-                        <td className="px-6 py-4 text-center">
-                          <div className="flex gap-2 justify-center">
+                        <td className="px-6 py-4 text-center whitespace-nowrap">
+                          <div className="flex gap-1.5 justify-center">
                             <button
                               onClick={() => navigate(`/aoos/${aoo.id}`)}
-                              className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                              className="inline-flex items-center justify-center h-8.5 w-8.5 rounded-lg bg-[#E7F5EF] text-[#087F5B] hover:bg-[#d8efe5] transition cursor-pointer"
                               title="Voir"
                             >
-                              <Eye size={18} />
+                              <Eye size={16} />
                             </button>
                             <button
                               onClick={() => navigate(`/aoos/${aoo.id}`)}
-                              className="p-2 text-amber-600 hover:bg-amber-50 rounded-lg transition-all"
+                              className="inline-flex items-center justify-center h-8.5 w-8.5 rounded-lg bg-amber-50 text-amber-700 hover:bg-amber-100 transition cursor-pointer"
                               title="Modifier"
                             >
-                              <Edit2 size={18} />
+                              <Edit2 size={16} />
                             </button>
                             <button
                               onClick={() => handleDelete(aoo.id)}
-                              className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                              className="inline-flex items-center justify-center h-8.5 w-8.5 rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100 transition cursor-pointer"
                               title="Supprimer"
                             >
-                              <Trash2 size={18} />
+                              <Trash2 size={16} />
                             </button>
                           </div>
                         </td>

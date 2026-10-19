@@ -108,6 +108,38 @@ class Aoo extends Model
         return $this->objet;
     }
 
+    /** Recalculate open CP/CE from notifications on this AOO's exact budget line. */
+    public function refreshCreditsOuvertsDepuisNotifications(): self
+    {
+        $ligneLiee = $this->notificationLigne;
+        $article = $this->art ?: $ligneLiee?->article;
+        $paragraphe = $this->par ?: $ligneLiee?->paragraphe;
+        $ligneBudgetaire = $this->lig ?: $ligneLiee?->ligne_budgetaire;
+        $domaineBudget = strtoupper((string) ($this->type_budget ?: 'INVESTISSEMENT'));
+        $exercice = $ligneLiee?->notification?->exercice
+            ?: ($this->date_preparation ? $this->date_preparation->format('Y') : date('Y'));
+
+        if (!$article || !$paragraphe || !$ligneBudgetaire) {
+            return $this;
+        }
+
+        $lignes = NotificationLigne::with('notification')
+            ->where('article', $article)
+            ->where('paragraphe', $paragraphe)
+            ->where('ligne_budgetaire', $ligneBudgetaire)
+            ->whereHas('notification', fn ($query) => $query->where('exercice', $exercice))
+            ->get()
+            ->filter(function (NotificationLigne $ligne) use ($domaineBudget) {
+                $domaine = strtoupper((string) ($ligne->domaine ?: $ligne->notification?->domaine ?: 'INVESTISSEMENT'));
+                return $domaine === $domaineBudget;
+            });
+
+        $this->setAttribute('credit_ouvert_cp', round((float) $lignes->sum('credits_neufs'), 2));
+        $this->setAttribute('credit_ouvert_ce', round((float) $lignes->sum('credits_engagements'), 2));
+
+        return $this;
+    }
+
     public function notificationLigne(): BelongsTo
     {
         return $this->belongsTo(NotificationLigne::class);

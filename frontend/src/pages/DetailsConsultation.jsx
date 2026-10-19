@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 import { ArrowLeft, Loader2, Save, Plus, Trash2, CheckCircle2, AlertCircle, FileText, Calculator, Download, Users, X, Edit, Award, FileCheck, Calendar, Briefcase, PenTool, Clock, BarChart2, Activity, PlayCircle, StopCircle, AlertTriangle, FileSignature, CheckSquare, PackageCheck, Banknote, Landmark, Archive, DownloadCloud } from 'lucide-react';
+import TopNavButtons from '../components/TopNavButtons';
 
 const DOCUMENTS_BC = [
   // Phase 1: Consultation / Estimation
@@ -840,27 +841,34 @@ const DetailsConsultation = () => {
         <main className="space-y-10">
         
         {/* HEADER */}
-        <header className="flex items-center justify-between mb-8">
-          <div>
-            <div className="flex items-center gap-3 mb-2">
-              <button onClick={() => navigate('/consultations')} className="p-2 hover:bg-gray-200 dark:hover:bg-gray-800 rounded-full transition-colors text-gray-500">
-                <ArrowLeft size={20} />
-              </button>
-              <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">Détails de la Consultation</h1>
-              <span className={`px-3 py-1 rounded-full text-xs font-bold ml-4 border ${
-                consultation.statut_dossier === 'ENGAGÉ' ? 'bg-blue-100 text-blue-700 border-blue-200' : 'bg-gray-100 text-gray-700 border-gray-200'
-              }`}>
-                {consultation.statut_dossier}
-              </span>
+        <header className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-8">
+          <div className="flex items-start sm:items-center gap-3">
+            <button onClick={() => navigate('/consultations')} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-semibold transition cursor-pointer shrink-0">
+              <ArrowLeft size={16} />
+              <span>Retour</span>
+            </button>
+            <div className="h-6 w-px bg-slate-200 hidden sm:block" />
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-[10px] font-bold text-[#087F5B] bg-[#E7F5EF] px-2 py-0.5 rounded-full uppercase tracking-wider">DRCA · RSK</span>
+                <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
+                  consultation.statut_dossier === 'ENGAGÉ' ? 'bg-[#E7F5EF] text-[#087F5B] border-[#087F5B]/30' : 'bg-slate-100 text-slate-700 border-slate-200'
+                }`}>
+                  {consultation.statut_dossier}
+                </span>
+              </div>
+              <h1 className="mt-1 text-2xl sm:text-3xl font-extrabold text-[#172033] tracking-tight">Détails de la Consultation</h1>
+              <p className="mt-0.5 text-xs sm:text-sm text-slate-500">
+                Réf : <span className="font-mono font-bold text-[#101B2D]">{consultation.numero_consultation}</span>
+              </p>
             </div>
-            <p className="text-gray-500 dark:text-gray-400 ml-11">
-              Réf : <span className="font-mono text-primary font-bold">{consultation.numero_consultation}</span>
-            </p>
           </div>
-          <div className="flex gap-4">
+          <div className="flex flex-wrap items-center gap-2.5">
+            <TopNavButtons current="dashboard" />
             {(consultation?.prestations?.length > 0 || saveSuccess) && (
-              <button onClick={handleDownloadPdf} className="px-6 py-3 bg-white dark:bg-gray-800 border border-gray-200 text-gray-700 font-bold rounded-xl shadow-sm hover:bg-gray-50 transition-all flex items-center gap-2">
-                <Download size={20} className="text-blue-500" /> Documents Officiels
+              <button onClick={handleDownloadPdf} className="inline-flex items-center gap-2 px-4 py-2 sm:px-5 sm:py-2.5 bg-[#087F5B] hover:bg-[#06694A] text-white text-xs sm:text-sm font-bold rounded-xl shadow-md shadow-[#087F5B]/20 transition transform active:scale-98 cursor-pointer">
+                <Download size={18} />
+                <span>Documents Officiels</span>
               </button>
             )}
           </div>
@@ -870,20 +878,20 @@ const DetailsConsultation = () => {
           <div className="flex items-center justify-between gap-4 mb-4">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">Progression</p>
-              <h2 className="mt-2 text-lg font-bold text-slate-900">Parcours de la consultation</h2>
+              <h2 className="mt-2 text-lg font-bold text-[#172033]">Parcours de la consultation</h2>
             </div>
-            <div className="text-sm font-semibold text-slate-600">{currentStepIndex + 1} / {visibleSteps.length}</div>
+            <div className="text-sm font-bold text-[#087F5B] bg-[#E7F5EF] px-3 py-1 rounded-full">{currentStepIndex + 1} / {visibleSteps.length}</div>
           </div>
           <div className="flex w-full items-start justify-between gap-4 py-4">
             {visibleSteps.map((step, index) => (
               <div key={step.key} className="flex-1 min-w-0 text-center px-1">
-                <div className={`mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full border text-sm font-bold ${step.key === activeTab ? 'border-blue-600 bg-blue-600 text-white shadow-sm' : index < currentStepIndex ? 'border-blue-200 bg-blue-50 text-blue-700' : 'border-slate-200 bg-slate-100 text-slate-500'}`}>
+                <div className={`mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full border text-sm font-bold transition-all duration-200 ${step.key === activeTab ? 'border-[#087F5B] bg-[#087F5B] text-white shadow-md shadow-[#087F5B]/25' : index < currentStepIndex ? 'border-[#A3D9C8] bg-[#E7F5EF] text-[#087F5B]' : 'border-slate-200 bg-slate-100 text-slate-500'}`}>
                   {index + 1}
                 </div>
                 <div className="mx-auto max-w-[110px] px-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-600 leading-tight sm:text-[11px]">
                   {step.label}
                 </div>
-                <div className={`mx-auto mt-2 h-1 w-10 rounded-full ${index < currentStepIndex ? 'bg-blue-500' : 'bg-slate-200'}`}></div>
+                <div className={`mx-auto mt-2 h-1 w-10 rounded-full transition-all duration-300 ${index < currentStepIndex ? 'bg-[#087F5B]' : 'bg-slate-200'}`}></div>
               </div>
             ))}
           </div>

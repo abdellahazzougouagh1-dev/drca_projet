@@ -624,6 +624,11 @@ const GestionAoo = () => {
     const { name, value } = e.target;
     setFormData(prev => {
       const next = { ...prev, [name]: value };
+      if (name === 'type_budget') {
+        // The server recomputes these against the newly selected budget domain on save.
+        next.credit_ouvert_cp = '';
+        next.credit_ouvert_ce = '';
+      }
       if (name === 'montant_depense_neuf') {
         const montant = parseNum(value);
         next.interets_moratoires = (montant * 0.01).toFixed(2);
@@ -1899,7 +1904,7 @@ const GestionAoo = () => {
                     type={type}
                     value={name.startsWith('disponible_') ? creditDisponible(formData[`credit_ouvert_${name.slice(-2)}`], formData[`depenses_anterieures_${name.slice(-2)}`]) : formData[name] ?? ''}
                     onChange={handleChange}
-                    readOnly={name.startsWith('disponible_') || name === 'interets_moratoires' || name === 'montant_engager_neuf'}
+                    readOnly={name.startsWith('disponible_') || name === 'credit_ouvert_cp' || name === 'credit_ouvert_ce' || name === 'interets_moratoires' || name === 'montant_engager_neuf'}
                     className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-normal outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 read-only:bg-slate-100"
                   />
                 </label>

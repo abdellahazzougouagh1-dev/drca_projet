@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../api/axios';
-import { ArrowLeft, Loader2, Plus, AlertCircle, Eye, Trash2, Edit3 } from 'lucide-react';
+import { ArrowLeft, Loader2, Plus, AlertCircle, Eye, Trash2, Edit3, ClipboardList } from 'lucide-react';
+import TopNavButtons from '../components/TopNavButtons';
 
 const ListeConsultations = () => {
   const navigate = useNavigate();
@@ -24,6 +25,22 @@ const ListeConsultations = () => {
     } catch (err) {
       console.error(err);
       alert(`Erreur lors de la suppression de ${label}.`);
+    }
+  };
+
+  const getStatusBadge = (status) => {
+    const baseClasses = 'px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider inline-flex items-center gap-1.5 border';
+    switch (status) {
+      case 'Programmation':
+        return <span className={`${baseClasses} bg-blue-50 text-blue-700 border-blue-200`}><span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>Programmation</span>;
+      case 'En cours':
+        return <span className={`${baseClasses} bg-amber-50 text-amber-800 border-amber-200`}><span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>En cours</span>;
+      case 'Validé':
+        return <span className={`${baseClasses} bg-[#E7F5EF] text-[#087F5B] border-[#087F5B]/30`}><span className="w-1.5 h-1.5 rounded-full bg-[#087F5B]"></span>Validé</span>;
+      case 'Clôturé':
+        return <span className={`${baseClasses} bg-slate-100 text-slate-700 border-slate-300`}><span className="w-1.5 h-1.5 rounded-full bg-slate-500"></span>Clôturé</span>;
+      default:
+        return <span className={`${baseClasses} bg-slate-100 text-slate-700 border-slate-200`}>{status || 'Non défini'}</span>;
     }
   };
 
@@ -105,22 +122,6 @@ const ListeConsultations = () => {
     return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'MAD' }).format(value).replace('MAD', 'dh');
   };
 
-  const getStatusBadge = (status) => {
-    const baseClasses = 'px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wide inline-block';
-    switch (status) {
-      case 'Programmation':
-        return <span className={`${baseClasses} bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300`}>Programmation</span>;
-      case 'En cours':
-        return <span className={`${baseClasses} bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300`}>En cours</span>;
-      case 'Validé':
-        return <span className={`${baseClasses} bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300`}>Validé</span>;
-      case 'Clôturé':
-        return <span className={`${baseClasses} bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300`}>Clôturé</span>;
-      default:
-        return <span className={`${baseClasses} bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300`}>{status}</span>;
-    }
-  };
-
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
@@ -150,90 +151,107 @@ const ListeConsultations = () => {
   }
 
   return (
-    <div className="p-3 sm:p-6 lg:p-8 bg-gray-50 dark:bg-gray-900 min-h-screen">
-      <div className="w-full">
-        <header className="mb-6 sm:mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-3 mb-2">
-              <button 
-                onClick={() => navigate('/dashboard')}
-                className="p-2 hover:bg-gray-200 dark:hover:bg-gray-800 rounded-full transition-colors text-gray-500"
-              >
-                <ArrowLeft size={20} />
-              </button>
-              <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">
+    <div className="p-4 sm:p-6 lg:p-8 bg-[#F5F7F5] min-h-screen text-[#172033]">
+      <div className="w-full max-w-[1700px] mx-auto space-y-6">
+        {/* Header bar */}
+        <header className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div className="flex items-start sm:items-center gap-3">
+            <button 
+              onClick={() => navigate('/dashboard')}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-semibold transition cursor-pointer shrink-0"
+              title="Retour au tableau de bord"
+            >
+              <ArrowLeft size={16} />
+              <span>Retour</span>
+            </button>
+            <div className="h-6 w-px bg-slate-200 hidden sm:block" />
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-[10px] font-bold text-[#087F5B] bg-[#E7F5EF] px-2 py-0.5 rounded-full uppercase tracking-wider">DRCA · RSK</span>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Marchés & Achats</span>
+              </div>
+              <h1 className="mt-1 text-2xl sm:text-3xl font-extrabold text-[#172033] tracking-tight">
                 Gestion des Consultations
               </h1>
+              <p className="mt-1 text-xs sm:text-sm text-slate-500">
+                Registre centralisé de toutes les consultations enregistrées.
+              </p>
             </div>
-            <p className="text-gray-500 dark:text-gray-400 ml-11">
-              Liste complète de toutes les consultations enregistrées.
-            </p>
           </div>
-          <Link 
-            to="/consultations/nouvelle"
-            className="px-6 py-3 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/30 hover:shadow-xl hover:bg-primary-dark hover:-translate-y-1 transition-all duration-300 flex items-center gap-2"
-          >
-            <Plus size={20} />
-            Nouvelle Consultation
-          </Link>
+          <div className="flex flex-wrap items-center gap-2.5">
+            <TopNavButtons current="dashboard" />
+            <Link 
+              to="/consultations/nouvelle"
+              className="inline-flex items-center gap-2 px-4 py-2 sm:px-5 sm:py-2.5 bg-[#087F5B] hover:bg-[#06694A] text-white text-xs sm:text-sm font-bold rounded-xl shadow-md shadow-[#087F5B]/20 transition transform active:scale-98 cursor-pointer"
+            >
+              <Plus size={18} />
+              <span>Nouvelle Consultation</span>
+            </Link>
+          </div>
         </header>
 
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-slate-200 dark:border-gray-700 overflow-hidden">
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-slate-50 dark:bg-gray-800/50 border-b border-slate-200 dark:border-gray-700">
-                  <th className="px-6 py-5 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Réf. Consultation</th>
-                  <th className="px-6 py-5 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Année</th>
-                  <th className="px-6 py-5 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Objet</th>
-                  <th className="px-6 py-5 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Mode d'engagement</th>
-                  <th className="px-6 py-5 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Budget TTC</th>
-                  <th className="px-6 py-5 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Statut</th>
-                  <th className="px-6 py-5 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider text-right">Actions</th>
+                <tr className="bg-[#101B2D] border-b-2 border-[#087F5B] text-white">
+                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider">Réf. Consultation</th>
+                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider">Année</th>
+                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider">Objet</th>
+                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider">Mode d'engagement</th>
+                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-right">Budget TTC</th>
+                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-center">Statut</th>
+                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-200 dark:divide-gray-700">
+              <tbody className="divide-y divide-slate-100">
                 {consultations.length === 0 ? (
                   <tr>
-                    <td colSpan="7" className="px-6 py-12 text-center text-slate-500 dark:text-slate-400">
-                      Aucun dossier trouvé.
+                    <td colSpan="7" className="px-6 py-16 text-center text-slate-500">
+                      <div className="flex flex-col items-center justify-center gap-3">
+                        <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-400">
+                          <ClipboardList size={24} />
+                        </div>
+                        <p className="font-semibold text-slate-700">Aucun dossier trouvé</p>
+                        <p className="text-xs text-slate-400">Commencez par créer une nouvelle consultation en cliquant sur le bouton ci-dessus.</p>
+                      </div>
                     </td>
                   </tr>
                 ) : (
                   consultations.map((consultation) => (
-                    <tr key={consultation.global_id} className="hover:bg-slate-50 dark:hover:bg-gray-700/30 transition-colors">
-                      <td className="px-6 py-5 whitespace-nowrap">
-                        <span className="font-mono font-semibold text-primary dark:text-blue-400">
+                    <tr key={consultation.global_id} className="hover:bg-[#F2FAF6] transition-colors">
+                      <td className="px-6 py-4.5 whitespace-nowrap">
+                        <span className="font-mono font-bold text-[#101B2D]">
                           {consultation.global_numero || 'N/A'}
                         </span>
                       </td>
-                      <td className="px-6 py-5 whitespace-nowrap text-sm font-medium text-slate-700 dark:text-slate-300">
+                      <td className="px-6 py-4.5 whitespace-nowrap text-xs font-semibold text-slate-600">
                         {consultation.annee || new Date(consultation.created_at || Date.now()).getFullYear()}
                       </td>
-                      <td className="px-6 py-5">
-                        <p className="text-sm font-medium text-slate-900 dark:text-white line-clamp-2" title={consultation.global_objet}>
-                          {consultation.global_objet || 'N/A'}
+                      <td className="px-6 py-4.5 max-w-md">
+                        <p className="text-sm font-semibold text-slate-900 line-clamp-2" title={consultation.global_objet}>
+                          {consultation.global_objet || 'Sans objet'}
                         </p>
                       </td>
-                      <td className="px-6 py-5 whitespace-nowrap">
+                      <td className="px-6 py-4.5 whitespace-nowrap">
                         {consultation.global_type === 'AO' || consultation.global_type === "Appel d'offres" || consultation.global_type === "Appel d'Offres" ? (
-                          <span className="inline-block rounded-full bg-violet-100 px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-violet-800 dark:bg-violet-900/30 dark:text-violet-300">
+                          <span className="inline-block rounded-full bg-violet-50 border border-violet-200 px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-violet-700">
                             Appel d'offres
                           </span>
                         ) : (
-                          <span className="inline-block rounded-full bg-cyan-100 px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-cyan-800 dark:bg-cyan-900/30 dark:text-cyan-300">
+                          <span className="inline-block rounded-full bg-[#E7F5EF] border border-[#087F5B]/25 px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-[#087F5B]">
                             Bon de commande
                           </span>
                         )}
                       </td>
-                      <td className="px-6 py-5 whitespace-nowrap font-mono font-bold text-slate-900 dark:text-slate-100">
+                      <td className="px-6 py-4.5 whitespace-nowrap font-mono font-bold text-slate-900 text-right tabular-nums">
                         {consultation.global_budget ? formatCurrency(consultation.global_budget) : 'N/A'}
                       </td>
-                      <td className="px-6 py-5 whitespace-nowrap">
+                      <td className="px-6 py-4.5 whitespace-nowrap text-center">
                         {getStatusBadge(consultation.global_statut)}
                       </td>
-                      <td className="px-6 py-5 whitespace-nowrap text-right">
-                        <div className="flex items-center justify-end gap-2">
+                      <td className="px-6 py-4.5 whitespace-nowrap text-right">
+                        <div className="flex items-center justify-end gap-1.5">
                           <button
                             onClick={() => {
                               if (consultation.is_ao || consultation.global_id?.startsWith('aoo_')) {
@@ -248,10 +266,10 @@ const ListeConsultations = () => {
                                 navigate(consultation.route);
                               }
                             }}
-                            className="inline-flex items-center justify-center h-9 w-9 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50 transition-colors cursor-pointer"
+                            className="inline-flex items-center justify-center h-8.5 w-8.5 rounded-lg bg-[#E7F5EF] text-[#087F5B] hover:bg-[#d8efe5] transition cursor-pointer"
                             title="Aperçu / Voir détails"
                           >
-                            <Eye size={18} />
+                            <Eye size={16} />
                           </button>
                           <button
                             onClick={() => {
@@ -269,17 +287,17 @@ const ListeConsultations = () => {
                                 });
                               }
                             }}
-                            className="inline-flex items-center justify-center h-9 w-9 rounded-lg bg-amber-50 text-amber-600 hover:bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400 dark:hover:bg-amber-900/50 transition-colors cursor-pointer"
+                            className="inline-flex items-center justify-center h-8.5 w-8.5 rounded-lg bg-amber-50 text-amber-700 hover:bg-amber-100 transition cursor-pointer"
                             title="Modifier"
                           >
-                            <Edit3 size={18} />
+                            <Edit3 size={16} />
                           </button>
                           <button
                             onClick={() => handleDelete(consultation)}
-                            className="inline-flex items-center justify-center h-9 w-9 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50 transition-colors cursor-pointer"
+                            className="inline-flex items-center justify-center h-8.5 w-8.5 rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100 transition cursor-pointer"
                             title="Supprimer"
                           >
-                            <Trash2 size={18} />
+                            <Trash2 size={16} />
                           </button>
                         </div>
                       </td>

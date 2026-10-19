@@ -39,6 +39,12 @@ class DocumentController extends Controller
             'document_data' => 'nullable|array',
         ])['document_data'] ?? [];
 
+        if ($type === 'fiche_engagement' && in_array(strtoupper((string) $consultation->type_budget), ['INVESTISSEMENT', 'FONCTIONNEMENT'], true)) {
+            // Use the live line and exercise totals, even if the form held older values.
+            $documentData['credit_ouvert_cp'] = $consultation->credit_ouvert_cp;
+            $documentData['credit_ouvert_ce'] = $consultation->credit_ouvert_ce;
+        }
+
         $docTitle = $this->documentNames()[$type] ?? 'Document Administratif';
 
         $pdf = Pdf::loadView($this->viewName($type), [
@@ -57,7 +63,7 @@ class DocumentController extends Controller
 
     private function loadConsultation($consultationId): Consultation
     {
-        return Consultation::with([
+        $consultation = Consultation::with([
             'budget',
             'prestations',
             'offres.fournisseur',
@@ -67,6 +73,12 @@ class DocumentController extends Controller
             'receptionCommission',
             'liquidation',
         ])->findOrFail($consultationId);
+
+        if (in_array(strtoupper((string) $consultation->type_budget), ['INVESTISSEMENT', 'FONCTIONNEMENT'], true)) {
+            $consultation->refreshCreditsOuvertsDepuisNotifications();
+        }
+
+        return $consultation;
     }
 
     private function documentNames(): array

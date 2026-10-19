@@ -13,6 +13,7 @@ import {
   Calendar,
   Layers,
 } from 'lucide-react';
+import TopNavButtons from '../components/TopNavButtons';
 
 const ListeNotifications = () => {
   const navigate = useNavigate();
@@ -82,36 +83,42 @@ const ListeNotifications = () => {
   const exercicesList = [2027, 2026, 2025, 2024, 2023];
 
   return (
-    <div className="p-3 sm:p-5 bg-slate-50 min-h-screen w-full">
+    <div className="p-4 sm:p-6 bg-[#F5F7F5] min-h-screen w-full">
       <div className="w-full">
         {/* Header */}
-        <header className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <header className="mb-6 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div>
-            <div className="flex items-center gap-3 mb-2">
+            <div className="flex items-center gap-3 mb-1">
               <button
                 onClick={() => navigate('/dashboard')}
-                className="p-2 hover:bg-slate-200 rounded-full transition-colors text-slate-500"
+                className="p-2 hover:bg-slate-200/70 rounded-lg transition-colors text-slate-500"
+                title="Retour au Tableau de Bord"
               >
                 <ArrowLeft size={20} />
               </button>
-              <h1 className="text-3xl font-extrabold text-[#1e3a8a] flex items-center gap-2">
-                <Landmark /> Notifications Budgétaires
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-[#101B2D] flex items-center gap-2.5">
+                <span className="p-2 rounded-xl bg-[#E7F5EF] text-[#087F5B]">
+                  <Landmark size={24} />
+                </span>
+                <span>Notifications Budgétaires</span>
               </h1>
             </div>
-            <p className="text-slate-500 ml-11 text-sm">
+            <p className="text-slate-500 ml-11 text-xs sm:text-sm">
               Gestion et tableaux récapitulatifs par notification et consolidation de l&apos;exercice.
             </p>
           </div>
 
           <div className="flex items-center gap-3 flex-wrap">
+            <TopNavButtons current="dashboard" />
+
             {/* Filtre Exercice */}
             <div className="flex items-center bg-white border border-slate-200 rounded-xl px-3 py-2 shadow-2xs">
-              <Calendar size={16} className="text-[#1e40af] mr-2" />
+              <Calendar size={16} className="text-[#087F5B] mr-2" />
               <label className="text-xs font-bold text-slate-600 mr-2">Exercice :</label>
               <select
                 value={selectedExercice}
                 onChange={(e) => setSelectedExercice(Number(e.target.value))}
-                className="text-xs font-bold font-mono text-[#1e3a8a] bg-transparent focus:outline-hidden"
+                className="text-xs font-bold font-mono text-[#101B2D] bg-transparent focus:outline-hidden cursor-pointer"
               >
                 {exercicesList.map((an) => (
                   <option key={an} value={an}>
@@ -124,7 +131,7 @@ const ListeNotifications = () => {
             {/* Bouton Nouvelle Notification */}
             <Link
               to="/notifications/nouvelle"
-              className="px-5 py-2.5 bg-[#1e40af] text-white font-bold rounded-xl shadow-xs hover:bg-[#1e3a8a] transition flex items-center gap-2 text-sm"
+              className="px-4 py-2.5 bg-[#087F5B] text-white font-bold rounded-xl shadow-xs hover:bg-[#06694A] transition flex items-center gap-2 text-xs sm:text-sm"
             >
               <Plus size={18} /> Nouvelle Notification
             </Link>
@@ -143,7 +150,7 @@ const ListeNotifications = () => {
             <button
               onClick={() => setViewMode('par_notification')}
               className={`px-4 py-2 rounded-lg transition flex items-center gap-1.5 ${viewMode === 'par_notification'
-                  ? 'bg-[#1e40af] text-white shadow-xs'
+                  ? 'bg-[#101B2D] text-white shadow-xs'
                   : 'text-slate-600 hover:text-slate-900'
                 }`}
             >
@@ -152,7 +159,7 @@ const ListeNotifications = () => {
             <button
               onClick={() => setViewMode('recap_cumule')}
               className={`px-4 py-2 rounded-lg transition flex items-center gap-1.5 ${viewMode === 'recap_cumule'
-                  ? 'bg-[#1e40af] text-white shadow-xs'
+                  ? 'bg-[#101B2D] text-white shadow-xs'
                   : 'text-slate-600 hover:text-slate-900'
                 }`}
             >
@@ -498,48 +505,61 @@ const ListeNotifications = () => {
 
             {/* SYNTHÈSE GLOBALE DE L'EXERCICE */}
             {recapExercice && (
-              <div className="bg-slate-900 text-white rounded-2xl p-6 shadow-sm border border-slate-800">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-4 mb-4">
+              <div className="bg-white rounded-2xl p-6 shadow-xs border border-slate-200">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4 mb-5">
                   <div>
-                    <h3 className="text-lg font-black text-white flex items-center gap-2">
-                      <Receipt className="text-emerald-400" size={20} /> Synthèse Globale de l&apos;Exercice {selectedExercice}
+                    <h3 className="text-base font-bold text-[#101B2D] flex items-center gap-2.5">
+                      <span className="p-2 rounded-xl bg-[#E7F5EF] text-[#087F5B]">
+                        <Receipt size={18} />
+                      </span>
+                      <span>Synthèse Globale de l&apos;Exercice {selectedExercice}</span>
                     </h3>
-                    <p className="text-xs text-slate-400 mt-0.5">
+                    <p className="text-xs text-slate-500 mt-1">
                       Consolidation des {notifications.length} notification{notifications.length > 1 ? 's' : ''} enregistrée{notifications.length > 1 ? 's' : ''}.
                     </p>
                   </div>
                   <div className="flex items-center gap-3">
-                    <div className="text-right">
-                      <span className="text-[11px] text-slate-400 uppercase font-bold block">Total Disponible Net</span>
-                      <span className="text-xl font-black text-emerald-400 font-mono">
+                    <div className="bg-[#E7F5EF] border border-[#087F5B]/30 px-4 py-2.5 rounded-xl text-left sm:text-right shadow-2xs">
+                      <span className="text-[10px] text-[#087F5B] uppercase font-bold block tracking-wider">
+                        Total Disponible Net
+                      </span>
+                      <span className="text-xl font-black text-[#087F5B] font-mono">
                         {formatCurrency(recapExercice?.totaux?.total_disponibles)}
                       </span>
                     </div>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
-                  <div className="bg-slate-800/60 p-3 rounded-xl border border-slate-700/50">
-                    <span className="text-slate-400 block text-[11px] uppercase font-bold">(1) Total Reports / Restes à payer</span>
-                    <span className="text-sm font-bold font-mono text-purple-300">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5 text-xs">
+                  <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 shadow-2xs hover:bg-slate-100/60 transition">
+                    <span className="text-slate-500 block text-[10px] uppercase font-bold tracking-wide">
+                      (1) Total Reports / Restes à payer
+                    </span>
+                    <span className="mt-1 text-base font-bold font-mono text-purple-700 block">
                       {formatCurrency(recapExercice?.totaux?.total_reports)}
                     </span>
                   </div>
-                  <div className="bg-slate-800/60 p-3 rounded-xl border border-slate-700/50">
-                    <span className="text-slate-400 block text-[11px] uppercase font-bold">(3) Crédits Neufs</span>
-                    <span className="text-sm font-bold font-mono text-blue-300">
+                  <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 shadow-2xs hover:bg-slate-100/60 transition">
+                    <span className="text-slate-500 block text-[10px] uppercase font-bold tracking-wide">
+                      (3) Crédits Neufs
+                    </span>
+                    <span className="mt-1 text-base font-bold font-mono text-blue-700 block">
                       {formatCurrency(recapExercice?.totaux?.total_credits_neufs)}
                     </span>
                   </div>
-                  <div className="bg-slate-800/60 p-3 rounded-xl border border-slate-700/50">
-                    <span className="text-slate-400 block text-[11px] uppercase font-bold">(5) Crédits Engagement</span>
-                    <span className="text-sm font-bold font-mono text-emerald-300">
+                  <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 shadow-2xs hover:bg-slate-100/60 transition">
+                    <span className="text-slate-500 block text-[10px] uppercase font-bold tracking-wide">
+                      (5) Crédits Engagement
+                    </span>
+                    <span className="mt-1 text-base font-bold font-mono text-indigo-700 block">
                       {formatCurrency(recapExercice?.totaux?.total_credits_engagements)}
                     </span>
                   </div>
-                  <div className="bg-slate-800/60 p-3 rounded-xl border border-slate-700/50">
-                    <span className="text-slate-400 block text-[11px] uppercase font-bold">Total Crédits</span>
-                    <span className="text-sm font-black font-mono text-amber-300">
+                  <div className="bg-[#E7F5EF] p-3.5 rounded-xl border border-[#087F5B]/30 shadow-2xs hover:bg-[#def0e7] transition">
+                    <span className="text-[#087F5B] block text-[10px] uppercase font-bold tracking-wide">
+                      Total Crédits
+                    </span>
+                    <span className="mt-1 text-base font-black font-mono text-[#087F5B] block">
                       {formatCurrency(recapExercice?.totaux?.total_credits)}
                     </span>
                   </div>

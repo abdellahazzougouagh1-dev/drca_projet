@@ -6,12 +6,13 @@ import api from '../api/axios';
 import * as XLSX from 'xlsx';
 import { useAuth } from '../context/AuthContext';
 import UserMenu from '../components/UserMenu';
+import TopNavButtons from '../components/TopNavButtons';
 import {
   BarChart3, Bell, Building2, CalendarDays, CheckCircle2, ChevronRight,
   CircleDollarSign, ClipboardList, Download, Eye, FileCheck2, FileText,
   Gauge, Landmark, Loader2, Search, SlidersHorizontal,
-  WalletCards, X, ArrowUpRight, Clock3, LayoutDashboard, FolderKanban,
-  CreditCard, Settings, LogOut, Menu, ShieldCheck, ArrowLeft, Receipt, Plus,
+  WalletCards, X, Clock3, LayoutDashboard, FolderKanban,
+  CreditCard, Settings, LogOut, Menu, ShieldCheck, ArrowLeft, Receipt, Plus, Handshake,
 } from 'lucide-react';
 import { Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
@@ -214,7 +215,18 @@ function Progress({ value, color = 'bg-blue-600' }) {
 
 function Kpi({ label, value, icon: Icon, tone = 'blue', detail }) {
   const tones = { blue: 'bg-blue-50 text-blue-600', emerald: 'bg-emerald-50 text-emerald-600', violet: 'bg-violet-50 text-violet-600', amber: 'bg-amber-50 text-amber-600', rose: 'bg-rose-50 text-rose-600' };
-  return <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"><div className="flex justify-between gap-2"><div><p className="text-xs font-semibold uppercase tracking-wider text-slate-500">{label}</p><p className="mt-2 text-2xl font-bold tracking-tight text-slate-900">{value}</p></div><span className={`grid h-10 w-10 place-items-center rounded-xl ${tones[tone]}`}><Icon size={20} /></span></div><p className="mt-4 flex items-center gap-1 text-xs text-slate-400"><ArrowUpRight size={14} className="text-emerald-600" /><span className="font-bold text-emerald-600">À jour</span> · {detail}</p></article>;
+  return (
+    <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs transition hover:-translate-y-0.5 hover:shadow-md">
+      <div className="flex justify-between gap-2">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">{label}</p>
+          <p className="mt-2 text-2xl font-bold tracking-tight text-slate-900">{value}</p>
+        </div>
+        <span className={`grid h-10 w-10 place-items-center rounded-xl ${tones[tone]}`}><Icon size={20} /></span>
+      </div>
+      {detail && <p className="mt-3 text-xs text-slate-500 font-medium">{detail}</p>}
+    </article>
+  );
 }
 
 export default function DashboardDirecteur() {
@@ -617,19 +629,19 @@ export default function DashboardDirecteur() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#f6f8fc] text-slate-900">
-      <aside className="fixed inset-y-0 left-0 z-40 hidden w-72 flex-col border-r border-slate-800 bg-[#101b33] p-5 text-slate-300 lg:flex">
-        <Link to="/directeur" className="flex items-center gap-3 border-b border-slate-700/80 pb-6">
-          <span className="grid h-11 w-11 place-items-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-500 text-sm font-black text-white shadow-lg shadow-blue-900">DR</span>
-          <span><b className="block text-sm text-white">DRCA · RSK</b><small className="text-xs text-slate-400">Espace de direction</small></span>
+    <div className="min-h-screen bg-[#F5F7F5] text-slate-900">
+      <aside className="fixed inset-y-0 left-0 z-40 hidden w-72 flex-col border-r border-[#172B46] bg-[#101B2D] p-5 text-slate-300 lg:flex">
+        <Link to="/directeur" className="flex items-center gap-3 border-b border-white/10 pb-6">
+          <span className="grid h-11 w-11 place-items-center rounded-xl bg-gradient-to-br from-[#087F5B] to-[#06694A] text-sm font-black text-white shadow-md shadow-[#087F5B]/30">DR</span>
+          <span><b className="block text-sm text-white">DRCA · RSK</b><small className="text-xs text-emerald-400 font-medium">Espace de direction · ERP ONCA</small></span>
         </Link>
-        <p className="mt-7 px-3 text-[10px] font-bold uppercase tracking-[.16em] text-slate-500">Pilotage</p>
+        <p className="mt-7 px-3 text-[10px] font-bold uppercase tracking-[.16em] text-slate-400">Pilotage</p>
         <nav className="mt-3 space-y-1">
           {navigation.map(({ label, icon: Icon, tabKey, action }) => (
             <button
               key={label}
               onClick={action}
-              className={`flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold transition ${tab === tabKey ? 'bg-blue-600 text-white shadow-lg shadow-blue-950/30' : 'text-slate-300 hover:bg-slate-800 hover:text-white'}`}
+              className={`flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold transition ${tab === tabKey ? 'bg-[#087F5B] text-white shadow-md shadow-[#087F5B]/25' : 'text-slate-300 hover:bg-slate-800/80 hover:text-white'}`}
             >
               <Icon size={18} />{label}
             </button>
@@ -639,7 +651,7 @@ export default function DashboardDirecteur() {
           <button
             type="button"
             onClick={() => setIsUserModalOpen(true)}
-            className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-slate-300 hover:bg-slate-800 hover:text-white transition"
+            className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-slate-300 hover:bg-slate-800/80 hover:text-white transition"
           >
             <Users size={18} />
             <span>Utilisateurs</span>
@@ -654,35 +666,18 @@ export default function DashboardDirecteur() {
         <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur">
           <div className="mx-auto flex max-w-[1600px] items-center justify-between px-4 py-4 sm:px-7">
             <Link to="/directeur" className="flex items-center gap-3 lg:hidden">
-              <span className="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-blue-700 to-indigo-700 text-sm font-black text-white">DR</span>
+              <span className="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-[#087F5B] to-[#06694A] text-sm font-black text-white shadow-sm shadow-[#087F5B]/30">DR</span>
               <span><b className="block text-sm">DRCA · RSK</b><small className="text-xs text-slate-500">Plateforme Directeur</small></span>
             </Link>
             <div className="hidden lg:flex items-center gap-4">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Plateforme sécurisée</p>
-                <p className="mt-1 flex items-center gap-2 text-sm font-bold text-slate-700"><ShieldCheck size={16} className="text-emerald-600" /> Espace décisionnel Directeur</p>
+                <p className="mt-1 flex items-center gap-2 text-sm font-bold text-slate-700"><ShieldCheck size={16} className="text-[#087F5B]" /> Espace décisionnel Directeur</p>
               </div>
             </div>
-            <div className="flex items-center gap-2.5">
-              <button
-                type="button"
-                onClick={() => navigate('/login', { state: { redirect: '/bons-commande', title: 'Bons de commande' } })}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs font-bold rounded-xl shadow-xs transition transform active:scale-98 cursor-pointer"
-                title="Accéder aux Bons de commande"
-              >
-                <Receipt size={15} />
-                <span>Bons de commande</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => navigate('/login', { state: { redirect: '/dashboard', title: 'Appels d’offres' } })}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs font-bold rounded-xl shadow-xs transition transform active:scale-98 cursor-pointer"
-                title="Accéder aux Appels d'offres"
-              >
-                <FileText size={15} />
-                <span>Appels d'offres</span>
-              </button>
-              <button onClick={() => setMobileNavOpen(!mobileNavOpen)} className="grid h-9 w-9 place-items-center rounded-lg border border-slate-200 text-slate-600 lg:hidden">
+            <div className="flex items-center gap-2 sm:gap-2.5">
+              <TopNavButtons current="directeur" />
+              <button onClick={() => setMobileNavOpen(!mobileNavOpen)} className="grid h-9 w-9 place-items-center rounded-lg border border-slate-200 text-slate-600 lg:hidden shrink-0">
                 <Menu size={18} />
               </button>
             </div>
@@ -696,7 +691,7 @@ export default function DashboardDirecteur() {
                 <button
                   key={label}
                   onClick={() => { action(); setMobileNavOpen(false); }}
-                  className={`flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold ${tab === tabKey ? 'bg-blue-50 text-blue-700 font-bold' : 'text-slate-700 hover:bg-slate-50'}`}
+                  className={`flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold ${tab === tabKey ? 'bg-emerald-50 text-[#087F5B] font-bold' : 'text-slate-700 hover:bg-slate-50'}`}
                 >
                   <Icon size={18} />{label}
                 </button>
@@ -721,6 +716,13 @@ export default function DashboardDirecteur() {
                 className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-slate-700 hover:bg-blue-50 hover:text-blue-700"
               >
                 <FileText size={18} /> Appels d'offres
+              </button>
+              <button
+                type="button"
+                onClick={() => { setMobileNavOpen(false); navigate('/convention'); }}
+                className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-slate-700 hover:bg-emerald-50 hover:text-emerald-700"
+              >
+                <Handshake size={18} /> Conventions
               </button>
             </div>
             <button onClick={logout} className="mt-2 flex w-full items-center gap-3 rounded-xl border-t border-slate-100 px-3 py-3 text-left text-sm font-semibold text-rose-600">

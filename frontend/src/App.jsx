@@ -191,7 +191,7 @@ function App() {
             path="/conventions"
             element={
               <ProtectedRoute>
-                <GestionConvention />
+                <BonCommandePlateforme />
               </ProtectedRoute>
             }
           />

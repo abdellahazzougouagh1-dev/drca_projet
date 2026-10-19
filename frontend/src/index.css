@@ -1,18 +1,31 @@
 @import "tailwindcss";
 
 @theme {
-  --color-primary: #1e40af;
-  --color-primary-dark: #1e3a8a;
+  --color-navy: #101B2D;
+  --color-navy-dark: #0B1320;
+  --color-navy-surface: #172B46;
+  --color-emerald-brand: #087F5B;
+  --color-emerald-hover: #06694A;
+  --color-emerald-active: #05553C;
+  --color-mint: #E7F5EF;
+  --color-mint-light: #F2FAF6;
+  --color-bg-warm: #F5F7F5;
+  --color-surface-white: #FFFFFF;
+  --color-text-primary: #172033;
+  --color-text-secondary: #64748B;
+  --color-border-subtle: #E2E8F0;
+  --color-warning-amber: #D97706;
+  --color-error-red: #DC2626;
+  --color-info-blue: #2563EB;
 }
 
 :root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
 
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
+  color: #172033;
+  background-color: #F5F7F5;
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -23,13 +36,16 @@
 html {
   min-width: 320px;
   min-height: 100%;
-  background: #f8fafc;
+  background: #F5F7F5;
+  color: #172033;
 }
 
 body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
+  background: #F5F7F5;
+  color: #172033;
   overflow-x: hidden;
 }
 
@@ -37,6 +53,7 @@ body {
   width: 100%;
   min-height: 100vh;
   isolation: isolate;
+  background: #F5F7F5;
 }
 
 /* Prevent long values and form controls from forcing a layout wider than the viewport. */
@@ -73,19 +90,12 @@ button {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.2);
+  background: #cbd5e1;
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.4);
-}
-
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
+  background: #94a3b8;
 }
 
 @keyframes scaleUp {

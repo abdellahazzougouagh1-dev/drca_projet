@@ -6,6 +6,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import api from '../api/axios';
 import * as XLSX from 'xlsx';
 import UserMenu from '../components/UserMenu';
+import TopNavButtons from '../components/TopNavButtons';
 import './BonCommandePlateforme.css';
 import LigneBudgetaireSelector from '../components/LigneBudgetaireSelector';
 import {
@@ -591,7 +592,7 @@ const BonCommandePlateforme = () => {
       type_prestation: consultation.type_prestation || '',
       intitule: consultation.intitule || consultation.type_prestation || '',
       mode_engagement: consultation.mode_engagement || 'BC',
-      type_budget: consultation.type_budget || 'Fonctionnement',
+      type_budget: consultation.type_budget || 'Investissement',
       delai_execution: consultation.delai_execution || 30,
       statut_dossier: consultation.statut_dossier || 'Programmation',
       art: consultation.budget?.art || '415',
@@ -1870,19 +1871,19 @@ const BonCommandePlateforme = () => {
         />
       )}
       {/* Sidebar */}
-      <aside className={`fixed inset-y-0 left-0 z-50 flex h-dvh w-72 shrink-0 flex-col bg-[#0f172a] text-white transition-transform duration-300 lg:sticky lg:top-0 lg:h-screen lg:w-64 lg:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+      <aside className={`fixed inset-y-0 left-0 z-50 flex h-dvh w-72 shrink-0 flex-col bg-[#101B2D] border-r border-[#172B46] text-white transition-transform duration-300 lg:sticky lg:top-0 lg:h-screen lg:w-64 lg:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="px-5 py-5 border-b border-white/10">
           <Link to={isConventionRoute ? '/convention' : '/bons-commande'} className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl border border-white/20 bg-white/10 flex items-center justify-center font-bold text-white text-xs">ON</div>
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#087F5B] to-[#06694A] flex items-center justify-center font-black text-white text-xs shadow-md shadow-[#087F5B]/30 tracking-wider">ON</div>
             <div>
-              <p className="text-sm font-semibold text-white tracking-wide">ERP ONCA</p>
-              <p className="text-xs text-slate-400 font-medium">{engagementLabel}</p>
+              <p className="text-sm font-bold text-white tracking-wide">DRCA · RSK</p>
+              <p className="text-xs text-emerald-400 font-medium">{engagementLabel} · ERP ONCA</p>
             </div>
           </Link>
         </div>
 
         <nav className="flex-1 px-3 py-4 overflow-y-auto">
-          <p className="px-4 pb-4 pt-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">Parcours de la {engagementLabelLower}</p>
+          <p className="px-4 pb-3 pt-2 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">Parcours de la {engagementLabelLower}</p>
           <ul className="space-y-1.5">
             {sidebarNav.map((item) => {
               const Icon = item.icon;
@@ -1893,10 +1894,12 @@ const BonCommandePlateforme = () => {
                     type="button"
                     onClick={() => goToPhase(item.id)}
                     aria-current={isActive ? 'step' : undefined}
-                    className={`w-full flex items-center gap-3 px-4 py-3.5 text-sm font-medium transition-colors duration-200 rounded-xl text-left ${isActive ? 'bg-white/10 text-white ring-1 ring-inset ring-white/10' : 'text-slate-400 hover:bg-white/5 hover:text-white'
+                    className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium transition-colors duration-200 rounded-xl text-left ${isActive
+                      ? 'bg-[#087F5B] text-white shadow-md shadow-[#087F5B]/20 font-semibold'
+                      : 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
                       }`}
                   >
-                    <Icon size={18} />
+                    <Icon size={18} className={isActive ? 'text-white' : 'text-slate-400'} />
                     <span>{item.label}</span>
                   </button>
                 </li>
@@ -1963,45 +1966,7 @@ const BonCommandePlateforme = () => {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => navigate('/login', { state: { redirect: '/directeur', requiredRole: 'directeur', title: 'Espace Directeur' } })}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white text-xs font-bold rounded-xl shadow-xs transition transform active:scale-98 cursor-pointer"
-                title="Accéder à l'Espace Directeur"
-              >
-                <ShieldCheck size={15} />
-                <span>Directeur</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => navigate('/login', { state: { redirect: '/dashboard', title: 'Appels d’offres' } })}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs font-bold rounded-xl shadow-xs transition transform active:scale-98 cursor-pointer"
-                title="Accéder aux Appels d'offres"
-              >
-                <FileText size={15} />
-                <span>Appels d'offres</span>
-              </button>
-              {isConventionRoute ? (
-                <button
-                  type="button"
-                  onClick={() => navigate('/bons-commande')}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs font-bold rounded-xl shadow-xs transition transform active:scale-98 cursor-pointer"
-                  title="Accéder aux bons de commande"
-                >
-                  <ClipboardList size={15} />
-                  <span>Bon de commande</span>
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => navigate('/convention')}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-xs font-bold rounded-xl shadow-xs transition transform active:scale-98 cursor-pointer"
-                  title="Accéder aux conventions"
-                >
-                  <Handshake size={15} />
-                  <span>Convention</span>
-                </button>
-              )}
+              <TopNavButtons current={isConventionRoute ? 'convention' : 'bons-commande'} />
             </div>
           </div>
 
