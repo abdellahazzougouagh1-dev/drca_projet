@@ -44,7 +44,7 @@ export default function Register() {
       <div className="w-full max-w-xl p-10 bg-[#2d3741]/90 rounded-3xl shadow-2xl border border-slate-700/50">
         <div className="text-center">
           <img
-            src="http://127.0.0.1:8000/images/logo-onca.png"
+            src="/images/logo-onca.png"
             alt="Logo ONCA"
             className="h-28 w-auto mx-auto mb-4 object-contain bg-white p-2 rounded-xl"
           />
