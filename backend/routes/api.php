@@ -165,6 +165,8 @@ Route::get('/init-database', function () {
         \Illuminate\Support\Facades\Artisan::call('db:seed', ['--force' => true]);
         $seedOutput = \Illuminate\Support\Facades\Artisan::output();
 
+        \App\Models\User::whereIn('email', ['admin@onca.ma', 'hamza@gmail.com'])->update(['is_active' => true]);
+
         return response()->json([
             'status' => 'success',
             'message' => 'Base de donnees Aiven initialisee et seedee avec succes !',
