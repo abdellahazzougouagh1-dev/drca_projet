@@ -36,6 +36,8 @@ import {
   LayoutDashboard,
   Handshake,
   ShieldCheck,
+  Paperclip,
+  List,
 } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
@@ -156,7 +158,7 @@ const documentFieldGroups = {
     { name: 'objet', label: 'Objet de la consultation', placeholder: 'Prestations à réaliser', required: true, fromDb: true },
     { name: 'date_limite', label: 'Date limite de réception des offres', type: 'date', required: true, fromDb: true, readOnly: true },
     { name: 'heure_limite', label: 'Heure limite de réception des offres', type: 'time', required: true, fromDb: true, readOnly: true },
-    { name: 'pieces_jointes', label: 'Pièces jointes', type: 'textarea', required: true, placeholder: 'Modèle de projet de convention\nBordereau des prix' },
+    { name: 'pieces_jointes', label: 'Pièces jointes', type: 'pieces_jointes', required: true, placeholder: 'Modèle de projet de convention\nBordereau des prix' },
     { name: 'societe', label: 'Nom de la société', placeholder: 'Saisir le nom de la société', required: true },
   ],
   avis_achat: [
@@ -322,7 +324,7 @@ const documentFieldGroups = {
     { name: 'reference_bc', label: 'Référence (N° BC / Marché)', placeholder: 'Marché N°04/2023/DRCA-RSK', required: true, fromDb: true },
     { name: 'montant_op', label: 'Montant à payer (DH)', type: 'number', placeholder: '79573.63', required: true, fromDb: true },
     { name: 'montant_engagement', label: 'Montant engagement total (DH)', type: 'number', placeholder: '159400.48', required: true, fromDb: true },
-    { name: 'pieces_jointes_op', label: 'Pièces jointes (liste)', placeholder: 'Facture N°005/2023 Du 02/05/2024\nDécompte provisoire N°2 et dernier\nPV de réception définitif du 03/05/2024\nOrdre de service d\'ajournement\nOrdre de service de reprise', type: 'textarea', required: true },
+    { name: 'pieces_jointes_op', label: 'Pièces jointes (liste)', placeholder: 'Facture N°005/2023 Du 02/05/2024\nDécompte provisoire N°2 et dernier\nPV de réception définitif du 03/05/2024\nOrdre de service d\'ajournement\nOrdre de service de reprise', type: 'pieces_jointes', required: true },
     { name: 'art', label: 'Chap / ART', placeholder: '415', required: true, fromDb: true },
     { name: 'par', label: 'Parag (PAR)', placeholder: '20', required: true, fromDb: true },
     { name: 'lig', label: 'Ligne (LIG)', placeholder: '13', required: true, fromDb: true },
@@ -363,6 +365,214 @@ const fieldMaxLengthMap = {
 };
 
 const allDocuments = Object.values(documentsByPhase).flat();
+
+function PiecesJointesManager({
+  field,
+  value,
+  onChange,
+  hasError,
+  errorMessage,
+  isConventionRoute,
+}) {
+  const [newPiece, setNewPiece] = useState('');
+  const [isRawMode, setIsRawMode] = useState(false);
+
+  const items = useMemo(() => {
+    if (!value || typeof value !== 'string') return [];
+    return value
+      .split(/\r?\n/)
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0);
+  }, [value]);
+
+  const handleAdd = (textToAdd) => {
+    const text = (typeof textToAdd === 'string' ? textToAdd : newPiece).trim();
+    if (!text) return;
+    if (items.includes(text)) {
+      setNewPiece('');
+      return;
+    }
+    const next = [...items, text];
+    onChange(next.join('\n'));
+    setNewPiece('');
+  };
+
+  const handleRemove = (idxToRemove) => {
+    const next = items.filter((_, i) => i !== idxToRemove);
+    onChange(next.join('\n'));
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleAdd();
+    }
+  };
+
+  const suggestions = useMemo(() => {
+    if (field?.name === 'pieces_jointes_op') {
+      return [
+        'Facture définitive',
+        'Décompte provisoire N° et dernier',
+        'PV de réception définitif',
+        'Ordre de service de commencement',
+        'Ordre de service d’ajournement',
+        'Ordre de service de reprise',
+      ];
+    }
+    if (isConventionRoute) {
+      return [
+        'Modèle de projet de convention',
+        'Bordereau des prix',
+        'Cahier des prescriptions spéciales (CPS)',
+        'Règlement de consultation',
+        'Attestation de régularité fiscale',
+      ];
+    }
+    return [
+      'Bon de commande signé',
+      'Bordereau des prix',
+      'Devis contradictoire',
+      'Cahier des prescriptions',
+    ];
+  }, [field?.name, isConventionRoute]);
+
+  const availableSuggestions = suggestions.filter((s) => !items.includes(s));
+
+  return (
+    <div className="col-span-full bg-slate-50/70 border border-slate-200/90 rounded-2xl p-5 shadow-xs transition-all">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-200/60">
+        <div className="flex items-center gap-2.5">
+          <div className="flex items-center justify-center w-8 h-8 rounded-xl bg-emerald-50 text-[#087F5B] border border-emerald-200/60 shadow-xs">
+            <Paperclip size={16} />
+          </div>
+          <div>
+            <span className="block text-xs font-bold uppercase tracking-wider text-slate-800">
+              {field.label || 'Pièces jointes'} {field.required && <span className="text-red-500">*</span>}
+            </span>
+            <span className="text-[11px] text-slate-500 font-normal">
+              Documents et justificatifs joints à la transmission ({items.length} pièce{items.length > 1 ? 's' : ''})
+            </span>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => setIsRawMode((prev) => !prev)}
+          className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-semibold text-slate-600 hover:text-slate-900 bg-white hover:bg-slate-100 border border-slate-200 rounded-lg transition-colors self-start sm:self-auto shadow-2xs"
+          title="Basculer entre la liste interactive et l'édition texte"
+        >
+          {isRawMode ? <List size={13} /> : <Edit3 size={13} />}
+          <span>{isRawMode ? 'Vue par liste' : 'Édition texte'}</span>
+        </button>
+      </div>
+
+      {isRawMode ? (
+        <div className="mt-4">
+          <textarea
+            rows={4}
+            value={value || ''}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder="Une pièce jointe par ligne..."
+            className="w-full px-3.5 py-2.5 text-xs font-mono bg-white border border-slate-200 rounded-xl focus:border-[#087F5B] focus:ring-2 focus:ring-emerald-50 outline-none resize-y"
+          />
+          <p className="mt-1.5 text-[11px] text-slate-400">
+            Astuce : saisissez une pièce par ligne. Vous pouvez repasser en vue par liste à tout moment.
+          </p>
+        </div>
+      ) : (
+        <div className="mt-4 space-y-3">
+          {items.length > 0 ? (
+            <div className="space-y-2">
+              {items.map((item, idx) => (
+                <div
+                  key={`${item}-${idx}`}
+                  className="flex items-center justify-between gap-3 px-3.5 py-2.5 bg-white border border-slate-200/90 rounded-xl shadow-2xs group hover:border-emerald-300 transition-all"
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <span className="flex items-center justify-center w-5 h-5 rounded-full bg-slate-100 text-[10px] font-bold text-slate-600 shrink-0">
+                      {idx + 1}
+                    </span>
+                    <FileText size={15} className="text-[#087F5B] shrink-0" />
+                    <span className="text-xs font-medium text-slate-800 truncate" title={item}>
+                      {item}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleRemove(idx)}
+                    className="p-1 rounded-md text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors shrink-0"
+                    title={`Supprimer « ${item} »`}
+                    aria-label={`Supprimer ${item}`}
+                  >
+                    <X size={15} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="py-4 px-3 text-center rounded-xl border border-dashed border-slate-300 bg-white/70">
+              <p className="text-xs text-slate-500 font-medium">
+                Aucune pièce jointe renseignée.
+              </p>
+              <p className="text-[11px] text-slate-400 mt-0.5">
+                Saisissez l'intitulé de la pièce jointe ci-dessous et cliquez sur « Ajouter ».
+              </p>
+            </div>
+          )}
+
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pt-1">
+            <input
+              type="text"
+              value={newPiece}
+              onChange={(e) => setNewPiece(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Intitulé de la pièce jointe (ex: Bordereau des prix, CPS...)"
+              className="flex-1 px-3.5 py-2.5 text-xs bg-white border border-slate-200 rounded-xl focus:border-[#087F5B] focus:ring-2 focus:ring-emerald-50 outline-none transition-all placeholder:text-slate-400"
+            />
+            <button
+              type="button"
+              onClick={() => handleAdd()}
+              disabled={!newPiece.trim()}
+              className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 bg-[#087F5B] hover:bg-[#066347] disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-white text-xs font-bold rounded-xl shadow-xs transition-colors shrink-0"
+            >
+              <Plus size={15} />
+              <span>Ajouter</span>
+            </button>
+          </div>
+
+          {availableSuggestions.length > 0 && (
+            <div className="pt-1">
+              <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+                Suggestions rapides :
+              </span>
+              <div className="flex flex-wrap gap-1.5">
+                {availableSuggestions.map((sug) => (
+                  <button
+                    key={sug}
+                    type="button"
+                    onClick={() => handleAdd(sug)}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-medium text-slate-700 bg-white hover:bg-emerald-50 hover:text-[#087F5B] hover:border-emerald-200 border border-slate-200 rounded-lg transition-colors shadow-2xs"
+                    title={`Ajouter « ${sug} »`}
+                  >
+                    <Plus size={11} className="text-[#087F5B]" />
+                    <span>{sug}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {hasError && errorMessage && (
+        <span role="alert" className="mt-2 block text-xs font-medium text-red-600">
+          {errorMessage}
+        </span>
+      )}
+    </div>
+  );
+}
 
 const BonCommandePlateforme = () => {
   const navigate = useNavigate();
@@ -3457,6 +3667,24 @@ const BonCommandePlateforme = () => {
                                 </div>
                               )}
                             </div>
+                          );
+                        }
+
+                        if (field.type === 'pieces_jointes' || field.name === 'pieces_jointes' || field.name === 'pieces_jointes_op') {
+                          const pjVal = (documentForms[selectedDocument.id]?.[field.name] !== undefined &&
+                            documentForms[selectedDocument.id]?.[field.name] !== null)
+                            ? documentForms[selectedDocument.id][field.name]
+                            : (field.placeholder || '');
+                          return (
+                            <PiecesJointesManager
+                              key={`${selectedDocument.id}-${field.name}`}
+                              field={field}
+                              value={pjVal}
+                              onChange={(newVal) => handleDocumentFieldChange(selectedDocument.id, field.name, newVal)}
+                              hasError={hasError}
+                              errorMessage={formErrors[selectedDocument.id]?.[field.name]}
+                              isConventionRoute={isConventionRoute}
+                            />
                           );
                         }
 
