@@ -79,9 +79,12 @@ const phase = (item) => {
 };
 
 const engagementMode = (item) => {
-  if (item.type === 'Appel d’offres') return 'Appel d’offres';
+  if (item.type === 'Appel d’offres' || item.type === "Appel d'offres") return 'Appel d’offres';
+  if (item.type === 'Convention') return 'Convention';
   const mode = String(item.mode_engagement || item.categorie || item.type_consultation || '').toLowerCase();
   if (mode.includes('appel') || mode.includes('aoo')) return 'Appel d’offres';
+  if (mode.includes('convention') || mode.includes('conv')) return 'Convention';
+  if (String(item.ref || item.numero_consultation || '').toUpperCase().startsWith('CONV')) return 'Convention';
   if (mode.includes('bon') || mode.includes('bc')) return 'Bon de commande';
   return 'Bon de commande';
 };
@@ -241,6 +244,7 @@ export default function DashboardDirecteur() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
+  const [procedureFilter, setProcedureFilter] = useState('ALL'); // 'ALL' | 'BC' | 'CONVENTION' | 'AOO'
   const [selected, setSelected] = useState(null);
   const [store, setStore] = useState({ consultations: [], aoos: [], notifications: [], lines: [], budget: {} });
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
@@ -569,13 +573,25 @@ export default function DashboardDirecteur() {
     const rawDossiers = [
       ...store.consultations.map((item) => {
         const isAo = item.mode_engagement === 'AO' || item.mode_engagement === "Appel d'offres" || item.mode_engagement === "Appel d'Offres" || item.mode_engagement === "Appel d'offre";
+        const isConv = item.mode_engagement === 'Convention' || String(item.mode_engagement || '').toLowerCase().includes('convention') || String(item.numero_consultation || '').toUpperCase().startsWith('CONV');
         const matchingAoo = store.aoos.find(a => a.num_aoo && item.numero_consultation && a.num_aoo.trim().toLowerCase() === item.numero_consultation.trim().toLowerCase());
+        
+        let type = 'Bon de commande';
+        let route = `/bons-commande?id=${item.id}`;
+        if (isAo) {
+          type = "Appel d'offres";
+          route = matchingAoo ? `/aoos/${matchingAoo.id}` : `/aoos/nouveau?consultation_id=${item.id}`;
+        } else if (isConv) {
+          type = 'Convention';
+          route = `/conventions?id=${item.id}`;
+        }
+
         return {
           ...item,
-          type: isAo ? "Appel d'offres" : 'Bon de commande',
-          ref: item.numero_consultation,
+          type,
+          ref: item.numero_consultation || item.numero_bc,
           title: item.objet_consultation,
-          route: isAo ? (matchingAoo ? `/aoos/${matchingAoo.id}` : `/aoos/nouveau?consultation_id=${item.id}`) : `/consultations/${item.id}`,
+          route,
         };
       }),
       ...store.aoos
@@ -618,7 +634,26 @@ export default function DashboardDirecteur() {
     });
   }, [store.notifications, domaine]);
 
-  const shownDossiers = dashboard.dossiers.filter((item) => `${item.ref || ''} ${item.title || ''} ${item.type}`.toLowerCase().includes(search.toLowerCase()));
+  const procedureCounts = useMemo(() => {
+    const list = dashboard.dossiers || [];
+    return {
+      all: list.length,
+      bc: list.filter((d) => d.type === 'Bon de commande').length,
+      convention: list.filter((d) => d.type === 'Convention').length,
+      aoo: list.filter((d) => d.type === "Appel d'offres" || d.type === "Appel d’offres").length,
+    };
+  }, [dashboard.dossiers]);
+
+  const shownDossiers = useMemo(() => {
+    return dashboard.dossiers
+      .filter((item) => {
+        if (procedureFilter === 'BC') return item.type === 'Bon de commande';
+        if (procedureFilter === 'CONVENTION') return item.type === 'Convention';
+        if (procedureFilter === 'AOO') return item.type === "Appel d'offres" || item.type === "Appel d’offres";
+        return true;
+      })
+      .filter((item) => `${item.ref || ''} ${item.title || ''} ${item.type} ${item.mode_engagement || ''}`.toLowerCase().includes(search.toLowerCase()));
+  }, [dashboard.dossiers, procedureFilter, search]);
 
   if (loading) return <div className="grid min-h-screen place-items-center bg-slate-50 text-slate-600"><span className="flex items-center gap-3"><Loader2 className="animate-spin text-blue-700" /> Chargement du tableau de pilotage…</span></div>;
 
@@ -993,6 +1028,57 @@ export default function DashboardDirecteur() {
                     <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Rechercher…" className="w-40 bg-transparent text-sm outline-none" />
                   </label>
                 </div>
+                {/* Filtres par type de procédure */}
+                <div className="flex flex-wrap items-center gap-2 border-b border-slate-100 bg-slate-50/70 px-5 py-3">
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-500 mr-1">Procédure :</span>
+                  <button
+                    type="button"
+                    onClick={() => setProcedureFilter('ALL')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                      procedureFilter === 'ALL'
+                        ? 'bg-[#101B2D] text-white shadow-xs'
+                        : 'bg-white text-slate-600 hover:text-slate-900 border border-slate-200'
+                    }`}
+                  >
+                    Toutes ({procedureCounts.all})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setProcedureFilter('BC')}
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                      procedureFilter === 'BC'
+                        ? 'bg-blue-600 text-white shadow-xs'
+                        : 'bg-white text-blue-700 hover:bg-blue-50 border border-blue-200'
+                    }`}
+                  >
+                    <Receipt size={13} />
+                    Bons de commande ({procedureCounts.bc})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setProcedureFilter('CONVENTION')}
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                      procedureFilter === 'CONVENTION'
+                        ? 'bg-[#087F5B] text-white shadow-xs'
+                        : 'bg-white text-[#087F5B] hover:bg-[#E7F5EF] border border-[#087F5B]/30'
+                    }`}
+                  >
+                    <Handshake size={13} />
+                    Conventions ({procedureCounts.convention})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setProcedureFilter('AOO')}
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                      procedureFilter === 'AOO'
+                        ? 'bg-violet-600 text-white shadow-xs'
+                        : 'bg-white text-violet-700 hover:bg-violet-50 border border-violet-200'
+                    }`}
+                  >
+                    <FileText size={13} />
+                    Appels d’offres ({procedureCounts.aoo})
+                  </button>
+                </div>
                 <div className="overflow-x-auto">
                   <table className="w-full min-w-[1050px] text-left text-sm">
                     <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
@@ -1012,10 +1098,29 @@ export default function DashboardDirecteur() {
                         const mode = engagementMode(item);
                         const dossierDom = getDossierDomaine(item);
                         return (
-                          <tr key={`${item.type}-${item.id}`} className="hover:bg-slate-50 transition-colors">
+                          <tr
+                            key={`${item.type}-${item.id}`}
+                            onClick={() => item.route && navigate(item.route)}
+                            className="hover:bg-blue-50/40 transition-colors cursor-pointer group"
+                            title="Cliquer pour ouvrir le dossier"
+                          >
                             <td className="px-5 py-4">
-                              <b className="font-mono text-blue-700">{item.ref || '—'}</b>
-                              <small className="mt-1 block text-slate-400">{item.type}</small>
+                              <b className="font-mono text-blue-700 group-hover:underline">{item.ref || '—'}</b>
+                              <small className="mt-1 block">
+                                {item.type === 'Convention' ? (
+                                  <span className="inline-flex items-center gap-1 font-semibold text-xs text-[#087F5B]">
+                                    <Handshake size={12} className="text-[#087F5B]" /> Convention
+                                  </span>
+                                ) : item.type === 'Appel d’offres' || item.type === "Appel d'offres" ? (
+                                  <span className="inline-flex items-center gap-1 font-semibold text-xs text-violet-600">
+                                    <FileText size={12} /> Appel d’offres
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1 font-semibold text-xs text-slate-500">
+                                    <Receipt size={12} className="text-blue-600" /> Bon de commande
+                                  </span>
+                                )}
+                              </small>
                             </td>
                             <td className="px-5 py-4">
                               <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold border ${dossierDom === 'FONCTIONNEMENT'
@@ -1027,7 +1132,15 @@ export default function DashboardDirecteur() {
                               </span>
                             </td>
                             <td className="px-5 py-4">
-                              <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-bold ${mode === 'Appel d’offres' ? 'bg-violet-50 text-violet-700' : 'bg-cyan-50 text-cyan-700'}`}>{mode}</span>
+                              <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-bold border ${
+                                mode === 'Convention'
+                                  ? 'bg-[#E7F5EF] text-[#087F5B] border-[#087F5B]/30'
+                                  : mode === 'Appel d’offres' || mode === "Appel d'offres"
+                                    ? 'bg-violet-50 text-violet-700 border-violet-200'
+                                    : 'bg-cyan-50 text-cyan-700 border-cyan-200'
+                              }`}>
+                                {mode}
+                              </span>
                             </td>
                             <td className="px-5 py-4"><span className="whitespace-nowrap font-mono text-xs font-semibold text-slate-600">{budgetLine(item)}</span></td>
                             <td className="max-w-sm px-5 py-4">

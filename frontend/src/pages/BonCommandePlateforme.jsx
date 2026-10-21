@@ -367,11 +367,15 @@ const allDocuments = Object.values(documentsByPhase).flat();
 const BonCommandePlateforme = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const isConventionRoute = location.pathname === '/convention';
+  const isConventionRoute = location.pathname.toLowerCase().startsWith('/convention');
   const engagementLabel = isConventionRoute ? 'Convention' : 'Bon de commande';
   const engagementLabelLower = isConventionRoute ? 'convention' : 'bon de commande';
-  const isConventionConsultation = (consultation) => String(consultation?.mode_engagement || '').trim().toLowerCase() === 'convention';
-  const isBonCommandeConsultation = (consultation) => ['bc', 'bon de commande'].includes(String(consultation?.mode_engagement || '').trim().toLowerCase());
+  const isConventionConsultation = (consultation) => {
+    const mode = String(consultation?.mode_engagement || '').trim().toLowerCase();
+    const ref = String(consultation?.numero_consultation || consultation?.numero_bc || '').toUpperCase();
+    return mode === 'convention' || ref.startsWith('CONV');
+  };
+  const isBonCommandeConsultation = (consultation) => !isConventionConsultation(consultation);
   const isVisibleConsultation = (consultation) => isConventionRoute
     ? isConventionConsultation(consultation)
     : isBonCommandeConsultation(consultation);
@@ -1454,7 +1458,7 @@ const BonCommandePlateforme = () => {
     try {
       const payload = {
         ...formData,
-        mode_engagement: 'BC',
+        mode_engagement: isConventionRoute ? 'Convention' : 'BC',
         statut_dossier: 'Programmation',
         montant_estimatif_ht: totalHT,
         tva: prestations[0]?.tva || 20,
@@ -2257,13 +2261,17 @@ const BonCommandePlateforme = () => {
                                   </p>
                                 </td>
                                 <td className="px-4 py-4 whitespace-nowrap">
-                                  {consultation.mode_engagement === 'AO' || consultation.mode_engagement === "Appel d'offres" || consultation.mode_engagement === "Appel d'offre" ? (
-                                    <span className="inline-block rounded-full bg-slate-100 px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-slate-800">
+                                  {consultation.mode_engagement === 'Convention' || String(consultation.numero_consultation || '').toUpperCase().startsWith('CONV') ? (
+                                    <span className="inline-block rounded-full bg-[#E7F5EF] text-[#087F5B] border border-[#087F5B]/30 px-3 py-1 text-[11px] font-bold uppercase tracking-wide">
+                                      Convention
+                                    </span>
+                                  ) : consultation.mode_engagement === 'AO' || consultation.mode_engagement === "Appel d'offres" || consultation.mode_engagement === "Appel d'offre" ? (
+                                    <span className="inline-block rounded-full bg-violet-50 text-violet-700 border border-violet-200 px-3 py-1 text-[11px] font-bold uppercase tracking-wide">
                                       Appel d'offres
                                     </span>
                                   ) : (
-                                    <span className="inline-block rounded-full bg-slate-100 px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-slate-800">
-                                      {engagementLabel}
+                                    <span className="inline-block rounded-full bg-blue-50 text-blue-800 border border-blue-200 px-3 py-1 text-[11px] font-bold uppercase tracking-wide">
+                                      Bon de commande
                                     </span>
                                   )}
                                 </td>
