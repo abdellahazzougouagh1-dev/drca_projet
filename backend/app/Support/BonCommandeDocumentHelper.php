@@ -83,6 +83,63 @@ class BonCommandeDocumentHelper
             $commissionMembers = self::commission($consultation, $documentData);
         }
 
+        $rawLettres = self::value($documentData, 'lettres_consultation', self::value($documentData, 'lettres', []));
+        $lettresRefsDefault = '';
+        $fournisseursFromLettres = [];
+        if (!empty($rawLettres) && is_array($rawLettres)) {
+            $nums = [];
+            $suffix = '';
+            foreach ($rawLettres as $l) {
+                if (is_array($l)) {
+                    $numStr = trim($l['numero_lettre'] ?? '');
+                    $numStr = preg_replace('/^CONV\s*[-_]?\s*/i', '', $numStr);
+                    if ($numStr) {
+                        $parts = explode('/', $numStr);
+                        if (count($parts) > 1) {
+                            $nums[] = trim($parts[0]);
+                            $suffix = '/' . trim(implode('/', array_slice($parts, 1)));
+                        } else {
+                            $nums[] = $numStr;
+                        }
+                    }
+                    if (!empty($l['societe'] ?? $l['nom'])) {
+                        $fournisseursFromLettres[] = [
+                            'nom' => $l['societe'] ?? $l['nom'] ?? '',
+                            'adresse' => $l['destinataire_adresse'] ?? $l['adresse'] ?? '',
+                            'ville' => $l['ville'] ?? '',
+                        ];
+                    }
+                }
+            }
+            if (count($nums) === 1) {
+                $lettresRefsDefault = $nums[0] . ($suffix ?: ' / ' . ($consultation->annee ?? date('Y')) . '/DRCA-RSK');
+            } elseif (count($nums) > 1) {
+                $lettresRefsDefault = implode(',', $nums) . ($suffix ?: '/' . ($consultation->annee ?? date('Y')) . '/DRCA-RSK');
+            }
+        } elseif (empty($rawLettres)) {
+            $cleanNum = preg_replace('/^CONV\s*[-_]?\s*/i', '', (string)($consultation->numero_consultation ?? ''));
+            if ($cleanNum) {
+                $p = explode('/', $cleanNum);
+                $base = $p[0];
+                $suffix = count($p) > 1 ? '/' . implode('/', array_slice($p, 1)) : ('/' . ($consultation->annee ?? date('Y')) . '/DRCA-RSK');
+                $offresCount = $consultation->relationLoaded('offres') ? $consultation->offres->count() : 0;
+                if ($offresCount > 1) {
+                    $nums = [];
+                    for ($i = 0; $i < $offresCount; $i++) {
+                        $next = (int)$base + $i;
+                        $formattedNext = (str_starts_with($base, '0') && strlen($base) > 1)
+                            ? str_pad((string)$next, strlen($base), '0', STR_PAD_LEFT)
+                            : (string)$next;
+                        $nums[] = $formattedNext;
+                    }
+                    $lettresRefsDefault = implode(',', $nums) . $suffix;
+                } else {
+                    $lettresRefsDefault = $cleanNum;
+                }
+            }
+        }
+        $fournisseursConsultesDefault = !empty($fournisseursFromLettres) ? $fournisseursFromLettres : $fournisseurs;
+
         return [
             'data' => $documentData,
             'numero_consultation' => self::value($documentData, 'numero_consultation', $consultation->numero_consultation),
@@ -108,6 +165,9 @@ class BonCommandeDocumentHelper
             'montant_en_lettres' => $txtLettres,
             'commission' => $commissionMembers,
             'fournisseurs' => $fournisseurs,
+            'fournisseurs_consultes' => self::value($documentData, 'fournisseurs_consultes', $fournisseursConsultesDefault),
+            'lettres_consultation_refs' => self::value($documentData, 'lettres_consultation_refs', $lettresRefsDefault),
+            'lettres_consultation' => $rawLettres,
             'concurrents' => $concurrents,
             'societes_invitees' => $societesInvitees,
             'societes_refusees' => $societesRefusees,

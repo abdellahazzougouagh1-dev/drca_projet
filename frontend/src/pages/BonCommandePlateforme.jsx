@@ -38,6 +38,7 @@ import {
   ShieldCheck,
   Paperclip,
   List,
+  Mail,
 } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
@@ -150,16 +151,14 @@ const documentsByPhase = {
 
 const documentFieldGroups = {
   lettre_consultation: [
-    { name: 'numero_lettre', label: 'Numéro de la lettre de consultation', placeholder: '15/2024/DRCA-RSK', required: true, fromDb: true, readOnly: true },
+    { name: 'numero_lettre', label: 'Numéro de la lettre de consultation (1ère lettre)', placeholder: '15/2026/DRCA-RSK', required: true, fromDb: true },
     { name: 'date_document', label: 'Date de la lettre', type: 'date', required: true },
-    { name: 'destinataire_nom', label: 'Destinataire', placeholder: 'Mr Le Gérant de la Société', required: true },
-    { name: 'destinataire_adresse', label: 'Adresse du destinataire', placeholder: 'Adresse de la société', required: true },
-    { name: 'numero_consultation', label: 'Référence de la consultation', placeholder: '05/2024/DRCA-RSK', required: true, fromDb: true },
+    { name: 'numero_consultation', label: 'Numéro de consultation', placeholder: '05/2024/DRCA-RSK', required: true, fromDb: true },
     { name: 'objet', label: 'Objet de la consultation', placeholder: 'Prestations à réaliser', required: true, fromDb: true },
     { name: 'date_limite', label: 'Date limite de réception des offres', type: 'date', required: true, fromDb: true, readOnly: true },
     { name: 'heure_limite', label: 'Heure limite de réception des offres', type: 'time', required: true, fromDb: true, readOnly: true },
-    { name: 'pieces_jointes', label: 'Pièces jointes', type: 'pieces_jointes', required: true, placeholder: 'Modèle de projet de convention\nBordereau des prix' },
-    { name: 'societe', label: 'Nom de la société', placeholder: 'Saisir le nom de la société', required: true },
+    { name: 'pieces_jointes', label: 'Pièces jointes', type: 'pieces_jointes', required: false, placeholder: '' },
+    { name: 'lettres_consultation', label: 'Lettres de consultation & Entreprises consultées', type: 'lettres_consultation_table', required: true },
   ],
   avis_achat: [
     { name: 'numero_consultation', label: "Numéro d'avis d'achat / Consultation", placeholder: '04/2024/DRCA-RSK', required: true, fromDb: true },
@@ -173,8 +172,9 @@ const documentFieldGroups = {
     { name: 'date_document', label: 'Date avis_achat', type: 'date', required: true },
   ],
   decision_commission_ouverture: [
-    { name: 'numero_consultation', label: 'Numéro consultation', placeholder: '04/2024/DRCA-RSK', required: true, fromDb: true },
+    { name: 'numero_consultation', label: 'Numéro de consultation', placeholder: '04/2024/DRCA-RSK', required: true, fromDb: true },
     { name: 'numero_decision', label: "Numéro de la décision de la commission d'ouverture", placeholder: '06/2024/DRCA-RSK', required: true, fromDb: true },
+    { name: 'lettres_consultation_refs', label: 'Numéros des lettres de consultation', placeholder: '15,16,17/2024/DRCA-RSK', condition: (form, isConv) => !!isConv || /^CONV/i.test(form?.numero_consultation || ''), readOnly: true, fromDb: true, required: false },
     { name: 'objet', label: 'Objet de la consultation', placeholder: 'Prestations topographiques...', required: true, fromDb: true },
     { name: 'membres_commission', label: 'Composition de la commission (Président & Membres)', type: 'commission_selector', required: true },
     { name: 'date_reunion', label: "Date séance d'ouverture", type: 'date', required: true },
@@ -188,12 +188,28 @@ const documentFieldGroups = {
     { name: 'heure_reunion', label: "Heure d'ouverture", type: 'time', required: true },
     { name: 'objet', label: 'Objet de la prestation', placeholder: 'Prestations topographiques...', required: true, fromDb: true },
     { name: 'concurrents', label: 'Synthése des devis reçus', type: 'concurrents_table', required: true },
-    { name: 'societes_refusees', label: "Sociétés écartées", type: 'societes_refusees_input', required: true },
+    { name: 'societes_refusees', label: "Sociétés écartées", type: 'societes_refusees_input', required: false },
     { name: 'attributaire', label: 'Société retenue ', type: 'attributaire_selector', required: true },
     { name: 'montant_apres_verification', label: 'Montant TTC retenu (DH)', type: 'number', placeholder: '39060', required: true },
     { name: 'heure_fin', label: 'Heure de fin de séance', type: 'time', required: true },
     { name: 'date_document', label: 'Date Pv', type: 'date', required: true },
     { name: 'membres_commission', label: 'Membres de la commission', type: 'commission_selector', required: true },
+  ],
+  pv_ouverture_convention: [
+    { name: 'numero_consultation', label: 'Numéro de consultation', placeholder: '7/2023/DRCA-RSK', required: true, fromDb: true },
+    { name: 'date_reunion', label: "Date de séance d'ouverture", type: 'date', required: true },
+    { name: 'heure_reunion', label: "Heure d'ouverture", type: 'time', required: true },
+    { name: 'numero_decision', label: 'N° décision de commission', placeholder: '65/2023/DRCA-RSK', required: true, fromDb: true },
+    { name: 'date_decision', label: 'Date de décision', type: 'date', required: true },
+    { name: 'membres_commission', label: 'Composition de la commission (Président & Membres)', type: 'commission_selector', required: true },
+    { name: 'objet', label: 'Prestation / Objet de la consultation', placeholder: 'Organisation de voyages d\'agriculteurs et de techniciens', required: true, fromDb: true },
+    { name: 'lettres_consultation_refs', label: 'Numéros des lettres de consultation', placeholder: '15,16,17/2026/DRCA-RSK', required: false, readOnly: true, fromDb: true },
+    { name: 'fournisseurs_consultes', label: 'Fournisseurs consultés (Participants, Adresses, Ville)', type: 'fournisseurs_consultes_table', required: true },
+    { name: 'concurrents', label: 'Résultats des concurrents (Offres avant & après vérification)', type: 'concurrents_convention_table', required: true },
+    { name: 'attributaire', label: 'Société retenue (Offre la plus avantageuse)', type: 'attributaire_selector', required: true },
+    { name: 'montant_apres_verification', label: 'Montant global retenu TTC (DH)', type: 'number', placeholder: '0.00', required: true },
+    { name: 'heure_fin', label: 'Heure de fin / levée de séance', type: 'time', required: true },
+    { name: 'date_document', label: 'Fait à Kénitra le (Date PV)', type: 'date', required: true },
   ],
   bon_commande: [
     { name: 'numero_bc', label: 'Numéro bon de commande', placeholder: '05/INV/2024/DRCA-RSK', required: true, fromDb: true },
@@ -409,36 +425,6 @@ function PiecesJointesManager({
     }
   };
 
-  const suggestions = useMemo(() => {
-    if (field?.name === 'pieces_jointes_op') {
-      return [
-        'Facture définitive',
-        'Décompte provisoire N° et dernier',
-        'PV de réception définitif',
-        'Ordre de service de commencement',
-        'Ordre de service d’ajournement',
-        'Ordre de service de reprise',
-      ];
-    }
-    if (isConventionRoute) {
-      return [
-        'Modèle de projet de convention',
-        'Bordereau des prix',
-        'Cahier des prescriptions spéciales (CPS)',
-        'Règlement de consultation',
-        'Attestation de régularité fiscale',
-      ];
-    }
-    return [
-      'Bon de commande signé',
-      'Bordereau des prix',
-      'Devis contradictoire',
-      'Cahier des prescriptions',
-    ];
-  }, [field?.name, isConventionRoute]);
-
-  const availableSuggestions = suggestions.filter((s) => !items.includes(s));
-
   return (
     <div className="col-span-full bg-slate-50/70 border border-slate-200/90 rounded-2xl p-5 shadow-xs transition-all">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-200/60">
@@ -540,30 +526,392 @@ function PiecesJointesManager({
               <span>Ajouter</span>
             </button>
           </div>
-
-          {availableSuggestions.length > 0 && (
-            <div className="pt-1">
-              <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">
-                Suggestions rapides :
-              </span>
-              <div className="flex flex-wrap gap-1.5">
-                {availableSuggestions.map((sug) => (
-                  <button
-                    key={sug}
-                    type="button"
-                    onClick={() => handleAdd(sug)}
-                    className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-medium text-slate-700 bg-white hover:bg-emerald-50 hover:text-[#087F5B] hover:border-emerald-200 border border-slate-200 rounded-lg transition-colors shadow-2xs"
-                    title={`Ajouter « ${sug} »`}
-                  >
-                    <Plus size={11} className="text-[#087F5B]" />
-                    <span>{sug}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
       )}
+
+      {hasError && errorMessage && (
+        <span role="alert" className="mt-2 block text-xs font-medium text-red-600">
+          {errorMessage}
+        </span>
+      )}
+    </div>
+  );
+}
+
+export function cleanNumeroLettreConsultation(rawNum, fallbackYear = new Date().getFullYear()) {
+  if (!rawNum || typeof rawNum !== 'string') {
+    return `15/${fallbackYear}/DRCA-RSK`;
+  }
+  let str = rawNum.trim();
+  // Strip any CONV prefix (CONV-, CONV_, CONV , etc.)
+  str = str.replace(/^CONV\s*[-_]?\s*/i, '');
+  if (!str) {
+    return `15/${fallbackYear}/DRCA-RSK`;
+  }
+  if (/^\d+$/.test(str)) {
+    return `${str.padStart(2, '0')}/${fallbackYear}/DRCA-RSK`;
+  }
+  if (/^\d+\/\d{4}$/.test(str)) {
+    return `${str}/DRCA-RSK`;
+  }
+  return str;
+}
+
+export function incrementNumeroLettre(baseNumero, increment = 1) {
+  if (!baseNumero || typeof baseNumero !== 'string') return '';
+  const cleanBase = cleanNumeroLettreConsultation(baseNumero);
+  if (increment === 0) return cleanBase;
+  const match = cleanBase.match(/^(\D*)(\d+)(.*)$/);
+  if (!match) return cleanBase;
+  const prefix = match[1];
+  const numStr = match[2];
+  const suffix = match[3];
+  const num = parseInt(numStr, 10);
+  if (isNaN(num)) return cleanBase;
+  const nextNum = num + increment;
+  const formattedNext = (numStr.startsWith('0') && numStr.length > 1)
+    ? String(nextNum).padStart(numStr.length, '0')
+    : String(nextNum);
+  return `${prefix}${formattedNext}${suffix}`;
+}
+
+export function formatLettresRefs(lettres, defaultYear = new Date().getFullYear()) {
+  if (!Array.isArray(lettres) || lettres.length === 0) {
+    return defaultYear ? `${defaultYear}/DRCA-RSK` : '';
+  }
+  const cleanLettres = lettres.map((l) => ({
+    ...l,
+    numero_lettre: cleanNumeroLettreConsultation(l?.numero_lettre, defaultYear),
+  }));
+  if (cleanLettres.length === 1) {
+    return cleanLettres[0]?.numero_lettre || '';
+  }
+  const nums = [];
+  let commonSuffix = '';
+  let commonPrefix = '';
+  let hasSuffix = false;
+
+  cleanLettres.forEach((l) => {
+    const m = String(l.numero_lettre || '').match(/^(\D*)(\d+)(.*)$/);
+    if (m) {
+      commonPrefix = m[1];
+      nums.push(m[2]);
+      if (!hasSuffix) {
+        commonSuffix = m[3];
+        hasSuffix = true;
+      }
+    }
+  });
+
+  if (nums.length > 1) {
+    const joinedNums = nums.slice(0, -1).join(', ') + ' et ' + nums[nums.length - 1];
+    return `${commonPrefix}${joinedNums} ${commonSuffix}`.trim();
+  }
+  return lettres[0]?.numero_lettre || '';
+}
+
+export function formatLettresRefsCompact(lettres, defaultYear = new Date().getFullYear()) {
+  if (!Array.isArray(lettres) || lettres.length === 0) {
+    return `15,16,17/${defaultYear}/DRCA-RSK`;
+  }
+  const cleanLettres = lettres.map((l) => ({
+    ...l,
+    numero_lettre: cleanNumeroLettreConsultation(l?.numero_lettre, defaultYear),
+  }));
+  if (cleanLettres.length === 1) {
+    return cleanLettres[0]?.numero_lettre || '';
+  }
+  const nums = [];
+  let commonSuffix = '';
+  cleanLettres.forEach((l) => {
+    const raw = String(l.numero_lettre || '').trim();
+    if (raw) {
+      const parts = raw.split('/');
+      if (parts.length > 1) {
+        nums.push(parts[0].trim());
+        if (!commonSuffix) {
+          commonSuffix = '/' + parts.slice(1).join('/');
+        }
+      } else {
+        nums.push(raw);
+      }
+    }
+  });
+
+  if (nums.length > 0) {
+    return `${nums.join(',')}${commonSuffix || `/${defaultYear}/DRCA-RSK`}`;
+  }
+  return cleanLettres[0]?.numero_lettre || '';
+}
+
+export function getAutoLettresRefsCompact(forms, savedConsultation, currentYear = new Date().getFullYear()) {
+  const lettresList = forms?.lettre_consultation?.lettres_consultation
+    || forms?.avis_achat?.lettres_consultation;
+
+  if (Array.isArray(lettresList) && lettresList.length > 0) {
+    return formatLettresRefsCompact(lettresList, savedConsultation?.annee || currentYear);
+  }
+
+  const rawBase = forms?.lettre_consultation?.numero_lettre
+    || forms?.avis_achat?.numero_lettre
+    || savedConsultation?.numero_avis
+    || savedConsultation?.numero_consultation
+    || '';
+  const baseNum = cleanNumeroLettreConsultation(rawBase, savedConsultation?.annee || currentYear);
+
+  const offres = savedConsultation?.offres;
+  if (Array.isArray(offres) && offres.length > 1 && baseNum) {
+    const dummyLettres = offres.map((_, idx) => ({
+      numero_lettre: incrementNumeroLettre(baseNum, idx),
+    }));
+    return formatLettresRefsCompact(dummyLettres, savedConsultation?.annee || currentYear);
+  }
+
+  return baseNum || `15,16,17/${savedConsultation?.annee || currentYear}/DRCA-RSK`;
+}
+
+export function getAutoLettresRefs(forms, savedConsultation, currentYear = new Date().getFullYear()) {
+  const lettresList = forms?.lettre_consultation?.lettres_consultation
+    || forms?.avis_achat?.lettres_consultation;
+
+  if (Array.isArray(lettresList) && lettresList.length > 0) {
+    return formatLettresRefs(lettresList, savedConsultation?.annee || currentYear);
+  }
+
+  const rawBase = forms?.lettre_consultation?.numero_lettre
+    || forms?.avis_achat?.numero_lettre
+    || savedConsultation?.numero_avis
+    || savedConsultation?.numero_consultation
+    || '';
+  const baseNum = cleanNumeroLettreConsultation(rawBase, savedConsultation?.annee || currentYear);
+
+  const offres = savedConsultation?.offres;
+  if (Array.isArray(offres) && offres.length > 1 && baseNum) {
+    const dummyLettres = offres.map((_, idx) => ({
+      numero_lettre: incrementNumeroLettre(baseNum, idx),
+    }));
+    return formatLettresRefs(dummyLettres, savedConsultation?.annee || currentYear);
+  }
+
+  return baseNum || (savedConsultation?.annee ? `${savedConsultation.annee}/DRCA-RSK` : `${currentYear}/DRCA-RSK`);
+}
+
+function LettresConsultationManager({
+  field,
+  letters = [],
+  baseNumero = '',
+  onChange,
+  hasError,
+  errorMessage,
+  availableFournisseurs = [],
+}) {
+  const syncLetters = (updatedList) => {
+    onChange(updatedList);
+  };
+
+  const updateLetter = (idx, key, val) => {
+    let cleanVal = val;
+    if (key === 'numero_lettre' && typeof val === 'string') {
+      cleanVal = cleanNumeroLettreConsultation(val);
+    }
+    let updated = letters.map((l, i) => (i === idx ? { ...l, [key]: cleanVal } : l));
+    if (idx === 0 && key === 'numero_lettre' && cleanVal && cleanVal.trim()) {
+      updated = updated.map((l, i) => (i === 0 ? l : { ...l, numero_lettre: incrementNumeroLettre(cleanVal, i) }));
+    }
+    syncLetters(updated);
+  };
+
+  const addLetter = () => {
+    const lastLetter = letters[letters.length - 1];
+    const prevNum = lastLetter?.numero_lettre || baseNumero;
+    const nextNum = incrementNumeroLettre(prevNum, 1);
+    const newLetter = {
+      numero_lettre: nextNum,
+      societe: '',
+      destinataire_nom: letters[0]?.destinataire_nom || 'Mr Le Gérant de la Société',
+      destinataire_adresse: '',
+      ville: '',
+    };
+    syncLetters([...letters, newLetter]);
+  };
+
+  const removeLetter = (idx) => {
+    if (letters.length <= 1) return;
+    const updated = letters.filter((_, i) => i !== idx);
+    syncLetters(updated);
+  };
+
+  const selectExistingFournisseur = (idx, fournisseurId) => {
+    if (!fournisseurId) return;
+    const f = availableFournisseurs.find((item) => String(item.id) === String(fournisseurId));
+    if (!f) return;
+    const updated = letters.map((l, i) => {
+      if (i !== idx) return l;
+      return {
+        ...l,
+        societe: f.raison_sociale || '',
+        destinataire_adresse: f.adresse || '',
+        ville: f.ville || '',
+      };
+    });
+    syncLetters(updated);
+  };
+
+  return (
+    <div className="col-span-full bg-slate-50/70 border border-slate-200/90 rounded-2xl p-5 shadow-xs space-y-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200/70">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-blue-50 text-blue-700 border border-blue-200/60 shadow-xs">
+            <Mail size={18} />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="block text-xs font-bold uppercase tracking-wider text-slate-800">
+                {field.label || 'Lettres de consultation & Entreprises'}
+              </span>
+              <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 font-bold text-[11px]">
+                {letters.length} lettre{letters.length > 1 ? 's' : ''}
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-500 mt-0.5">
+              Chaque entreprise consultée reçoit une lettre dédiée. Le numéro de lettre s'incrémente automatiquement de +1.
+            </p>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={addLetter}
+          className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-blue-700 hover:bg-blue-800 text-white font-bold text-xs rounded-xl shadow-xs transition-colors shrink-0"
+        >
+          <Plus size={15} />
+          <span>Ajouter une lettre (+1)</span>
+        </button>
+      </div>
+
+      <div className="space-y-3.5">
+        {letters.map((letter, idx) => (
+          <div
+            key={idx}
+            className="bg-white border border-slate-200 rounded-xl p-4 shadow-2xs hover:border-blue-300 transition-all space-y-3"
+          >
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2.5 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <span className="flex items-center justify-center w-6 h-6 rounded-lg bg-blue-100 text-blue-800 font-bold text-xs">
+                  {idx + 1}
+                </span>
+                <span className="text-xs font-bold text-slate-800">
+                  Lettre de consultation N° {idx + 1}
+                </span>
+                {idx > 0 && (
+                  <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold">
+                    +{idx}
+                  </span>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2">
+                {availableFournisseurs.length > 0 && (
+                  <select
+                    defaultValue=""
+                    onChange={(e) => {
+                      selectExistingFournisseur(idx, e.target.value);
+                      e.target.value = '';
+                    }}
+                    className="text-[11px] font-semibold text-slate-600 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg px-2.5 py-1 outline-none transition-colors"
+                  >
+                    <option value="" disabled>Choisir un fournisseur existant...</option>
+                    {availableFournisseurs.map((f) => (
+                      <option key={f.id} value={f.id}>
+                        {f.raison_sociale} {f.ville ? `(${f.ville})` : ''}
+                      </option>
+                    ))}
+                  </select>
+                )}
+
+                {letters.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => removeLetter(idx)}
+                    className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                    title={`Supprimer la lettre N° ${idx + 1}`}
+                  >
+                    <Trash2 size={15} />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
+              <div className="md:col-span-4">
+                <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                  Numéro de la lettre <span className="text-red-500">*</span>
+                  {idx > 0 && <span className="text-emerald-600 font-normal ml-1">(auto +1)</span>}
+                </label>
+                <input
+                  type="text"
+                  value={letter.numero_lettre || ''}
+                  onChange={(e) => updateLetter(idx, 'numero_lettre', e.target.value)}
+                  placeholder="Ex: 15/2026/DRCA-RSK"
+                  className="w-full px-3 py-2 text-xs font-semibold text-slate-800 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 outline-none"
+                />
+              </div>
+
+              <div className="md:col-span-8">
+                <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                  Nom de la société / Entreprise <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={letter.societe || ''}
+                  onChange={(e) => updateLetter(idx, 'societe', e.target.value)}
+                  placeholder="Ex: SOCIETE GENERATION MULTISERVICES"
+                  className="w-full px-3 py-2 text-xs font-bold text-slate-900 bg-white border border-slate-200 rounded-lg focus:border-blue-500 outline-none"
+                />
+              </div>
+
+              <div className="md:col-span-5">
+                <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                  Destinataire <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={letter.destinataire_nom || 'Mr Le Gérant de la Société'}
+                  onChange={(e) => updateLetter(idx, 'destinataire_nom', e.target.value)}
+                  placeholder="Ex: Mr Le Gérant de la Société"
+                  className="w-full px-3 py-2 text-xs text-slate-800 bg-white border border-slate-200 rounded-lg focus:border-blue-500 outline-none"
+                />
+              </div>
+
+              <div className="md:col-span-4">
+                <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                  Adresse de l'entreprise <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={letter.destinataire_adresse || ''}
+                  onChange={(e) => updateLetter(idx, 'destinataire_adresse', e.target.value)}
+                  placeholder="Ex: AV MOUKAOUAMA DALIA B2/2"
+                  className="w-full px-3 py-2 text-xs text-slate-800 bg-white border border-slate-200 rounded-lg focus:border-blue-500 outline-none"
+                />
+              </div>
+
+              <div className="md:col-span-3">
+                <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                  Ville
+                </label>
+                <input
+                  type="text"
+                  value={letter.ville || ''}
+                  onChange={(e) => updateLetter(idx, 'ville', e.target.value)}
+                  placeholder="Ex: Marrakech"
+                  className="w-full px-3 py-2 text-xs text-slate-800 bg-white border border-slate-200 rounded-lg focus:border-blue-500 outline-none"
+                />
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
 
       {hasError && errorMessage && (
         <span role="alert" className="mt-2 block text-xs font-medium text-red-600">
@@ -578,8 +926,6 @@ const BonCommandePlateforme = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const isConventionRoute = location.pathname.toLowerCase().startsWith('/convention');
-  const engagementLabel = isConventionRoute ? 'Convention' : 'Bon de commande';
-  const engagementLabelLower = isConventionRoute ? 'convention' : 'bon de commande';
   const isConventionConsultation = (consultation) => {
     const mode = String(consultation?.mode_engagement || '').trim().toLowerCase();
     const ref = String(consultation?.numero_consultation || consultation?.numero_bc || '').toUpperCase();
@@ -589,14 +935,6 @@ const BonCommandePlateforme = () => {
   const isVisibleConsultation = (consultation) => isConventionRoute
     ? isConventionConsultation(consultation)
     : isBonCommandeConsultation(consultation);
-  const adaptEngagementText = (text) => (isConventionRoute && typeof text === 'string'
-    ? text
-      .replace(/bons? de commande/gi, (match) => match[0] === 'B' ? 'Convention' : 'convention')
-      .replace(/avis d'achat/gi, 'Lettre de consultation')
-    : text);
-  const documentFieldsId = (documentId) => isConventionRoute && documentId === 'avis_achat'
-    ? 'lettre_consultation'
-    : documentId;
   const currentYear = new Date().getFullYear();
 
   const [activePhase, setActivePhase] = useState(() => {
@@ -643,6 +981,27 @@ const BonCommandePlateforme = () => {
   const [searchingBonCommande, setSearchingBonCommande] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [availableFournisseurs, setAvailableFournisseurs] = useState([]);
+
+  const isConventionActive = isConventionRoute || isConventionConsultation(savedConsultation);
+  const engagementLabel = isConventionActive ? 'Convention' : 'Bon de commande';
+  const engagementLabelLower = isConventionActive ? 'convention' : 'bon de commande';
+
+  const adaptEngagementText = (text) => (isConventionActive && typeof text === 'string'
+    ? text
+      .replace(/Num[ée]ro d['’]avis d['’]achat(\s*\/\s*Consultation)?/gi, 'Numéro de consultation')
+      .replace(/N[°o]\s*d['’]avis d['’]achat/gi, 'N° de consultation')
+      .replace(/d['’]avis d['’]achat/gi, 'de consultation')
+      .replace(/avis d['’]achat/gi, 'Lettre de consultation')
+      .replace(/bons? de commande/gi, (match) => match[0] === 'B' ? 'Convention' : 'convention')
+      .replace(/PV d['’]ouverture(\s+des\s+plis|\s+et\s+d['’]attribution)?(?! de plis)/gi, "PV d'ouverture de plis")
+    : text);
+
+  const documentFieldsId = (documentId) => {
+    if (isConventionActive && documentId === 'avis_achat') return 'lettre_consultation';
+    if (isConventionActive && documentId === 'pv_ouverture_attribution') return 'pv_ouverture_convention';
+    return documentId;
+  };
 
   useEffect(() => {
     if (savedConsultation?.id) {
@@ -677,6 +1036,20 @@ const BonCommandePlateforme = () => {
       localStorage.removeItem('drca_selected_doc_id');
     }
   }, [selectedDocumentId]);
+
+  useEffect(() => {
+    const fetchFournisseurs = async () => {
+      try {
+        const res = await api.get('/fournisseurs');
+        if (Array.isArray(res.data)) {
+          setAvailableFournisseurs(res.data);
+        }
+      } catch (e) {
+        // silently fallback
+      }
+    };
+    fetchFournisseurs();
+  }, []);
 
   const [consultationsList, setConsultationsList] = useState([]);
   const [consultationsLoading, setConsultationsLoading] = useState(false);
@@ -969,7 +1342,7 @@ const BonCommandePlateforme = () => {
   };
 
   const removeMembreFromDocumentCommission = (documentId, fieldName, indexToRemove) => {
-    if (documentId === 'pv_ouverture_attribution') documentId = 'decision_commission_ouverture';
+    if (documentId === 'pv_ouverture_attribution' || documentId === 'pv_ouverture_convention') documentId = 'decision_commission_ouverture';
     const currentList = Array.isArray(documentForms[documentId]?.[fieldName])
       ? [...documentForms[documentId][fieldName]]
       : [];
@@ -1016,6 +1389,44 @@ const BonCommandePlateforme = () => {
           ...(prev.pv_ouverture_attribution || {}),
           membres_commission: value,
         };
+      }
+      if (documentId === 'lettre_consultation' && field === 'numero_lettre' && typeof cleanVal === 'string') {
+        const cleaned = cleanNumeroLettreConsultation(cleanVal);
+        const currentLettres = updated.lettre_consultation?.lettres_consultation;
+        if (Array.isArray(currentLettres) && currentLettres.length > 0) {
+          updated.lettre_consultation = {
+            ...updated.lettre_consultation,
+            numero_lettre: cleaned,
+            lettres_consultation: currentLettres.map((l, i) => ({
+              ...l,
+              numero_lettre: i === 0 ? cleaned : incrementNumeroLettre(cleaned, i),
+            })),
+          };
+        } else {
+          updated.lettre_consultation = {
+            ...updated.lettre_consultation,
+            numero_lettre: cleaned,
+          };
+        }
+      }
+      if (documentId === 'lettre_consultation' && (field === 'numero_lettre' || field === 'lettres_consultation')) {
+        const currentLettres = updated.lettre_consultation?.lettres_consultation;
+        if (Array.isArray(currentLettres) && currentLettres.length > 0) {
+          const newCompact = formatLettresRefsCompact(currentLettres, savedConsultation?.annee || currentYear);
+          const newFormatted = formatLettresRefs(currentLettres, savedConsultation?.annee || currentYear);
+          if (updated.decision_commission_ouverture) {
+            updated.decision_commission_ouverture = {
+              ...updated.decision_commission_ouverture,
+              lettres_consultation_refs: newCompact,
+            };
+          }
+          if (updated.pv_ouverture_convention) {
+            updated.pv_ouverture_convention = {
+              ...updated.pv_ouverture_convention,
+              lettres_consultation_refs: newFormatted,
+            };
+          }
+        }
       }
       if (documentId === 'decision_commission_reception') {
         const fieldMap = {
@@ -1110,11 +1521,49 @@ const BonCommandePlateforme = () => {
     const defaults = {};
 
     fields.forEach((field) => {
-      if (field.name === 'numero_lettre') defaults.numero_lettre = savedConsultation?.numero_avis || savedConsultation?.numero_consultation || `15/${savedConsultation?.annee || new Date().getFullYear()}/DRCA-RSK`;
+      if (field.name === 'numero_lettre') {
+        const rawNum = savedConsultation?.numero_avis || savedConsultation?.numero_consultation;
+        defaults.numero_lettre = cleanNumeroLettreConsultation(rawNum, savedConsultation?.annee || currentYear);
+      }
       else if (field.name === 'destinataire_nom') defaults.destinataire_nom = 'Mr Le Gérant de la Société';
       else if (field.name === 'societe') defaults.societe = documentForms[documentId]?.societe || '';
       else if (field.name === 'destinataire_adresse') defaults.destinataire_adresse = savedConsultation?.fournisseur?.adresse || savedConsultation?.offres?.find((offre) => offre.retenu)?.fournisseur?.adresse || '';
-      else if (field.name === 'pieces_jointes') defaults.pieces_jointes = 'Modèle de projet de convention\nBordereau des prix';
+      else if (field.name === 'lettres_consultation') {
+        const rawNum = savedConsultation?.numero_avis || savedConsultation?.numero_consultation;
+        const baseNum = cleanNumeroLettreConsultation(rawNum, savedConsultation?.annee || currentYear);
+        const existingLettres = documentForms[documentId]?.lettres_consultation;
+        if (Array.isArray(existingLettres) && existingLettres.length > 0) {
+          defaults.lettres_consultation = existingLettres.map((l, idx) => ({
+            ...l,
+            numero_lettre: cleanNumeroLettreConsultation(l.numero_lettre || incrementNumeroLettre(baseNum, idx), savedConsultation?.annee || currentYear),
+          }));
+        } else if (savedConsultation?.offres && savedConsultation.offres.length > 0) {
+          defaults.lettres_consultation = savedConsultation.offres.map((o, idx) => ({
+            numero_lettre: incrementNumeroLettre(baseNum, idx),
+            societe: o.fournisseur?.raison_sociale || '',
+            destinataire_nom: 'Mr Le Gérant de la Société',
+            destinataire_adresse: o.fournisseur?.adresse || '',
+            ville: o.fournisseur?.ville || '',
+          }));
+        } else {
+          defaults.lettres_consultation = [
+            {
+              numero_lettre: baseNum,
+              societe: savedConsultation?.fournisseur?.raison_sociale || documentForms[documentId]?.societe || '',
+              destinataire_nom: documentForms[documentId]?.destinataire_nom || 'Mr Le Gérant de la Société',
+              destinataire_adresse: savedConsultation?.fournisseur?.adresse || documentForms[documentId]?.destinataire_adresse || '',
+              ville: savedConsultation?.fournisseur?.ville || '',
+            },
+          ];
+        }
+      }
+      else if (field.name === 'pieces_jointes') {
+        if (documentId === 'fiche_engagement') {
+          defaults.pieces_jointes = savedConsultation?.numero_bc ? `${engagementLabel} N° ${savedConsultation.numero_bc}` : '';
+        } else {
+          defaults.pieces_jointes = '';
+        }
+      }
       else if (field.name === 'numero_consultation') defaults.numero_consultation = savedConsultation?.numero_consultation || formData.numero_consultation || '04/2024/DRCA-RSK';
       else if (field.name === 'numero_bc') {
         let rawBc;
@@ -1222,9 +1671,6 @@ const BonCommandePlateforme = () => {
         }, 0);
         defaults.engagement_propose_cp = ttc > 0 ? (ttc * 1.01).toFixed(2) : '';
       }
-      else if (field.name === 'pieces_jointes' && documentId === 'fiche_engagement') {
-        defaults.pieces_jointes = savedConsultation?.numero_bc ? `${engagementLabel} N° ${savedConsultation.numero_bc}` : '';
-      }
       else if (field.name === 'numero_lettre') defaults.numero_lettre = `${new Date().getFullYear()}/DRCA-RSK/SOS`;
       else if (field.name === 'nature_os') defaults.nature_os = "Commencement de l'exécution";
       else if (field.name === 'societe' || field.name === 'participant_1' || field.name === 'titulaire_nom') {
@@ -1281,7 +1727,7 @@ const BonCommandePlateforme = () => {
       else if ((field.name === 'date_document' || field.name === 'date_decision' || field.name === 'date_os' || field.name === 'date_reception' || field.name === 'date_bon_payer') && documentId !== 'fiche_engagement') {
         if (documentId === 'decision_commission_reception' || documentId === 'pv_reception') {
           defaults[field.name] = savedConsultation?.reception_commission?.date_decision || documentForms.decision_commission_reception?.date_document || '';
-        } else if (isConventionRoute && documentId === 'avis_achat') {
+        } else if (isConventionActive && documentId === 'avis_achat') {
           defaults[field.name] = savedConsultation?.date_consultation || formData.date_consultation || '';
         } else {
           defaults[field.name] = '';
@@ -1339,7 +1785,17 @@ const BonCommandePlateforme = () => {
           : [{ numero_prix: '1', designation: '', specification: '', unite_mesure: 'Unite', quantite: '1', prix_unitaire_ht: '0', tva: '20', garantie_exigee: '' }];
       }
       else if (field.name === 'concurrents') {
-        if (savedConsultation?.offres?.length > 0) {
+        if (isConventionActive) {
+          const supplierNom = savedConsultation?.fournisseur?.raison_sociale || documentForms.lettre_consultation?.societe || 'GENERATION MULISERVICES';
+          defaults.concurrents = [
+            {
+              nom: supplierNom,
+              montant_avant: '',
+              montant_apres: totalTTC > 0 ? totalTTC.toFixed(2) : (savedConsultation?.budget?.montant_ttc ? String(savedConsultation.budget.montant_ttc) : ''),
+              montant: totalTTC > 0 ? totalTTC : (savedConsultation?.budget?.montant_ttc || 0),
+            },
+          ];
+        } else if (savedConsultation?.offres?.length > 0) {
           defaults.concurrents = savedConsultation.offres.map((o) => ({
             nom: o.fournisseur?.raison_sociale || 'Société',
             montant: o.montant_apres_verification || o.montant_propose || 0,
@@ -1348,8 +1804,39 @@ const BonCommandePlateforme = () => {
           defaults.concurrents = [];
         }
       }
+      else if (field.name === 'fournisseurs_consultes') {
+        const lettres = documentForms.lettre_consultation?.lettres_consultation;
+        const defaultSuppliers = (Array.isArray(lettres) && lettres.length > 0 && lettres.some((l) => l.societe))
+          ? lettres.map((l) => ({
+              nom: l.societe || '',
+              adresse: l.destinataire_adresse || '',
+              ville: l.ville || '',
+            }))
+          : ((savedConsultation?.offres && savedConsultation.offres.length > 0)
+            ? savedConsultation.offres.map((o) => ({
+                nom: o.fournisseur?.raison_sociale || '',
+                adresse: o.fournisseur?.adresse || '',
+                ville: o.fournisseur?.ville || '',
+              }))
+            : [
+                {
+                  nom: savedConsultation?.fournisseur?.raison_sociale || documentForms.lettre_consultation?.societe || 'GENERATION MULISERVICES',
+                  adresse: savedConsultation?.fournisseur?.adresse || documentForms.lettre_consultation?.destinataire_adresse || 'AV MOUKAOUAMA DALIA B2/2APPT NO 7 MARRAKECH.',
+                  ville: savedConsultation?.fournisseur?.ville || 'Marrakech',
+                },
+              ]);
+        defaults.fournisseurs_consultes = defaultSuppliers;
+      }
+      else if (field.name === 'lettres_consultation_refs') {
+        defaults.lettres_consultation_refs = documentId === 'decision_commission_ouverture'
+          ? getAutoLettresRefsCompact(documentForms, savedConsultation, currentYear)
+          : getAutoLettresRefs(documentForms, savedConsultation, currentYear);
+      }
+      else if (field.name === 'date_decision') {
+        defaults.date_decision = documentForms.decision_commission_ouverture?.date_document || savedConsultation?.date_consultation || '';
+      }
       else if (field.name === 'attributaire') {
-        const attrNom = savedConsultation?.fournisseur?.raison_sociale || savedConsultation?.engagement?.fournisseur?.raison_sociale || '';
+        const attrNom = savedConsultation?.fournisseur?.raison_sociale || savedConsultation?.engagement?.fournisseur?.raison_sociale || documentForms.lettre_consultation?.societe || (isConventionActive ? 'GENERATION MULISERVICES' : '');
         defaults.attributaire = attrNom;
 
         const concs = defaults.concurrents || [];
@@ -1423,6 +1910,14 @@ const BonCommandePlateforme = () => {
       }
     });
 
+    if (documentId === 'lettre_consultation' && defaults.lettres_consultation && defaults.lettres_consultation[0]) {
+      defaults.numero_lettre = cleanNumeroLettreConsultation(defaults.lettres_consultation[0].numero_lettre, savedConsultation?.annee || currentYear);
+      defaults.societe = defaults.lettres_consultation[0].societe;
+      defaults.destinataire_nom = defaults.lettres_consultation[0].destinataire_nom;
+      defaults.destinataire_adresse = defaults.lettres_consultation[0].destinataire_adresse;
+      defaults.ville = defaults.lettres_consultation[0].ville;
+    }
+
     setDocumentForms((prev) => ({
       ...prev,
       [documentId]: {
@@ -1449,7 +1944,8 @@ const BonCommandePlateforme = () => {
     const missingLabels = [];
 
     fields.forEach((field) => {
-      if (field.condition && !field.condition(values)) {
+      const fieldLabelText = adaptEngagementText(field.label);
+      if (field.condition && !field.condition(values, isConventionActive)) {
         return;
       }
       if (field.required) {
@@ -1461,7 +1957,7 @@ const BonCommandePlateforme = () => {
 
           if (!Array.isArray(commList) || commList.length < 3) {
             errors[field.name] = 'La commission doit obligatoirement comporter au moins 3 personnes (1 Président(e) et 2 membres).';
-            missingLabels.push(`${field.label} (au moins 3 personnes)`);
+            missingLabels.push(`${fieldLabelText} (au moins 3 personnes)`);
           }
         } else if (field.type === 'consistance_table') {
           const rawLignes = values[field.name] || documentForms['avis_achat']?.[field.name] || documentForms['bon_commande']?.[field.name];
@@ -1508,11 +2004,28 @@ const BonCommandePlateforme = () => {
 
           if (hasEmptyCell || hasInvalidPrice) {
             errors[field.name] = checkPrice ? `Veuillez remplir tous les champs et P.U HT > 0` : `Veuillez remplir tous les champs`;
-            missingLabels.push(`${field.label} (Tous les champs et P.U HT > 0)`);
+            missingLabels.push(`${fieldLabelText} (Tous les champs et P.U HT > 0)`);
+          }
+        } else if (field.type === 'lettres_consultation_table') {
+          const list = Array.isArray(val) ? val : [];
+          if (list.length === 0) {
+            errors[field.name] = 'Veuillez ajouter au moins une lettre de consultation.';
+            missingLabels.push(`${fieldLabelText} (au moins une lettre)`);
+          } else {
+            let hasEmpty = false;
+            list.forEach((l) => {
+              if (!l.societe || !String(l.societe).trim() || !l.destinataire_adresse || !String(l.destinataire_adresse).trim()) {
+                hasEmpty = true;
+              }
+            });
+            if (hasEmpty) {
+              errors[field.name] = 'Veuillez renseigner le nom de la société et l\'adresse pour chaque lettre.';
+              missingLabels.push(`${fieldLabelText} (Société et adresse requises)`);
+            }
           }
         } else if (val === undefined || val === null || String(val).trim() === '') {
-          errors[field.name] = `Le champ « ${field.label} » est obligatoire.`;
-          missingLabels.push(field.label);
+          errors[field.name] = `Le champ « ${fieldLabelText} » est obligatoire.`;
+          missingLabels.push(fieldLabelText);
         }
       }
 
@@ -1523,21 +2036,21 @@ const BonCommandePlateforme = () => {
         if (field.name === 'rib') {
           if (!/^\d{24}$/.test(cleanVal)) {
             errors[field.name] = `Le RIB doit comporter exactement 24 chiffres (actuellement: ${cleanVal.length}).`;
-            if (!missingLabels.includes(field.label)) missingLabels.push(`${field.label} (24 chiffres obligatoires)`);
+            if (!missingLabels.includes(fieldLabelText)) missingLabels.push(`${fieldLabelText} (24 chiffres obligatoires)`);
           }
         }
 
         if (field.name === 'ice') {
           if (!/^\d{15}$/.test(cleanVal)) {
             errors[field.name] = `L'ICE doit comporter exactement 15 chiffres (actuellement: ${cleanVal.length}).`;
-            if (!missingLabels.includes(field.label)) missingLabels.push(`${field.label} (15 chiffres obligatoires)`);
+            if (!missingLabels.includes(fieldLabelText)) missingLabels.push(`${fieldLabelText} (15 chiffres obligatoires)`);
           }
         }
 
         if (field.name === 'if' || field.name === 'identifiant_fiscal') {
           if (!/^\d{5}$|^\d{8}$/.test(cleanVal)) {
             errors[field.name] = `L'Identifiant Fiscal (IF) doit comporter 5 ou 8 chiffres (actuellement: ${cleanVal.length}).`;
-            if (!missingLabels.includes(field.label)) missingLabels.push(`${field.label} (5 ou 8 chiffres)`);
+            if (!missingLabels.includes(fieldLabelText)) missingLabels.push(`${fieldLabelText} (5 ou 8 chiffres)`);
           }
         }
       }
@@ -1574,8 +2087,23 @@ const BonCommandePlateforme = () => {
       ville_societe: values.ville_societe || values.ville_1 || documentForms['bon_commande']?.ville_societe || savedConsultation?.fournisseur?.ville || savedConsultation?.engagement?.fournisseur?.ville || 'Rabat',
     };
 
-    if (documentId === 'pv_ouverture_attribution' && Array.isArray(documentForms.decision_commission_ouverture?.membres_commission) && documentForms.decision_commission_ouverture.membres_commission.length > 0) {
+    if ((documentId === 'decision_commission_ouverture' || documentId === 'pv_ouverture_convention' || documentId === 'pv_ouverture_attribution') && isConventionActive) {
+      const lettresList = documentForms.lettre_consultation?.lettres_consultation
+        || documentForms.avis_achat?.lettres_consultation;
+      const computedRefs = getAutoLettresRefsCompact(documentForms, savedConsultation, currentYear);
+
+      data.lettres_consultation_refs = computedRefs;
+      data.lettres_consultation = Array.isArray(lettresList) ? lettresList : [];
+    }
+
+    if ((documentId === 'pv_ouverture_attribution' || documentId === 'pv_ouverture_convention') && Array.isArray(documentForms.decision_commission_ouverture?.membres_commission) && documentForms.decision_commission_ouverture.membres_commission.length > 0) {
       data.membres_commission = documentForms.decision_commission_ouverture.membres_commission;
+    }
+    if ((documentId === 'pv_ouverture_attribution' || documentId === 'pv_ouverture_convention') && documentForms.decision_commission_ouverture?.numero_decision) {
+      data.numero_decision = data.numero_decision || documentForms.decision_commission_ouverture.numero_decision;
+    }
+    if ((documentId === 'pv_ouverture_attribution' || documentId === 'pv_ouverture_convention') && documentForms.decision_commission_ouverture?.date_document) {
+      data.date_decision = data.date_decision || documentForms.decision_commission_ouverture.date_document;
     }
 
     if (documentId === 'pv_reception') {
@@ -1939,7 +2467,9 @@ const BonCommandePlateforme = () => {
       setError('');
       await saveDocumentDataToDatabase(document.id, false);
       const payload = { document_data: buildDocumentData(document.id) };
-      const documentType = isConventionRoute && document.id === 'avis_achat' ? 'lettre_consultation' : document.id;
+      const documentType = isConventionActive && document.id === 'avis_achat'
+        ? 'lettre_consultation'
+        : (isConventionActive && document.id === 'pv_ouverture_attribution' ? 'pv_ouverture_convention' : document.id);
       const endpoint = `/consultations/${savedConsultation.id}/documents/${documentType}`;
       const response = await api.post(endpoint, payload, { responseType: 'blob' });
       const url = window.URL.createObjectURL(new Blob([response.data]));
@@ -2050,17 +2580,18 @@ const BonCommandePlateforme = () => {
 
   const fieldSections = [
     { id: 'references', title: 'Références du document', description: 'Identifiez la commande et précisez son objet.' },
-    { id: 'supplier', title: 'Informations du fournisseur', description: 'Coordonnées et identifiants de la société.' },
+    { id: 'supplier', title: isConventionActive ? 'Entreprises consultées & Lettres de consultation' : 'Informations du fournisseur', description: isConventionActive ? 'Chaque entreprise reçoit une lettre dédiée avec numéro incrémenté (+1).' : 'Coordonnées et identifiants de la société.' },
     { id: 'schedule', title: 'Dates et modalités', description: 'Précisez les dates, les lieux et les délais.' },
     { id: 'finance', title: 'Budget et montants', description: 'Renseignez les imputations et les montants associés.' },
     { id: 'details', title: 'Prestations et intervenants', description: 'Vérifiez les prestations, les entreprises et les commissions.' },
   ].map((section) => ({
     ...section,
     fields: selectedFields.filter((field) => {
-      if (field.condition && !field.condition(documentForms[selectedDocument.id])) return false;
+      if (field.condition && !field.condition(documentForms[selectedDocument.id], isConventionActive)) return false;
       if (selectedDocument.id === 'fiche_engagement' && String(savedConsultation?.type_budget || '').toLowerCase() === 'fonctionnement'
         && ['credit_ouvert_ce', 'depenses_anterieures_ce', 'depenses_credits_engagement', 'disponible_ce'].includes(field.name)) return false;
-      const group = isConventionRoute && ['pieces_jointes', 'societe'].includes(field.name) ? 'supplier'
+      const group = ['lettres_consultation'].includes(field.name) ? 'supplier'
+        : isConventionActive && ['pieces_jointes', 'societe'].includes(field.name) ? 'supplier'
         : /table|selector|societes_refusees_input/.test(field.type || '') ? 'details'
         : /^(titulaire_nom|societe|adresse_societe|ville_societe|patente|cnss|ice|if|rib)$/.test(field.name) ? 'supplier'
           : /^(art|par|lig|s_lig|intitule|credit_|depenses_|disponible_|montant_|interets_)/.test(field.name) ? 'finance'
@@ -2681,7 +3212,7 @@ const BonCommandePlateforme = () => {
                           findBonCommande();
                         }
                       }}
-                      placeholder={isConventionRoute ? 'CONV-2026-00125' : 'BC-2026-00125'}
+                      placeholder={isConventionActive ? 'CONV-2026-00125' : 'BC-2026-00125'}
                       className="flex-1 px-4 py-3 rounded-lg border border-blue-200 bg-white outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                     />
                     <button
@@ -2712,7 +3243,7 @@ const BonCommandePlateforme = () => {
                     </div>
                     <div className="bc-fields grid grid-cols-1 md:grid-cols-2 gap-5">
                       {section.fields.map((field) => {
-                        if (field.condition && !field.condition(documentForms[selectedDocument.id])) {
+                        if (field.condition && !field.condition(documentForms[selectedDocument.id], isConventionActive)) {
                           return null;
                         }
 
@@ -3395,9 +3926,9 @@ const BonCommandePlateforme = () => {
                                   <button
                                     type="button"
                                     onClick={() => addRefusedCompany('')}
-                                    className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white font-bold text-xs rounded-lg inline-flex items-center gap-1 shadow-sm transition-all"
+                                    className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white font-bold text-xs rounded-lg inline-flex items-center gap-1.5 shadow-sm transition-all"
                                   >
-                                    <Plus size={14} /> Ajouter manuellement
+                                    <Plus size={14} /> Ajouter une société écartée
                                   </button>
                                 </div>
                               </div>
@@ -3562,8 +4093,322 @@ const BonCommandePlateforme = () => {
                           );
                         }
 
+                        if (field.type === 'lettres_consultation_table') {
+                          const rawBase = documentForms[selectedDocument.id]?.numero_lettre
+                            || savedConsultation?.numero_avis
+                            || savedConsultation?.numero_consultation;
+                          const baseNum = cleanNumeroLettreConsultation(rawBase, savedConsultation?.annee || currentYear);
+
+                          const rawLetters = documentForms[selectedDocument.id]?.[field.name];
+                          const currentLetters = (Array.isArray(rawLetters) && rawLetters.length > 0)
+                            ? rawLetters.map((l, i) => ({
+                                ...l,
+                                numero_lettre: cleanNumeroLettreConsultation(l.numero_lettre || incrementNumeroLettre(baseNum, i), savedConsultation?.annee || currentYear),
+                              }))
+                            : [
+                                {
+                                  numero_lettre: baseNum,
+                                  societe: documentForms[selectedDocument.id]?.societe || savedConsultation?.fournisseur?.raison_sociale || '',
+                                  destinataire_nom: documentForms[selectedDocument.id]?.destinataire_nom || 'Mr Le Gérant de la Société',
+                                  destinataire_adresse: documentForms[selectedDocument.id]?.destinataire_adresse || savedConsultation?.fournisseur?.adresse || '',
+                                  ville: documentForms[selectedDocument.id]?.ville || savedConsultation?.fournisseur?.ville || '',
+                                }
+                              ];
+
+                          const handleLettersChange = (updatedList) => {
+                            const cleanedList = updatedList.map((l, i) => ({
+                              ...l,
+                              numero_lettre: cleanNumeroLettreConsultation(l.numero_lettre || incrementNumeroLettre(baseNum, i), savedConsultation?.annee || currentYear),
+                            }));
+                            handleDocumentFieldChange(selectedDocument.id, field.name, cleanedList);
+                            if (cleanedList[0]) {
+                              handleDocumentFieldChange(selectedDocument.id, 'numero_lettre', cleanedList[0].numero_lettre || '');
+                              handleDocumentFieldChange(selectedDocument.id, 'societe', cleanedList[0].societe || '');
+                              handleDocumentFieldChange(selectedDocument.id, 'destinataire_nom', cleanedList[0].destinataire_nom || 'Mr Le Gérant de la Société');
+                              handleDocumentFieldChange(selectedDocument.id, 'destinataire_adresse', cleanedList[0].destinataire_adresse || '');
+                              handleDocumentFieldChange(selectedDocument.id, 'ville', cleanedList[0].ville || '');
+                            }
+                          };
+
+                          return (
+                            <LettresConsultationManager
+                              key={`${selectedDocument.id}-${field.name}`}
+                              field={field}
+                              letters={currentLetters}
+                              baseNumero={baseNum}
+                              onChange={handleLettersChange}
+                              hasError={hasError}
+                              errorMessage={formErrors[selectedDocument.id]?.[field.name]}
+                              availableFournisseurs={availableFournisseurs}
+                            />
+                          );
+                        }
+
+                        if (field.type === 'fournisseurs_consultes_table') {
+                          const rawList = documentForms[selectedDocument.id]?.[field.name];
+                          const currentList = Array.isArray(rawList) && rawList.length > 0
+                            ? rawList
+                            : [
+                                {
+                                  nom: savedConsultation?.fournisseur?.raison_sociale || documentForms.lettre_consultation?.societe || 'GENERATION MULISERVICES',
+                                  adresse: savedConsultation?.fournisseur?.adresse || documentForms.lettre_consultation?.destinataire_adresse || 'AV MOUKAOUAMA DALIA B2/2APPT NO 7 MARRAKECH.',
+                                  ville: savedConsultation?.fournisseur?.ville || 'Marrakech',
+                                }
+                              ];
+
+                          const updateParticipant = (idx, key, val) => {
+                            const updated = currentList.map((p, i) => (i === idx ? { ...p, [key]: val } : p));
+                            handleDocumentFieldChange(selectedDocument.id, field.name, updated);
+
+                            if (key === 'nom') {
+                              const concs = Array.isArray(documentForms[selectedDocument.id]?.concurrents)
+                                ? [...documentForms[selectedDocument.id].concurrents]
+                                : [];
+                              if (concs[idx]) {
+                                concs[idx] = { ...concs[idx], nom: val };
+                              } else {
+                                concs[idx] = { nom: val, montant_avant: '', montant_apres: '', montant: '' };
+                              }
+                              handleDocumentFieldChange(selectedDocument.id, 'concurrents', concs);
+                            }
+                          };
+
+                          const addParticipant = () => {
+                            const updated = [...currentList, { nom: '', adresse: '', ville: '' }];
+                            handleDocumentFieldChange(selectedDocument.id, field.name, updated);
+                          };
+
+                          const removeParticipant = (idx) => {
+                            const updated = currentList.filter((_, i) => i !== idx);
+                            handleDocumentFieldChange(selectedDocument.id, field.name, updated);
+                          };
+
+                          return (
+                            <div key={`${selectedDocument.id}-${field.name}`} className="col-span-full bg-slate-50 border border-slate-200 rounded-2xl p-5 shadow-sm space-y-3">
+                              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                <div>
+                                  <label className="block text-xs font-semibold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                                    🏢 {adaptEngagementText(field.label)} {field.required && <span className="text-red-600 font-bold ml-0.5">*</span>}
+                                  </label>
+                                  <p className="text-xs text-slate-500 mt-0.5">
+                                    Liste des fournisseurs qui ont été respectivement consultés (Tableau 1 du PV).
+                                  </p>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={addParticipant}
+                                  className="px-3 py-1.5 bg-blue-700 hover:bg-blue-800 text-white font-bold text-xs rounded-xl inline-flex items-center gap-1.5 shadow-xs transition-all self-start sm:self-auto"
+                                >
+                                  <Plus size={14} /> Ajouter un participant
+                                </button>
+                              </div>
+
+                              <div className="overflow-x-auto">
+                                <table className="w-full bg-white border border-slate-200 rounded-xl overflow-hidden text-xs">
+                                  <thead>
+                                    <tr className="bg-slate-100 border-b border-slate-200 text-slate-700 font-bold uppercase tracking-wider text-[11px]">
+                                      <th className="py-2.5 px-3 text-center w-12">N°</th>
+                                      <th className="py-2.5 px-3 text-left">Les Participants (Raison sociale)</th>
+                                      <th className="py-2.5 px-3 text-left">Adresses</th>
+                                      <th className="py-2.5 px-3 text-left w-36">Ville</th>
+                                      <th className="py-2.5 px-3 text-center w-16">Action</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody className="divide-y divide-slate-100">
+                                    {currentList.map((item, idx) => (
+                                      <tr key={idx} className="hover:bg-slate-50/80 transition-colors">
+                                        <td className="py-2 px-3 text-center font-bold text-slate-500">
+                                          {idx + 1}
+                                        </td>
+                                        <td className="py-2 px-3">
+                                          <input
+                                            type="text"
+                                            value={item.nom || ''}
+                                            onChange={(e) => updateParticipant(idx, 'nom', e.target.value)}
+                                            placeholder="Ex: GENERATION MULISERVICES"
+                                            className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 font-semibold text-slate-800 text-xs outline-none focus:border-blue-500 bg-white"
+                                          />
+                                        </td>
+                                        <td className="py-2 px-3">
+                                          <input
+                                            type="text"
+                                            value={item.adresse || ''}
+                                            onChange={(e) => updateParticipant(idx, 'adresse', e.target.value)}
+                                            placeholder="Ex: AV MOUKAOUAMA DALIA B2/2APPT NO 7"
+                                            className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 text-slate-700 text-xs outline-none focus:border-blue-500 bg-white"
+                                          />
+                                        </td>
+                                        <td className="py-2 px-3">
+                                          <input
+                                            type="text"
+                                            value={item.ville || ''}
+                                            onChange={(e) => updateParticipant(idx, 'ville', e.target.value)}
+                                            placeholder="Ex: Marrakech"
+                                            className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 text-slate-700 text-xs outline-none focus:border-blue-500 bg-white"
+                                          />
+                                        </td>
+                                        <td className="py-2 px-3 text-center">
+                                          <button
+                                            type="button"
+                                            onClick={() => removeParticipant(idx)}
+                                            className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                            title="Supprimer ce participant"
+                                          >
+                                            <Trash2 size={14} />
+                                          </button>
+                                        </td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            </div>
+                          );
+                        }
+
+                        if (field.type === 'concurrents_convention_table') {
+                          const rawList = documentForms[selectedDocument.id]?.[field.name];
+                          const participants = Array.isArray(documentForms[selectedDocument.id]?.fournisseurs_consultes)
+                            ? documentForms[selectedDocument.id].fournisseurs_consultes
+                            : [];
+
+                          const initialList = participants.length > 0
+                            ? participants.map((p) => ({
+                                nom: p.nom || '',
+                                montant_avant: '',
+                                montant_apres: '',
+                              }))
+                            : [
+                                {
+                                  nom: savedConsultation?.fournisseur?.raison_sociale || 'GENERATION MULISERVICES',
+                                  montant_avant: '',
+                                  montant_apres: '',
+                                }
+                              ];
+
+                          const currentList = Array.isArray(rawList) && rawList.length > 0
+                            ? rawList
+                            : initialList;
+
+                          const updateConcurrent = (idx, key, val) => {
+                            const updated = currentList.map((c, i) => {
+                              if (i === idx) {
+                                const item = { ...c, [key]: val };
+                                if (key === 'montant_apres') {
+                                  item.montant = val;
+                                }
+                                return item;
+                              }
+                              return c;
+                            });
+                            handleDocumentFieldChange(selectedDocument.id, field.name, updated);
+
+                            const selectedAttr = documentForms[selectedDocument.id]?.attributaire;
+                            if (selectedAttr && updated[idx]?.nom === selectedAttr && (key === 'montant_apres' || key === 'montant')) {
+                              handleDocumentFieldChange(selectedDocument.id, 'montant_apres_verification', val);
+                            }
+                          };
+
+                          const addConcurrent = () => {
+                            const updated = [...currentList, { nom: '', montant_avant: '', montant_apres: '', montant: '' }];
+                            handleDocumentFieldChange(selectedDocument.id, field.name, updated);
+                          };
+
+                          const removeConcurrent = (idx) => {
+                            const updated = currentList.filter((_, i) => i !== idx);
+                            handleDocumentFieldChange(selectedDocument.id, field.name, updated);
+                          };
+
+                          return (
+                            <div key={`${selectedDocument.id}-${field.name}`} className="col-span-full bg-slate-50 border border-slate-200 rounded-2xl p-5 shadow-sm space-y-3">
+                              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                <div>
+                                  <label className="block text-xs font-semibold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                                    💰 {adaptEngagementText(field.label)} {field.required && <span className="text-red-600 font-bold ml-0.5">*</span>}
+                                  </label>
+                                  <p className="text-xs text-slate-500 mt-0.5">
+                                    Propositions des concurrents : Montant avant et après vérification (Tableau 2 du PV).
+                                  </p>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={addConcurrent}
+                                  className="px-3 py-1.5 bg-blue-700 hover:bg-blue-800 text-white font-bold text-xs rounded-xl inline-flex items-center gap-1.5 shadow-xs transition-all self-start sm:self-auto"
+                                >
+                                  <Plus size={14} /> Ajouter un concurrent
+                                </button>
+                              </div>
+
+                              <div className="overflow-x-auto">
+                                <table className="w-full bg-white border border-slate-200 rounded-xl overflow-hidden text-xs">
+                                  <thead>
+                                    <tr className="bg-slate-100 border-b border-slate-200 text-slate-700 font-bold uppercase tracking-wider text-[11px]">
+                                      <th rowSpan="2" className="py-2.5 px-3 text-center w-12 border-r border-slate-200">N°</th>
+                                      <th rowSpan="2" className="py-2.5 px-3 text-left border-r border-slate-200">Nom des concurrents</th>
+                                      <th colSpan="2" className="py-2 px-3 text-center border-b border-slate-200">Montant de l'offre (TTC)</th>
+                                      <th rowSpan="2" className="py-2.5 px-3 text-center w-16">Action</th>
+                                    </tr>
+                                    <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold text-[10px] uppercase">
+                                      <th className="py-1.5 px-3 text-center w-40 border-r border-slate-200">Avant vérification (DH)</th>
+                                      <th className="py-1.5 px-3 text-center w-40">Après vérification (DH)</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody className="divide-y divide-slate-100">
+                                    {currentList.map((item, idx) => (
+                                      <tr key={idx} className="hover:bg-slate-50/80 transition-colors">
+                                        <td className="py-2 px-3 text-center font-bold text-slate-500 border-r border-slate-100">
+                                          {idx + 1}
+                                        </td>
+                                        <td className="py-2 px-3 border-r border-slate-100">
+                                          <input
+                                            type="text"
+                                            value={item.nom || ''}
+                                            onChange={(e) => updateConcurrent(idx, 'nom', e.target.value)}
+                                            placeholder="Ex: GENERATION MULISERVICES"
+                                            className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 font-semibold text-slate-800 text-xs outline-none focus:border-blue-500 bg-white"
+                                          />
+                                        </td>
+                                        <td className="py-2 px-3 border-r border-slate-100">
+                                          <input
+                                            type="number"
+                                            step="0.01"
+                                            value={item.montant_avant !== undefined && item.montant_avant !== null ? item.montant_avant : ''}
+                                            onChange={(e) => updateConcurrent(idx, 'montant_avant', e.target.value)}
+                                            placeholder="Optionnel ou - "
+                                            className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 text-slate-800 text-xs outline-none focus:border-blue-500 bg-white text-right"
+                                          />
+                                        </td>
+                                        <td className="py-2 px-3">
+                                          <input
+                                            type="number"
+                                            step="0.01"
+                                            value={item.montant_apres !== undefined && item.montant_apres !== null ? item.montant_apres : (item.montant || '')}
+                                            onChange={(e) => updateConcurrent(idx, 'montant_apres', e.target.value)}
+                                            placeholder="0.00"
+                                            className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 text-slate-800 text-xs outline-none focus:border-blue-500 bg-white text-right font-bold"
+                                          />
+                                        </td>
+                                        <td className="py-2 px-3 text-center">
+                                          <button
+                                            type="button"
+                                            onClick={() => removeConcurrent(idx)}
+                                            className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                            title="Supprimer ce concurrent"
+                                          >
+                                            <Trash2 size={14} />
+                                          </button>
+                                        </td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            </div>
+                          );
+                        }
+
                         if (field.type === 'commission_selector') {
-                          const isPV = selectedDocument.id === 'pv_ouverture_attribution' || selectedDocument.id === 'pv_reception';
+                          const isPV = selectedDocument.id === 'pv_ouverture_attribution' || selectedDocument.id === 'pv_ouverture_convention' || selectedDocument.id === 'pv_reception';
                           const decMembres = selectedDocument.id === 'pv_reception'
                             ? (documentForms.decision_commission_reception?.membres_commission || savedConsultation?.reception_commission?.membres_commission || savedConsultation?.receptionCommission?.membres_commission)
                             : documentForms.decision_commission_ouverture?.membres_commission;
@@ -3582,7 +4427,7 @@ const BonCommandePlateforme = () => {
                                 </label>
                               </div>
 
-                              {(!isPV || selectedDocument.id === 'pv_ouverture_attribution') && (
+                              {(!isPV || selectedDocument.id === 'pv_ouverture_attribution' || selectedDocument.id === 'pv_ouverture_convention') && (
                                 <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 mb-4">
                                   <div className="sm:col-span-6 flex gap-2">
                                     <select
@@ -3671,10 +4516,13 @@ const BonCommandePlateforme = () => {
                         }
 
                         if (field.type === 'pieces_jointes' || field.name === 'pieces_jointes' || field.name === 'pieces_jointes_op') {
-                          const pjVal = (documentForms[selectedDocument.id]?.[field.name] !== undefined &&
+                          let pjVal = (documentForms[selectedDocument.id]?.[field.name] !== undefined &&
                             documentForms[selectedDocument.id]?.[field.name] !== null)
                             ? documentForms[selectedDocument.id][field.name]
-                            : (field.placeholder || '');
+                            : '';
+                          if (pjVal === 'Modèle de projet de convention\nBordereau des prix') {
+                            pjVal = '';
+                          }
                           return (
                             <PiecesJointesManager
                               key={`${selectedDocument.id}-${field.name}`}
@@ -3683,7 +4531,7 @@ const BonCommandePlateforme = () => {
                               onChange={(newVal) => handleDocumentFieldChange(selectedDocument.id, field.name, newVal)}
                               hasError={hasError}
                               errorMessage={formErrors[selectedDocument.id]?.[field.name]}
-                              isConventionRoute={isConventionRoute}
+                              isConventionRoute={isConventionActive}
                             />
                           );
                         }
@@ -3704,7 +4552,11 @@ const BonCommandePlateforme = () => {
                             ? ((Number(documentForms.fiche_engagement?.montant_depense_neuf) || 0) * 1.01).toFixed(2)
                             : selectedDocument.id === 'fiche_engagement' && field.name.startsWith('disponible_')
                               ? creditDisponible(documentForms.fiche_engagement?.[`credit_ouvert_${field.name.slice(-2)}`], documentForms.fiche_engagement?.[`depenses_anterieures_${field.name.slice(-2)}`])
-                              : currentVal;
+                              : (selectedDocument.id === 'lettre_consultation' || (isConventionActive && selectedDocument.id === 'avis_achat')) && field.name === 'numero_lettre'
+                                ? cleanNumeroLettreConsultation(currentVal, savedConsultation?.annee || currentYear)
+                                : ((selectedDocument.id === 'decision_commission_ouverture' || selectedDocument.id === 'pv_ouverture_convention') && field.name === 'lettres_consultation_refs')
+                                  ? getAutoLettresRefsCompact(documentForms, savedConsultation, currentYear)
+                                  : currentVal;
                         const currentLen = String(displayedVal || '').length;
 
                         return (
@@ -3727,7 +4579,7 @@ const BonCommandePlateforme = () => {
                             {field.type === 'select' ? (
                               <select
                                 value={documentForms[selectedDocument.id]?.[field.name]
-                                  || (field.name === 'forme_engagement' && isConventionRoute ? engagementLabel : field.options?.[0])
+                                  || (field.name === 'forme_engagement' && isConventionActive ? engagementLabel : field.options?.[0])
                                   || ''}
                                 onChange={(event) => handleDocumentFieldChange(selectedDocument.id, field.name, event.target.value)}
                                 disabled={field.readOnly}
@@ -3735,7 +4587,7 @@ const BonCommandePlateforme = () => {
                                 className={fieldClass}
                               >
                                 {(field.options || []).map((opt) => {
-                                  const optionValue = opt === 'Bon de commande' && isConventionRoute ? engagementLabel : opt;
+                                  const optionValue = opt === 'Bon de commande' && isConventionActive ? engagementLabel : opt;
                                   return (
                                   <option key={optionValue} value={optionValue}>
                                     {adaptEngagementText(opt)}

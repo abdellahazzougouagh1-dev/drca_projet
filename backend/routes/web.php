@@ -64,3 +64,37 @@ Route::get('/test-estimation', function () {
 
     return $pdf->download('Estimation_Test.pdf');
 });
+
+Route::get('/test-pv-convention', function () {
+    $doc = [
+        'numero_consultation' => '7/2023/DRCA-RSK',
+        'date_reunion' => '06/07/2023',
+        'heure_reunion' => '12:30',
+        'numero_decision' => '65/2023/DRCA-RSK',
+        'date_decision' => '27/06/2023',
+        'commission' => [
+            ['nom' => 'Enneddam Wafaa', 'fonction' => 'Chef de Service de la Programmation du conseil agricole', 'qualite' => 'Président'],
+            ['nom' => 'LAARISI HOUDA', 'fonction' => 'Chef de service/SPSO', 'qualite' => 'Membre'],
+            ['nom' => 'BEKOUCHE Karim', 'fonction' => 'Administrateur de 2éme grade/SAF', 'qualite' => 'Membre'],
+        ],
+        'objet' => 'Organisation de voyages d’agriculteurs et de techniciens',
+        'lettres_consultation_refs' => '62,63 et 64 / 2023/DRCA-RSK',
+        'fournisseurs_consultes' => [
+            ['nom' => 'GENERATION MULISERVICES', 'adresse' => 'AV MOUKAOUAMA DALIA B2/2APPT NO 7 MARRAKECH.', 'ville' => 'Marrakech'],
+        ],
+        'concurrents' => [
+            ['nom' => 'GENERATION MULISERVICES', 'montant_avant' => null, 'montant_apres' => null, 'montant' => 0],
+        ],
+        'attributaire' => 'GENERATION MULISERVICES',
+        'montant_retenu' => 0,
+        'montant_en_lettres' => '-',
+        'heure_fin' => '13:15',
+        'date_document' => '06/07/2023',
+    ];
+
+    $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('documents.pv_ouverture_convention', [
+        'doc' => $doc,
+    ])->setPaper('A4', 'portrait');
+
+    return $pdf->download('test_pv_convention.pdf');
+});

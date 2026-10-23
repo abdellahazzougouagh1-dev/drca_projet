@@ -69,6 +69,46 @@
     @include('documents.partials.bc_header')
     @include('documents.partials.bc_footer')
 <div class="page">
+@php
+    $isConvention = (!empty($consultation) && ($consultation->mode_engagement === 'Convention' || str_starts_with(strtoupper($consultation->numero_consultation ?? ''), 'CONV')))
+        || str_starts_with(strtoupper($doc['numero_consultation'] ?? ''), 'CONV');
+
+    $lettresRefs = trim((string)($doc['lettres_consultation_refs'] ?? ''));
+
+    if (!$lettresRefs && !empty($doc['lettres_consultation']) && is_array($doc['lettres_consultation'])) {
+        $lNums = [];
+        $lSuffix = '';
+        foreach ($doc['lettres_consultation'] as $lc) {
+            $n = trim((string)data_get($lc, 'numero_lettre', ''));
+            $n = preg_replace('/^CONV\s*[-_]?\s*/i', '', $n);
+            if ($n) {
+                $p = explode('/', $n);
+                if (count($p) > 1) {
+                    $lNums[] = trim($p[0]);
+                    if (!$lSuffix) {
+                        $lSuffix = '/' . trim(implode('/', array_slice($p, 1)));
+                    }
+                } else {
+                    $lNums[] = $n;
+                }
+            }
+        }
+        if (!empty($lNums)) {
+            $year = $consultation->annee ?? date('Y');
+            $lettresRefs = implode(',', $lNums) . ($lSuffix ?: "/{$year}/DRCA-RSK");
+        }
+    }
+
+    if (!$lettresRefs) {
+        $rawNum = $doc['numero_lettre'] ?? $consultation->numero_consultation ?? '';
+        $cleanNum = preg_replace('/^CONV\s*[-_]?\s*/i', '', (string)$rawNum);
+        $lettresRefs = $cleanNum ?: ('15,16,17/' . ($consultation->annee ?? date('Y')) . '/DRCA-RSK');
+    }
+
+    $lettresRefsClean = preg_replace('/^vu\s+(les|la)\s+lettres?\s*[:]?\s*/i', '', $lettresRefs);
+    $lettresRefsClean = preg_replace('/^CONV\s*[-_]?\s*/i', '', $lettresRefsClean);
+    $isMultipleLettres = str_contains($lettresRefsClean, ',') || str_contains($lettresRefsClean, 'et');
+@endphp
 
     <table class="meta">
         <tr>
@@ -92,8 +132,13 @@
         • Vu la décision n°277/ONCA/DRHS/DRH/SGAP du 08 Février 2023, portant nomination de M. BOUDRA Abdelâali Directeur Régional de l’ONCA de la région de Rabat-Salé-Kénitra ;<br>
         • Vu la décision n° 567 /ONCA/DRHS/DRH/SGAP du 17 Mars 2025 portant nomination de M. BOUDRA Abdelâali Directeur Régional de l’ONCA de la région de Rabat-Salé-Kénitra en tant que sous-ordonnateur ;<br>
         • Vu la décision n° 568/ONCA/DRHS/DRH/SGAP du 17 Mars 2025 portant délégation de signature à M. BOUDRA Abdelâali, Directeur Régional de l’ONCA de la région de Rabat-Salé-Kénitra ; <br>
+        @if($isConvention)
+        • Vu {{ $isMultipleLettres ? 'les lettres' : 'la lettre' }} <span class="bold">{{ $lettresRefsClean }}</span> ;<br>
+        @endif
         • Vu le budget de fonctionnement de l’ONCA au titre de l’exercice 2025 ;<br>
+        @if(!$isConvention)
         • Vu l'avis d'achat n° {{ $doc['numero_consultation'] }} ;<br>
+        @endif
         • Vu le budget d'investissement de l'ONCA délégué et notifié à la DRCA-RSK au titre de l’exercice 2025.
     </p>
 

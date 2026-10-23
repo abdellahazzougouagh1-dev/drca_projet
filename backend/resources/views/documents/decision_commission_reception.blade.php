@@ -93,7 +93,11 @@
         • Vu la décision n° 567 /ONCA/DRHS/DRH/SGAP du 17 Mars 2025 portant nomination de M. BOUDRA Abdelâali Directeur Régional de l’ONCA de la région de Rabat-Salé-Kénitra en tant que sous-ordonnateur ;<br>
         • Vu la décision n° 568/ONCA/DRHS/DRH/SGAP du 17 Mars 2025 portant délégation de signature à M. BOUDRA Abdelâali, Directeur Régional de l’ONCA de la région de Rabat-Salé-Kénitra ; <br>
         • Vu le budget de fonctionnement de l’ONCA au titre de l’exercice 2025 ;<br>
+        @if(!empty($consultation) && ($consultation->mode_engagement === 'Convention' || str_starts_with(strtoupper($consultation->numero_consultation ?? ''), 'CONV')))
+        • Vu la consultation n° {{ $doc['numero_consultation'] }} ;<br>
+        @else
         • Vu l'avis d'achat n° {{ $doc['numero_consultation'] }} ;<br>
+        @endif
         • Vu le budget d'investissement de l'ONCA délégué et notifié à la DRCA-RSK au titre de l’exercice 2025 ;<br>
         • Vu le bon de commande N° {{ $doc['numero_bc'] }} ;
     </p>

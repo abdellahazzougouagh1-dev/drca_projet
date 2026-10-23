@@ -17,7 +17,7 @@ class DocumentController extends Controller
         $consultation = $this->loadConsultation($consultationId);
 
         $docTitle = $this->documentNames()[$type] ?? 'Document Administratif';
-        $viewName = $this->viewName($type);
+        $viewName = $this->viewName($type, $consultation);
 
         $pdf = Pdf::loadView($viewName, [
             'consultation' => $consultation,
@@ -47,7 +47,7 @@ class DocumentController extends Controller
 
         $docTitle = $this->documentNames()[$type] ?? 'Document Administratif';
 
-        $pdf = Pdf::loadView($this->viewName($type), [
+        $pdf = Pdf::loadView($this->viewName($type, $consultation), [
             'consultation' => $consultation,
             'docTitle' => $docTitle,
             'type' => $type,
@@ -99,6 +99,7 @@ class DocumentController extends Controller
             'liste_presence' => 'Liste de presence',
             'pv_ouverture' => "PV d'ouverture des plis",
             'pv_ouverture_attribution' => "PV d'ouverture et d'attribution",
+            'pv_ouverture_convention' => "PV d'ouverture de plis (Convention)",
             'devis_contradictoires' => 'Devis contradictoires',
             'decision_attribution' => "Decision d'attribution",
             'note_recours' => 'Note de recours a la concurrence',
@@ -121,13 +122,23 @@ class DocumentController extends Controller
         ];
     }
 
-    private function viewName(string $type): string
+    private function viewName(string $type, ?Consultation $consultation = null): string
     {
+        $isConvention = $consultation && (
+            $consultation->mode_engagement === 'Convention' ||
+            str_starts_with(strtoupper($consultation->numero_consultation ?? ''), 'CONV')
+        );
+
+        if (($type === 'pv_ouverture_convention' || ($isConvention && $type === 'pv_ouverture_attribution')) && view()->exists('documents.pv_ouverture_convention')) {
+            return 'documents.pv_ouverture_convention';
+        }
+
         $bonCommandeDocuments = [
             'avis_achat',
             'lettre_consultation',
             'decision_commission_ouverture',
             'pv_ouverture_attribution',
+            'pv_ouverture_convention',
             'bon_commande',
             'fiche_engagement',
             'ordre_commande',
