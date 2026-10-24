@@ -25,19 +25,4 @@
     @if($footerBanner)
         <img src="{{ $footerBanner }}" style="width: 100%; height: auto; max-height: 52px; display: block;" alt="ONCA DRCA">
     @endif
-
-    <table style="width: 100%; border-collapse: collapse; table-layout: fixed;">
-        <tr>
-          
-
-            <td style="width: 20%; vertical-align: middle; text-align: center;">
-            </td>
-
-            <td style="width: 40%; vertical-align: middle; text-align: right;">
-                @if($sceauMaroc)
-                    <img src="{{ $sceauMaroc }}" alt="Sceau Maroc" class="header-logo" style="max-height: 70px; height: 55px; width: auto;">
-                @endif
-            </td>
-        </tr>
-    </table>
 </div>

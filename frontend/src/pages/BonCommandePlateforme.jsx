@@ -39,6 +39,7 @@ import {
   Paperclip,
   List,
   Mail,
+  RotateCcw,
 } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
@@ -1390,27 +1391,36 @@ const BonCommandePlateforme = () => {
           membres_commission: value,
         };
       }
-      if (documentId === 'lettre_consultation' && field === 'numero_lettre' && typeof cleanVal === 'string') {
-        const cleaned = cleanNumeroLettreConsultation(cleanVal);
-        const currentLettres = updated.lettre_consultation?.lettres_consultation;
-        if (Array.isArray(currentLettres) && currentLettres.length > 0) {
-          updated.lettre_consultation = {
-            ...updated.lettre_consultation,
-            numero_lettre: cleaned,
-            lettres_consultation: currentLettres.map((l, i) => ({
-              ...l,
-              numero_lettre: i === 0 ? cleaned : incrementNumeroLettre(cleaned, i),
-            })),
-          };
-        } else {
-          updated.lettre_consultation = {
-            ...updated.lettre_consultation,
-            numero_lettre: cleaned,
-          };
-        }
+      if (field === 'numero_consultation' && typeof cleanVal === 'string' && (isConventionActive || ['lettre_consultation', 'decision_commission_ouverture', 'pv_ouverture_convention', 'pv_ouverture_attribution'].includes(documentId))) {
+        const cleanedNum = cleanVal.replace(/\bCONV\s*[-_]?\s*/i, '').trim().replace(/^[-_\s]+|[-_\s]+$/, '');
+        updated[documentId] = {
+          ...updated[documentId],
+          numero_consultation: cleanedNum,
+        };
       }
-      if (documentId === 'lettre_consultation' && (field === 'numero_lettre' || field === 'lettres_consultation')) {
-        const currentLettres = updated.lettre_consultation?.lettres_consultation;
+      const isConsultationLettersDoc = documentId === 'lettre_consultation' || (isConventionActive && documentId === 'avis_achat');
+      if (isConsultationLettersDoc && field === 'numero_lettre' && typeof cleanVal === 'string') {
+        const cleaned = cleanNumeroLettreConsultation(cleanVal, savedConsultation?.annee || currentYear);
+        const currentLettres = updated[documentId]?.lettres_consultation
+          || updated.lettre_consultation?.lettres_consultation
+          || updated.avis_achat?.lettres_consultation;
+        const patched = (Array.isArray(currentLettres) && currentLettres.length > 0)
+          ? {
+              numero_lettre: cleaned,
+              lettres_consultation: currentLettres.map((l, i) => ({
+                ...l,
+                numero_lettre: i === 0 ? cleaned : incrementNumeroLettre(cleaned, i),
+              })),
+            }
+          : { numero_lettre: cleaned };
+
+        updated.lettre_consultation = { ...(updated.lettre_consultation || {}), ...patched };
+        updated.avis_achat = { ...(updated.avis_achat || {}), ...patched };
+      }
+      if (isConsultationLettersDoc && (field === 'numero_lettre' || field === 'lettres_consultation')) {
+        const currentLettres = updated[documentId]?.lettres_consultation
+          || updated.lettre_consultation?.lettres_consultation
+          || updated.avis_achat?.lettres_consultation;
         if (Array.isArray(currentLettres) && currentLettres.length > 0) {
           const newCompact = formatLettresRefsCompact(currentLettres, savedConsultation?.annee || currentYear);
           const newFormatted = formatLettresRefs(currentLettres, savedConsultation?.annee || currentYear);
@@ -1420,12 +1430,47 @@ const BonCommandePlateforme = () => {
               lettres_consultation_refs: newCompact,
             };
           }
-          if (updated.pv_ouverture_convention) {
-            updated.pv_ouverture_convention = {
-              ...updated.pv_ouverture_convention,
-              lettres_consultation_refs: newFormatted,
-            };
-          }
+
+          // Synchroniser les participants et les concurrents dans l'ordre exact des lettres
+          const prevPvSuppliers = updated.pv_ouverture_convention?.fournisseurs_consultes
+            || updated.pv_ouverture_attribution?.fournisseurs_consultes
+            || [];
+          const syncedSuppliers = currentLettres
+            .filter((l) => l && (l.societe || l.destinataire_adresse || l.numero_lettre))
+            .map((l, idx) => {
+              const matched = prevPvSuppliers.find((s) => s.nom === l.societe) || prevPvSuppliers[idx] || {};
+              const defaultAmt = matched.montant || matched.montant_apres || matched.montant_avant || (idx === 0 && totalTTC > 0 ? totalTTC.toFixed(2) : (idx === 0 && savedConsultation?.budget?.montant_ttc ? String(savedConsultation.budget.montant_ttc) : ''));
+              return {
+                nom: l.societe || '',
+                adresse: l.destinataire_adresse || '',
+                ville: l.ville || '',
+                montant: defaultAmt,
+                montant_avant: matched.montant_avant || defaultAmt,
+                montant_apres: matched.montant_apres || defaultAmt,
+              };
+            });
+
+          const syncedConcurrents = syncedSuppliers.map((s) => ({
+            nom: s.nom,
+            montant: s.montant || '',
+            montant_avant: s.montant_avant || s.montant || '',
+            montant_apres: s.montant_apres || s.montant || '',
+          }));
+
+          const pvPatch = {
+            lettres_consultation_refs: newFormatted,
+            fournisseurs_consultes: syncedSuppliers,
+            concurrents: syncedConcurrents,
+          };
+
+          updated.pv_ouverture_convention = {
+            ...(updated.pv_ouverture_convention || {}),
+            ...pvPatch,
+          };
+          updated.pv_ouverture_attribution = {
+            ...(updated.pv_ouverture_attribution || {}),
+            ...pvPatch,
+          };
         }
       }
       if (documentId === 'decision_commission_reception') {
@@ -1564,7 +1609,13 @@ const BonCommandePlateforme = () => {
           defaults.pieces_jointes = '';
         }
       }
-      else if (field.name === 'numero_consultation') defaults.numero_consultation = savedConsultation?.numero_consultation || formData.numero_consultation || '04/2024/DRCA-RSK';
+      else if (field.name === 'numero_consultation') {
+        let numCons = savedConsultation?.numero_consultation || formData.numero_consultation || '04/2024/DRCA-RSK';
+        if (isConventionActive || ['lettre_consultation', 'decision_commission_ouverture', 'pv_ouverture_convention', 'pv_ouverture_attribution'].includes(documentId)) {
+          numCons = String(numCons).replace(/\bCONV\s*[-_]?\s*/i, '').trim().replace(/^[-_\s]+|[-_\s]+$/, '');
+        }
+        defaults.numero_consultation = numCons;
+      }
       else if (field.name === 'numero_bc') {
         let rawBc;
         if (documentId === 'decision_commission_reception' || documentId === 'pv_reception') {
@@ -1784,13 +1835,68 @@ const BonCommandePlateforme = () => {
           }))
           : [{ numero_prix: '1', designation: '', specification: '', unite_mesure: 'Unite', quantite: '1', prix_unitaire_ht: '0', tva: '20', garantie_exigee: '' }];
       }
+      else if (field.name === 'fournisseurs_consultes') {
+        const lettres = documentForms.lettre_consultation?.lettres_consultation
+          || documentForms.avis_achat?.lettres_consultation;
+        const defaultSuppliers = (Array.isArray(lettres) && lettres.length > 0 && lettres.some((l) => l.societe))
+          ? lettres
+              .filter((l) => l && (l.societe || l.destinataire_adresse || l.numero_lettre))
+              .map((l, idx) => {
+                const defaultAmt = idx === 0 && totalTTC > 0 ? totalTTC.toFixed(2) : (idx === 0 && savedConsultation?.budget?.montant_ttc ? String(savedConsultation.budget.montant_ttc) : '');
+                return {
+                  nom: l.societe || '',
+                  adresse: l.destinataire_adresse || '',
+                  ville: l.ville || '',
+                  montant: defaultAmt,
+                  montant_avant: defaultAmt,
+                  montant_apres: defaultAmt,
+                };
+              })
+          : ((savedConsultation?.offres && savedConsultation.offres.length > 0)
+            ? savedConsultation.offres.map((o) => {
+                const amt = o.montant_apres_verification || o.montant_propose || '';
+                return {
+                  nom: o.fournisseur?.raison_sociale || '',
+                  adresse: o.fournisseur?.adresse || '',
+                  ville: o.fournisseur?.ville || '',
+                  montant: amt,
+                  montant_avant: amt,
+                  montant_apres: amt,
+                };
+              })
+            : [
+                {
+                  nom: savedConsultation?.fournisseur?.raison_sociale || documentForms.lettre_consultation?.societe || 'GENERATION MULISERVICES',
+                  adresse: savedConsultation?.fournisseur?.adresse || documentForms.lettre_consultation?.destinataire_adresse || 'AV MOUKAOUAMA DALIA B2/2APPT NO 7 MARRAKECH.',
+                  ville: savedConsultation?.fournisseur?.ville || 'Marrakech',
+                  montant: totalTTC > 0 ? totalTTC.toFixed(2) : (savedConsultation?.budget?.montant_ttc ? String(savedConsultation.budget.montant_ttc) : ''),
+                  montant_avant: totalTTC > 0 ? totalTTC.toFixed(2) : '',
+                  montant_apres: totalTTC > 0 ? totalTTC.toFixed(2) : '',
+                },
+              ]);
+        defaults.fournisseurs_consultes = defaultSuppliers;
+      }
       else if (field.name === 'concurrents') {
-        if (isConventionActive) {
+        const lettres = documentForms.lettre_consultation?.lettres_consultation
+          || documentForms.avis_achat?.lettres_consultation;
+        if (isConventionActive && Array.isArray(lettres) && lettres.length > 0 && lettres.some((l) => l.societe)) {
+          defaults.concurrents = lettres
+            .filter((l) => l && (l.societe || l.destinataire_adresse || l.numero_lettre))
+            .map((l, idx) => {
+              const defaultAmt = idx === 0 && totalTTC > 0 ? totalTTC.toFixed(2) : (idx === 0 && savedConsultation?.budget?.montant_ttc ? String(savedConsultation.budget.montant_ttc) : '');
+              return {
+                nom: l.societe || `Société ${idx + 1}`,
+                montant_avant: defaultAmt,
+                montant_apres: defaultAmt,
+                montant: defaultAmt,
+              };
+            });
+        } else if (isConventionActive) {
           const supplierNom = savedConsultation?.fournisseur?.raison_sociale || documentForms.lettre_consultation?.societe || 'GENERATION MULISERVICES';
           defaults.concurrents = [
             {
               nom: supplierNom,
-              montant_avant: '',
+              montant_avant: totalTTC > 0 ? totalTTC.toFixed(2) : '',
               montant_apres: totalTTC > 0 ? totalTTC.toFixed(2) : (savedConsultation?.budget?.montant_ttc ? String(savedConsultation.budget.montant_ttc) : ''),
               montant: totalTTC > 0 ? totalTTC : (savedConsultation?.budget?.montant_ttc || 0),
             },
@@ -1799,33 +1905,12 @@ const BonCommandePlateforme = () => {
           defaults.concurrents = savedConsultation.offres.map((o) => ({
             nom: o.fournisseur?.raison_sociale || 'Société',
             montant: o.montant_apres_verification || o.montant_propose || 0,
+            montant_avant: o.montant_propose || '',
+            montant_apres: o.montant_apres_verification || o.montant_propose || '',
           }));
         } else {
           defaults.concurrents = [];
         }
-      }
-      else if (field.name === 'fournisseurs_consultes') {
-        const lettres = documentForms.lettre_consultation?.lettres_consultation;
-        const defaultSuppliers = (Array.isArray(lettres) && lettres.length > 0 && lettres.some((l) => l.societe))
-          ? lettres.map((l) => ({
-              nom: l.societe || '',
-              adresse: l.destinataire_adresse || '',
-              ville: l.ville || '',
-            }))
-          : ((savedConsultation?.offres && savedConsultation.offres.length > 0)
-            ? savedConsultation.offres.map((o) => ({
-                nom: o.fournisseur?.raison_sociale || '',
-                adresse: o.fournisseur?.adresse || '',
-                ville: o.fournisseur?.ville || '',
-              }))
-            : [
-                {
-                  nom: savedConsultation?.fournisseur?.raison_sociale || documentForms.lettre_consultation?.societe || 'GENERATION MULISERVICES',
-                  adresse: savedConsultation?.fournisseur?.adresse || documentForms.lettre_consultation?.destinataire_adresse || 'AV MOUKAOUAMA DALIA B2/2APPT NO 7 MARRAKECH.',
-                  ville: savedConsultation?.fournisseur?.ville || 'Marrakech',
-                },
-              ]);
-        defaults.fournisseurs_consultes = defaultSuppliers;
       }
       else if (field.name === 'lettres_consultation_refs') {
         defaults.lettres_consultation_refs = documentId === 'decision_commission_ouverture'
@@ -1910,7 +1995,7 @@ const BonCommandePlateforme = () => {
       }
     });
 
-    if (documentId === 'lettre_consultation' && defaults.lettres_consultation && defaults.lettres_consultation[0]) {
+    if ((documentId === 'lettre_consultation' || (isConventionActive && documentId === 'avis_achat')) && defaults.lettres_consultation && defaults.lettres_consultation[0]) {
       defaults.numero_lettre = cleanNumeroLettreConsultation(defaults.lettres_consultation[0].numero_lettre, savedConsultation?.annee || currentYear);
       defaults.societe = defaults.lettres_consultation[0].societe;
       defaults.destinataire_nom = defaults.lettres_consultation[0].destinataire_nom;
@@ -1918,13 +2003,23 @@ const BonCommandePlateforme = () => {
       defaults.ville = defaults.lettres_consultation[0].ville;
     }
 
-    setDocumentForms((prev) => ({
-      ...prev,
-      [documentId]: {
-        ...(prev[documentId] || {}),
-        ...defaults,
-      },
-    }));
+    setDocumentForms((prev) => {
+      const next = {
+        ...prev,
+        [documentId]: {
+          ...(prev[documentId] || {}),
+          ...defaults,
+        },
+      };
+      if (isConventionActive && documentId === 'avis_achat') {
+        next.lettre_consultation = { ...(next.lettre_consultation || {}), ...defaults };
+      }
+      if (isConventionActive && (documentId === 'pv_ouverture_attribution' || documentId === 'pv_ouverture_convention')) {
+        next.pv_ouverture_convention = { ...(next.pv_ouverture_convention || {}), ...defaults };
+        next.pv_ouverture_attribution = { ...(next.pv_ouverture_attribution || {}), ...defaults };
+      }
+      return next;
+    });
 
     setFormErrors((prev) => ({ ...prev, [documentId]: {} }));
     setMessage('Champs pré-remplis automatiquement avec succès !');
@@ -2082,7 +2177,9 @@ const BonCommandePlateforme = () => {
         disponible_ce: (Number(values.credit_ouvert_ce) || 0) - (Number(values.depenses_anterieures_ce) || 0),
       } : {}),
       objet: values.objet || formData.objet_consultation,
-      numero_consultation: values.numero_consultation || savedConsultation?.numero_consultation,
+      numero_consultation: (isConventionActive || ['decision_commission_ouverture', 'pv_ouverture_convention', 'pv_ouverture_attribution', 'lettre_consultation'].includes(documentId))
+        ? String(values.numero_consultation || savedConsultation?.numero_consultation || '').replace(/\bCONV\s*[-_]?\s*/i, '').trim().replace(/^[-_\s]+|[-_\s]+$/, '')
+        : (values.numero_consultation || savedConsultation?.numero_consultation),
       adresse_societe: values.adresse_societe || values.adresse_1 || documentForms['bon_commande']?.adresse_societe || savedConsultation?.fournisseur?.adresse || savedConsultation?.engagement?.fournisseur?.adresse || 'APP N 6 Immeuble 01 KHENIFRA',
       ville_societe: values.ville_societe || values.ville_1 || documentForms['bon_commande']?.ville_societe || savedConsultation?.fournisseur?.ville || savedConsultation?.engagement?.fournisseur?.ville || 'Rabat',
     };
@@ -2156,7 +2253,21 @@ const BonCommandePlateforme = () => {
       }
     }
 
-    if (values.concurrents) {
+    if (documentId === 'pv_ouverture_attribution' || documentId === 'pv_ouverture_convention') {
+      const fConsultes = values.fournisseurs_consultes
+        || documentForms.pv_ouverture_convention?.fournisseurs_consultes
+        || documentForms.pv_ouverture_attribution?.fournisseurs_consultes;
+      if (Array.isArray(fConsultes) && fConsultes.length > 0) {
+        data.fournisseurs_consultes = fConsultes;
+      }
+
+      const cList = values.concurrents
+        || documentForms.pv_ouverture_convention?.concurrents
+        || documentForms.pv_ouverture_attribution?.concurrents;
+      if (Array.isArray(cList) && cList.length > 0) {
+        data.concurrents = cList;
+      }
+    } else if (values.concurrents) {
       data.concurrents = values.concurrents;
     }
     if (values.societes_refusees) {
@@ -4018,31 +4129,50 @@ const BonCommandePlateforme = () => {
                         }
 
                         if (field.type === 'attributaire_selector') {
-                          const concurrentsList = Array.isArray(documentForms[selectedDocument.id]?.concurrents)
-                            ? documentForms[selectedDocument.id].concurrents
-                            : [];
-                          const selectedAttr = documentForms[selectedDocument.id]?.[field.name] || '';
-                          const motifAttr = documentForms[selectedDocument.id]?.motif_attribution || '';
+                          const docId = selectedDocument.id;
+                          const concurrentsList = (Array.isArray(documentForms[docId]?.concurrents) && documentForms[docId].concurrents.length > 0)
+                            ? documentForms[docId].concurrents
+                            : ((Array.isArray(documentForms[docId]?.fournisseurs_consultes) && documentForms[docId].fournisseurs_consultes.length > 0)
+                                ? documentForms[docId].fournisseurs_consultes
+                                : (Array.isArray(documentForms.pv_ouverture_convention?.fournisseurs_consultes)
+                                    ? documentForms.pv_ouverture_convention.fournisseurs_consultes
+                                    : (Array.isArray(documentForms.pv_ouverture_convention?.concurrents)
+                                        ? documentForms.pv_ouverture_convention.concurrents
+                                        : [])));
+                          const selectedAttr = documentForms[docId]?.[field.name] || documentForms.pv_ouverture_convention?.[field.name] || '';
+                          const motifAttr = documentForms[docId]?.motif_attribution || documentForms.pv_ouverture_convention?.motif_attribution || '';
 
                           const handleSelectAttr = (e) => {
                             const selectedNom = e.target.value;
-                            handleDocumentFieldChange(selectedDocument.id, field.name, selectedNom);
+                            handleDocumentFieldChange(docId, field.name, selectedNom);
+                            if (docId !== 'pv_ouverture_convention') handleDocumentFieldChange('pv_ouverture_convention', field.name, selectedNom);
+                            if (docId !== 'pv_ouverture_attribution') handleDocumentFieldChange('pv_ouverture_attribution', field.name, selectedNom);
 
                             if (!selectedNom) return;
 
                             const foundIndex = concurrentsList.findIndex((c) => c.nom === selectedNom);
                             if (foundIndex !== -1) {
                               const found = concurrentsList[foundIndex];
-                              if (found && found.montant) {
-                                handleDocumentFieldChange(selectedDocument.id, 'montant_apres_verification', found.montant);
+                              const foundMontant = found.montant || found.montant_apres;
+                              if (foundMontant) {
+                                handleDocumentFieldChange(docId, 'montant_apres_verification', foundMontant);
+                                if (docId !== 'pv_ouverture_convention') handleDocumentFieldChange('pv_ouverture_convention', 'montant_apres_verification', foundMontant);
+                                if (docId !== 'pv_ouverture_attribution') handleDocumentFieldChange('pv_ouverture_attribution', 'montant_apres_verification', foundMontant);
                               }
 
                               const rank = found.classement || (foundIndex + 1);
                               handleDocumentFieldChange(
-                                selectedDocument.id,
+                                docId,
                                 'motif_attribution',
                                 `Offre la moins disante conforme (classée N°${rank}) retenue par le maître d'ouvrage`
                               );
+                              if (docId !== 'pv_ouverture_convention') {
+                                handleDocumentFieldChange(
+                                  'pv_ouverture_convention',
+                                  'motif_attribution',
+                                  `Offre la moins disante conforme (classée N°${rank}) retenue par le maître d'ouvrage`
+                                );
+                              }
                             }
 
                             handleDocumentFieldChange('bon_commande', 'titulaire_nom', selectedNom);
@@ -4145,42 +4275,172 @@ const BonCommandePlateforme = () => {
                         }
 
                         if (field.type === 'fournisseurs_consultes_table') {
-                          const rawList = documentForms[selectedDocument.id]?.[field.name];
-                          const currentList = Array.isArray(rawList) && rawList.length > 0
+                          const docId = selectedDocument.id;
+                          const lettres = documentForms.lettre_consultation?.lettres_consultation
+                            || documentForms.avis_achat?.lettres_consultation;
+                          const hasLettres = Array.isArray(lettres) && lettres.length > 0 && lettres.some((l) => l.societe || l.destinataire_adresse);
+
+                          const rawList = documentForms[docId]?.[field.name]
+                            || documentForms.pv_ouverture_convention?.[field.name]
+                            || documentForms.pv_ouverture_attribution?.[field.name];
+
+                          const currentList = (Array.isArray(rawList) && rawList.length > 0)
                             ? rawList
-                            : [
-                                {
-                                  nom: savedConsultation?.fournisseur?.raison_sociale || documentForms.lettre_consultation?.societe || 'GENERATION MULISERVICES',
-                                  adresse: savedConsultation?.fournisseur?.adresse || documentForms.lettre_consultation?.destinataire_adresse || 'AV MOUKAOUAMA DALIA B2/2APPT NO 7 MARRAKECH.',
-                                  ville: savedConsultation?.fournisseur?.ville || 'Marrakech',
-                                }
-                              ];
+                            : (hasLettres
+                                ? lettres
+                                    .filter((l) => l && (l.societe || l.destinataire_adresse || l.numero_lettre))
+                                    .map((l, i) => {
+                                      const defaultAmt = i === 0 && totalTTC > 0 ? totalTTC.toFixed(2) : (i === 0 && savedConsultation?.budget?.montant_ttc ? String(savedConsultation.budget.montant_ttc) : '');
+                                      return {
+                                        nom: l.societe || '',
+                                        adresse: l.destinataire_adresse || '',
+                                        ville: l.ville || '',
+                                        montant: defaultAmt,
+                                        montant_avant: defaultAmt,
+                                        montant_apres: defaultAmt,
+                                      };
+                                    })
+                                : [
+                                    {
+                                      nom: savedConsultation?.fournisseur?.raison_sociale || documentForms.lettre_consultation?.societe || 'GENERATION MULISERVICES',
+                                      adresse: savedConsultation?.fournisseur?.adresse || documentForms.lettre_consultation?.destinataire_adresse || 'AV MOUKAOUAMA DALIA B2/2APPT NO 7 MARRAKECH.',
+                                      ville: savedConsultation?.fournisseur?.ville || 'Marrakech',
+                                      montant: totalTTC > 0 ? totalTTC.toFixed(2) : '',
+                                      montant_avant: totalTTC > 0 ? totalTTC.toFixed(2) : '',
+                                      montant_apres: totalTTC > 0 ? totalTTC.toFixed(2) : '',
+                                    }
+                                  ]
+                              );
+
+                          const syncFromLettres = () => {
+                            if (!hasLettres) return;
+                            const synced = lettres
+                              .filter((l) => l && (l.societe || l.destinataire_adresse || l.numero_lettre))
+                              .map((l, idx) => {
+                                const matched = currentList.find((s) => s.nom === l.societe) || currentList[idx] || {};
+                                const amount = matched.montant || matched.montant_apres || matched.montant_avant || (idx === 0 && totalTTC > 0 ? totalTTC.toFixed(2) : '');
+                                return {
+                                  nom: l.societe || '',
+                                  adresse: l.destinataire_adresse || '',
+                                  ville: l.ville || '',
+                                  montant: amount,
+                                  montant_avant: matched.montant_avant || amount,
+                                  montant_apres: matched.montant_apres || amount,
+                                };
+                              });
+
+                            const concs = synced.map((s) => ({
+                              nom: s.nom,
+                              montant: s.montant || '',
+                              montant_avant: s.montant_avant || s.montant || '',
+                              montant_apres: s.montant_apres || s.montant || '',
+                            }));
+
+                            handleDocumentFieldChange(docId, field.name, synced);
+                            handleDocumentFieldChange(docId, 'concurrents', concs);
+                            if (docId !== 'pv_ouverture_convention') {
+                              handleDocumentFieldChange('pv_ouverture_convention', field.name, synced);
+                              handleDocumentFieldChange('pv_ouverture_convention', 'concurrents', concs);
+                            }
+                            if (docId !== 'pv_ouverture_attribution') {
+                              handleDocumentFieldChange('pv_ouverture_attribution', field.name, synced);
+                              handleDocumentFieldChange('pv_ouverture_attribution', 'concurrents', concs);
+                            }
+                          };
 
                           const updateParticipant = (idx, key, val) => {
-                            const updated = currentList.map((p, i) => (i === idx ? { ...p, [key]: val } : p));
-                            handleDocumentFieldChange(selectedDocument.id, field.name, updated);
-
-                            if (key === 'nom') {
-                              const concs = Array.isArray(documentForms[selectedDocument.id]?.concurrents)
-                                ? [...documentForms[selectedDocument.id].concurrents]
-                                : [];
-                              if (concs[idx]) {
-                                concs[idx] = { ...concs[idx], nom: val };
-                              } else {
-                                concs[idx] = { nom: val, montant_avant: '', montant_apres: '', montant: '' };
+                            const updated = currentList.map((p, i) => {
+                              if (i !== idx) return p;
+                              const nextItem = { ...p, [key]: val };
+                              if (key === 'montant') {
+                                nextItem.montant_apres = val;
+                                if (!nextItem.montant_avant) nextItem.montant_avant = val;
                               }
-                              handleDocumentFieldChange(selectedDocument.id, 'concurrents', concs);
+                              return nextItem;
+                            });
+
+                            handleDocumentFieldChange(docId, field.name, updated);
+                            if (docId !== 'pv_ouverture_convention') {
+                              handleDocumentFieldChange('pv_ouverture_convention', field.name, updated);
+                            }
+                            if (docId !== 'pv_ouverture_attribution') {
+                              handleDocumentFieldChange('pv_ouverture_attribution', field.name, updated);
+                            }
+
+                            // Synchroniser immédiatement avec le Tableau 2 (concurrents)
+                            const existingConcs = Array.isArray(documentForms[docId]?.concurrents)
+                              ? [...documentForms[docId].concurrents]
+                              : [];
+
+                            const updatedConcs = updated.map((p, i) => {
+                              const prevC = existingConcs[i] || {};
+                              return {
+                                nom: p.nom || prevC.nom || '',
+                                montant: p.montant || prevC.montant || '',
+                                montant_avant: p.montant_avant || prevC.montant_avant || p.montant || '',
+                                montant_apres: p.montant_apres || prevC.montant_apres || p.montant || '',
+                              };
+                            });
+
+                            handleDocumentFieldChange(docId, 'concurrents', updatedConcs);
+                            if (docId !== 'pv_ouverture_convention') {
+                              handleDocumentFieldChange('pv_ouverture_convention', 'concurrents', updatedConcs);
+                            }
+                            if (docId !== 'pv_ouverture_attribution') {
+                              handleDocumentFieldChange('pv_ouverture_attribution', 'concurrents', updatedConcs);
+                            }
+
+                            // Si le participant modifié est l'attributaire retenu
+                            const selectedAttr = documentForms[docId]?.attributaire || documentForms.pv_ouverture_convention?.attributaire;
+                            if ((key === 'montant' || key === 'montant_apres') && selectedAttr && (updated[idx]?.nom === selectedAttr || (!selectedAttr && idx === 0))) {
+                              handleDocumentFieldChange(docId, 'montant_apres_verification', val);
+                              if (docId !== 'pv_ouverture_convention') {
+                                handleDocumentFieldChange('pv_ouverture_convention', 'montant_apres_verification', val);
+                              }
+                              if (docId !== 'pv_ouverture_attribution') {
+                                handleDocumentFieldChange('pv_ouverture_attribution', 'montant_apres_verification', val);
+                              }
                             }
                           };
 
                           const addParticipant = () => {
-                            const updated = [...currentList, { nom: '', adresse: '', ville: '' }];
-                            handleDocumentFieldChange(selectedDocument.id, field.name, updated);
+                            const updated = [...currentList, { nom: '', adresse: '', ville: '', montant: '', montant_avant: '', montant_apres: '' }];
+                            handleDocumentFieldChange(docId, field.name, updated);
+                            const updatedConcs = updated.map((p) => ({
+                              nom: p.nom || '',
+                              montant: p.montant || '',
+                              montant_avant: p.montant_avant || p.montant || '',
+                              montant_apres: p.montant_apres || p.montant || '',
+                            }));
+                            handleDocumentFieldChange(docId, 'concurrents', updatedConcs);
+                            if (docId !== 'pv_ouverture_convention') {
+                              handleDocumentFieldChange('pv_ouverture_convention', field.name, updated);
+                              handleDocumentFieldChange('pv_ouverture_convention', 'concurrents', updatedConcs);
+                            }
+                            if (docId !== 'pv_ouverture_attribution') {
+                              handleDocumentFieldChange('pv_ouverture_attribution', field.name, updated);
+                              handleDocumentFieldChange('pv_ouverture_attribution', 'concurrents', updatedConcs);
+                            }
                           };
 
                           const removeParticipant = (idx) => {
                             const updated = currentList.filter((_, i) => i !== idx);
-                            handleDocumentFieldChange(selectedDocument.id, field.name, updated);
+                            handleDocumentFieldChange(docId, field.name, updated);
+                            const updatedConcs = updated.map((p) => ({
+                              nom: p.nom || '',
+                              montant: p.montant || '',
+                              montant_avant: p.montant_avant || p.montant || '',
+                              montant_apres: p.montant_apres || p.montant || '',
+                            }));
+                            handleDocumentFieldChange(docId, 'concurrents', updatedConcs);
+                            if (docId !== 'pv_ouverture_convention') {
+                              handleDocumentFieldChange('pv_ouverture_convention', field.name, updated);
+                              handleDocumentFieldChange('pv_ouverture_convention', 'concurrents', updatedConcs);
+                            }
+                            if (docId !== 'pv_ouverture_attribution') {
+                              handleDocumentFieldChange('pv_ouverture_attribution', field.name, updated);
+                              handleDocumentFieldChange('pv_ouverture_attribution', 'concurrents', updatedConcs);
+                            }
                           };
 
                           return (
@@ -4191,16 +4451,28 @@ const BonCommandePlateforme = () => {
                                     🏢 {adaptEngagementText(field.label)} {field.required && <span className="text-red-600 font-bold ml-0.5">*</span>}
                                   </label>
                                   <p className="text-xs text-slate-500 mt-0.5">
-                                    Liste des fournisseurs qui ont été respectivement consultés (Tableau 1 du PV).
+                                    Liste des fournisseurs consultés dans l'ordre exact des lettres (Tableau 1 et montants Tableau 2).
                                   </p>
                                 </div>
-                                <button
-                                  type="button"
-                                  onClick={addParticipant}
-                                  className="px-3 py-1.5 bg-blue-700 hover:bg-blue-800 text-white font-bold text-xs rounded-xl inline-flex items-center gap-1.5 shadow-xs transition-all self-start sm:self-auto"
-                                >
-                                  <Plus size={14} /> Ajouter un participant
-                                </button>
+                                <div className="flex flex-wrap items-center gap-2">
+                                  {hasLettres && (
+                                    <button
+                                      type="button"
+                                      onClick={syncFromLettres}
+                                      className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl inline-flex items-center gap-1.5 shadow-xs transition-all self-start sm:self-auto"
+                                      title="Réaligner les participants sur les lettres de consultation"
+                                    >
+                                      <RotateCcw size={13} /> Synchroniser depuis les lettres
+                                    </button>
+                                  )}
+                                  <button
+                                    type="button"
+                                    onClick={addParticipant}
+                                    className="px-3 py-1.5 bg-blue-700 hover:bg-blue-800 text-white font-bold text-xs rounded-xl inline-flex items-center gap-1.5 shadow-xs transition-all self-start sm:self-auto"
+                                  >
+                                    <Plus size={14} /> Ajouter un participant
+                                  </button>
+                                </div>
                               </div>
 
                               <div className="overflow-x-auto">
@@ -4211,6 +4483,7 @@ const BonCommandePlateforme = () => {
                                       <th className="py-2.5 px-3 text-left">Les Participants (Raison sociale)</th>
                                       <th className="py-2.5 px-3 text-left">Adresses</th>
                                       <th className="py-2.5 px-3 text-left w-36">Ville</th>
+                                      <th className="py-2.5 px-3 text-right w-44">Montant TTC (DH)</th>
                                       <th className="py-2.5 px-3 text-center w-16">Action</th>
                                     </tr>
                                   </thead>
@@ -4247,6 +4520,15 @@ const BonCommandePlateforme = () => {
                                             className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 text-slate-700 text-xs outline-none focus:border-blue-500 bg-white"
                                           />
                                         </td>
+                                        <td className="py-2 px-3">
+                                          <input
+                                            type="text"
+                                            value={item.montant || item.montant_apres || ''}
+                                            onChange={(e) => updateParticipant(idx, 'montant', e.target.value)}
+                                            placeholder="0.00"
+                                            className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 text-slate-800 font-bold text-xs text-right outline-none focus:border-blue-500 bg-white"
+                                          />
+                                        </td>
                                         <td className="py-2 px-3 text-center">
                                           <button
                                             type="button"
@@ -4267,22 +4549,32 @@ const BonCommandePlateforme = () => {
                         }
 
                         if (field.type === 'concurrents_convention_table') {
-                          const rawList = documentForms[selectedDocument.id]?.[field.name];
-                          const participants = Array.isArray(documentForms[selectedDocument.id]?.fournisseurs_consultes)
-                            ? documentForms[selectedDocument.id].fournisseurs_consultes
-                            : [];
+                          const docId = selectedDocument.id;
+                          const rawList = documentForms[docId]?.[field.name]
+                            || documentForms.pv_ouverture_convention?.[field.name]
+                            || documentForms.pv_ouverture_attribution?.[field.name];
+
+                          const participants = Array.isArray(documentForms[docId]?.fournisseurs_consultes)
+                            ? documentForms[docId].fournisseurs_consultes
+                            : (Array.isArray(documentForms.pv_ouverture_convention?.fournisseurs_consultes)
+                                ? documentForms.pv_ouverture_convention.fournisseurs_consultes
+                                : (Array.isArray(documentForms.pv_ouverture_attribution?.fournisseurs_consultes)
+                                    ? documentForms.pv_ouverture_attribution.fournisseurs_consultes
+                                    : []));
 
                           const initialList = participants.length > 0
                             ? participants.map((p) => ({
                                 nom: p.nom || '',
-                                montant_avant: '',
-                                montant_apres: '',
+                                montant_avant: p.montant_avant || p.montant || '',
+                                montant_apres: p.montant_apres || p.montant || '',
+                                montant: p.montant || p.montant_apres || '',
                               }))
                             : [
                                 {
                                   nom: savedConsultation?.fournisseur?.raison_sociale || 'GENERATION MULISERVICES',
-                                  montant_avant: '',
-                                  montant_apres: '',
+                                  montant_avant: totalTTC > 0 ? totalTTC.toFixed(2) : '',
+                                  montant_apres: totalTTC > 0 ? totalTTC.toFixed(2) : '',
+                                  montant: totalTTC > 0 ? totalTTC.toFixed(2) : '',
                                 }
                               ];
 
@@ -4294,29 +4586,68 @@ const BonCommandePlateforme = () => {
                             const updated = currentList.map((c, i) => {
                               if (i === idx) {
                                 const item = { ...c, [key]: val };
-                                if (key === 'montant_apres') {
+                                if (key === 'montant_apres' || key === 'montant') {
                                   item.montant = val;
+                                  item.montant_apres = val;
                                 }
                                 return item;
                               }
                               return c;
                             });
-                            handleDocumentFieldChange(selectedDocument.id, field.name, updated);
 
-                            const selectedAttr = documentForms[selectedDocument.id]?.attributaire;
+                            handleDocumentFieldChange(docId, field.name, updated);
+                            if (docId !== 'pv_ouverture_convention') {
+                              handleDocumentFieldChange('pv_ouverture_convention', field.name, updated);
+                            }
+                            if (docId !== 'pv_ouverture_attribution') {
+                              handleDocumentFieldChange('pv_ouverture_attribution', field.name, updated);
+                            }
+
+                            // Rétro-synchroniser vers fournisseurs_consultes
+                            const existingParts = Array.isArray(documentForms[docId]?.fournisseurs_consultes)
+                              ? [...documentForms[docId].fournisseurs_consultes]
+                              : [];
+                            if (existingParts[idx]) {
+                              existingParts[idx] = {
+                                ...existingParts[idx],
+                                nom: updated[idx]?.nom || existingParts[idx].nom,
+                                montant: key === 'montant_apres' || key === 'montant' ? val : (existingParts[idx].montant || ''),
+                                montant_apres: key === 'montant_apres' ? val : (existingParts[idx].montant_apres || ''),
+                                montant_avant: key === 'montant_avant' ? val : (existingParts[idx].montant_avant || ''),
+                              };
+                              handleDocumentFieldChange(docId, 'fournisseurs_consultes', existingParts);
+                              if (docId !== 'pv_ouverture_convention') {
+                                handleDocumentFieldChange('pv_ouverture_convention', 'fournisseurs_consultes', existingParts);
+                              }
+                              if (docId !== 'pv_ouverture_attribution') {
+                                handleDocumentFieldChange('pv_ouverture_attribution', 'fournisseurs_consultes', existingParts);
+                              }
+                            }
+
+                            const selectedAttr = documentForms[docId]?.attributaire || documentForms.pv_ouverture_convention?.attributaire;
                             if (selectedAttr && updated[idx]?.nom === selectedAttr && (key === 'montant_apres' || key === 'montant')) {
-                              handleDocumentFieldChange(selectedDocument.id, 'montant_apres_verification', val);
+                              handleDocumentFieldChange(docId, 'montant_apres_verification', val);
+                              if (docId !== 'pv_ouverture_convention') {
+                                handleDocumentFieldChange('pv_ouverture_convention', 'montant_apres_verification', val);
+                              }
+                              if (docId !== 'pv_ouverture_attribution') {
+                                handleDocumentFieldChange('pv_ouverture_attribution', 'montant_apres_verification', val);
+                              }
                             }
                           };
 
                           const addConcurrent = () => {
                             const updated = [...currentList, { nom: '', montant_avant: '', montant_apres: '', montant: '' }];
-                            handleDocumentFieldChange(selectedDocument.id, field.name, updated);
+                            handleDocumentFieldChange(docId, field.name, updated);
+                            if (docId !== 'pv_ouverture_convention') handleDocumentFieldChange('pv_ouverture_convention', field.name, updated);
+                            if (docId !== 'pv_ouverture_attribution') handleDocumentFieldChange('pv_ouverture_attribution', field.name, updated);
                           };
 
                           const removeConcurrent = (idx) => {
                             const updated = currentList.filter((_, i) => i !== idx);
-                            handleDocumentFieldChange(selectedDocument.id, field.name, updated);
+                            handleDocumentFieldChange(docId, field.name, updated);
+                            if (docId !== 'pv_ouverture_convention') handleDocumentFieldChange('pv_ouverture_convention', field.name, updated);
+                            if (docId !== 'pv_ouverture_attribution') handleDocumentFieldChange('pv_ouverture_attribution', field.name, updated);
                           };
 
                           return (
@@ -4556,7 +4887,9 @@ const BonCommandePlateforme = () => {
                                 ? cleanNumeroLettreConsultation(currentVal, savedConsultation?.annee || currentYear)
                                 : ((selectedDocument.id === 'decision_commission_ouverture' || selectedDocument.id === 'pv_ouverture_convention') && field.name === 'lettres_consultation_refs')
                                   ? getAutoLettresRefsCompact(documentForms, savedConsultation, currentYear)
-                                  : currentVal;
+                                  : (field.name === 'numero_consultation' && (isConventionActive || ['decision_commission_ouverture', 'pv_ouverture_convention', 'pv_ouverture_attribution', 'lettre_consultation'].includes(selectedDocument.id)))
+                                    ? String(currentVal || '').replace(/\bCONV\s*[-_]?\s*/i, '').trim().replace(/^[-_\s]+|[-_\s]+$/, '')
+                                    : currentVal;
                         const currentLen = String(displayedVal || '').length;
 
                         return (

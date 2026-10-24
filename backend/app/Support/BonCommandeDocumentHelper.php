@@ -140,9 +140,19 @@ class BonCommandeDocumentHelper
         }
         $fournisseursConsultesDefault = !empty($fournisseursFromLettres) ? $fournisseursFromLettres : $fournisseurs;
 
+        $finalNumeroConsultation = self::value($documentData, 'numero_consultation', $consultation->numero_consultation);
+        $isConventionDoc = (!empty($consultation) && ($consultation->mode_engagement === 'Convention' || str_starts_with(strtoupper($consultation->numero_consultation ?? ''), 'CONV')))
+            || in_array($type, ['lettre_consultation', 'decision_commission_ouverture', 'pv_ouverture_convention', 'pv_ouverture_attribution'], true)
+            || str_starts_with(strtoupper((string)$finalNumeroConsultation), 'CONV');
+
+        if ($isConventionDoc && $finalNumeroConsultation) {
+            $finalNumeroConsultation = trim(preg_replace('/\bCONV\s*[-_]?\s*/i', '', (string)$finalNumeroConsultation));
+            $finalNumeroConsultation = trim(preg_replace('/^[-_\s]+|[-_\s]+$/', '', $finalNumeroConsultation));
+        }
+
         return [
             'data' => $documentData,
-            'numero_consultation' => self::value($documentData, 'numero_consultation', $consultation->numero_consultation),
+            'numero_consultation' => $finalNumeroConsultation,
             'numero_bc' => $numeroBc ?: ($consultation->numero_consultation ?? ''),
             'objet' => self::value($documentData, 'objet', $consultation->objet_consultation),
             'lieu_execution' => self::value($documentData, 'lieu_execution', $consultation->lieu_execution ?? 'REGION DE RABAT SALE KENITRA'),
@@ -307,13 +317,31 @@ class BonCommandeDocumentHelper
     private static function concurrents(Consultation $consultation, array $data, float $totalTtc): array
     {
         $custom = self::value($data, 'concurrents', null);
-        if (is_array($custom)) {
+        if (is_array($custom) && !empty($custom)) {
             return array_map(function ($c) {
+                $montant = is_array($c) ? ($c['montant'] ?? $c['montant_apres'] ?? $c['montant_ttc'] ?? $c['montant_avant'] ?? 0) : 0;
+                $montantAvant = is_array($c) ? ($c['montant_avant'] ?? $c['montant'] ?? $montant) : $montant;
+                $montantApres = is_array($c) ? ($c['montant_apres'] ?? $c['montant'] ?? $montant) : $montant;
                 return [
                     'nom' => is_array($c) ? ($c['nom'] ?? $c['raison_sociale'] ?? '') : (string) $c,
-                    'montant' => is_array($c) ? (float) ($c['montant'] ?? $c['montant_ttc'] ?? 0) : 0,
+                    'montant' => (float) $montant,
+                    'montant_avant' => $montantAvant !== null && $montantAvant !== '' ? $montantAvant : null,
+                    'montant_apres' => $montantApres !== null && $montantApres !== '' ? $montantApres : null,
                 ];
             }, $custom);
+        }
+
+        $fConsultes = self::value($data, 'fournisseurs_consultes', null);
+        if (is_array($fConsultes) && !empty($fConsultes)) {
+            return array_map(function ($f) {
+                $m = is_array($f) ? ($f['montant'] ?? $f['montant_apres'] ?? $f['montant_avant'] ?? null) : null;
+                return [
+                    'nom' => is_array($f) ? ($f['nom'] ?? $f['raison_sociale'] ?? '') : (string) $f,
+                    'montant' => $m !== null ? (float) $m : 0,
+                    'montant_avant' => is_array($f) ? ($f['montant_avant'] ?? $m) : $m,
+                    'montant_apres' => is_array($f) ? ($f['montant_apres'] ?? $m) : $m,
+                ];
+            }, $fConsultes);
         }
 
         $offres = $consultation->offres instanceof Collection ? $consultation->offres : collect($consultation->offres ?? []);

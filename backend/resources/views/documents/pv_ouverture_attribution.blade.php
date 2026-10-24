@@ -74,6 +74,13 @@
     @include('documents.partials.bc_header')
     @include('documents.partials.bc_footer')
 <div class="page">
+@php
+    $isConvention = (!empty($consultation) && ($consultation->mode_engagement === 'Convention' || str_starts_with(strtoupper($consultation->numero_consultation ?? ''), 'CONV')))
+        || str_starts_with(strtoupper($doc['numero_consultation'] ?? ''), 'CONV');
+    $numeroConsultationClean = trim(preg_replace('/\bCONV\s*[-_]?\s*/i', '', (string)($doc['numero_consultation'] ?? '')));
+    $numeroConsultationClean = trim(preg_replace('/^[-_\s]+|[-_\s]+$/', '', $numeroConsultationClean));
+    $numeroConsultationDisplay = $isConvention ? $numeroConsultationClean : ($doc['numero_consultation'] ?? '');
+@endphp
 
     <!-- TITRE PRINCIPAL ET NUMERO D'AVIS -->
     <table style="width: 100%; border: 1.5px solid #000; border-collapse: collapse; text-align: center; margin-top: 4px; margin-bottom: 9px;">
@@ -90,7 +97,7 @@
                             AVIS D'ACHAT N° :
                         </td>
                         <td style="width: 50%; text-align: center; padding: 3px; font-weight: bold; font-size: 10px;">
-                            {{ $doc['numero_consultation'] }}
+                            {{ $numeroConsultationDisplay }}
                         </td>
                     </tr>
                 </table>

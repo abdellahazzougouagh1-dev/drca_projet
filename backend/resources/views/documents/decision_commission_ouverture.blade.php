@@ -108,6 +108,10 @@
     $lettresRefsClean = preg_replace('/^vu\s+(les|la)\s+lettres?\s*[:]?\s*/i', '', $lettresRefs);
     $lettresRefsClean = preg_replace('/^CONV\s*[-_]?\s*/i', '', $lettresRefsClean);
     $isMultipleLettres = str_contains($lettresRefsClean, ',') || str_contains($lettresRefsClean, 'et');
+
+    $numeroConsultationClean = trim(preg_replace('/\bCONV\s*[-_]?\s*/i', '', (string)($doc['numero_consultation'] ?? '')));
+    $numeroConsultationClean = trim(preg_replace('/^[-_\s]+|[-_\s]+$/', '', $numeroConsultationClean));
+    $numeroConsultationDisplay = $isConvention ? $numeroConsultationClean : ($doc['numero_consultation'] ?? '');
 @endphp
 
     <table class="meta">
@@ -120,7 +124,7 @@
     <div class="sub-title">Décision</div>
     <div class="header-desc">
         De nomination de la commission d'ouverture des plis<br>
-        Consultation N° : {{ $doc['numero_consultation'] }}
+        Consultation N° : {{ $numeroConsultationDisplay }}
     </div>
 
     <p class="article-text">
@@ -147,7 +151,7 @@
     <p><span class="section">Article 1 :</span>
     <br>
         Une commission est instituée à la Direction Régionale du Conseil Agricole de Rabat-Salé-Kénitra pour l'ouverture des plis relatifs à la consultation
-        <span class="bold">{{ $doc['numero_consultation'] }}</span> ayant pour objet :
+        <span class="bold">{{ $numeroConsultationDisplay }}</span> ayant pour objet :
     </p>
     <p class="bold" style="text-align: justify; font-size: 11px;">{{ $doc['objet'] }}</p>
 

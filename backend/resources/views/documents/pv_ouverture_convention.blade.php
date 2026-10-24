@@ -116,6 +116,9 @@
     $lettresRefsClean = preg_replace('/^vu\s+(les|la)\s+lettres?\s*[:]?\s*/i', '', $lettresRefs);
     $lettresRefsClean = preg_replace('/^CONV\s*[-_]?\s*/i', '', $lettresRefsClean);
     $isMultipleLettres = str_contains($lettresRefsClean, ',') || str_contains($lettresRefsClean, 'et');
+
+    $numeroConsultationClean = trim(preg_replace('/\bCONV\s*[-_]?\s*/i', '', (string)($doc['numero_consultation'] ?? '')));
+    $numeroConsultationClean = trim(preg_replace('/^[-_\s]+|[-_\s]+$/', '', $numeroConsultationClean));
 @endphp
 
     <!-- 1. EN-TÊTE OFFICIEL -->
@@ -149,7 +152,7 @@
                 Consultation
             </td>
             <td style="width: 50%; text-align: left; padding: 3px 12px; font-size: 10px; font-weight: bold;">
-                {{ $doc['numero_consultation'] }}
+                {{ $numeroConsultationClean }}
             </td>
         </tr>
     </table>
@@ -181,7 +184,7 @@
 
     <!-- 6. DETAILS DE LA PRESTATION ET DES LETTRES -->
     <div style="font-size: 9.5px; line-height: 1.35; margin-bottom: 2px;">
-        S’est réunie au siège de la DRCA-RSK en vue de procéder à l’ouverture des plis concernant l’offre de prix N° &nbsp; <strong>{{ $doc['numero_consultation'] }}</strong> &nbsp; relative au prestation de :
+        S’est réunie au siège de la DRCA-RSK en vue de procéder à l’ouverture des plis concernant l’offre de prix N° &nbsp; <strong>{{ $numeroConsultationClean }}</strong> &nbsp; relative au prestation de :
     </div>
     <div style="font-size: 9.5px; font-weight: bold; margin: 2px 0 2px 10px;">
         {{ $doc['objet'] }}
@@ -242,26 +245,29 @@
             </tr>
         </thead>
         <tbody>
-            @php $countC = max(3, count($concurrentsList)); @endphp
+            @php $countC = max(3, count($concurrentsList), count($fournisseursConsultes)); @endphp
             @for($i = 0; $i < $countC; $i++)
-            @php $c = $concurrentsList[$i] ?? null; @endphp
+            @php 
+                $c = $concurrentsList[$i] ?? ($fournisseursConsultes[$i] ?? null); 
+                $nomC = $c ? (data_get($c, 'nom') ?: data_get($c, 'raison_sociale', '')) : '';
+                $mAvant = $c ? (data_get($c, 'montant_avant') ?? data_get($c, 'montant')) : null;
+                $mApres = $c ? (data_get($c, 'montant_apres') ?? data_get($c, 'montant')) : null;
+            @endphp
             <tr style="height: 20px;">
                 <td style="text-align: center;">{{ $i + 1 }}</td>
                 <td style="font-weight: bold; text-transform: uppercase; padding-left: 6px;">
-                    {{ $c ? data_get($c, 'nom', '') : '' }}
+                    {{ $nomC }}
                 </td>
                 <td style="text-align: center;">
-                    @if($c && data_get($c, 'montant_avant') !== null && data_get($c, 'montant_avant') !== '')
-                        {{ number_format((float) data_get($c, 'montant_avant'), 2, ',', ' ') }}
+                    @if($mAvant !== null && $mAvant !== '' && is_numeric(str_replace([' ', ','], ['', '.'], (string)$mAvant)))
+                        {{ number_format((float) str_replace([' ', ','], ['', '.'], (string)$mAvant), 2, ',', ' ') }}
                     @else
                         -
                     @endif
                 </td>
                 <td style="text-align: center;">
-                    @if($c && data_get($c, 'montant_apres') !== null && data_get($c, 'montant_apres') !== '')
-                        {{ number_format((float) data_get($c, 'montant_apres'), 2, ',', ' ') }}
-                    @elseif($c && (float) data_get($c, 'montant', 0) > 0)
-                        {{ number_format((float) data_get($c, 'montant'), 2, ',', ' ') }}
+                    @if($mApres !== null && $mApres !== '' && is_numeric(str_replace([' ', ','], ['', '.'], (string)$mApres)))
+                        {{ number_format((float) str_replace([' ', ','], ['', '.'], (string)$mApres), 2, ',', ' ') }}
                     @else
                         -
                     @endif
