@@ -134,11 +134,16 @@
         $sceauMarocPath = public_path('images/sceau-maroc.png');
         $sceauMarocSrc  = file_exists($sceauMarocPath) ? 'data:image/png;base64,'.base64_encode(file_get_contents($sceauMarocPath)) : '';
 
+        $isConvention = (!empty($consultation) && (in_array($consultation->mode_engagement, ['Convention', 'Contrat']) || str_starts_with(strtoupper($consultation->numero_consultation ?? ''), 'CONV')))
+            || str_starts_with(strtoupper((string)data_get($documentData, 'numero_consultation', '')), 'CONV');
+
         /* ── Données de base ── */
-        $typeBudget = $consultation->type_budget ?? 'Fonctionnement';
+        $typeBudget = data_get($documentData, 'type_budget') ?: ($consultation->type_budget ?? 'Investissement');
         $exercice   = $consultation->annee ?? date('Y');
+        $isContrat  = $isConvention && strtolower((string)$typeBudget) === 'fonctionnement';
+        $labelEngagement = $isConvention ? ($isContrat ? 'Contrat' : 'Convention') : 'Bon de commande';
         $formeEngagement = data_get($documentData, 'forme_engagement')
-            ?: ($doc['forme_engagement'] ?? 'Bon de commande');
+            ?: ($doc['forme_engagement'] ?? $labelEngagement);
 
         /* ── N° Engagement : depuis documentData en priorité ── */
         $numEngagement = data_get($documentData, 'numero_engagement')
@@ -157,10 +162,12 @@
 
         /* ── Bénéficiaire ── */
         $beneficiaire = data_get($documentData, 'societe')
-            ?: ($doc['titulaire_nom']
-                ?? ($doc['societe']
-                    ?? ($consultation->fournisseur->raison_sociale
-                        ?? ($consultation->engagement?->fournisseur?->raison_sociale ?? ''))));
+            ?: (data_get($documentData, 'attributaire')
+                ?: ($doc['titulaire_nom']
+                    ?? ($doc['societe']
+                        ?? ($doc['attributaire']
+                            ?? ($consultation->fournisseur->raison_sociale
+                                ?? ($consultation->engagement?->fournisseur?->raison_sociale ?? ''))))));
 
         /* ── Montant de la dépense ── */
         $rawMontant = data_get($documentData, 'montant_ttc');
@@ -195,8 +202,16 @@
         }
 
         /* ── Pièces jointes ── */
-        $piecesJointes = data_get($documentData, 'pieces_jointes')
-            ?: ($doc['pieces_jointes'] ?? ($consultation->numero_bc ? 'Bon de commande N° '.$consultation->numero_bc : ''));
+        if ($isConvention) {
+            $cleanNum = trim(preg_replace('/\bCONV\s*[-_]?\s*/i', '', (string)($consultation->numero_consultation ?? '')));
+            $cleanNum = trim(preg_replace('/^[-_\s]+|[-_\s]+$/', '', $cleanNum));
+            $prefix = $isContrat ? 'Contrat' : 'Convention';
+            $piecesJointes = data_get($documentData, 'pieces_jointes')
+                ?: ($doc['pieces_jointes'] ?? ($prefix . ' N° ' . $cleanNum));
+        } else {
+            $piecesJointes = data_get($documentData, 'pieces_jointes')
+                ?: ($doc['pieces_jointes'] ?? ($consultation->numero_bc ? 'Bon de commande N° '.$consultation->numero_bc : ''));
+        }
     @endphp
 
     <!-- ══════════ HEADER LOGOS ══════════ -->

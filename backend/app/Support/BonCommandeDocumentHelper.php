@@ -141,8 +141,8 @@ class BonCommandeDocumentHelper
         $fournisseursConsultesDefault = !empty($fournisseursFromLettres) ? $fournisseursFromLettres : $fournisseurs;
 
         $finalNumeroConsultation = self::value($documentData, 'numero_consultation', $consultation->numero_consultation);
-        $isConventionDoc = (!empty($consultation) && ($consultation->mode_engagement === 'Convention' || str_starts_with(strtoupper($consultation->numero_consultation ?? ''), 'CONV')))
-            || in_array($type, ['lettre_consultation', 'decision_commission_ouverture', 'pv_ouverture_convention', 'pv_ouverture_attribution'], true)
+        $isConventionDoc = (!empty($consultation) && (in_array($consultation->mode_engagement, ['Convention', 'Contrat']) || str_starts_with(strtoupper($consultation->numero_consultation ?? ''), 'CONV')))
+            || in_array($type, ['lettre_consultation', 'decision_commission_ouverture', 'pv_ouverture_convention', 'pv_ouverture_attribution', 'ordre_service_convention'], true)
             || str_starts_with(strtoupper((string)$finalNumeroConsultation), 'CONV');
 
         if ($isConventionDoc && $finalNumeroConsultation) {
@@ -237,7 +237,15 @@ class BonCommandeDocumentHelper
             return $default;
         }
 
-        return Carbon::parse($value)->format('d/m/Y');
+        if (preg_match('/^\d{2}\/\d{2}\/\d{4}$/', (string)$value)) {
+            return (string)$value;
+        }
+
+        try {
+            return Carbon::parse($value)->format('d/m/Y');
+        } catch (\Throwable $e) {
+            return (string)$value;
+        }
     }
 
     private static function commission(Consultation $consultation, array $data): array

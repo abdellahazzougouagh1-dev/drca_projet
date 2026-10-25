@@ -107,6 +107,7 @@ class DocumentController extends Controller
             'convention' => 'Convention',
             'fiche_engagement' => "Fiche d'engagement budgetaire",
             'ordre_commande' => 'Ordre de commande',
+            'ordre_service_convention' => 'Ordre de service (Convention)',
             'os_notification' => 'OS de notification',
             'os_commencement' => 'OS de commencement',
             'accuse_reception' => 'Accuse de reception',
@@ -125,12 +126,16 @@ class DocumentController extends Controller
     private function viewName(string $type, ?Consultation $consultation = null): string
     {
         $isConvention = $consultation && (
-            $consultation->mode_engagement === 'Convention' ||
+            in_array($consultation->mode_engagement, ['Convention', 'Contrat']) ||
             str_starts_with(strtoupper($consultation->numero_consultation ?? ''), 'CONV')
         );
 
         if (($type === 'pv_ouverture_convention' || ($isConvention && $type === 'pv_ouverture_attribution')) && view()->exists('documents.pv_ouverture_convention')) {
             return 'documents.pv_ouverture_convention';
+        }
+
+        if (($type === 'ordre_service_convention' || ($isConvention && $type === 'ordre_commande')) && view()->exists('documents.ordre_service_convention')) {
+            return 'documents.ordre_service_convention';
         }
 
         $bonCommandeDocuments = [
@@ -142,6 +147,7 @@ class DocumentController extends Controller
             'bon_commande',
             'fiche_engagement',
             'ordre_commande',
+            'ordre_service_convention',
             'accuse_reception',
             'decision_commission_reception',
             'pv_reception',

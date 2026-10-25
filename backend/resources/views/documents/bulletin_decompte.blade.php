@@ -42,15 +42,23 @@
     $logoOncaSrc   = file_exists(public_path('images/logo-onca.png'))   ? 'data:image/png;base64,'.base64_encode(file_get_contents(public_path('images/logo-onca.png')))   : '';
     $sceauMarocSrc = file_exists(public_path('images/sceau-maroc.png')) ? 'data:image/png;base64,'.base64_encode(file_get_contents(public_path('images/sceau-maroc.png'))) : '';
 
+    $isConvention = (!empty($consultation) && (in_array($consultation->mode_engagement, ['Convention', 'Contrat']) || str_starts_with(strtoupper($consultation->numero_consultation ?? ''), 'CONV')))
+        || str_starts_with(strtoupper((string)data_get($documentData, 'numero_consultation', '')), 'CONV');
     $exercice     = $consultation->annee ?? date('Y');
-    $typeBudget   = $consultation->type_budget ?? 'Investissement';
+    $typeBudget   = data_get($documentData, 'type_budget') ?: ($consultation->type_budget ?? 'Investissement');
+    $isContrat    = $isConvention && strtolower((string)$typeBudget) === 'fonctionnement';
 
     $dateDoc      = data_get($documentData, 'date_document')
                     ? \Carbon\Carbon::parse(data_get($documentData, 'date_document'))->format('d/m/Y')
                     : date('d/m/Y');
 
-    $numeroBc     = data_get($documentData, 'numero_bc') ?: ($consultation->numero_bc ?? ($doc['numero_bc'] ?? ''));
-    $beneficiaire = data_get($documentData, 'societe') ?: ($doc['societe'] ?? '');
+    $cleanNumConv = trim(preg_replace('/\bCONV\s*[-_]?\s*/i', '', (string)($doc['numero_consultation'] ?? ($consultation->numero_consultation ?? ''))));
+    $cleanNumConv = trim(preg_replace('/^[-_\s]+|[-_\s]+$/', '', $cleanNumConv));
+    $numeroBc     = $isConvention 
+        ? $cleanNumConv
+        : (data_get($documentData, 'numero_bc') ?: ($consultation->numero_bc ?? ($doc['numero_bc'] ?? '')));
+    $labelEngagement = $isConvention ? ($isContrat ? 'Contrat N°' : 'Convention N°') : 'Bon de commande N°';
+    $beneficiaire = data_get($documentData, 'societe') ?: ($doc['societe'] ?? ($doc['attributaire'] ?? ''));
     $objet        = data_get($documentData, 'objet') ?: ($consultation->objet_consultation ?? '');
 
     $numFacture   = data_get($documentData, 'numero_facture', '');
@@ -92,7 +100,7 @@
 <table class="data-table">
     <tr><th colspan="2" style="font-size:11px; padding:6px;">RENSEIGNEMENTS GÉNÉRAUX</th></tr>
     <tr>
-        <td class="label">Bon de commande N°</td>
+        <td class="label">{{ $labelEngagement }}</td>
         <td class="value" style="font-weight:bold;">{{ $numeroBc }}</td>
     </tr>
     <tr>

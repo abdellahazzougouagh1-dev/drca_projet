@@ -232,6 +232,8 @@ const documentFieldGroups = {
 
   fiche_engagement: [
     { name: 'numero_engagement', label: "N° Fiche d'Engagement", placeholder: '02/2024/FE/DRCA-RSK', required: true },
+    { name: 'forme_engagement', label: "Forme de l'engagement", placeholder: 'Convention / Contrat', required: false, readOnly: true },
+    { name: 'societe', label: 'Bénéficiaire (Entreprise retenue)', placeholder: 'GENERATION MULISERVICES', required: true, fromDb: true },
     { name: 'credit_ouvert_cp', label: 'Crédit ouvert CP', type: 'number', required: false },
     { name: 'credit_ouvert_ce', label: 'Crédit ouvert CE', type: 'number', required: false },
     { name: 'depenses_anterieures_ce', label: 'Dépenses engagées antérieurement CE', type: 'number', required: false },
@@ -242,6 +244,7 @@ const documentFieldGroups = {
     { name: 'montant_depense_neuf', label: 'Montant de la dépense neuf', type: 'number', required: false },
     { name: 'interets_moratoires', label: 'Intérêts moratoires 1 %', type: 'number', required: false, readOnly: true },
     { name: 'montant_engager_neuf', label: 'Montant à engager neuf', type: 'number', required: false, readOnly: true },
+    { name: 'pieces_jointes', label: 'Pièces jointes', placeholder: 'Convention / Contrat N° ...', required: false },
   ],
   ordre_commande: [
     {
@@ -249,32 +252,59 @@ const documentFieldGroups = {
       label: "Nature de l'ordre de service",
       type: 'select',
       options: [
+        "Notification de l'approbation",
         "Commencement de l'exécution",
+        "Ajournement de l'exécution",
         "Reprise de l'exécution",
-        "Ajournement de l'exécution"
       ],
       required: true
     },
-    { name: 'motif_ajournement', label: "Motif de l'ajournement (si ajournement)", placeholder: 'Planification et disponibilité des agriculteurs', required: true, condition: (form) => form?.nature_os === "Ajournement de l'exécution" },
-    { name: 'numero_lettre', label: "Numéro d'ordre de service / lettre", placeholder: '11/2024/DRCA-RSK/OS', required: true },
+    { 
+      name: 'motif_ajournement', 
+      label: "Motif de l'ajournement (si ajournement)", 
+      placeholder: 'Planification et disponibilité des agriculteurs', 
+      required: true, 
+      condition: (form) => form?.nature_os === "Ajournement de l'exécution" 
+    },
+    { name: 'numero_lettre', label: "Numéro d'ordre de service (N°)", placeholder: '01 /2024/DRC-RSK/OS', required: true },
     { name: 'date_document', label: 'Date du document', type: 'date', required: true },
-    { name: 'numero_consultation', label: ' Consultation N°', placeholder: '04/2024/DRCA-RSK', required: true, fromDb: true },
-    { name: 'numero_bc', label: 'Bon de commande N°', placeholder: '04/2024/DRCA-RSK', required: true, fromDb: true },
-    { name: 'societe', label: 'Nom de la société ', placeholder: 'DESTIN FLOTTE', required: true, fromDb: true },
-    { name: 'adresse_societe', label: 'Adresse de Société', placeholder: 'Ex: N° 12 Avenue Hassan II, Kénitra', required: true, fromDb: true },
-    { name: 'ville_societe', label: 'Ville', placeholder: 'Rabat', required: true, fromDb: true },
-    { name: 'objet', label: 'Objet de la prestation', placeholder: 'Prestation de transport des agriculteurs...', required: true, fromDb: true },
+    { name: 'numero_consultation', label: 'Convention / Consultation N°', placeholder: '05/2023/DRCA-RSK', required: true, fromDb: true },
+    { name: 'numero_bc', label: 'Bon de commande N°', placeholder: '04/2024/DRCA-RSK', required: false, condition: (form, isConv) => !isConv, fromDb: true },
+    { name: 'destinataire_nom', label: 'Destinataire (Civilité / Titre)', placeholder: 'Monsieur le gérant de la société', required: false },
+    { name: 'societe', label: 'Entreprise choisie (Société retenue au PV)', placeholder: 'GENERATION MULISERVICES', required: true, type: 'os_company_selector' },
+    { name: 'adresse_societe', label: 'Adresse de Société', placeholder: 'AV MOUKAOUAMA DALIA B2/2APPT NO 7 MARRAKECH.', required: true, fromDb: true },
+    { name: 'ville_societe', label: 'Ville', placeholder: 'Marrakech', required: true, fromDb: true },
+    { name: 'objet', label: 'Objet de la prestation', placeholder: 'Organisation de voyages d\'agriculteurs et de techniciens', required: true, fromDb: true },
   ],
   accuse_reception: [
-    { name: 'nature_os', label: "Nature de l'ordre de service", placeholder: "Notification de l'approbation", required: true },
-    { name: 'numero_lettre', label: "Numéro d'ordre de service ", placeholder: '11/2024/DRCA-RSK/OS', required: true },
+    { 
+      name: 'nature_os', 
+      label: "Nature de l'ordre de service", 
+      type: 'select',
+      options: [
+        "Notification de l'approbation",
+        "Commencement de l'exécution",
+        "Ajournement de l'exécution",
+        "Reprise de l'exécution",
+      ],
+      required: true 
+    },
+    { 
+      name: 'motif_ajournement', 
+      label: "Motif de l'ajournement (si ajournement)", 
+      placeholder: 'Planification et disponibilité des agriculteurs', 
+      required: true, 
+      condition: (form) => form?.nature_os === "Ajournement de l'exécution" 
+    },
+    { name: 'numero_lettre', label: "Numéro d'ordre de service ", placeholder: '01 /2024/DRC-RSK/OS', required: true },
     { name: 'date_document', label: 'Date du document ', type: 'date', required: true },
-    { name: 'numero_consultation', label: 'Convention / Consultation N°', placeholder: '04/2024/DRCA-RSK', required: true, fromDb: true },
-    { name: 'numero_bc', label: 'Bon de commande N°', placeholder: '04/2024/DRCA-RSK', required: true, fromDb: true },
-    { name: 'societe', label: 'Nom de la société / Prestataire', placeholder: 'DESTIN FLOTTE', required: true, fromDb: true },
-    { name: 'adresse_societe', label: 'Adresse / Domicile de la société', placeholder: 'Ex: N° 12 Avenue Hassan II, Kénitra', required: true, fromDb: true },
-    { name: 'ville_societe', label: 'Ville', placeholder: 'Rabat', required: true, fromDb: true },
-    { name: 'objet', label: 'Objet de la prestation', placeholder: 'Prestation de transport des agriculteurs...', required: true, fromDb: true },
+    { name: 'numero_consultation', label: 'Convention / Consultation N°', placeholder: '05/2023/DRCA-RSK', required: true, fromDb: true },
+    { name: 'numero_bc', label: 'Bon de commande N°', placeholder: '04/2024/DRCA-RSK', required: false, condition: (form, isConv) => !isConv, fromDb: true },
+    { name: 'destinataire_nom', label: 'Destinataire (Civilité / Titre)', placeholder: 'Monsieur le gérant de la société', required: false },
+    { name: 'societe', label: 'Entreprise choisie (Société retenue au PV)', placeholder: 'GENERATION MULISERVICES', required: true, type: 'os_company_selector' },
+    { name: 'adresse_societe', label: 'Adresse / Domicile de la société', placeholder: 'AV MOUKAOUAMA DALIA B2/2APPT NO 7 MARRAKECH.', required: true, fromDb: true },
+    { name: 'ville_societe', label: 'Ville', placeholder: 'Marrakech', required: true, fromDb: true },
+    { name: 'objet', label: 'Objet de la prestation', placeholder: 'Organisation de voyages d\'agriculteurs et de techniciens', required: true, fromDb: true },
   ],
   decision_commission_reception: [
     { name: 'numero_decision', label: 'Numéro de décision', placeholder: 'Ex: 05/DR/2024', required: true },
@@ -930,7 +960,7 @@ const BonCommandePlateforme = () => {
   const isConventionConsultation = (consultation) => {
     const mode = String(consultation?.mode_engagement || '').trim().toLowerCase();
     const ref = String(consultation?.numero_consultation || consultation?.numero_bc || '').toUpperCase();
-    return mode === 'convention' || ref.startsWith('CONV');
+    return mode === 'convention' || mode === 'contrat' || ref.startsWith('CONV');
   };
   const isBonCommandeConsultation = (consultation) => !isConventionConsultation(consultation);
   const isVisibleConsultation = (consultation) => isConventionRoute
@@ -985,8 +1015,14 @@ const BonCommandePlateforme = () => {
   const [availableFournisseurs, setAvailableFournisseurs] = useState([]);
 
   const isConventionActive = isConventionRoute || isConventionConsultation(savedConsultation);
-  const engagementLabel = isConventionActive ? 'Convention' : 'Bon de commande';
-  const engagementLabelLower = isConventionActive ? 'convention' : 'bon de commande';
+  const activeBudgetType = String(
+    savedConsultation?.type_budget ||
+    formData?.type_budget ||
+    'Investissement'
+  ).trim();
+  const isContrat = isConventionActive && activeBudgetType.toLowerCase() === 'fonctionnement';
+  const engagementLabel = isConventionActive ? (isContrat ? 'Contrat' : 'Convention') : 'Bon de commande';
+  const engagementLabelLower = isConventionActive ? (isContrat ? 'contrat' : 'convention') : 'bon de commande';
 
   const adaptEngagementText = (text) => (isConventionActive && typeof text === 'string'
     ? text
@@ -994,7 +1030,8 @@ const BonCommandePlateforme = () => {
       .replace(/N[°o]\s*d['’]avis d['’]achat/gi, 'N° de consultation')
       .replace(/d['’]avis d['’]achat/gi, 'de consultation')
       .replace(/avis d['’]achat/gi, 'Lettre de consultation')
-      .replace(/bons? de commande/gi, (match) => match[0] === 'B' ? 'Convention' : 'convention')
+      .replace(/bons? de commande/gi, (match) => match[0] === 'B' ? (isContrat ? 'Contrat' : 'Convention') : (isContrat ? 'contrat' : 'convention'))
+      .replace(/conventions?/gi, (match) => isContrat ? (match[0] === 'C' ? 'Contrat' : 'contrat') : match)
       .replace(/PV d['’]ouverture(\s+des\s+plis|\s+et\s+d['’]attribution)?(?! de plis)/gi, "PV d'ouverture de plis")
     : text);
 
@@ -1244,8 +1281,10 @@ const BonCommandePlateforme = () => {
         categorie: editingConsultationData.categorie,
         type_prestation: editingConsultationData.intitule || editingConsultationData.type_prestation,
         intitule: editingConsultationData.intitule || editingConsultationData.type_prestation,
-        mode_engagement: editingConsultationData.mode_engagement,
-        type_budget: editingConsultationData.type_budget,
+        mode_engagement: isConventionActive
+          ? (String(editingConsultationData.type_budget).toLowerCase() === 'fonctionnement' ? 'Contrat' : 'Convention')
+          : editingConsultationData.mode_engagement,
+        type_budget: editingConsultationData.type_budget || 'Investissement',
         delai_execution: Number(editingConsultationData.delai_execution) || 30,
         statut_dossier: editingConsultationData.statut_dossier,
         art: editingConsultationData.art,
@@ -1536,7 +1575,7 @@ const BonCommandePlateforme = () => {
         });
       }
       if (field === 'titulaire_nom' || field === 'societe' || field === 'attributaire') {
-        ['ordre_commande', 'accuse_reception', 'pv_reception', 'bon_commande'].forEach((docKey) => {
+        ['ordre_commande', 'accuse_reception', 'pv_reception', 'bon_commande', 'fiche_engagement'].forEach((docKey) => {
           if (docKey !== documentId) {
             updated[docKey] = {
               ...(prev[docKey] || {}),
@@ -1545,6 +1584,38 @@ const BonCommandePlateforme = () => {
             };
           }
         });
+      }
+
+      if (documentId === 'fiche_engagement') {
+        if (field === 'montant_depense_neuf') {
+          const m = Number(value) || 0;
+          const im = Number((m * 0.01).toFixed(2));
+          const total = Number((m + im).toFixed(2));
+          updated.fiche_engagement = {
+            ...(updated.fiche_engagement || {}),
+            montant_depense_neuf: value,
+            interets_moratoires: im,
+            montant_engager_neuf: total,
+          };
+        }
+        if (field === 'credit_ouvert_cp' || field === 'depenses_anterieures_cp') {
+          const c = field === 'credit_ouvert_cp' ? Number(value) || 0 : Number(updated.fiche_engagement?.credit_ouvert_cp) || 0;
+          const d = field === 'depenses_anterieures_cp' ? Number(value) || 0 : Number(updated.fiche_engagement?.depenses_anterieures_cp) || 0;
+          updated.fiche_engagement = {
+            ...(updated.fiche_engagement || {}),
+            [field]: value,
+            disponible_cp: (c - d).toFixed(2),
+          };
+        }
+        if (field === 'credit_ouvert_ce' || field === 'depenses_anterieures_ce') {
+          const c = field === 'credit_ouvert_ce' ? Number(value) || 0 : Number(updated.fiche_engagement?.credit_ouvert_ce) || 0;
+          const d = field === 'depenses_anterieures_ce' ? Number(value) || 0 : Number(updated.fiche_engagement?.depenses_anterieures_ce) || 0;
+          updated.fiche_engagement = {
+            ...(updated.fiche_engagement || {}),
+            [field]: value,
+            disponible_ce: (c - d).toFixed(2),
+          };
+        }
       }
 
       return updated;
@@ -1604,7 +1675,12 @@ const BonCommandePlateforme = () => {
       }
       else if (field.name === 'pieces_jointes') {
         if (documentId === 'fiche_engagement') {
-          defaults.pieces_jointes = savedConsultation?.numero_bc ? `${engagementLabel} N° ${savedConsultation.numero_bc}` : '';
+          if (isConventionActive) {
+            const cleanNum = String(savedConsultation?.numero_consultation || '').replace(/\bCONV\s*[-_]?\s*/i, '').trim().replace(/^[-_\s]+|[-_\s]+$/, '');
+            defaults.pieces_jointes = `${isContrat ? 'Contrat' : 'Convention'} N° ${cleanNum}`;
+          } else {
+            defaults.pieces_jointes = savedConsultation?.numero_bc ? `${engagementLabel} N° ${savedConsultation.numero_bc}` : '';
+          }
         } else {
           defaults.pieces_jointes = '';
         }
@@ -1709,9 +1785,37 @@ const BonCommandePlateforme = () => {
       else if (field.name === 'depenses_credits_engagement') defaults.depenses_credits_engagement = savedConsultation?.depenses_credits_engagement ?? '';
       else if (field.name === 'depenses_credits_consolides') defaults.depenses_credits_consolides = savedConsultation?.depenses_credits_consolides ?? '';
       else if (field.name === 'depenses_rap') defaults.depenses_rap = savedConsultation?.depenses_rap ?? '';
-      else if (field.name === 'montant_depense_neuf') defaults.montant_depense_neuf = savedConsultation?.montant_depense_neuf ?? '';
-      else if (field.name === 'interets_moratoires') defaults.interets_moratoires = savedConsultation?.interets_moratoires ?? '';
-      else if (field.name === 'montant_engager_neuf') defaults.montant_engager_neuf = savedConsultation?.montant_engager_neuf ?? '';
+      else if (field.name === 'montant_depense_neuf') {
+        const srcPrestations = savedConsultation?.prestations?.length > 0 ? savedConsultation.prestations : prestations.filter(p => p.designation?.trim());
+        const ttc = srcPrestations.reduce((sum, p) => {
+          const ht = (Number(p.quantite) || 0) * (Number(p.prix_unitaire_ht) || 0);
+          return sum + ht * (1 + ((Number(p.tva) || 20) / 100));
+        }, 0);
+        const pvMontant = Number(documentForms.pv_ouverture_convention?.montant_apres_verification || documentForms.pv_ouverture_attribution?.montant_apres_verification) || 0;
+        const val = savedConsultation?.montant_depense_neuf ?? (pvMontant > 0 ? pvMontant : (ttc > 0 ? ttc : ''));
+        defaults.montant_depense_neuf = val !== '' ? Number(val).toFixed(2) : '';
+      }
+      else if (field.name === 'interets_moratoires') {
+        const m = Number(defaults.montant_depense_neuf || savedConsultation?.montant_depense_neuf || 0);
+        defaults.interets_moratoires = m > 0 ? (m * 0.01).toFixed(2) : '';
+      }
+      else if (field.name === 'montant_engager_neuf') {
+        const m = Number(defaults.montant_depense_neuf || savedConsultation?.montant_depense_neuf || 0);
+        defaults.montant_engager_neuf = m > 0 ? (m * 1.01).toFixed(2) : '';
+      }
+      else if (field.name === 'disponible_cp') {
+        const c = Number(defaults.credit_ouvert_cp || savedConsultation?.credit_ouvert_cp || 0);
+        const d = Number(defaults.depenses_anterieures_cp || savedConsultation?.depenses_anterieures_cp || 0);
+        defaults.disponible_cp = (c - d).toFixed(2);
+      }
+      else if (field.name === 'disponible_ce') {
+        const c = Number(defaults.credit_ouvert_ce || savedConsultation?.credit_ouvert_ce || 0);
+        const d = Number(defaults.depenses_anterieures_ce || savedConsultation?.depenses_anterieures_ce || 0);
+        defaults.disponible_ce = (c - d).toFixed(2);
+      }
+      else if (field.name === 'forme_engagement') {
+        defaults.forme_engagement = isConventionActive ? (isContrat ? 'Contrat' : 'Convention') : engagementLabel;
+      }
       else if (field.name === 'credit_budget_cp') defaults.credit_budget_cp = '';
       else if (field.name === 'depenses_engagees_cp') defaults.depenses_engagees_cp = '';
       else if (field.name === 'engagement_propose_cp') {
@@ -1722,10 +1826,36 @@ const BonCommandePlateforme = () => {
         }, 0);
         defaults.engagement_propose_cp = ttc > 0 ? (ttc * 1.01).toFixed(2) : '';
       }
-      else if (field.name === 'numero_lettre') defaults.numero_lettre = `${new Date().getFullYear()}/DRCA-RSK/SOS`;
-      else if (field.name === 'nature_os') defaults.nature_os = "Commencement de l'exécution";
+      else if (field.name === 'numero_lettre') {
+        const year = savedConsultation?.annee || currentYear;
+        if (isConventionActive && (documentId === 'ordre_commande' || documentId === 'accuse_reception')) {
+          defaults.numero_lettre = `01 /${year}/DRC-RSK/OS`;
+        } else {
+          defaults.numero_lettre = `${new Date().getFullYear()}/DRCA-RSK/SOS`;
+        }
+      }
+      else if (field.name === 'nature_os') defaults.nature_os = "Notification de l'approbation";
+      else if (field.name === 'destinataire_nom') defaults.destinataire_nom = "Monsieur le gérant de la société";
       else if (field.name === 'societe' || field.name === 'participant_1' || field.name === 'titulaire_nom') {
-        defaults[field.name] = documentForms.bon_commande?.titulaire_nom || documentForms.pv_ouverture_attribution?.attributaire || savedConsultation?.fournisseur?.raison_sociale || savedConsultation?.engagement?.fournisseur?.raison_sociale || '';
+        const pvWinner = documentForms.pv_ouverture_convention?.attributaire
+          || documentForms.pv_ouverture_attribution?.attributaire
+          || '';
+        const pvSuppliers = documentForms.pv_ouverture_convention?.fournisseurs_consultes
+          || documentForms.pv_ouverture_attribution?.fournisseurs_consultes
+          || [];
+        const found = pvSuppliers.find((s) => s.nom === pvWinner) || pvSuppliers[0];
+
+        defaults[field.name] = pvWinner
+          || documentForms.bon_commande?.titulaire_nom
+          || found?.nom
+          || savedConsultation?.fournisseur?.raison_sociale
+          || savedConsultation?.engagement?.fournisseur?.raison_sociale
+          || '';
+
+        if (found) {
+          if (!defaults.adresse_societe && found.adresse) defaults.adresse_societe = found.adresse;
+          if (!defaults.ville_societe && found.ville) defaults.ville_societe = found.ville;
+        }
       }
       else if (field.name === 'art') defaults.art = savedConsultation?.budget?.art || formData.art || '';
       else if (field.name === 'par') defaults.par = savedConsultation?.budget?.par || formData.par || '';
@@ -1736,8 +1866,18 @@ const BonCommandePlateforme = () => {
       else if (field.name === 'ice') defaults.ice = '';
       else if (field.name === 'if' || field.name === 'identifiant_fiscal') defaults[field.name] = '';
       else if (field.name === 'representant') defaults.representant = '';
-      else if (field.name === 'adresse_1' || field.name === 'adresse_societe') defaults[field.name] = documentForms.bon_commande?.adresse_societe || '';
-      else if (field.name === 'ville_1' || field.name === 'ville_societe') defaults[field.name] = documentForms.bon_commande?.ville_societe || '';
+      else if (field.name === 'adresse_1' || field.name === 'adresse_societe') {
+        const pvWinner = documentForms.pv_ouverture_convention?.attributaire || documentForms.pv_ouverture_attribution?.attributaire;
+        const pvSuppliers = documentForms.pv_ouverture_convention?.fournisseurs_consultes || documentForms.pv_ouverture_attribution?.fournisseurs_consultes || [];
+        const found = pvSuppliers.find((s) => s.nom === pvWinner);
+        defaults[field.name] = found?.adresse || documentForms.bon_commande?.adresse_societe || '';
+      }
+      else if (field.name === 'ville_1' || field.name === 'ville_societe') {
+        const pvWinner = documentForms.pv_ouverture_convention?.attributaire || documentForms.pv_ouverture_attribution?.attributaire;
+        const pvSuppliers = documentForms.pv_ouverture_convention?.fournisseurs_consultes || documentForms.pv_ouverture_attribution?.fournisseurs_consultes || [];
+        const found = pvSuppliers.find((s) => s.nom === pvWinner);
+        defaults[field.name] = found?.ville || documentForms.bon_commande?.ville_societe || '';
+      }
       else if (field.name === 'code_societe' || field.name === 'code_ste') defaults[field.name] = '';
       else if (field.name === 'coordonnees_parties') defaults[field.name] = '';
       else if (field.name === 'montant_reserve' || field.name === 'montant_facture' || field.name === 'montant_apres_verification' || field.name === 'montant_avant_verification' || field.name === 'montant_1') {
@@ -2003,6 +2143,50 @@ const BonCommandePlateforme = () => {
       defaults.ville = defaults.lettres_consultation[0].ville;
     }
 
+    if (documentId === 'ordre_commande' || documentId === 'accuse_reception') {
+      const pvWinner = documentForms.pv_ouverture_convention?.attributaire
+        || documentForms.pv_ouverture_attribution?.attributaire
+        || '';
+      const pvSuppliers = documentForms.pv_ouverture_convention?.fournisseurs_consultes
+        || documentForms.pv_ouverture_attribution?.fournisseurs_consultes
+        || [];
+      const foundSupplier = pvSuppliers.find((s) => s.nom === pvWinner) || pvSuppliers[0];
+
+      if (pvWinner && !defaults.societe) {
+        defaults.societe = pvWinner;
+      }
+      if (foundSupplier) {
+        if (!defaults.adresse_societe && foundSupplier.adresse) defaults.adresse_societe = foundSupplier.adresse;
+        if (!defaults.ville_societe && foundSupplier.ville) defaults.ville_societe = foundSupplier.ville;
+      }
+      if (!defaults.nature_os) {
+        defaults.nature_os = "Notification de l'approbation";
+      }
+      if (isConventionActive && (!defaults.numero_lettre || defaults.numero_lettre.includes('SOS'))) {
+        defaults.numero_lettre = `01 /${savedConsultation?.annee || currentYear}/DRC-RSK/OS`;
+      }
+      if (!defaults.destinataire_nom) {
+        defaults.destinataire_nom = "Monsieur le gérant de la société";
+      }
+    }
+
+    if (documentId === 'fiche_engagement') {
+      const pvWinner = documentForms.pv_ouverture_convention?.attributaire
+        || documentForms.pv_ouverture_attribution?.attributaire
+        || documentForms.bon_commande?.titulaire_nom
+        || '';
+      if (pvWinner && !defaults.societe) {
+        defaults.societe = pvWinner;
+      }
+      if (isConventionActive) {
+        defaults.forme_engagement = isContrat ? 'Contrat' : 'Convention';
+        const cleanNum = String(savedConsultation?.numero_consultation || '').replace(/\bCONV\s*[-_]?\s*/i, '').trim().replace(/^[-_\s]+|[-_\s]+$/, '');
+        if (!defaults.pieces_jointes) {
+          defaults.pieces_jointes = `${isContrat ? 'Contrat' : 'Convention'} N° ${cleanNum}`;
+        }
+      }
+    }
+
     setDocumentForms((prev) => {
       const next = {
         ...prev,
@@ -2175,6 +2359,10 @@ const BonCommandePlateforme = () => {
         depenses_engagees_ce: values.depenses_anterieures_ce,
         disponible_cp: (Number(values.credit_ouvert_cp) || 0) - (Number(values.depenses_anterieures_cp) || 0),
         disponible_ce: (Number(values.credit_ouvert_ce) || 0) - (Number(values.depenses_anterieures_ce) || 0),
+        forme_engagement: isConventionActive ? (isContrat ? 'Contrat' : 'Convention') : (values.forme_engagement || engagementLabel),
+        type_budget: values.type_budget || savedConsultation?.type_budget || (isConventionActive ? (isContrat ? 'Fonctionnement' : 'Investissement') : 'Investissement'),
+        societe: values.societe || documentForms.pv_ouverture_convention?.attributaire || documentForms.bon_commande?.titulaire_nom || '',
+        pieces_jointes: values.pieces_jointes || (isConventionActive ? `${isContrat ? 'Contrat' : 'Convention'} N° ${String(values.numero_consultation || savedConsultation?.numero_consultation || '').replace(/\bCONV\s*[-_]?\s*/i, '').trim().replace(/^[-_\s]+|[-_\s]+$/, '')}` : (savedConsultation?.numero_bc ? `${engagementLabel} N° ${savedConsultation.numero_bc}` : '')),
       } : {}),
       objet: values.objet || formData.objet_consultation,
       numero_consultation: (isConventionActive || ['decision_commission_ouverture', 'pv_ouverture_convention', 'pv_ouverture_attribution', 'lettre_consultation'].includes(documentId))
@@ -2286,6 +2474,17 @@ const BonCommandePlateforme = () => {
       data.attributaire = values.attributaire || values.participant_1 || values.societe || '';
     }
 
+    if (documentId === 'ordre_commande' || documentId === 'accuse_reception') {
+      data.numero_os = values.numero_lettre || values.numero_os || data.numero_os || '01 /2024/DRC-RSK/OS';
+      data.numero_convention = data.numero_consultation || values.numero_consultation || values.numero_bc;
+      data.nature_os = values.nature_os || "Notification de l'approbation";
+      data.motif_ajournement = values.motif_ajournement || '';
+      data.destinataire_nom = values.destinataire_nom || 'Monsieur le gérant de la société';
+      data.societe = values.societe || documentForms.bon_commande?.titulaire_nom || documentForms.pv_ouverture_convention?.attributaire || '';
+      data.adresse_societe = values.adresse_societe || documentForms.bon_commande?.adresse_societe || '';
+      data.ville_societe = values.ville_societe || documentForms.bon_commande?.ville_societe || '';
+    }
+
     return data;
   };
 
@@ -2307,7 +2506,9 @@ const BonCommandePlateforme = () => {
     try {
       const payload = {
         ...formData,
-        mode_engagement: isConventionRoute ? 'Convention' : 'BC',
+        mode_engagement: isConventionRoute
+          ? (String(formData.type_budget).toLowerCase() === 'fonctionnement' ? 'Contrat' : 'Convention')
+          : 'BC',
         statut_dossier: 'Programmation',
         montant_estimatif_ht: totalHT,
         tva: prestations[0]?.tva || 20,
@@ -2448,9 +2649,20 @@ const BonCommandePlateforme = () => {
       updatePayload.interets_moratoires = interetsMoratoires;
       updatePayload.montant_engager_neuf = montantEngagerNeuf;
       if (values.s_lig !== undefined) updatePayload.s_lig = values.s_lig;
+      if (isConventionActive) {
+        const curType = String(values.type_budget || savedConsultation?.type_budget || (isContrat ? 'Fonctionnement' : 'Investissement'));
+        const curIsContrat = curType.toLowerCase() === 'fonctionnement';
+        updatePayload.type_budget = curIsContrat ? 'Fonctionnement' : 'Investissement';
+        updatePayload.mode_engagement = curIsContrat ? 'Contrat' : 'Convention';
+      }
     }
 
-    const chosenAttributaire = values.attributaire || values.titulaire_nom || documentForms['pv_ouverture_attribution']?.attributaire || documentForms['bon_commande']?.titulaire_nom;
+    const chosenAttributaire = values.attributaire 
+      || values.titulaire_nom 
+      || values.societe 
+      || documentForms['pv_ouverture_convention']?.attributaire 
+      || documentForms['pv_ouverture_attribution']?.attributaire 
+      || documentForms['bon_commande']?.titulaire_nom;
     if (chosenAttributaire && typeof chosenAttributaire === 'string' && chosenAttributaire.trim() !== '') {
       try {
         const nomTrimmed = chosenAttributaire.trim();
@@ -2580,7 +2792,11 @@ const BonCommandePlateforme = () => {
       const payload = { document_data: buildDocumentData(document.id) };
       const documentType = isConventionActive && document.id === 'avis_achat'
         ? 'lettre_consultation'
-        : (isConventionActive && document.id === 'pv_ouverture_attribution' ? 'pv_ouverture_convention' : document.id);
+        : (isConventionActive && document.id === 'pv_ouverture_attribution' 
+            ? 'pv_ouverture_convention' 
+            : (isConventionActive && (document.id === 'ordre_commande' || document.id === 'ordre_service_convention')
+                ? 'ordre_service_convention' 
+                : document.id));
       const endpoint = `/consultations/${savedConsultation.id}/documents/${documentType}`;
       const response = await api.post(endpoint, payload, { responseType: 'blob' });
       const url = window.URL.createObjectURL(new Blob([response.data]));
@@ -2863,7 +3079,7 @@ const BonCommandePlateforme = () => {
                 </span>
               </div>
 
-              <div className="px-6 py-4 border-b border-slate-200 bg-slate-50 flex flex-wrap gap-2">
+              <div className="px-6 py-4 border-b border-slate-200 bg-slate-50 flex flex-wrap gap-2 items-center">
                 {['Investissement', 'Fonctionnement'].map((budgetType) => (
                   <button
                     key={budgetType}
@@ -2874,9 +3090,14 @@ const BonCommandePlateforme = () => {
                       : 'bg-white border border-slate-200 text-slate-600 hover:border-blue-300 hover:text-blue-700'
                       }`}
                   >
-                    Registre {budgetType}
+                    Registre {budgetType} {isConventionActive ? (budgetType === 'Fonctionnement' ? '(Contrats)' : '(Conventions)') : ''}
                   </button>
                 ))}
+                {isConventionActive && (
+                  <span className="text-xs text-slate-500 italic ml-2">
+                    💡 Les conventions sont gérées sur le budget d'Investissement et les contrats sur le budget de Fonctionnement.
+                  </span>
+                )}
               </div>
 
               {consultationsLoading ? (
@@ -4178,6 +4399,21 @@ const BonCommandePlateforme = () => {
                             handleDocumentFieldChange('bon_commande', 'titulaire_nom', selectedNom);
                             handleDocumentFieldChange('bon_commande', 'societe', selectedNom);
                             handleDocumentFieldChange('ordre_commande', 'societe', selectedNom);
+                            handleDocumentFieldChange('accuse_reception', 'societe', selectedNom);
+
+                            const foundSupp = concurrentsList.find((c) => c.nom === selectedNom);
+                            if (foundSupp) {
+                              if (foundSupp.adresse) {
+                                handleDocumentFieldChange('bon_commande', 'adresse_societe', foundSupp.adresse);
+                                handleDocumentFieldChange('ordre_commande', 'adresse_societe', foundSupp.adresse);
+                                handleDocumentFieldChange('accuse_reception', 'adresse_societe', foundSupp.adresse);
+                              }
+                              if (foundSupp.ville) {
+                                handleDocumentFieldChange('bon_commande', 'ville_societe', foundSupp.ville);
+                                handleDocumentFieldChange('ordre_commande', 'ville_societe', foundSupp.ville);
+                                handleDocumentFieldChange('accuse_reception', 'ville_societe', foundSupp.ville);
+                              }
+                            }
                           };
 
                           return (
@@ -4219,6 +4455,119 @@ const BonCommandePlateforme = () => {
                                 />
                               </div>
 
+                            </div>
+                          );
+                        }
+
+                        if (field.type === 'os_company_selector') {
+                          const docId = selectedDocument.id;
+                          const currentVal = documentForms[docId]?.[field.name] || '';
+
+                          const pvAttributaire = documentForms.pv_ouverture_convention?.attributaire
+                            || documentForms.pv_ouverture_attribution?.attributaire
+                            || documentForms.bon_commande?.titulaire_nom
+                            || '';
+
+                          const pvSuppliers = [
+                            ...(documentForms.pv_ouverture_convention?.fournisseurs_consultes || []),
+                            ...(documentForms.pv_ouverture_attribution?.fournisseurs_consultes || []),
+                          ];
+
+                          const lettresSuppliers = (documentForms.lettre_consultation?.lettres_consultation || []).map((l) => ({
+                            nom: l.societe,
+                            adresse: l.destinataire_adresse,
+                            ville: l.destinataire_ville,
+                          }));
+
+                          const supplierMap = new Map();
+                          if (pvAttributaire) {
+                            supplierMap.set(pvAttributaire, { nom: pvAttributaire, isWinner: true });
+                          }
+                          pvSuppliers.forEach((s) => {
+                            if (s && s.nom) {
+                              const existing = supplierMap.get(s.nom) || {};
+                              supplierMap.set(s.nom, {
+                                ...existing,
+                                nom: s.nom,
+                                adresse: s.adresse || existing.adresse || '',
+                                ville: s.ville || existing.ville || '',
+                                isWinner: existing.isWinner || (s.nom === pvAttributaire),
+                              });
+                            }
+                          });
+                          lettresSuppliers.forEach((s) => {
+                            if (s && s.nom) {
+                              const existing = supplierMap.get(s.nom) || {};
+                              supplierMap.set(s.nom, {
+                                ...existing,
+                                nom: s.nom,
+                                adresse: s.adresse || existing.adresse || '',
+                                ville: s.ville || existing.ville || '',
+                                isWinner: existing.isWinner || (s.nom === pvAttributaire),
+                              });
+                            }
+                          });
+
+                          const uniqueCandidates = Array.from(supplierMap.values());
+
+                          const handleSelectCompany = (chosenNom) => {
+                            handleDocumentFieldChange(docId, field.name, chosenNom);
+                            const matched = uniqueCandidates.find((c) => c.nom === chosenNom);
+                            if (matched) {
+                              if (matched.adresse) {
+                                handleDocumentFieldChange(docId, 'adresse_societe', matched.adresse);
+                              }
+                              if (matched.ville) {
+                                handleDocumentFieldChange(docId, 'ville_societe', matched.ville);
+                              }
+                            }
+                          };
+
+                          return (
+                            <div key={`${selectedDocument.id}-${field.name}`} className="col-span-full space-y-2 bg-slate-50/70 p-4 rounded-xl border border-slate-200">
+                              <div className="flex items-center justify-between">
+                                <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                                  🏢 {adaptEngagementText(field.label)} {field.required && !field.fromDb && <span className="text-red-500 ml-0.5">*</span>}
+                                </label>
+                                {pvAttributaire && (
+                                  <span className="text-[11px] font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                                    ⭐ Attributaire retenu au PV : <strong>{pvAttributaire}</strong>
+                                  </span>
+                                )}
+                              </div>
+
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                <div>
+                                  <label className="block text-[11px] font-semibold text-slate-500 mb-1">
+                                    Sélectionner depuis le PV d'ouverture :
+                                  </label>
+                                  <select
+                                    value={currentVal}
+                                    onChange={(e) => handleSelectCompany(e.target.value)}
+                                    className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-800 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                                  >
+                                    <option value="">-- Choisir une entreprise --</option>
+                                    {uniqueCandidates.map((c, i) => (
+                                      <option key={i} value={c.nom}>
+                                        {c.isWinner ? '⭐ ' : ''}{c.nom} {c.isWinner ? "(Retenu au PV d'ouverture)" : ''}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </div>
+
+                                <div>
+                                  <label className="block text-[11px] font-semibold text-slate-500 mb-1">
+                                    Ou saisir / ajuster le nom :
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={currentVal}
+                                    onChange={(e) => handleSelectCompany(e.target.value)}
+                                    placeholder={field.placeholder || "Nom de l'entreprise"}
+                                    className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs font-semibold text-slate-800 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                                  />
+                                </div>
+                              </div>
                             </div>
                           );
                         }
@@ -5267,12 +5616,14 @@ const BonCommandePlateforme = () => {
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1">Mode d'engagement</label>
                   <select
-                    value={editingConsultationData.mode_engagement}
+                    value={isConventionActive ? (editingConsultationData.type_budget === 'Fonctionnement' ? 'Contrat' : 'Convention') : editingConsultationData.mode_engagement}
+                    disabled={isConventionActive}
                     onChange={(e) => setEditingConsultationData({ ...editingConsultationData, mode_engagement: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100 disabled:bg-slate-100"
                   >
-                    <option value="BC">BC ({engagementLabel})</option>
-                    <option value="AO">AO (Appel d'offres)</option>
+                    {!isConventionActive && <option value="BC">BC (Bon de commande)</option>}
+                    {!isConventionActive && <option value="AO">AO (Appel d'offres)</option>}
+                    {isConventionActive && editingConsultationData.type_budget === 'Fonctionnement' && <option value="Contrat">Contrat</option>}
                     <option value="Convention">Convention</option>
                   </select>
                 </div>
@@ -5280,11 +5631,18 @@ const BonCommandePlateforme = () => {
                   <label className="block text-xs font-bold text-slate-700 mb-1">Type de budget</label>
                   <select
                     value={editingConsultationData.type_budget}
-                    onChange={(e) => setEditingConsultationData({ ...editingConsultationData, type_budget: e.target.value })}
+                    onChange={(e) => {
+                      const newType = e.target.value;
+                      setEditingConsultationData({
+                        ...editingConsultationData,
+                        type_budget: newType,
+                        mode_engagement: isConventionActive ? (newType === 'Fonctionnement' ? 'Contrat' : 'Convention') : editingConsultationData.mode_engagement,
+                      });
+                    }}
                     className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
                   >
-                    <option value="Fonctionnement">Fonctionnement</option>
-                    <option value="Investissement">Investissement</option>
+                    <option value="Investissement">Investissement {isConventionActive ? '(Convention)' : ''}</option>
+                    <option value="Fonctionnement">Fonctionnement {isConventionActive ? '(Contrat)' : ''}</option>
                   </select>
                 </div>
               </div>

@@ -40,6 +40,19 @@
     @include('documents.partials.bc_footer')
 <div class="page">
 
+    @php
+        $isConvention = (!empty($consultation) && (in_array($consultation->mode_engagement, ['Convention', 'Contrat']) || str_starts_with(strtoupper($consultation->numero_consultation ?? ''), 'CONV')))
+            || str_starts_with(strtoupper((string)data_get($documentData ?? [], 'numero_consultation', '')), 'CONV');
+        $typeBudget = data_get($documentData ?? [], 'type_budget') ?: ($consultation->type_budget ?? 'Investissement');
+        $isContrat = $isConvention && strtolower((string)$typeBudget) === 'fonctionnement';
+        $labelEngagement = $isConvention ? ($isContrat ? 'Contrat' : 'Convention') : 'Bon de Commande';
+        $labelEngagementLower = $isConvention ? ($isContrat ? 'du contrat' : 'de la convention') : 'du bon de commande';
+        $refNum = $isConvention 
+            ? (trim(preg_replace('/\bCONV\s*[-_]?\s*/i', '', (string)($doc['numero_consultation'] ?? ($doc['numero_bc'] ?? '')))))
+            : ($doc['numero_bc'] ?? '');
+        $refNum = trim(preg_replace('/^[-_\s]+|[-_\s]+$/', '', (string)$refNum));
+    @endphp
+
     <div style="border: 2px solid #000; text-align: center; font-weight: bold; padding: 8px; margin: 15px auto 18px; width: 75%;">
         <div style="font-size: 14px; text-transform: uppercase; margin-bottom: 4px;">PROCÈS-VERBAL DE LA RÉCEPTION {{ mb_strtoupper($doc['type_reception'] ?? 'DÉFINITIVE', 'UTF-8') }}</div>
         @if(in_array(strtolower($doc['type_reception'] ?? ''), ['partielle', 'provisoire']) && (!empty($doc['periode_du']) || !empty($doc['periode_au'])))
@@ -47,7 +60,7 @@
                 Période : du <span style="font-weight: bold;">{{ $doc['periode_du'] ?? '.....' }}</span> au <span style="font-weight: bold;">{{ $doc['periode_au'] ?? '.....' }}</span>
             </div>
         @else
-            <div style="font-size: 12px;">Bon de Commande N° : {{ $doc['numero_bc'] }}</div>
+            <div style="font-size: 12px;">{{ $labelEngagement }} N° : {{ $refNum }}</div>
             @if(!empty($doc['date_reception_definitive']))
                 <div style="font-size: 12px; margin-top: 3px;">Date de réception définitive : <span style="font-weight: bold;">{{ $doc['date_reception_definitive'] }}</span></div>
             @endif
@@ -55,7 +68,7 @@
     </div>
 
     <p style="text-align: justify; margin-bottom: 12px; line-height: 1.4;">
-        En date du <span class="bold">{{ $doc['date_reunion'] }}</span> à <span class="bold">{{ $doc['heure_reunion'] }}</span>, la commission de réception instituée par la décision Numéro : <span class="bold">{{ $doc['numero_decision'] }}</span> en date du <span class="bold">{{ $doc['date_decision'] }}</span> pour la réception des prestations objet du bon de commande N° : <span class="bold">{{ $doc['numero_bc'] }}</span> est composée de :
+        En date du <span class="bold">{{ $doc['date_reunion'] }}</span> à <span class="bold">{{ $doc['heure_reunion'] }}</span>, la commission de réception instituée par la décision Numéro : <span class="bold">{{ $doc['numero_decision'] }}</span> en date du <span class="bold">{{ $doc['date_decision'] }}</span> pour la réception des prestations objet {{ $labelEngagementLower }} N° : <span class="bold">{{ $refNum }}</span> est composée de :
     </p>
 
     <table class="box tight" style="margin-bottom: 12px;">
@@ -85,8 +98,8 @@
 
     <table style="width: 100%; margin-bottom: 10px;">
         <tr>
-            <td style="width: 22%;">Bon de Commande N° :</td>
-            <td style="width: 38%; font-weight: bold;">{{ $doc['numero_bc'] }}</td>
+            <td style="width: 22%;">{{ $labelEngagement }} N° :</td>
+            <td style="width: 38%; font-weight: bold;">{{ $refNum }}</td>
             <td style="width: 22%;">établi(e) en date du</td>
             <td style="width: 18%; font-weight: bold;">{{ $doc['date_document'] }}</td>
         </tr>
@@ -134,11 +147,11 @@
     @endphp
 
     <p style="text-align: justify; margin-bottom: 10px; line-height: 1.4;">
-        À l’ouverture de la séance, {{ $lePresTxt }} rappelle aux membres de la commission l’objet de la réunion et fait une lecture du contenu du Bon de Commande susmentionné, notamment les désignations précisant les prestations demandées. Ensuite, {{ $lePresTxt }} demande aux membres de la commission de formuler leurs observations sur la conformité et la qualité des prestations livrées.
+        À l’ouverture de la séance, {{ $lePresTxt }} rappelle aux membres de la commission l’objet de la réunion et fait une lecture du contenu {{ $isConvention ? 'de la Convention susmentionnée' : 'du Bon de Commande susmentionné' }}, notamment les désignations précisant les prestations demandées. Ensuite, {{ $lePresTxt }} demande aux membres de la commission de formuler leurs observations sur la conformité et la qualité des prestations livrées.
     </p>
 
     <p style="text-align: justify; margin-bottom: 12px; line-height: 1.4;">
-        La commission atteste que les prestations objet du bon de commande N° : <span class="bold">{{ $doc['numero_bc'] }}</span> sont conformes aux dispositions prévues et certifie qu’elles sont {{ (isset($doc['type_reception']) && in_array(strtolower($doc['type_reception']), ['partielle', 'provisoire'])) ? (strtolower($doc['type_reception']) === 'provisoire' ? 'provisoirement' : 'partiellement') : 'définitivement' }} réceptionnées
+        La commission atteste que les prestations objet {{ $isConvention ? 'de la convention' : 'du bon de commande' }} N° : <span class="bold">{{ $refNum }}</span> sont conformes aux dispositions prévues et certifie qu’elles sont {{ (isset($doc['type_reception']) && in_array(strtolower($doc['type_reception']), ['partielle', 'provisoire'])) ? (strtolower($doc['type_reception']) === 'provisoire' ? 'provisoirement' : 'partiellement') : 'définitivement' }} réceptionnées
         @if(!in_array(strtolower($doc['type_reception'] ?? ''), ['partielle', 'provisoire']) && !empty($doc['date_reception_definitive']))
             en date du <span class="bold">{{ $doc['date_reception_definitive'] }}</span>
         @endif.

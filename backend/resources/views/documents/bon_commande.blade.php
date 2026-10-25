@@ -144,13 +144,23 @@
     @include('documents.partials.bc_footer')
 <div class="page">
 
+    @php
+        $isConvention = (!empty($consultation) && (in_array($consultation->mode_engagement, ['Convention', 'Contrat']) || str_starts_with(strtoupper($consultation->numero_consultation ?? ''), 'CONV')))
+            || str_starts_with(strtoupper((string)data_get($documentData ?? [], 'numero_consultation', '')), 'CONV');
+        $typeBudget = data_get($documentData ?? [], 'type_budget') ?: ($consultation->type_budget ?? 'Investissement');
+        $isContrat = $isConvention && strtolower((string)$typeBudget) === 'fonctionnement';
+        $cleanNumConv = trim(preg_replace('/\bCONV\s*[-_]?\s*/i', '', (string)($doc['numero_consultation'] ?? ($consultation->numero_consultation ?? ''))));
+        $cleanNumConv = trim(preg_replace('/^[-_\s]+|[-_\s]+$/', '', $cleanNumConv));
+        $refDocTitle = $isConvention ? (($isContrat ? 'Contrat N° : ' : 'Convention N° : ') . $cleanNumConv) : ('Bon de commande N° : ' . ($doc['numero_bc'] ?? ''));
+    @endphp
+
     <div class="meta-header">
         Exercice {{ $consultation->annee ?? date('Y') }}<br>
-        Budget {{ $consultation->type_budget ?? 'Investissement' }}
+        Budget {{ $typeBudget }}
     </div>
 
     <div class="title-box">
-        Bon de commande N° : {{ $doc['numero_bc'] }}
+        {{ $refDocTitle }}
     </div>
 
     <table class="info-table">

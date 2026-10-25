@@ -78,9 +78,22 @@
     </table>
 
     <div class="sub-title">Décision</div>
+    @php
+        $isConvention = (!empty($consultation) && (in_array($consultation->mode_engagement, ['Convention', 'Contrat']) || str_starts_with(strtoupper($consultation->numero_consultation ?? ''), 'CONV')))
+            || str_starts_with(strtoupper((string)data_get($documentData ?? [], 'numero_consultation', '')), 'CONV');
+        $typeBudget = data_get($documentData ?? [], 'type_budget') ?: ($consultation->type_budget ?? 'Investissement');
+        $isContrat = $isConvention && strtolower((string)$typeBudget) === 'fonctionnement';
+        $labelEngagement = $isConvention ? ($isContrat ? 'Contrat' : 'Convention') : 'Bon de Commande';
+        $labelEngagementLower = $isConvention ? ($isContrat ? 'le contrat' : 'la convention') : 'le bon de commande';
+        $refNum = $isConvention 
+            ? (trim(preg_replace('/\bCONV\s*[-_]?\s*/i', '', (string)($doc['numero_consultation'] ?? ($doc['numero_bc'] ?? '')))))
+            : ($doc['numero_bc'] ?? '');
+        $refNum = trim(preg_replace('/^[-_\s]+|[-_\s]+$/', '', (string)$refNum));
+    @endphp
+
     <div class="header-desc">
         Nomination de la commission de réception {{ strtolower($doc['type_reception'] ?? 'définitive') }}<br>
-        Bon de Commande N° : {{ $doc['numero_bc'] }}
+        {{ $labelEngagement }} N° : {{ $refNum }}
     </div>
 
     <p class="article-text">
@@ -93,20 +106,20 @@
         • Vu la décision n° 567 /ONCA/DRHS/DRH/SGAP du 17 Mars 2025 portant nomination de M. BOUDRA Abdelâali Directeur Régional de l’ONCA de la région de Rabat-Salé-Kénitra en tant que sous-ordonnateur ;<br>
         • Vu la décision n° 568/ONCA/DRHS/DRH/SGAP du 17 Mars 2025 portant délégation de signature à M. BOUDRA Abdelâali, Directeur Régional de l’ONCA de la région de Rabat-Salé-Kénitra ; <br>
         • Vu le budget de fonctionnement de l’ONCA au titre de l’exercice 2025 ;<br>
-        @if(!empty($consultation) && ($consultation->mode_engagement === 'Convention' || str_starts_with(strtoupper($consultation->numero_consultation ?? ''), 'CONV')))
+        @if($isConvention)
         • Vu la consultation n° {{ $doc['numero_consultation'] }} ;<br>
         @else
         • Vu l'avis d'achat n° {{ $doc['numero_consultation'] }} ;<br>
         @endif
         • Vu le budget d'investissement de l'ONCA délégué et notifié à la DRCA-RSK au titre de l’exercice 2025 ;<br>
-        • Vu le bon de commande N° {{ $doc['numero_bc'] }} ;
+        • Vu {{ $labelEngagementLower }} N° {{ $refNum }} ;
     </p>
 
     <div class="decide-title">DÉCIDE</div>
 
     <p><span class="section">Article 1 :</span>
-        Une commission est instituée pour la réception des prestations liées au Bon de Commande
-        <span class="bold">{{ $doc['numero_bc'] }}</span> ayant pour objet :
+        Une commission est instituée pour la réception des prestations liées {{ $isConvention ? ($isContrat ? 'au Contrat' : 'à la Convention') : 'au Bon de Commande' }}
+        <span class="bold">{{ $refNum }}</span> ayant pour objet :
     </p>
     <p class="bold" style="text-align: justify; font-size: 11px;">{{ $doc['objet'] }}</p>
 

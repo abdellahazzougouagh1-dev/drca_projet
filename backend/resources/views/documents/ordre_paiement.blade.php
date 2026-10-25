@@ -58,7 +58,11 @@
     $logoOncaSrc   = file_exists(public_path('images/logo-onca.png'))   ? 'data:image/png;base64,'.base64_encode(file_get_contents(public_path('images/logo-onca.png')))   : '';
     $sceauMarocSrc = file_exists(public_path('images/sceau-maroc.png')) ? 'data:image/png;base64,'.base64_encode(file_get_contents(public_path('images/sceau-maroc.png'))) : '';
 
-    $typeBudget    = $consultation->type_budget ?? 'Investissement';
+    $isConvention = (!empty($consultation) && (in_array($consultation->mode_engagement, ['Convention', 'Contrat']) || str_starts_with(strtoupper($consultation->numero_consultation ?? ''), 'CONV')))
+        || str_starts_with(strtoupper((string)data_get($documentData, 'numero_consultation', '')), 'CONV');
+    $typeBudget    = data_get($documentData, 'type_budget') ?: ($consultation->type_budget ?? 'Investissement');
+    $isContrat     = $isConvention && strtolower((string)$typeBudget) === 'fonctionnement';
+    $labelEngagement = $isConvention ? ($isContrat ? 'Contrat' : 'Convention') : 'Bon de commande';
     $exercice      = $consultation->annee ?? date('Y');
     $creditType    = data_get($documentData, 'credit_type', 'Crédit Consolidés');
     $exerciceOrig  = data_get($documentData, 'exercice_origine', $exercice - 1);
@@ -69,12 +73,16 @@
                      ? \Carbon\Carbon::parse(data_get($documentData, 'date_document'))->format('d/m/Y')
                      : '';
 
-    $beneficiaire  = data_get($documentData, 'societe') ?: ($doc['societe'] ?? '');
+    $beneficiaire  = data_get($documentData, 'societe') ?: ($doc['societe'] ?? ($doc['attributaire'] ?? ''));
     $adresse       = data_get($documentData, 'adresse_societe') ?: ($doc['adresse_societe'] ?? '');
     $rib           = data_get($documentData, 'rib') ?: ($doc['rib'] ?? '');
     $banque        = data_get($documentData, 'banque', '');
     $objet         = data_get($documentData, 'objet') ?: ($consultation->objet_consultation ?? '');
-    $reference     = data_get($documentData, 'reference_bc') ?: ($doc['numero_bc'] ?? '');
+
+    $cleanNumConv  = trim(preg_replace('/\bCONV\s*[-_]?\s*/i', '', (string)($doc['numero_consultation'] ?? ($consultation->numero_consultation ?? ''))));
+    $cleanNumConv  = trim(preg_replace('/^[-_\s]+|[-_\s]+$/', '', $cleanNumConv));
+    $defaultRef    = $isConvention ? (($isContrat ? 'Contrat N° ' : 'Convention N° ') . $cleanNumConv) : ($doc['numero_bc'] ?? '');
+    $reference     = data_get($documentData, 'reference_bc') ?: $defaultRef;
 
     $montantOp     = (float)(data_get($documentData, 'montant_op') ?: $doc['total_ttc'] ?? 0);
     $montantEng    = (float)(data_get($documentData, 'montant_engagement') ?: $montantOp);

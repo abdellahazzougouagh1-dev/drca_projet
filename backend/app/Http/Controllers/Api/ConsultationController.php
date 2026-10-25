@@ -50,7 +50,7 @@ class ConsultationController extends Controller
             'categorie' => 'required|string|max:255',
             'type_prestation' => 'required|string|max:65000',
             'intitule' => 'nullable|string|max:65000',
-            'mode_engagement' => 'required|in:BC,Convention,AO,Bon de commande,Appel d\'offres,Appel d\'offre',
+            'mode_engagement' => 'required|in:BC,Convention,Contrat,AO,Bon de commande,Appel d\'offres,Appel d\'offre',
             'type_budget' => 'required|in:Investissement,Fonctionnement',
             'delai_execution' => 'required|integer|min:1',
             'statut_dossier' => 'required|string|max:255',
@@ -179,7 +179,7 @@ class ConsultationController extends Controller
             'categorie' => 'sometimes|required|string|max:255',
             'intitule' => 'nullable|string|max:65000',
             'type_prestation' => 'nullable|string|max:65000',
-            'mode_engagement' => 'sometimes|required|in:BC,Convention,AO,Bon de commande,Appel d\'offres,Appel d\'offre',
+            'mode_engagement' => 'sometimes|required|in:BC,Convention,Contrat,AO,Bon de commande,Appel d\'offres,Appel d\'offre',
             'type_budget' => 'sometimes|required|in:Investissement,Fonctionnement',
             'statut_dossier' => 'sometimes|required|string|max:255',
             'date_consultation' => 'sometimes|required|date',
@@ -242,6 +242,24 @@ class ConsultationController extends Controller
             $creditConsolide = $notificationLigne
                 ? (float) ($notificationLigne->reports ?? 0) + (float) ($notificationLigne->credits_neufs ?? 0)
                 : null;
+
+            $isConvention = in_array($consultation->mode_engagement, ['Convention', 'Contrat']) 
+                || str_starts_with(strtoupper($consultation->numero_consultation ?? ''), 'CONV');
+            $typeBudget = $request->type_budget ?: ($consultation->type_budget ?: 'Investissement');
+            $isContrat = $isConvention && strtolower((string)$typeBudget) === 'fonctionnement';
+
+            $beneficiaire = $consultation->fournisseur?->raison_sociale
+                ?: ($request->beneficiaire
+                ?: ($request->societe
+                ?: ($request->titulaire_nom
+                ?: ($consultation->engagement?->fournisseur?->raison_sociale ?? ''))));
+
+            $ref = $consultation->numero_bc ?: $consultation->numero_consultation;
+            if ($isConvention && $ref) {
+                $ref = trim(preg_replace('/\bCONV\s*[-_]?\s*/i', '', (string)$ref));
+                $ref = trim(preg_replace('/^[-_\s]+|[-_\s]+$/', '', $ref));
+            }
+
             $consultation->registreEngagement()->updateOrCreate(
                 ['consultation_id' => $consultation->id],
                 [
@@ -250,10 +268,10 @@ class ConsultationController extends Controller
                     'engagement_id' => $consultation->engagement?->id,
                     'date_engagement' => $request->date_consultation,
                     'numero_rubrique' => $consultation->numero_engagement,
-                    'mode_engagement' => $consultation->mode_engagement,
-                    'reference' => $consultation->numero_bc ?: $consultation->numero_consultation,
+                    'mode_engagement' => $isConvention ? ($isContrat ? 'Contrat' : 'Convention') : ($consultation->mode_engagement ?: 'Bon de commande'),
+                    'reference' => $ref,
                     'reference_2' => $consultation->reference_2,
-                    'budget' => $consultation->type_budget,
+                    'budget' => $typeBudget,
                     'code' => $consultation->budget?->code_imputation,
                     'art' => $consultation->budget?->art,
                     'par' => $consultation->budget?->par,
@@ -261,18 +279,18 @@ class ConsultationController extends Controller
                     's_lig' => $consultation->s_lig,
                     'intitule' => $consultation->intitule,
                     'credit_ouvert_cp' => $consultation->credit_ouvert_cp,
-                    'credit_ouvert_ce' => $consultation->credit_ouvert_ce,
+                    'credit_ouvert_ce' => $isContrat ? null : $consultation->credit_ouvert_ce,
                     'credit_consolide' => $creditConsolide,
-                    'depenses_anterieures_ce' => $consultation->depenses_anterieures_ce,
+                    'depenses_anterieures_ce' => $isContrat ? null : $consultation->depenses_anterieures_ce,
                     'depenses_anterieures_cp' => $consultation->depenses_anterieures_cp,
-                    'depenses_credits_engagement' => $consultation->depenses_credits_engagement,
+                    'depenses_credits_engagement' => $isContrat ? null : $consultation->depenses_credits_engagement,
                     'depenses_credits_consolides' => $consultation->depenses_credits_consolides,
                     'depenses_rap' => $consultation->depenses_rap,
                     'montant_depense_neuf' => $consultation->montant_depense_neuf,
                     'interets_moratoires' => $consultation->interets_moratoires,
                     'montant_engager_neuf' => $consultation->montant_engager_neuf,
                     'objet' => $consultation->objet_consultation,
-                    'beneficiaire' => $consultation->fournisseur?->raison_sociale,
+                    'beneficiaire' => $beneficiaire,
                 ]
             );
         }

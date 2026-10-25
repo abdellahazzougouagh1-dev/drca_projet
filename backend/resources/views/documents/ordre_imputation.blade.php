@@ -57,7 +57,11 @@
     $logoOncaSrc   = file_exists(public_path('images/logo-onca.png'))   ? 'data:image/png;base64,'.base64_encode(file_get_contents(public_path('images/logo-onca.png')))   : '';
     $sceauMarocSrc = file_exists(public_path('images/sceau-maroc.png')) ? 'data:image/png;base64,'.base64_encode(file_get_contents(public_path('images/sceau-maroc.png'))) : '';
 
-    $typeBudget  = $consultation->type_budget ?? 'Investissement';
+    $isConvention = (!empty($consultation) && (in_array($consultation->mode_engagement, ['Convention', 'Contrat']) || str_starts_with(strtoupper($consultation->numero_consultation ?? ''), 'CONV')))
+        || str_starts_with(strtoupper((string)data_get($documentData, 'numero_consultation', '')), 'CONV');
+    $typeBudget  = data_get($documentData, 'type_budget') ?: ($consultation->type_budget ?? 'Investissement');
+    $isContrat   = $isConvention && strtolower((string)$typeBudget) === 'fonctionnement';
+    $labelEngagement = $isConvention ? ($isContrat ? 'Contrat' : 'Convention') : 'Bon de commande';
     $exercice    = $consultation->annee ?? date('Y');
     $anneeOrig   = data_get($documentData, 'annee_origine', $exercice);
     $creditType  = data_get($documentData, 'credit_type', 'Crédit Consolidés');
@@ -67,10 +71,13 @@
                    ? \Carbon\Carbon::parse(data_get($documentData, 'date_document'))->format('d/m/Y')
                    : '';
 
-    $beneficiaire     = data_get($documentData, 'societe') ?: ($doc['societe'] ?? '');
+    $beneficiaire     = data_get($documentData, 'societe') ?: ($doc['societe'] ?? ($doc['attributaire'] ?? ''));
     $objet            = data_get($documentData, 'objet') ?: ($consultation->objet_consultation ?? '');
-    $formeEngagement  = data_get($documentData, 'forme_engagement', 'Bon de commande');
-    $referenceBc      = data_get($documentData, 'reference_bc') ?: ($doc['numero_bc'] ?? '');
+    $formeEngagement  = data_get($documentData, 'forme_engagement', $labelEngagement);
+    $cleanNumConv     = trim(preg_replace('/\bCONV\s*[-_]?\s*/i', '', (string)($doc['numero_consultation'] ?? ($consultation->numero_consultation ?? ''))));
+    $cleanNumConv     = trim(preg_replace('/^[-_\s]+|[-_\s]+$/', '', $cleanNumConv));
+    $defaultRef       = $isConvention ? (($isContrat ? 'Contrat N° ' : 'Convention N° ') . $cleanNumConv) : ($doc['numero_bc'] ?? '');
+    $referenceBc      = data_get($documentData, 'reference_bc') ?: $defaultRef;
     $montant          = (float)(data_get($documentData, 'montant_oi') ?: $doc['total_ttc'] ?? 0);
     $montantLettres   = \App\Helpers\NumberToWordsHelper::toFrenchMoneyWords($montant);
     $modeReglement    = data_get($documentData, 'mode_reglement', 'Virement');

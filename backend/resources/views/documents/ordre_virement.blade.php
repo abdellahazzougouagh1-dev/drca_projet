@@ -73,9 +73,13 @@
     $montantOv      = (float)(data_get($documentData, 'montant_ov') ?: $doc['total_ttc'] ?? 0);
     $montantLettres = \App\Helpers\NumberToWordsHelper::toFrenchMoneyWords($montantOv);
 
-    $beneficiaire   = data_get($documentData, 'societe') ?: ($doc['societe'] ?? '');
+    $isConvention = (!empty($consultation) && ($consultation->mode_engagement === 'Convention' || str_starts_with(strtoupper($consultation->numero_consultation ?? ''), 'CONV')))
+        || str_starts_with(strtoupper((string)data_get($documentData, 'numero_consultation', '')), 'CONV');
+    $cleanNumConv  = trim(preg_replace('/\bCONV\s*[-_]?\s*/i', '', (string)($doc['numero_consultation'] ?? ($consultation->numero_consultation ?? ''))));
+    $defaultRef    = $isConvention ? ('Convention N° ' . $cleanNumConv) : ($doc['numero_bc'] ?? '');
+    $beneficiaire   = data_get($documentData, 'societe') ?: ($doc['societe'] ?? ($doc['attributaire'] ?? ''));
     $rib            = data_get($documentData, 'rib') ?: ($doc['rib'] ?? '');
-    $reference      = data_get($documentData, 'reference_bc') ?: ($doc['numero_bc'] ?? '');
+    $reference      = data_get($documentData, 'reference_bc') ?: $defaultRef;
 @endphp
 
 <!-- HEADER -->
