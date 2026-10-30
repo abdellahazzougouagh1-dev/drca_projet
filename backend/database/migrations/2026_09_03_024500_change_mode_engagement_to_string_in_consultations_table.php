@@ -12,7 +12,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        DB::statement("ALTER TABLE consultations MODIFY mode_engagement VARCHAR(255) NOT NULL DEFAULT 'BC'");
+        $driver = DB::getDriverName();
+        if ($driver === 'pgsql') {
+            DB::statement("ALTER TABLE consultations DROP CONSTRAINT IF EXISTS consultations_mode_engagement_check");
+            DB::statement("ALTER TABLE consultations ALTER COLUMN mode_engagement TYPE VARCHAR(255), ALTER COLUMN mode_engagement SET DEFAULT 'BC', ALTER COLUMN mode_engagement SET NOT NULL");
+        } else {
+            DB::statement("ALTER TABLE consultations MODIFY mode_engagement VARCHAR(255) NOT NULL DEFAULT 'BC'");
+        }
     }
 
     /**
@@ -20,6 +26,11 @@ return new class extends Migration
      */
     public function down(): void
     {
-        DB::statement("ALTER TABLE consultations MODIFY mode_engagement ENUM('BC', 'Convention') NOT NULL DEFAULT 'BC'");
+        $driver = DB::getDriverName();
+        if ($driver === 'pgsql') {
+            DB::statement("ALTER TABLE consultations ALTER COLUMN mode_engagement TYPE VARCHAR(255)");
+        } else {
+            DB::statement("ALTER TABLE consultations MODIFY mode_engagement ENUM('BC', 'Convention') NOT NULL DEFAULT 'BC'");
+        }
     }
 };

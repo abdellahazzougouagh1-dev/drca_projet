@@ -5,7 +5,7 @@ set -e
 PORT="${PORT:-80}"
 sed -i "s/80/$PORT/g" /etc/apache2/ports.conf /etc/apache2/sites-available/*.conf
 
-# Automatically run database migrations & realistic seeders on Aiven
+# Automatically run database migrations & realistic seeders on Neon / PostgreSQL
 php artisan migrate --force || true
 php artisan db:seed --force || true
 

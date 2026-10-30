@@ -16,7 +16,7 @@ Before starting, make sure you have installed:
 - Composer
 - Node.js 18+
 - npm
-- MySQL or another supported database
+- PostgreSQL (recommandé avec [Neon.tech](https://neon.tech)) ou SQLite / MySQL
 
 ## Backend setup
 
@@ -24,8 +24,10 @@ Before starting, make sure you have installed:
 cd backend
 composer install
 cp .env.example .env
+# Renseignez vos identifiants Neon dans le fichier .env (DATABASE_URL ou DB_HOST/DB_USERNAME/...)
 php artisan key:generate
-php artisan migrate
+php artisan migrate --force
+php artisan db:seed --force
 php artisan serve
 ```
 

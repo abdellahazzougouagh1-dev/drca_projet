@@ -10,8 +10,14 @@ return new class extends Migration
      */
     public function up(): void
     {
-        DB::statement("ALTER TABLE consultations MODIFY objet_consultation TEXT NULL");
-        DB::statement("ALTER TABLE consultations MODIFY type_prestation TEXT NULL");
+        $driver = DB::getDriverName();
+        if ($driver === 'pgsql') {
+            DB::statement("ALTER TABLE consultations ALTER COLUMN objet_consultation TYPE TEXT, ALTER COLUMN objet_consultation DROP NOT NULL");
+            DB::statement("ALTER TABLE consultations ALTER COLUMN type_prestation TYPE TEXT, ALTER COLUMN type_prestation DROP NOT NULL");
+        } else {
+            DB::statement("ALTER TABLE consultations MODIFY objet_consultation TEXT NULL");
+            DB::statement("ALTER TABLE consultations MODIFY type_prestation TEXT NULL");
+        }
     }
 
     /**
@@ -19,7 +25,13 @@ return new class extends Migration
      */
     public function down(): void
     {
-        DB::statement("ALTER TABLE consultations MODIFY objet_consultation VARCHAR(255) NULL");
-        DB::statement("ALTER TABLE consultations MODIFY type_prestation VARCHAR(255) NULL");
+        $driver = DB::getDriverName();
+        if ($driver === 'pgsql') {
+            DB::statement("ALTER TABLE consultations ALTER COLUMN objet_consultation TYPE VARCHAR(255)");
+            DB::statement("ALTER TABLE consultations ALTER COLUMN type_prestation TYPE VARCHAR(255)");
+        } else {
+            DB::statement("ALTER TABLE consultations MODIFY objet_consultation VARCHAR(255) NULL");
+            DB::statement("ALTER TABLE consultations MODIFY type_prestation VARCHAR(255) NULL");
+        }
     }
 };

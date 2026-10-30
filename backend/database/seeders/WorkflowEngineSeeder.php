@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class WorkflowEngineSeeder extends Seeder
 {
@@ -223,10 +224,14 @@ class WorkflowEngineSeeder extends Seeder
         ];
 
         // Suppression des anciennes données avant de populer
-        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
-        DB::table('document_modeles')->truncate();
-        DB::table('etape_workflows')->truncate();
-        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+        if (DB::getDriverName() === 'pgsql') {
+            DB::statement('TRUNCATE TABLE document_modeles, etape_workflows CASCADE;');
+        } else {
+            Schema::disableForeignKeyConstraints();
+            DB::table('document_modeles')->truncate();
+            DB::table('etape_workflows')->truncate();
+            Schema::enableForeignKeyConstraints();
+        }
         
         foreach ($workflows as $workflowData) {
             $documents = $workflowData['documents'];

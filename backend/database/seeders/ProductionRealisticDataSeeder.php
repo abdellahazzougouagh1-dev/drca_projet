@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use App\Models\Fournisseur;
 use App\Models\Notification;
 use App\Models\NotificationLigne;
@@ -27,7 +28,11 @@ class ProductionRealisticDataSeeder extends Seeder
 {
     public function run(): void
     {
-        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+        } else {
+            Schema::disableForeignKeyConstraints();
+        }
 
         // =========================================================================
         // 1. FOURNISSEURS MAROCAINS RÉELS
@@ -403,20 +408,24 @@ class ProductionRealisticDataSeeder extends Seeder
         // =========================================================================
         // 4. RÉINITIALISATION PROPRE DES TABLES MÉTIERS
         // =========================================================================
-        Consultation::truncate();
-        Budget::truncate();
-        Prestation::truncate();
-        Offre::truncate();
-        Engagement::truncate();
-        RegistreEngagement::truncate();
-        LiquidationFinanciere::truncate();
-        Liquidation::truncate();
-        Ordonnancement::truncate();
-        OrdonnancementOrdre::truncate();
-        Aoo::truncate();
-        Lot::truncate();
-        Marche::truncate();
-        OuverturePlisConcurrent::truncate();
+        if (DB::getDriverName() === 'pgsql') {
+            DB::statement('TRUNCATE TABLE consultations, budgets, prestations, offres, engagements, registre_engagements, liquidation_financieres, liquidations, ordonnancements, ordonnancement_ordres, aoos, lots, marches, ouverture_plis_concurrents CASCADE;');
+        } else {
+            Consultation::truncate();
+            Budget::truncate();
+            Prestation::truncate();
+            Offre::truncate();
+            Engagement::truncate();
+            RegistreEngagement::truncate();
+            LiquidationFinanciere::truncate();
+            Liquidation::truncate();
+            Ordonnancement::truncate();
+            OrdonnancementOrdre::truncate();
+            Aoo::truncate();
+            Lot::truncate();
+            Marche::truncate();
+            OuverturePlisConcurrent::truncate();
+        }
 
         // =========================================================================
         // 5. BONS DE COMMANDE RÉELS (mode_engagement = 'BC' pour /bons-commande)
@@ -1308,6 +1317,10 @@ class ProductionRealisticDataSeeder extends Seeder
             'imputation' => '4151020',
         ]);
 
-        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+        } else {
+            Schema::enableForeignKeyConstraints();
+        }
     }
 }
