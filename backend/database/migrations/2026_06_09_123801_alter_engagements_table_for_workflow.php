@@ -19,6 +19,14 @@ return new class extends Migration
             $table->string('statut_actuel')->nullable();
             $table->json('data_specifique')->nullable();
         });
+
+        if (\Illuminate\Support\Facades\DB::getDriverName() === 'pgsql') {
+            \Illuminate\Support\Facades\DB::statement('ALTER TABLE engagements ALTER COLUMN type_engagement DROP NOT NULL');
+        } else {
+            \Illuminate\Support\Facades\Schema::table('engagements', function (Blueprint $table) {
+                $table->string('type_engagement')->nullable()->change();
+            });
+        }
     }
 
     /**
