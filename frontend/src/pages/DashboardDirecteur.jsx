@@ -774,6 +774,12 @@ export default function DashboardDirecteur() {
               <p className="mt-2 text-sm text-slate-500">Vue consolidée des activités, procédures et indicateurs budgétaires.</p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
+              <Link
+                to="/notifications/nouvelle"
+                className="inline-flex items-center gap-2 rounded-xl bg-[#087F5B] hover:bg-[#06694A] text-white px-3.5 py-2 text-xs sm:text-sm font-bold shadow-xs transition-colors"
+              >
+                <Plus size={16} /> NEW NOTIFICATION
+              </Link>
               <div className="inline-flex rounded-xl border border-slate-200 bg-white p-1 shadow-xs">
                 <button
                   type="button"
