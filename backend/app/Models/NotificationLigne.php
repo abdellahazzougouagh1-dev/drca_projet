@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Cache;
 
 class NotificationLigne extends Model
 {
@@ -74,54 +75,99 @@ class NotificationLigne extends Model
         return $this->hasMany(Aoo::class);
     }
 
+    protected static $engageNeufCache = null;
+    protected static $mouvementsCache = null;
+
+    protected static function getCachedEngageNeuf(int $ligneId, string $domaine): float
+    {
+        $data = Cache::remember('notif_lignes_engage_neuf_map', 60, function () {
+            $map = [];
+
+            // Group sum by consultation.notification_ligne_id
+            $consultations = RegistreEngagement::query()
+                ->join('consultations', 'registre_engagements.consultation_id', '=', 'consultations.id')
+                ->whereNotNull('consultations.notification_ligne_id')
+                ->selectRaw('consultations.notification_ligne_id as lid, UPPER(COALESCE(registre_engagements.budget, \'\')) as bgt, sum(COALESCE(registre_engagements.montant_engager_neuf, 0)) as total')
+                ->groupBy('consultations.notification_ligne_id', 'registre_engagements.budget')
+                ->get();
+
+            foreach ($consultations as $row) {
+                $b = $row->bgt ?: 'INVESTISSEMENT';
+                $map[$row->lid][$b] = ($map[$row->lid][$b] ?? 0) + (float)$row->total;
+            }
+
+            // Group sum by aoo.notification_ligne_id
+            $aoos = RegistreEngagement::query()
+                ->join('aoos', 'registre_engagements.aoo_id', '=', 'aoos.id')
+                ->whereNotNull('aoos.notification_ligne_id')
+                ->selectRaw('aoos.notification_ligne_id as lid, UPPER(COALESCE(registre_engagements.budget, \'\')) as bgt, sum(COALESCE(registre_engagements.montant_engager_neuf, 0)) as total')
+                ->groupBy('aoos.notification_ligne_id', 'registre_engagements.budget')
+                ->get();
+
+            foreach ($aoos as $row) {
+                $b = $row->bgt ?: 'INVESTISSEMENT';
+                $map[$row->lid][$b] = ($map[$row->lid][$b] ?? 0) + (float)$row->total;
+            }
+
+            // Group sum by marche.notification_ligne_id
+            $marches = RegistreEngagement::query()
+                ->join('marches', 'registre_engagements.marche_id', '=', 'marches.id')
+                ->whereNotNull('marches.notification_ligne_id')
+                ->selectRaw('marches.notification_ligne_id as lid, UPPER(COALESCE(registre_engagements.budget, \'\')) as bgt, sum(COALESCE(registre_engagements.montant_engager_neuf, 0)) as total')
+                ->groupBy('marches.notification_ligne_id', 'registre_engagements.budget')
+                ->get();
+
+            foreach ($marches as $row) {
+                $b = $row->bgt ?: 'INVESTISSEMENT';
+                $map[$row->lid][$b] = ($map[$row->lid][$b] ?? 0) + (float)$row->total;
+            }
+
+            return $map;
+        });
+
+        $b = $domaine === 'FONCTIONNEMENT' ? 'FONCTIONNEMENT' : 'INVESTISSEMENT';
+        return (float) ($data[$ligneId][$b] ?? 0);
+    }
+
+    protected static function getCachedMouvements(int $ligneId): float
+    {
+        $map = Cache::remember('notif_lignes_mouvements_map', 60, function () {
+            return NotificationMouvement::query()
+                ->where('type_credit', 'NEUF_CC')
+                ->where('nature', 'ALIMENTATION')
+                ->selectRaw('notification_ligne_id, sum(COALESCE(montant, 0)) as total')
+                ->groupBy('notification_ligne_id')
+                ->pluck('total', 'notification_ligne_id')
+                ->all();
+        });
+
+        return (float) ($map[$ligneId] ?? 0);
+    }
+
     public function getCreditsEngagesAttribute()
     {
         $domaine = strtoupper($this->domaine ?: ($this->notification?->domaine ?? 'INVESTISSEMENT'));
-        if (in_array($domaine, ['INVESTISSEMENT', 'FONCTIONNEMENT'], true)) {
-            // Sum each saved registry row once, using its linked budget line.
-            $engageNeuf = RegistreEngagement::query()
-                ->where('budget', $domaine === 'FONCTIONNEMENT' ? 'Fonctionnement' : 'Investissement')
-                ->where(function ($query) {
-                    $query->whereHas('consultation', fn ($q) => $q->where('notification_ligne_id', $this->id))
-                        ->orWhereHas('aoo', fn ($q) => $q->where('notification_ligne_id', $this->id))
-                        ->orWhereHas('marche', fn ($q) => $q->where('notification_ligne_id', $this->id));
-                })
-                ->sum('montant_engager_neuf');
+        $engageNeuf = static::getCachedEngageNeuf($this->id, $domaine);
 
-            if ($domaine === 'FONCTIONNEMENT') {
-                return round(floatval($this->reports ?? 0)
-                    - floatval($this->diminution_report ?? 0)
-                    + floatval($engageNeuf), 2);
-            }
-
-            $creditsConsolides = $this->mouvements()
-                ->where('type_credit', 'NEUF_CC')
-                ->where('nature', 'ALIMENTATION')
-                ->sum('montant');
-
+        if ($domaine === 'FONCTIONNEMENT') {
             return round(floatval($this->reports ?? 0)
-                + floatval($this->credits_engagements ?? 0)
-                + floatval($creditsConsolides)
+                - floatval($this->diminution_report ?? 0)
                 + floatval($engageNeuf), 2);
         }
 
-        $engagementsConsultations = \App\Models\Engagement::whereIn('consultation_id', $this->consultations()->pluck('id'))->sum('montant_global');
-        $engagementsMarches = $this->marches()->where('statut_acte_engagement', '!=', 'Annulé')->sum('montant') ?? 0;
-        $engageNeuf = floatval($engagementsConsultations + $engagementsMarches);
+        $creditsConsolides = static::getCachedMouvements($this->id);
 
-        $report = floatval($this->reports ?? 0);
-        $engagement = floatval($this->credits_engagements ?? 0);
-        $creditsConsolides = floatval($this->credits_consolides ?? 0);
-
-        return round($report + $creditsConsolides + $engagement + $engageNeuf, 2);
+        return round(floatval($this->reports ?? 0)
+            + floatval($this->credits_engagements ?? 0)
+            + floatval($creditsConsolides)
+            + floatval($engageNeuf), 2);
     }
 
     public function getCreditsDisponiblesAttribute()
     {
         $netCreditsNeufs = max(0, floatval($this->credits_neufs ?? 0) - floatval($this->diminution_credit_neuf ?? 0));
-        $engagementsConsultations = \App\Models\Engagement::whereIn('consultation_id', $this->consultations()->pluck('id'))->sum('montant_global');
-        $engagementsMarches = $this->marches()->where('statut_acte_engagement', '!=', 'Annulé')->sum('montant') ?? 0;
-        $engageNeuf = floatval($engagementsConsultations + $engagementsMarches);
+        $domaine = strtoupper($this->domaine ?: ($this->notification?->domaine ?? 'INVESTISSEMENT'));
+        $engageNeuf = static::getCachedEngageNeuf($this->id, $domaine);
 
         return round(max(0, $netCreditsNeufs - $engageNeuf), 2);
     }
