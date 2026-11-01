@@ -146,7 +146,7 @@ class NotificationLigne extends Model
 
     public function getCreditsEngagesAttribute()
     {
-        $domaine = strtoupper($this->domaine ?: ($this->notification?->domaine ?? 'INVESTISSEMENT'));
+        $domaine = strtoupper($this->domaine ?: ($this->relationLoaded('notification') ? $this->notification?->domaine : null) ?: 'INVESTISSEMENT');
         $engageNeuf = static::getCachedEngageNeuf($this->id, $domaine);
 
         if ($domaine === 'FONCTIONNEMENT') {
@@ -166,7 +166,7 @@ class NotificationLigne extends Model
     public function getCreditsDisponiblesAttribute()
     {
         $netCreditsNeufs = max(0, floatval($this->credits_neufs ?? 0) - floatval($this->diminution_credit_neuf ?? 0));
-        $domaine = strtoupper($this->domaine ?: ($this->notification?->domaine ?? 'INVESTISSEMENT'));
+        $domaine = strtoupper($this->domaine ?: ($this->relationLoaded('notification') ? $this->notification?->domaine : null) ?: 'INVESTISSEMENT');
         $engageNeuf = static::getCachedEngageNeuf($this->id, $domaine);
 
         return round(max(0, $netCreditsNeufs - $engageNeuf), 2);

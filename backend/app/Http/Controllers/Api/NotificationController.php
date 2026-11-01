@@ -330,7 +330,7 @@ class NotificationController extends Controller
     public function getLignes(Request $request)
     {
         $exercice = $request->query('exercice');
-        $query = NotificationLigne::with(['notification', 'mouvements', 'marches.aoo', 'consultations.engagement', 'aoos']);
+        $query = NotificationLigne::with(['notification', 'mouvements']);
 
         if ($exercice) {
             $query->whereHas('notification', function ($q) use ($exercice) {
