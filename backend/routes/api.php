@@ -83,8 +83,6 @@ Route::middleware('auth:sanctum')->group(function () {
     // Architecture 1:N - Appels d'Offres & Marchés
     Route::post('aoos/{aoo}/passer-commission', [\App\Http\Controllers\Api\AooController::class, 'passerCommissionOuverture']);
     Route::apiResource('aoos', \App\Http\Controllers\Api\AooController::class);
-    Route::post('translate', [\App\Http\Controllers\Api\AooController::class, 'translateFrToAr']);
-    Route::post('aoos/{id}/generate-publication-avis', [\App\Http\Controllers\Api\AooController::class, 'generatePublicationAvis']);
     Route::match(['get', 'post'], 'aoos/{id}/documents/{documentType}', [\App\Http\Controllers\Api\AooController::class, 'downloadDocument']);
     Route::get('aoos/{aoo}/documents-generes/{type}', [\App\Http\Controllers\Api\AooController::class, 'generateDocument']);
     Route::get('aoos/{aoo}/lettres-notification/{fournisseur}/{lot}', [\App\Http\Controllers\Api\AooController::class, 'downloadLettreNotification']);
@@ -93,16 +91,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('consultations/{id}/documents/{typeDocument}/generate', [\App\Http\Controllers\ConsultationDocumentController::class, 'generate']);
     Route::get('consultations/documents/{id}/download', [\App\Http\Controllers\ConsultationDocumentController::class, 'download']);
 
-    Route::post('aoos/{aoo}/validate-commission', [\App\Http\Controllers\Api\AooController::class, 'validateCommission']);
-    Route::post('aoos/{aoo}/generate-pv-ouverture', [\App\Http\Controllers\Api\AooController::class, 'generatePvOuverture']);
-    Route::post('aoos/{aoo}/generate-letters-ecartement', [\App\Http\Controllers\Api\AooController::class, 'generateLettersEcartement']);
-    Route::post('aoos/{aoo}/send-lettre-ecartement/{fournisseur}', [\App\Http\Controllers\Api\AooController::class, 'sendLettreEcartement']);
-    Route::post('aoos/{aoo}/send-lettres-ecartement', [\App\Http\Controllers\Api\AooController::class, 'sendLettresEcartement']);
     Route::post('aoos/{aoo}/ouverture-plis', [\App\Http\Controllers\Api\AooController::class, 'saveOuverturePlis']);
-    Route::post('aoos/{id}/cloturer', [\App\Http\Controllers\Api\AooController::class, 'cloturerAoo']);
     Route::post('aoos/{id}/analyse-multi-lots', [\App\Http\Controllers\Api\AooController::class, 'saveAnalyseMultiLots']);
     Route::post('aoos/{id}/attribuer-lots', [\App\Http\Controllers\Api\AooController::class, 'attribuerLots']);
-    Route::get('lots/{lot}/export-estimation', [\App\Http\Controllers\Api\LotController::class, 'exportEstimation']);
+    Route::post('aoos/{id}/cloturer', [\App\Http\Controllers\Api\AooController::class, 'cloturerAoo']);
 
     // Phase Liquidation
     Route::get('liquidations/marches', [\App\Http\Controllers\Api\LiquidationController::class, 'marches']);
