@@ -32,7 +32,7 @@ import {
   Download,
   RefreshCw
 } from 'lucide-react';
-import * as XLSX from 'xlsx';
+import * as XLSX from '@e965/xlsx';
 import api from '../api/axios';
 import IdentificationConsultationCard from './IdentificationConsultationCard';
 
@@ -463,13 +463,18 @@ export default function CommissionOuvertureStep({
     reader.onload = (evt) => {
       try {
         const data = new Uint8Array(evt.target?.result);
-        const wb = XLSX.read(data, { type: 'array' });
-        const wsName = wb.SheetNames[0];
-        const ws = wb.Sheets[wsName];
-        const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+        const workbook = XLSX.read(data, {
+          type: 'array',
+          cellFormula: false,
+          cellHTML: false,
+          cellStyles: false,
+          sheetRows: 10000,
+        });
+        const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
 
         if (!rows || rows.length === 0) {
-          addToast('error', 'Le fichier Excel est vide.');
+          addToast('error', 'Le fichier CSV est vide.');
           return;
         }
 
@@ -651,10 +656,10 @@ export default function CommissionOuvertureStep({
         }
 
         addToast('success', `${parsedCompanies.length} soumissionnaire(s) importé(s) avec succès !`);
-        logAction(`Import Excel : ${parsedCompanies.length} soumissionnaires`, 'bg-emerald-100 text-emerald-800');
+        logAction(`Import CSV : ${parsedCompanies.length} soumissionnaires`, 'bg-emerald-100 text-emerald-800');
       } catch (err) {
-        console.error('Erreur import Excel:', err);
-        addToast('error', `Erreur lors de la lecture du fichier Excel: ${err.message || err}`);
+        console.error('Erreur import CSV:', err);
+        addToast('error', `Erreur lors de la lecture du fichier CSV: ${err.message || err}`);
       }
     };
     reader.readAsArrayBuffer(file);
@@ -712,25 +717,23 @@ export default function CommissionOuvertureStep({
       ['Société GHI SARL', 'Non conforme', 'Dossier incomplet', '-', '-', 0, 'Rejeté', '-', 0, '-', 'Rejeté', '-'],
     ];
 
-    const ws = XLSX.utils.aoa_to_sheet([
+    const worksheet = XLSX.utils.aoa_to_sheet([
       resumeHeader,
       headerRow1,
       headerRow2,
       ...sampleRows
     ]);
-
-    ws['!merges'] = [
-      { s: { r: 0, c: 2 }, e: { r: 0, c: 7 } }, // Introduire le résumé
-      { s: { r: 1, c: 0 }, e: { r: 2, c: 0 } }, // Nom du dépositaire
-      { s: { r: 1, c: 1 }, e: { r: 1, c: 2 } }, // Dossier admin
-      { s: { r: 1, c: 3 }, e: { r: 1, c: 4 } }, // Offre tech
-      { s: { r: 1, c: 5 }, e: { r: 1, c: 7 } }, // Offre fin (avant vérif)
-      { s: { r: 1, c: 8 }, e: { r: 1, c: 11 } }, // Après vérif
+    worksheet['!merges'] = [
+      { s: { r: 0, c: 2 }, e: { r: 0, c: 7 } },
+      { s: { r: 1, c: 0 }, e: { r: 2, c: 0 } },
+      { s: { r: 1, c: 1 }, e: { r: 1, c: 2 } },
+      { s: { r: 1, c: 3 }, e: { r: 1, c: 4 } },
+      { s: { r: 1, c: 5 }, e: { r: 1, c: 7 } },
+      { s: { r: 1, c: 8 }, e: { r: 1, c: 11 } },
     ];
-
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Examen des offres');
-    XLSX.writeFile(wb, 'Tableau_Examen_Offres_Commission.xlsx');
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Examen des offres');
+    XLSX.writeFile(workbook, 'Tableau_Examen_Offres_Commission.xlsx');
     addToast('info', 'Modèle Excel téléchargé avec succès.');
   };
 
@@ -1175,7 +1178,7 @@ export default function CommissionOuvertureStep({
               </button>
             </div>
 
-            {/* Action Excel Import */}
+            {/* Action CSV Import */}
             {!isLocked && (
               <div className="flex items-center gap-2">
                 <label
@@ -1198,7 +1201,7 @@ export default function CommissionOuvertureStep({
           </div>
         </div>
 
-        {/* Main Table conforme au modèle Excel */}
+        {/* Main Table conforme au modèle CSV */}
         <div className="overflow-x-auto rounded-xl border border-slate-300 shadow-xs bg-white">
           <table className="w-full text-xs text-left border-collapse">
             <thead>

@@ -11,7 +11,7 @@ class Engagement extends Model
         'consultation_id',
         'fournisseur_id',
         'montant_global',
-        'type_engagement_id',
+        'type_engagement',
         'objet',
         'statut_actuel',
         'data_specifique',
@@ -27,6 +27,16 @@ class Engagement extends Model
         'date_notification' => 'date',
         'date_commencement' => 'date',
     ];
+
+    public function getMontantEngagementAttribute()
+    {
+        return $this->attributes['montant_global'] ?? null;
+    }
+
+    public function getNumeroEngagementAttribute()
+    {
+        return $this->attributes['numero'] ?? null;
+    }
 
     public function getParam($key, $default = null)
     {
@@ -58,4 +68,3 @@ class Engagement extends Model
         return $this->hasMany(HistoriqueStatut::class);
     }
 }
-

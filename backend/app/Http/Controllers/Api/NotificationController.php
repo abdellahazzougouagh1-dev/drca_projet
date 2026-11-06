@@ -12,6 +12,13 @@ use Illuminate\Support\Facades\DB;
 
 class NotificationController extends Controller
 {
+    private function authorizeDirector(Request $request): void
+    {
+        if ($request->user()?->role !== 'directeur') {
+            abort(403, 'Seul le Directeur peut gérer les notifications budgétaires.');
+        }
+    }
+
     public function index(Request $request)
     {
         $exercice = $request->query('exercice');
@@ -28,6 +35,8 @@ class NotificationController extends Controller
 
     public function store(Request $request)
     {
+        $this->authorizeDirector($request);
+
         $validated = $request->validate([
             'numero' => 'required|string|unique:notifications,numero',
             'type_budget' => 'nullable|string',
@@ -477,13 +486,31 @@ class NotificationController extends Controller
 
     public function updateLigne(Request $request, $id)
     {
+        $this->authorizeDirector($request);
+
         $ligne = NotificationLigne::findOrFail($id);
-        $ligne->update($request->all());
+        $validated = $request->validate([
+            'article' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'paragraphe' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'ligne_budgetaire' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'libelle' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'type_budget' => ['sometimes', 'nullable', 'string', 'max:100'],
+            'domaine' => ['sometimes', 'nullable', 'string', 'max:100'],
+            'reports' => ['sometimes', 'numeric', 'min:0'],
+            'diminution_report' => ['sometimes', 'numeric', 'min:0'],
+            'credits_neufs' => ['sometimes', 'numeric', 'min:0'],
+            'diminution_credit_neuf' => ['sometimes', 'numeric', 'min:0'],
+            'credits_engagements' => ['sometimes', 'numeric', 'min:0'],
+            'diminution_credit_engagement' => ['sometimes', 'numeric', 'min:0'],
+        ]);
+        $ligne->update($validated);
         return response()->json($ligne->load('mouvements'));
     }
 
-    public function destroy($id)
+    public function destroy(Request $request, $id)
     {
+        $this->authorizeDirector($request);
+
         $notification = Notification::findOrFail($id);
         DB::transaction(function () use ($notification) {
             foreach ($notification->lignes as $ligne) {

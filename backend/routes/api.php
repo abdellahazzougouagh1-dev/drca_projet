@@ -155,31 +155,3 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/users', [UserController::class, 'index']);
     Route::patch('/users/{id}/toggle-status', [UserController::class, 'toggleStatus']);
 });
-
-// Route d'initialisation automatique de la base de données Aiven
-Route::get('/init-database', function () {
-    try {
-        \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
-        $migrateOutput = \Illuminate\Support\Facades\Artisan::output();
-
-        \Illuminate\Support\Facades\Artisan::call('db:seed', ['--force' => true]);
-        $seedOutput = \Illuminate\Support\Facades\Artisan::output();
-
-        \App\Models\User::whereIn('email', ['admin@onca.ma', 'hamza@gmail.com'])->update(['is_active' => true]);
-
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Base de donnees Aiven initialisee et seedee avec succes !',
-            'output_migrate' => $migrateOutput,
-            'output_seed' => $seedOutput,
-        ]);
-    } catch (\Throwable $e) {
-        return response()->json([
-            'status' => 'error',
-            'message' => $e->getMessage(),
-        ], 500);
-    }
-});
-
-
-

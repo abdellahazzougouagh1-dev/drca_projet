@@ -18,6 +18,11 @@ class ApiRoutesSmokeTest extends TestCase
             ->assertJsonValidationErrors(['name', 'email', 'password']);
     }
 
+    public function test_database_initialization_endpoint_is_not_publicly_available(): void
+    {
+        $this->getJson('/api/init-database')->assertNotFound();
+    }
+
     public function test_all_protected_api_routes_require_sanctum_authentication(): void
     {
         $checkedRoutes = 0;

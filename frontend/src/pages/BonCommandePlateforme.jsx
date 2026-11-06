@@ -4,7 +4,7 @@ import RegistreFonctionnement, { fonctionnementRow } from '../components/Registr
 import { useMemo, useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import api from '../api/axios';
-import * as XLSX from 'xlsx';
+import * as XLSX from '@e965/xlsx';
 import UserMenu from '../components/UserMenu';
 import TopNavButtons from '../components/TopNavButtons';
 import './BonCommandePlateforme.css';
@@ -41,6 +41,11 @@ import {
   Mail,
   RotateCcw,
 } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 
 // ---------------------------------------------------------------------------
 // Définition des 3 phases du processus Bon de Commande
@@ -2991,16 +2996,19 @@ const BonCommandePlateforme = () => {
           {/* Header bar */}
           <div className="bc-heading border-b border-slate-200 pb-6 flex items-start sm:items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              <button
+              <Button
                 type="button"
+                variant="ghost"
+                size="icon"
                 onClick={() => setIsSidebarOpen(true)}
-                className="lg:hidden p-2 -ml-1 rounded-lg text-slate-600 hover:bg-slate-100"
+                className="lg:hidden -ml-1 text-slate-600 hover:bg-slate-100"
                 aria-label="Ouvrir le menu"
               >
                 <Menu size={21} />
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
+                variant="outline"
                 onClick={() => {
                   if (selectedDocument) {
                     setSelectedDocumentId(null);
@@ -3019,15 +3027,15 @@ const BonCommandePlateforme = () => {
               >
                 <ArrowLeft size={17} aria-hidden="true" />
                 <span>Retour</span>
-              </button>
+              </Button>
               <div className="h-5 w-px bg-slate-200" />
               <div>
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-[0.18em]">{engagementLabel}</span>
                   {savedConsultation && (
-                    <span className="px-2 py-0.5 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-[10px] font-semibold">
+                    <Badge variant="outline" className="rounded-full border-blue-200 bg-blue-50 px-2 py-0.5 text-[10px] font-semibold text-blue-700">
                       N° {savedConsultation.numero_consultation}
-                    </span>
+                    </Badge>
                   )}
                 </div>
                 <h1 className="mt-1 text-2xl sm:text-3xl font-semibold text-slate-900 tracking-tight leading-tight">
@@ -3054,16 +3062,16 @@ const BonCommandePlateforme = () => {
           </nav>
 
           {message && (
-            <div className="p-4 rounded-2xl bg-blue-50 border border-blue-200 text-blue-800 font-semibold flex items-center gap-3 shadow-sm animate-fadeIn">
+            <Alert className="flex items-center gap-3 rounded-2xl border-blue-200 bg-blue-50 text-blue-800 shadow-sm animate-fadeIn">
               <CheckCircle2 size={20} />
-              {message}
-            </div>
+              <AlertDescription className="font-semibold text-blue-800">{message}</AlertDescription>
+            </Alert>
           )}
           {error && (
-            <div className="p-4 rounded-2xl bg-red-50 border border-red-200 text-red-800 font-semibold flex items-center gap-3 shadow-sm">
+            <Alert variant="destructive" className="flex items-center gap-3 rounded-2xl shadow-sm">
               <AlertCircle size={20} />
-              {error}
-            </div>
+              <AlertDescription className="font-semibold">{error}</AlertDescription>
+            </Alert>
           )}
 
           {activePhase === 'registre' && !selectedDocument && (
@@ -3234,13 +3242,13 @@ const BonCommandePlateforme = () => {
                   </h3>
                   <p className="text-sm text-slate-500 mt-1">Retrouvez vos consultations et accédez aux documents de chaque étape.</p>
                 </div>
-                <button
+                <Button
                   type="button"
                   onClick={() => navigate('/consultations/nouvelle')}
-                  className="px-5 py-2.5 bg-blue-700 text-white font-bold rounded-xl hover:bg-blue-800 inline-flex items-center gap-2"
+                  className="bg-blue-700 text-white font-bold hover:bg-blue-800"
                 >
                   <Plus size={18} /> Nouvelle consultation
-                </button>
+                </Button>
               </div>
 
               {consultationsLoading ? (
@@ -3256,7 +3264,7 @@ const BonCommandePlateforme = () => {
                   Aucune consultation enregistrée. Cliquez sur « Nouvelle consultation » pour en créer une puis générer l'avis d'achat.
                 </div>
               ) : (
-                <div className="bc-panel bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                <Card className="bc-panel overflow-hidden">
                   <div className="bc-budget-switch" role="group" aria-label="Type de budget des consultations">
                     {Object.entries(consultationsByBudget).filter(([budget, items]) => budget !== 'Non renseigné' || items.length > 0 || consultationBudget === budget).map(([budget, items]) => (
                       <button key={budget} type="button" aria-pressed={consultationBudget === budget}
@@ -3270,13 +3278,13 @@ const BonCommandePlateforme = () => {
                   <div className="bc-table-toolbar p-5 bg-white border-b border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4">
                     <div className="relative w-full sm:w-80">
                       <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                      <input
+                      <Input
                         type="text"
                         aria-label="Rechercher une consultation"
                         placeholder="Rechercher une consultation..."
                         value={consultationSearchTerm}
                         onChange={(e) => setConsultationSearchTerm(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition-all"
+                        className="w-full bg-white pl-10 text-sm text-slate-800"
                       />
                     </div>
                     <div className="text-xs font-semibold text-slate-500">
@@ -3364,10 +3372,10 @@ const BonCommandePlateforme = () => {
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-right">
                                   <div className="flex items-center justify-end gap-2">
-                                    <button
+                                    <Button
                                       type="button"
                                       onClick={() => selectConsultation(consultation)}
-                                      className={`px-3.5 py-2 font-bold text-xs rounded-xl inline-flex items-center gap-1.5 transition-all shadow-sm ${isCurrent
+                                      className={`font-bold text-xs ${isCurrent
                                         ? 'bg-blue-600 hover:bg-blue-700 text-white'
                                         : 'bg-blue-700 hover:bg-blue-800 text-white'
                                         }`}
@@ -3381,7 +3389,7 @@ const BonCommandePlateforme = () => {
                                           <FileText size={14} /> Ouvrir
                                         </>
                                       )}
-                                    </button>
+                                    </Button>
 
                                     <button
                                       type="button"
@@ -3411,7 +3419,7 @@ const BonCommandePlateforme = () => {
                       </tbody>
                     </table>
                   </div>
-                </div>
+                </Card>
               )}
 
               <div className="mt-8 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-3">
@@ -3439,8 +3447,8 @@ const BonCommandePlateforme = () => {
           {activePhase !== 'dashboard' && activePhase !== 'registre' && activePhase !== 'Ordonnancement' && !selectedDocument && (
             <div key={activePhase} className="bc-document-grid grid grid-cols-1 md:grid-cols-2 gap-4">
               {(documentsByPhase[activePhase] || []).map((doc) => (
-                <div key={doc.id} style={{ '--card-index': (documentsByPhase[activePhase] || []).indexOf(doc) }} className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-sm hover:shadow-md hover:border-slate-300 transition-all duration-200 flex flex-col">
-                  <div className="flex items-start justify-between gap-4">
+                <Card key={doc.id} style={{ '--card-index': (documentsByPhase[activePhase] || []).indexOf(doc) }} className="flex flex-col">
+                  <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0 p-6">
                     <div>
                       <div className="text-xs font-semibold text-blue-700 uppercase tracking-wide">
                         {String(doc.step).padStart(2, '0')} - {phases.find((p) => p.id === activePhase)?.label}
@@ -3448,26 +3456,26 @@ const BonCommandePlateforme = () => {
                       <h3 className="text-base font-semibold text-slate-900 mt-1">{adaptEngagementText(doc.title)}</h3>
                       <p className="text-sm text-slate-600 mt-2">{doc.role}</p>
                     </div>
-                    <button
+                    <Button
                       type="button"
                       onClick={() => selectDocument(doc.id)}
-                      className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shrink-0 shadow-sm transition-colors"
+                      className="shrink-0 bg-blue-600 text-xs font-bold text-white hover:bg-blue-700"
                     >
                       Remplir
-                    </button>
-                  </div>
-                  <div className="mt-3 flex flex-wrap gap-2">
+                    </Button>
+                  </CardHeader>
+                  <CardContent className="flex flex-wrap gap-2 px-6 pb-6 pt-0">
                     {doc.data?.map((item) => (
-                      <span key={item} className="px-2.5 py-1 rounded-md bg-slate-100 text-slate-600 text-xs font-semibold">
+                      <Badge key={item} variant="secondary" className="text-xs font-semibold">
                         {adaptEngagementText(item)}
-                      </span>
+                      </Badge>
                     ))}
-                  </div>
-                </div>
+                  </CardContent>
+                </Card>
               ))}
               {activePhase === 'engagement' && (
-                <div className="bg-white rounded-2xl border border-blue-200/80 p-6 shadow-sm hover:shadow-md hover:border-blue-300 transition-all duration-200 flex flex-col">
-                  <div className="flex items-start justify-between gap-4">
+                <Card className="flex flex-col border-blue-200/80">
+                  <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0 p-6">
                     <div>
                       <div className="text-xs font-semibold text-blue-700 uppercase tracking-wide">
                         07 - ENGAGEMENT
@@ -3477,30 +3485,30 @@ const BonCommandePlateforme = () => {
                         Registre d'engagement
                       </h3>
                     </div>
-                    <button
+                    <Button
                       type="button"
                       onClick={() => goToPhase('registre')}
-                      className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shrink-0 shadow-sm transition-colors"
+                      className="shrink-0 bg-blue-600 text-xs font-bold text-white hover:bg-blue-700"
                     >
                       Ouvrir
-                    </button>
-                  </div>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    <span className="px-2.5 py-1 rounded-md bg-blue-50 text-blue-700 text-xs font-semibold">
+                    </Button>
+                  </CardHeader>
+                  <CardContent className="flex flex-wrap gap-2 px-6 pb-6 pt-0">
+                    <Badge className="bg-blue-50 text-blue-700 hover:bg-blue-100">
                       Toutes les fiches enregistrées
-                    </span>
-                    <span className="px-2.5 py-1 rounded-md bg-blue-50 text-blue-700 text-xs font-semibold">
+                    </Badge>
+                    <Badge className="bg-blue-50 text-blue-700 hover:bg-blue-100">
                       Registre complet
-                    </span>
-                  </div>
-                </div>
+                    </Badge>
+                  </CardContent>
+                </Card>
               )}
             </div>
           )}
 
           {selectedDocument && (
-            <div key={selectedDocument.id} className="bc-editor bg-white rounded-3xl p-4 sm:p-6 lg:p-8 shadow-md border border-slate-100">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 pb-6 border-b border-slate-100">
+            <Card key={selectedDocument.id} className="bc-editor">
+              <CardHeader className="flex flex-col items-start justify-between gap-4 border-b border-slate-100 p-4 sm:flex-row sm:items-center sm:p-6 lg:p-8">
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-semibold text-blue-700 uppercase tracking-wide">
@@ -3514,17 +3522,19 @@ const BonCommandePlateforme = () => {
                   <p className="text-sm text-slate-600 mt-1">{selectedDocument.role}</p>
                 </div>
                 <div className="flex items-center gap-3">
-                  <button
+                  <Button
                     type="button"
                     onClick={() => setSelectedDocumentId(null)}
-                    className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-all"
+                    variant="outline"
+                    className="bg-slate-100 text-xs font-bold text-slate-700 hover:bg-slate-200"
                   >
                     ← Retour aux documents
-                  </button>
+                  </Button>
                 </div>
-              </div>
+              </CardHeader>
 
-              <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-600 mb-5 bg-slate-50 border border-slate-200/60 px-3.5 py-2 rounded-xl w-fit">
+              <CardContent className="p-4 sm:p-6 lg:p-8">
+              <div className="mb-5 flex w-fit items-center gap-1.5 rounded-xl border border-slate-200/60 bg-slate-50 px-3.5 py-2 text-xs font-semibold text-slate-600">
                 <span className="text-red-600 font-semibold text-sm">*</span> : Les champs obligatoires
               </div>
 
@@ -3534,7 +3544,7 @@ const BonCommandePlateforme = () => {
                     Numéro de la {engagementLabelLower}
                   </label>
                   <div className="flex flex-col sm:flex-row gap-3">
-                    <input
+                    <Input
                       type="text"
                       value={documentForms.fiche_engagement?.numero_bc ?? savedConsultation?.numero_bc ?? ''}
                       onChange={(event) => handleDocumentFieldChange('fiche_engagement', 'numero_bc', event.target.value)}
@@ -3545,17 +3555,17 @@ const BonCommandePlateforme = () => {
                         }
                       }}
                       placeholder={isConventionActive ? 'CONV-2026-00125' : 'BC-2026-00125'}
-                      className="flex-1 px-4 py-3 rounded-lg border border-blue-200 bg-white outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                      className="flex-1 border-blue-200 bg-white"
                     />
-                    <button
+                    <Button
                       type="button"
                       onClick={findBonCommande}
                       disabled={searchingBonCommande}
-                      className="px-5 py-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold inline-flex items-center justify-center gap-2 disabled:opacity-50"
+                      className="bg-blue-600 font-bold text-white hover:bg-blue-700"
                     >
                       {searchingBonCommande ? <Loader2 size={17} className="animate-spin" /> : <Search size={17} />}
                       Rechercher
-                    </button>
+                    </Button>
                   </div>
                   {savedConsultation?.numero_bc && (
                     <p className="mt-2 text-xs font-semibold text-blue-700">{engagementLabel} trouvé(e) et associé(e).</p>
@@ -3890,29 +3900,17 @@ const BonCommandePlateforme = () => {
 
                                 if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
                                   const data = new Uint8Array(evt.target.result);
-                                  const wb = XLSX.read(data, { type: 'array' });
-                                  const wsName = wb.SheetNames[0];
-                                  const ws = wb.Sheets[wsName];
-                                  rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+                                  const workbook = XLSX.read(data, {
+                                    type: 'array',
+                                    cellFormula: false,
+                                    cellHTML: false,
+                                    cellStyles: false,
+                                    sheetRows: 10000,
+                                  });
+                                  const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+                                  rows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
                                 } else {
-                                  let text = '';
-                                  if (typeof evt.target.result === 'string') {
-                                    text = evt.target.result;
-                                  } else {
-                                    const decoder = new TextDecoder('utf-8', { fatal: false });
-                                    text = decoder.decode(evt.target.result);
-                                  }
-
-                                  const lines = text.split(/\r\n|\n|\r/);
-                                  rows = lines
-                                    .filter((line) => line.trim() !== '')
-                                    .map((line) => {
-                                      let delimiter = ';';
-                                      if (line.includes(';')) delimiter = ';';
-                                      else if (line.includes('\t')) delimiter = '\t';
-                                      else if (line.includes(',')) delimiter = ',';
-                                      return line.split(delimiter).map((c) => c.trim().replace(/^["']|["']$/g, ''));
-                                    });
+                                  rows = String(evt.target.result || '').split(/\r\n|\n|\r/).filter(Boolean).map((line) => line.split(';'));
                                 }
 
                                 if (!rows || rows.length === 0) {
@@ -4073,7 +4071,8 @@ const BonCommandePlateforme = () => {
                               }
                             };
 
-                            if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
+                            const extension = file.name.toLowerCase();
+                            if (extension.endsWith('.xlsx') || extension.endsWith('.xls')) {
                               reader.readAsArrayBuffer(file);
                             } else {
                               reader.readAsText(file);
@@ -5361,7 +5360,8 @@ const BonCommandePlateforme = () => {
                   );
                 })()}
               </div>
-            </div>
+              </CardContent>
+            </Card>
           )}
         </div>
       </main>

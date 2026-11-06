@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Validation\Rule;
 
 class ConsultationController extends Controller
 {
@@ -429,15 +430,42 @@ class ConsultationController extends Controller
     {
         $validated = $request->validate([
             'offres' => 'required|array',
-            'offres.*.id' => 'required|exists:offres,id',
+            'offres.*.id' => [
+                'required',
+                Rule::exists('offres', 'id')->where(
+                    fn ($query) => $query->where('consultation_id', $consultation->id)
+                ),
+            ],
             'offres.*.montant_apres_verification' => 'nullable|numeric|min:0',
             'offres.*.retenu' => 'required|boolean',
             'offres.*.observations_offre' => 'nullable|string',
         ]);
 
+        $retenues = collect($validated['offres'])->where('retenu', true);
+        if ($retenues->count() > 1) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'offres' => ['Une seule offre peut être retenue pour une consultation.'],
+            ]);
+        }
+
         foreach ($validated['offres'] as $offreData) {
             $offre = $consultation->offres()->where('id', $offreData['id'])->first();
             if ($offre) {
+                $statut = $offre->statut_reponse;
+                if ($offreData['retenu'] && in_array($statut, ['Hors délai', 'Refusé'], true)) {
+                    throw \Illuminate\Validation\ValidationException::withMessages([
+                        'offres' => ['Une offre hors délai ou refusée ne peut pas être retenue.'],
+                    ]);
+                }
+
+                if ($offreData['retenu']
+                    && ($offreData['montant_apres_verification'] ?? $offre->montant_apres_verification) === null
+                ) {
+                    throw \Illuminate\Validation\ValidationException::withMessages([
+                        'offres' => ['Le montant de l’offre retenue est obligatoire.'],
+                    ]);
+                }
+
                 $offre->update([
                     'montant_apres_verification' => $offreData['montant_apres_verification'] ?? $offre->montant_apres_verification,
                     'retenu' => $offreData['retenu'],

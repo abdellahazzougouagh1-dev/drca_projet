@@ -16,14 +16,13 @@ class AuthController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
-            'is_admin' => ['sometimes', 'boolean'],
         ]);
 
         $user = User::create([
             'name' => $validated['name'],
             'email' => $validated['email'],
             'password' => $validated['password'],
-            'is_admin' => $validated['is_admin'] ?? false,
+            'is_admin' => false,
             'is_active' => false,
             'role' => 'gestionnaire',
         ]);

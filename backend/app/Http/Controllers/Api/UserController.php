@@ -55,8 +55,14 @@ class UserController extends Controller
     }
 
     // Basculer l'état Actif / Inactif
-    public function toggleStatus($id)
+    public function toggleStatus(Request $request, $id)
     {
+        $currentUser = $request->user();
+
+        if (! $currentUser || ! $currentUser->is_admin) {
+            abort(403, 'Accès interdit.');
+        }
+
         $user = User::findOrFail($id);
         $user->is_active = !$user->is_active;
         $user->save();

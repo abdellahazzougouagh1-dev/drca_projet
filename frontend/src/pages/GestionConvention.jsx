@@ -1,6 +1,10 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Handshake, ArrowLeft, Clock, Sparkles, Landmark } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 
 export default function GestionConvention() {
   return (
@@ -33,33 +37,37 @@ export default function GestionConvention() {
       {/* Main Content */}
       <main className="min-w-0 flex-1 px-5 py-10 sm:px-10 lg:px-14 lg:py-14 flex items-center justify-center">
         <div className="max-w-2xl w-full text-center space-y-8">
-          <Link to="/dashboard" className="inline-flex items-center gap-2 text-sm font-bold text-blue-700 hover:underline mb-4">
+          <Button asChild variant="ghost" className="mb-4 text-sm font-bold text-blue-700 hover:underline">
+            <Link to="/dashboard">
             <ArrowLeft size={16} /> Retour au Tableau de bord
-          </Link>
+            </Link>
+          </Button>
 
-          <div className="bg-white rounded-3xl p-10 border border-slate-200 shadow-xl space-y-6 relative overflow-hidden">
+          <Card className="relative space-y-6 overflow-hidden">
             <div className="absolute top-0 right-0 w-40 h-40 bg-purple-600/5 rounded-full blur-3xl pointer-events-none"></div>
 
-            <div className="grid h-20 w-20 place-items-center rounded-3xl bg-indigo-100 text-indigo-700 mx-auto shadow-inner">
-              <Handshake size={42} />
-            </div>
+            <CardHeader className="space-y-6 p-10">
+              <div className="mx-auto grid h-20 w-20 place-items-center rounded-3xl bg-indigo-100 text-indigo-700 shadow-inner">
+                <Handshake size={42} />
+              </div>
 
-            <div className="space-y-3">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold bg-indigo-100 text-indigo-800 border border-indigo-200">
+              <div className="space-y-3">
+              <Badge className="gap-1.5 bg-indigo-100 text-indigo-800 hover:bg-indigo-100">
                 <Clock size={14} className="text-indigo-600" /> Module en développement
-              </span>
+              </Badge>
               <h1 className="text-3xl font-extrabold text-[#1e3a8a]">Convention</h1>
-              <p className="text-base text-slate-600 leading-relaxed max-w-lg mx-auto">
+              <p className="mx-auto max-w-lg text-base leading-relaxed text-slate-600">
                 Le module <strong>Convention</strong> est en cours de développement. Cette fonctionnalité sera disponible prochainement dans une version ultérieure.
               </p>
-            </div>
+              </div>
+            </CardHeader>
 
-            <div className="pt-4 border-t border-slate-100 flex items-center justify-center gap-4 text-xs font-semibold text-slate-500">
+            <CardContent className="flex items-center justify-center gap-4 border-t border-slate-100 px-10 pb-10 pt-4 text-xs font-semibold text-slate-500">
               <span className="flex items-center gap-1.5"><Sparkles size={14} className="text-indigo-600" /> Architecture prête</span>
               <span>•</span>
               <span>Gestion partenariale à venir</span>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
         </div>
       </main>
     </div>

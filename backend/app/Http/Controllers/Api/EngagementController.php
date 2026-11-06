@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 
 class EngagementController extends Controller
 {
@@ -49,6 +50,33 @@ class EngagementController extends Controller
             'date_commencement' => 'nullable|date',
         ]);
 
+        $expectedType = in_array($consultation->mode_engagement, ['BC', 'Bon de commande'], true)
+            ? 'BC'
+            : (in_array($consultation->mode_engagement, ['Convention', 'Contrat'], true) ? 'Convention' : null);
+
+        if ($expectedType === null || $validated['type_engagement'] !== $expectedType) {
+            throw ValidationException::withMessages([
+                'type_engagement' => ['Le type d’engagement ne correspond pas au mode de la consultation.'],
+            ]);
+        }
+
+        $offreRetenue = $consultation->offres()
+            ->where('fournisseur_id', $validated['fournisseur_id'])
+            ->where('retenu', true)
+            ->first();
+
+        if (!$offreRetenue) {
+            throw ValidationException::withMessages([
+                'fournisseur_id' => ['Le fournisseur doit être celui retenu pour cette consultation.'],
+            ]);
+        }
+
+        if ($consultation->engagement()->exists()) {
+            throw ValidationException::withMessages([
+                'consultation' => ['Cette consultation possède déjà un engagement.'],
+            ]);
+        }
+
         try {
             \Illuminate\Support\Facades\DB::beginTransaction();
 
@@ -73,7 +101,8 @@ class EngagementController extends Controller
 
             $engagement = \App\Models\Engagement::create(array_merge($validated, [
                 'consultation_id' => $consultation->id,
-                'numero_engagement' => $numero_engagement,
+                'numero' => $numero_engagement,
+                'montant_global' => $validated['montant_engagement'],
             ]));
 
             $consultation->update([

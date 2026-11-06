@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, BarChart3, CircleDollarSign, FileCheck2, FileText, Loader2 } from 'lucide-react';
 import api from '../api/axios';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const money = (v) => new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 2 }).format(Number(v) || 0) + ' DH';
 const pct = (part, total) => {
@@ -301,10 +303,10 @@ export default function SuiviBudgetDirecteur() {
         <p className="mt-2 text-sm text-slate-500">Analyse détaillée des crédits et consommations budgétaires réels par domaine.</p>
       </div>
       <div className="flex flex-wrap items-center gap-2">
-        <label className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-600 hover:border-slate-300 transition-colors">Exercice <select value={year} onChange={(e) => setYear(e.target.value)} className="ml-2 bg-transparent font-semibold outline-none cursor-pointer">{Array.from({ length: 12 }, (_, i) => currentYear + 2 - i).map((y) => <option key={y} value={y}>{y}</option>)}</select></label>
+        <Select value={String(year)} onValueChange={setYear}><SelectTrigger className="w-[150px] bg-white font-semibold"><SelectValue placeholder="Exercice" /></SelectTrigger><SelectContent>{Array.from({ length: 12 }, (_, i) => currentYear + 2 - i).map((y) => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}</SelectContent></Select>
       </div>
     </div>
-    {error && <p className="mt-5 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm font-semibold text-amber-800">{error}</p>}
+    {error && <Alert className="mt-5 border-amber-200 bg-amber-50 text-amber-800"><AlertDescription className="font-semibold">{error}</AlertDescription></Alert>}
     <section className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
       <PhaseCard step="1" label="Crédits notifiés" value={summary?.total_notifie} rateValue="Taux : 100 %" detail="Base de calcul" Icon={BarChart3} tone="bg-blue-600" />
       <PhaseCard step="2" label="Engagement" value={summary?.total_engage} rateValue={`Taux / notifié : ${rate(summary?.taux_consommation || pct(summary?.total_engage, summary?.total_notifie))}`} detail="Engagé / notifié" Icon={FileCheck2} tone="bg-emerald-600" />

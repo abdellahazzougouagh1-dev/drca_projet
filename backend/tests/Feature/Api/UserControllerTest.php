@@ -77,4 +77,53 @@ class UserControllerTest extends TestCase
         $response->assertNoContent();
         $this->assertDatabaseMissing('users', ['id' => $user->id]);
     }
+
+    public function test_non_admin_cannot_toggle_user_status(): void
+    {
+        $user = User::factory()->create();
+        $target = User::factory()->create(['is_active' => false]);
+
+        Sanctum::actingAs($user);
+
+        $this->patchJson('/api/users/' . $target->id . '/toggle-status')
+            ->assertForbidden();
+
+        $this->assertDatabaseHas('users', [
+            'id' => $target->id,
+            'is_active' => false,
+        ]);
+    }
+
+    public function test_admin_can_toggle_user_status(): void
+    {
+        $admin = User::factory()->create(['is_admin' => true]);
+        $target = User::factory()->create(['is_active' => false]);
+
+        Sanctum::actingAs($admin);
+
+        $this->patchJson('/api/users/' . $target->id . '/toggle-status')
+            ->assertOk();
+
+        $this->assertDatabaseHas('users', [
+            'id' => $target->id,
+            'is_active' => true,
+        ]);
+    }
+
+    public function test_registration_cannot_grant_admin_privileges(): void
+    {
+        $response = $this->postJson('/api/register', [
+            'name' => 'Utilisateur test',
+            'email' => 'new-user@example.com',
+            'password' => 'secure-password-123',
+            'password_confirmation' => 'secure-password-123',
+            'is_admin' => true,
+        ]);
+
+        $response->assertCreated();
+        $this->assertDatabaseHas('users', [
+            'email' => 'new-user@example.com',
+            'is_admin' => false,
+        ]);
+    }
 }

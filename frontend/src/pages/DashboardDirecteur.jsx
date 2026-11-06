@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Users } from 'lucide-react';
 import GestionUtilisateursModal from '../components/GestionUtilisateursModal';
 import api from '../api/axios';
-import * as XLSX from 'xlsx';
+import * as XLSX from '@e965/xlsx';
 import { useAuth } from '../context/AuthContext';
 import UserMenu from '../components/UserMenu';
 import TopNavButtons from '../components/TopNavButtons';
@@ -15,6 +15,9 @@ import {
   CreditCard, Settings, LogOut, Menu, ShieldCheck, ArrowLeft, Receipt, Plus, Handshake,
 } from 'lucide-react';
 import { Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 
 const months = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc'];
 const money = (value) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'MAD', maximumFractionDigits: 0 }).format(Number(value) || 0).replace('MAD', 'DH');
@@ -185,9 +188,9 @@ function CircularProgress({ percentage = 0, color = '#2563eb', trackColor = '#f1
 
 function PhaseCard({ step, label, value, percentage = 0, rateValue, secondaryRate, Icon, color = '#2563eb', detail }) {
   return (
-    <article className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md hover:-translate-y-0.5">
+    <Card className="relative overflow-hidden transition hover:-translate-y-0.5 hover:shadow-md">
       <span className="absolute inset-y-0 left-0 w-1" style={{ backgroundColor: color }} />
-      <div className="flex items-center justify-between gap-4">
+      <CardContent className="flex items-center justify-between gap-4 p-5">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <span className="text-[10px] font-black uppercase tracking-[.16em] text-slate-400">Taux {step}</span>
@@ -207,8 +210,8 @@ function PhaseCard({ step, label, value, percentage = 0, rateValue, secondaryRat
         </div>
 
         <CircularProgress percentage={percentage} color={color} size={84} strokeWidth={7} />
-      </div>
-    </article>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -219,7 +222,8 @@ function Progress({ value, color = 'bg-blue-600' }) {
 function Kpi({ label, value, icon: Icon, tone = 'blue', detail }) {
   const tones = { blue: 'bg-blue-50 text-blue-600', emerald: 'bg-emerald-50 text-emerald-600', violet: 'bg-violet-50 text-violet-600', amber: 'bg-amber-50 text-amber-600', rose: 'bg-rose-50 text-rose-600' };
   return (
-    <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs transition hover:-translate-y-0.5 hover:shadow-md">
+    <Card className="transition hover:-translate-y-0.5 hover:shadow-md">
+      <CardContent className="p-5">
       <div className="flex justify-between gap-2">
         <div>
           <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">{label}</p>
@@ -228,7 +232,8 @@ function Kpi({ label, value, icon: Icon, tone = 'blue', detail }) {
         <span className={`grid h-10 w-10 place-items-center rounded-xl ${tones[tone]}`}><Icon size={20} /></span>
       </div>
       {detail && <p className="mt-3 text-xs text-slate-500 font-medium">{detail}</p>}
-    </article>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -774,12 +779,13 @@ export default function DashboardDirecteur() {
               <p className="mt-2 text-sm text-slate-500">Vue consolidée des activités, procédures et indicateurs budgétaires.</p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <Link
+              <Button asChild className="bg-[#087F5B] text-white hover:bg-[#06694A]">
+                <Link
                 to="/notifications/nouvelle"
-                className="inline-flex items-center gap-2 rounded-xl bg-[#087F5B] hover:bg-[#06694A] text-white px-3.5 py-2 text-xs sm:text-sm font-bold shadow-xs transition-colors"
               >
                 <Plus size={16} /> NEW NOTIFICATION
-              </Link>
+                </Link>
+              </Button>
               <div className="inline-flex rounded-xl border border-slate-200 bg-white p-1 shadow-xs">
                 <button
                   type="button"
@@ -852,12 +858,12 @@ export default function DashboardDirecteur() {
                       <div className="flex items-center gap-2">
                         <h2 className="font-bold text-base text-slate-800">Liste des notifications</h2>
                         <button type="button" disabled={loading} onClick={() => setRefreshVersion((value) => value + 1)} className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-50 disabled:opacity-50">{loading ? 'Actualisation…' : 'Actualiser'}</button>
-                        <span className={`text-xs px-2.5 py-0.5 rounded-full font-bold ${domaine === 'FONCTIONNEMENT' ? 'bg-blue-100 text-blue-800 border border-blue-200' :
+                        <Badge className={`text-xs font-bold ${domaine === 'FONCTIONNEMENT' ? 'bg-blue-100 text-blue-800 hover:bg-blue-100' :
                           domaine === 'INVESTISSEMENT' ? 'bg-indigo-100 text-indigo-800 border border-indigo-200' :
                             'bg-slate-100 text-slate-700'
                           }`}>
                           {domaine === 'ALL' ? 'Tous les domaines' : domaine}
-                        </span>
+                        </Badge>
                       </div>
                       <p className="mt-1 text-sm text-slate-500">Consultez les informations de l'exercice {year}.</p>
                     </div>
