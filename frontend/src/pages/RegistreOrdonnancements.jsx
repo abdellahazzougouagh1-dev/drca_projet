@@ -460,23 +460,17 @@ export default function RegistreOrdonnancements() {
                       {row.index}
                     </td>
                     <td className="px-3.5 py-3.5 text-center font-mono font-bold text-blue-900 border-r border-slate-200 whitespace-nowrap">
-                      <Link 
-                        to={`/ordonnancements/${row.id}`}
-                        className="text-blue-700 hover:text-blue-900 hover:underline font-extrabold"
-                      >
+                      <span className="text-blue-700 font-extrabold">
                         {row.num_op}
-                      </Link>
+                      </span>
                     </td>
                     <td className="px-3.5 py-3.5 text-center text-slate-700 whitespace-nowrap border-r border-slate-200 font-medium">
                       {row.date_op}
                     </td>
                     <td className="px-4 py-3.5 font-bold text-slate-900 border-r border-slate-200">
-                      <Link 
-                        to={`/ordonnancements/${row.id}`}
-                        className="hover:text-blue-600 hover:underline transition block"
-                      >
+                      <span className="block">
                         {row.beneficiaire}
-                      </Link>
+                      </span>
                     </td>
                     <td className="px-4 py-3.5 text-slate-800 font-medium border-r border-slate-200">
                       {row.reference}
@@ -540,13 +534,6 @@ export default function RegistreOrdonnancements() {
                     {/* Actions */}
                     <td className="px-3 py-3.5 text-center">
                       <div className="flex items-center justify-center gap-2">
-                        <Link
-                          to={`/ordonnancements/${row.id}`}
-                          className="p-2 text-blue-600 bg-blue-50/80 hover:bg-blue-600 hover:text-white rounded-xl shadow-xs transition border border-blue-200/60 cursor-pointer"
-                          title="Consulter le dossier d'ordonnancement"
-                        >
-                          <Eye size={17} />
-                        </Link>
                         <button
                           onClick={() => {
                             setSelectedOrdonnancement(row.raw);

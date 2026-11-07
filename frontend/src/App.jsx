@@ -26,7 +26,6 @@ import ListeNotifications from './pages/ListeNotifications';
 import NouvelleNotification from './pages/NouvelleNotification';
 import DetailsNotification from './pages/DetailsNotification';
 import RegistreOrdonnancements from './pages/RegistreOrdonnancements';
-import DossierOrdonnancement from './pages/DossierOrdonnancement';
 import SuiviBudgetDirecteur from './pages/SuiviBudgetDirecteur';
 import DashboardDirecteur from './pages/DashboardDirecteur';
 import { AuthProvider } from './context/AuthContext';
@@ -256,14 +255,6 @@ function App() {
             element={
               <ProtectedRoute>
                 <RegistreOrdonnancements />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/ordonnancements/:id"
-            element={
-              <ProtectedRoute>
-                <DossierOrdonnancement />
               </ProtectedRoute>
             }
           />
