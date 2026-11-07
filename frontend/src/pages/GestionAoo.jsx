@@ -9,6 +9,9 @@ import CommissionOuvertureStep from '../components/CommissionOuvertureStep';
 import PreparationStep from '../components/preparation/PreparationStep';
 import AttributionStep from '../components/AttributionStep';
 import { Save, CheckCircle, AlertCircle, Loader2, ArrowLeft, ArrowRight, Download, Users, FileText, Building2, PlayCircle, BarChart2, CheckSquare, FileSpreadsheet, Plus, X, Trash2 } from 'lucide-react';
+import { Tabs, TabsList, TabsTrigger } from '../components/ui/tabs';
+import { Button } from '../components/ui/button';
+import { Card } from '../components/ui/card';
 
 const TVA_RATE = 0.20;
 
@@ -1736,9 +1739,9 @@ const GestionAoo = () => {
         <div className="w-full px-4 sm:px-6 lg:px-8">
           <div className="py-3 sm:py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex min-w-0 items-start sm:items-center gap-3 sm:gap-4">
-              <button onClick={() => navigate('/dashboard')} className="p-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl transition-all">
+              <Button type="button" variant="outline" size="icon" onClick={() => navigate('/dashboard')} className="rounded-xl">
                 <ArrowLeft size={20} />
-              </button>
+              </Button>
               <div>
                 <h1 className="text-xl sm:text-2xl font-bold text-slate-800 flex items-center gap-2 sm:gap-3">
                   <Building2 className="text-primary" />
@@ -1762,27 +1765,22 @@ const GestionAoo = () => {
             </div>
           </div>
           {/* TABS NAVIGATION */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4 pb-4">
-            <button onClick={() => setActiveTab('preparation')} className={`min-w-0 flex-1 px-6 py-5 rounded-2xl font-bold text-base transition-all flex items-center justify-center gap-3 ${activeTab === 'preparation'
-              ? 'bg-primary text-white shadow-lg'
-              : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-              }`}>
-              <FileText size={24} /> 1. Préparation
-            </button>
-            <button onClick={() => {
-              setActiveTab('commission');
-            }} className={`min-w-0 flex-1 px-6 py-5 rounded-2xl font-bold text-base transition-all flex items-center justify-center gap-3 ${activeTab === 'commission'
-              ? 'bg-primary text-white shadow-lg'
-              : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-              }`}>
-              <Users size={24} /> 2. Ouverture des plis et analyse
-            </button>
-          </div>
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="pb-4">
+            <TabsList className="grid h-auto w-full grid-cols-1 gap-2 bg-transparent p-0 sm:grid-cols-2">
+              <TabsTrigger value="preparation" className="h-auto rounded-2xl border border-slate-200 bg-slate-100 px-6 py-5 text-base font-bold data-active:border-primary data-active:bg-primary data-active:text-white data-active:shadow-lg">
+                <FileText size={24} /> 1. Préparation
+              </TabsTrigger>
+              <TabsTrigger value="commission" className="h-auto rounded-2xl border border-slate-200 bg-slate-100 px-6 py-5 text-base font-bold data-active:border-primary data-active:bg-primary data-active:text-white data-active:shadow-lg">
+                <Users size={24} /> 2. Ouverture des plis et analyse
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
         </div>
       </header>
 
       <main className="w-full px-3 sm:px-6 lg:px-8 mt-8 sm:mt-16">
-        <form onSubmit={handleSubmit} className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 shadow-sm border border-slate-200">
+        <Card className="rounded-2xl border-slate-200 bg-white shadow-sm sm:rounded-3xl">
+          <form onSubmit={handleSubmit} className="p-4 sm:p-6 lg:p-8">
 
           {/* TAB 1 : PREPARATION */}
           <div className={activeTab === 'preparation' ? 'block animate-fade-in' : 'hidden'}>
@@ -2014,7 +2012,8 @@ const GestionAoo = () => {
 
 
 
-        </form>
+          </form>
+        </Card>
 
         {/* Modal Transition Étape 9 */}
         {showTransitionModal && (
