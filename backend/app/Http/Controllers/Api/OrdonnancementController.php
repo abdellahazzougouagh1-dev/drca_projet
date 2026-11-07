@@ -30,7 +30,12 @@ class OrdonnancementController extends Controller
         }
 
         if ($request->filled('statut') && $request->statut !== 'TOUS') {
-            $query->where('statut', $request->statut);
+            $query->where(function ($statusQuery) use ($request) {
+                $statusQuery->where('statut', $request->statut)
+                    ->orWhereHas('ordres', function ($ordreQuery) use ($request) {
+                        $ordreQuery->where('statut', $request->statut);
+                    });
+            });
         }
 
         if ($request->filled('type_procedure') && $request->type_procedure !== 'TOUS') {
@@ -102,7 +107,7 @@ class OrdonnancementController extends Controller
             $dejaOrdonnance = 0;
             if ($liq->ordonnancements) {
                 foreach ($liq->ordonnancements as $ord) {
-                    $dejaOrdonnance += (float) ($ord->ordres?->sum('montant') ?: $ord->montant_brut ?: 0);
+                    $dejaOrdonnance += (float) ($ord->ordres?->whereNotIn('statut', ['Rejeté', 'Annulé'])->sum('montant') ?: 0);
                 }
             }
 
@@ -225,7 +230,7 @@ class OrdonnancementController extends Controller
             }
 
             $dejaOrdonnance = (float) $consultation->ordonnancements->sum(function ($ord) {
-                return (float) ($ord->ordres->sum('montant') ?: $ord->montant_brut ?: 0);
+                return (float) ($ord->ordres->whereNotIn('statut', ['Rejeté', 'Annulé'])->sum('montant') ?: 0);
             });
             $resteDisponible = round(max(0, $montantLiquidation - $dejaOrdonnance), 2);
             if ($resteDisponible <= 0.01) {
@@ -355,7 +360,7 @@ class OrdonnancementController extends Controller
                     $montantLiquidation = (float) ($liq->montant_brut_ttc ?: $liq->montant_ttc ?: $validated['montant_brut']);
                     $dejaOrdonnance = 0;
                     foreach ($liq->ordonnancements as $ord) {
-                        $dejaOrdonnance += (float) ($ord->ordres->sum('montant') ?: $ord->montant_brut ?: 0);
+                        $dejaOrdonnance += (float) ($ord->ordres->whereNotIn('statut', ['Rejeté', 'Annulé'])->sum('montant') ?: 0);
                     }
                     $resteDisponible = round(max(0, $montantLiquidation - $dejaOrdonnance), 2);
 
@@ -398,7 +403,7 @@ class OrdonnancementController extends Controller
                     $dejaOrdonnance = (float) Ordonnancement::with('ordres')
                         ->where('consultation_id', $validated['consultation_id'])
                         ->get()
-                        ->sum(fn ($ord) => (float) ($ord->ordres->sum('montant') ?: $ord->montant_brut ?: 0));
+                        ->sum(fn ($ord) => (float) $ord->ordres->whereNotIn('statut', ['Rejeté', 'Annulé'])->sum('montant'));
                     $resteDisponible = round(max(0, $montantLiquidation - $dejaOrdonnance), 2);
 
                     if ($totalOrdres > ($resteDisponible + 0.05)) {
@@ -574,7 +579,7 @@ class OrdonnancementController extends Controller
             // Total ordonnanced so far across all ordonnancements for this liquidation
             $dejaOrdonnance = 0;
             foreach ($liq->ordonnancements as $ord) {
-                $dejaOrdonnance += (float) ($ord->ordres->sum('montant') ?: $ord->montant_brut ?: 0);
+                $dejaOrdonnance += (float) $ord->ordres->whereNotIn('statut', ['Rejeté', 'Annulé'])->sum('montant');
             }
             $resteDisponible = round(max(0, $montantLiquidation - $dejaOrdonnance), 2);
 
@@ -596,7 +601,7 @@ class OrdonnancementController extends Controller
         $ordre = $ordonnancement->ordres()->create($validated);
 
         // Recalculate ordonnancement total & status
-        $totalOrdres = (float) $ordonnancement->ordres()->sum('montant');
+        $totalOrdres = (float) $ordonnancement->ordres()->actifs()->sum('montant');
         $ordonnancement->montant_brut = $totalOrdres;
         $ordonnancement->net_a_payer = (float) $ordonnancement->ordres()->where('type_mouvement', 'Paiement fournisseur')->sum('montant');
         
@@ -655,7 +660,7 @@ class OrdonnancementController extends Controller
             
             $dejaOrdonnance = 0;
             foreach ($liq->ordonnancements as $ord) {
-                $dejaOrdonnance += (float) ($ord->ordres->sum('montant') ?: $ord->montant_brut ?: 0);
+                $dejaOrdonnance += (float) $ord->ordres->whereNotIn('statut', ['Rejeté', 'Annulé'])->sum('montant');
             }
             // Add back current order's old amount to compute actual capacity
             $resteDisponible = round(max(0, $montantLiquidation - ($dejaOrdonnance - $ancienMontant)), 2);
@@ -672,7 +677,7 @@ class OrdonnancementController extends Controller
         $ordre->update($validated);
 
         // Recalculate ordonnancement total & status
-        $totalOrdres = (float) $ordonnancement->ordres()->sum('montant');
+        $totalOrdres = (float) $ordonnancement->ordres()->actifs()->sum('montant');
         $ordonnancement->montant_brut = $totalOrdres;
         $ordonnancement->net_a_payer = (float) $ordonnancement->ordres()->where('type_mouvement', 'Paiement fournisseur')->sum('montant');
         
@@ -703,7 +708,7 @@ class OrdonnancementController extends Controller
         $ordre->delete();
 
         // Recalculate ordonnancement total & status
-        $totalOrdres = (float) $ordonnancement->ordres()->sum('montant');
+        $totalOrdres = (float) $ordonnancement->ordres()->actifs()->sum('montant');
         $ordonnancement->montant_brut = $totalOrdres;
         $ordonnancement->net_a_payer = (float) $ordonnancement->ordres()->where('type_mouvement', 'Paiement fournisseur')->sum('montant');
         
@@ -738,48 +743,93 @@ class OrdonnancementController extends Controller
         $request->validate([
             'statut' => 'required|string|in:Brouillon,À payer,À vérifier,Ordonnancé,Transmis au trésorier,Payé,Rejeté,Annulé',
             'motif_rejet' => 'nullable|string',
+            'ordre_id' => 'nullable|integer|exists:ordonnancement_ordres,id',
             'date_transmission_tresorier' => 'nullable|date',
             'date_paiement' => 'nullable|date',
         ]);
 
-        $ordonnancement = Ordonnancement::findOrFail($id);
-        $oldStatut = $ordonnancement->statut;
-        $newStatut = $request->statut;
+        return DB::transaction(function () use ($request, $id) {
+            $ordonnancement = Ordonnancement::with('ordres')->lockForUpdate()->findOrFail($id);
+            $oldStatut = $ordonnancement->statut;
+            $newStatut = $request->statut;
+            $currentUser = auth()->user()?->name ?? 'admin';
+            $replacement = null;
 
-        $ordonnancement->statut = $newStatut;
-        if ($newStatut === 'Transmis au trésorier') {
-            $ordonnancement->date_transmission_tresorier = $request->date_transmission_tresorier ?: now()->format('Y-m-d');
-        } elseif ($newStatut === 'Payé') {
-            $ordonnancement->date_paiement = $request->date_paiement ?: now()->format('Y-m-d');
-            $ordonnancement->ordres()->update(['statut' => 'Payé']);
-        } elseif ($newStatut === 'Rejeté') {
-            $ordonnancement->motif_rejet = $request->motif_rejet;
-        }
-        $ordonnancement->save();
+            if ($newStatut === 'Rejeté') {
+                $ordre = $request->filled('ordre_id')
+                    ? $ordonnancement->ordres->firstWhere('id', (int) $request->ordre_id)
+                    : $ordonnancement->ordres->first(fn ($item) => !in_array($item->statut, ['Payé', 'Rejeté', 'Annulé'], true));
 
-        $currentUser = auth()->user()->name ?? 'admin';
-        $actionTitle = match ($newStatut) {
-            'Transmis au trésorier' => 'Dossier transmis au trésorier',
-            'Payé' => 'Paiement effectué',
-            'Rejeté' => 'Dossier rejeté',
-            'Annulé' => 'Dossier annulé',
-            default => "Statut changé en {$newStatut}",
-        };
+                if (!$ordre) {
+                    throw ValidationException::withMessages([
+                        'ordre_id' => ['Aucun ordre de paiement actif à rejeter pour cet ordonnancement.'],
+                    ]);
+                }
 
-        OrdonnancementHistorique::create([
-            'ordonnancement_id' => $ordonnancement->id,
-            'action' => $actionTitle,
-            'auteur' => $currentUser,
-            'statut_precedent' => $oldStatut,
-            'statut_nouveau' => $newStatut,
-            'details' => $newStatut === 'Rejeté' ? "Motif : {$request->motif_rejet}" : "Passage du statut {$oldStatut} à {$newStatut}.",
-            'created_at' => now(),
-        ]);
+                $ordre->update([
+                    'statut' => 'Rejeté',
+                    'observations' => trim(($ordre->observations ? $ordre->observations . "\n" : '') . ($request->motif_rejet ?: 'Ordre rejeté par le fondé de pouvoir.')),
+                ]);
 
-        return response()->json([
-            'message' => "Statut mis à jour : {$newStatut}",
-            'data' => $ordonnancement->fresh(['ordres', 'historiques'])
-        ]);
+                $existingNumbers = $ordonnancement->ordres
+                    ->pluck('num_ordre')
+                    ->filter()
+                    ->map(fn ($number) => (int) preg_replace('/\D+/', '', $number))
+                    ->filter();
+                $nextNumber = ($existingNumbers->max() ?: 0) + 1;
+                $replacement = $ordonnancement->ordres()->create([
+                    'num_ordre' => 'OP-' . str_pad((string) $nextNumber, 3, '0', STR_PAD_LEFT),
+                    'type_mouvement' => $ordre->type_mouvement,
+                    'mode_paiement' => $ordre->mode_paiement,
+                    'beneficiaire' => $ordre->beneficiaire,
+                    'rib_compte' => $ordre->rib_compte,
+                    'banque_agence' => $ordre->banque_agence,
+                    'creance' => $ordre->creance,
+                    'montant' => $ordre->montant,
+                    'statut' => 'À payer',
+                    'observations' => "Remplacement de {$ordre->num_ordre} rejeté.",
+                ]);
+
+                // The rejected amount is released; the replacement is the only active amount.
+                $ordonnancement->statut = 'À payer';
+                $ordonnancement->motif_rejet = $request->motif_rejet;
+            } else {
+                $ordonnancement->statut = $newStatut;
+                if ($newStatut === 'Transmis au trésorier') {
+                    $ordonnancement->date_transmission_tresorier = $request->date_transmission_tresorier ?: now()->format('Y-m-d');
+                } elseif ($newStatut === 'Payé') {
+                    $ordonnancement->date_paiement = $request->date_paiement ?: now()->format('Y-m-d');
+                    $ordonnancement->ordres()->where('statut', '!=', 'Rejeté')->update(['statut' => 'Payé']);
+                }
+            }
+            $ordonnancement->save();
+
+            $actionTitle = match ($newStatut) {
+                'Transmis au trésorier' => 'Dossier transmis au trésorier',
+                'Payé' => 'Paiement effectué',
+                'Rejeté' => "Ordre {$replacement?->num_ordre} généré après rejet",
+                'Annulé' => 'Dossier annulé',
+                default => "Statut changé en {$newStatut}",
+            };
+            OrdonnancementHistorique::create([
+                'ordonnancement_id' => $ordonnancement->id,
+                'action' => $actionTitle,
+                'auteur' => $currentUser,
+                'statut_precedent' => $oldStatut,
+                'statut_nouveau' => $ordonnancement->statut,
+                'details' => $newStatut === 'Rejeté'
+                    ? "Ordre rejeté : {$request->motif_rejet}. Nouvel ordre {$replacement->num_ordre} créé avec le même montant."
+                    : "Passage du statut {$oldStatut} à {$newStatut}.",
+                'created_at' => now(),
+            ]);
+
+            return response()->json([
+                'message' => $newStatut === 'Rejeté'
+                    ? "Ordre rejeté. Le nouvel ordre {$replacement->num_ordre} est à payer."
+                    : "Statut mis à jour : {$newStatut}",
+                'data' => $ordonnancement->fresh(['ordres', 'historiques'])
+            ]);
+        });
     }
 
     /**
@@ -815,7 +865,7 @@ class OrdonnancementController extends Controller
         $dejaOrdonnance = Ordonnancement::with('ordres')
             ->where('consultation_id', $ordonnancement->consultation_id)
             ->get()
-            ->sum(fn ($ord) => (float) ($ord->ordres->sum('montant') ?: $ord->montant_brut ?: 0));
+            ->sum(fn ($ord) => (float) $ord->ordres->whereNotIn('statut', ['Rejeté', 'Annulé'])->sum('montant'));
         $resteDisponible = round(max(0, (float) $liq->montant_a_payer - ($dejaOrdonnance - $montantDejaInclus)), 2);
 
         if ($montant > ($resteDisponible + 0.05)) {

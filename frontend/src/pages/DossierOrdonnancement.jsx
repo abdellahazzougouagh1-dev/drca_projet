@@ -41,6 +41,7 @@ export default function DossierOrdonnancement() {
   const [statusComment, setStatusComment] = useState('');
   const [statusDate, setStatusDate] = useState(new Date().toISOString().split('T')[0]);
   const [statusLoading, setStatusLoading] = useState(false);
+  const [statusOrdreId, setStatusOrdreId] = useState(null);
 
   // Ordre Add/Edit Modal
   const [ordreModalOpen, setOrdreModalOpen] = useState(false);
@@ -105,8 +106,9 @@ export default function DossierOrdonnancement() {
     }
   };
 
-  const openStatusChange = (newStatut) => {
+  const openStatusChange = (newStatut, ordreId = null) => {
     setTargetStatut(newStatut);
+    setStatusOrdreId(ordreId);
     setStatusComment('');
     setStatusDate(new Date().toISOString().split('T')[0]);
     setStatusModalOpen(true);
@@ -120,6 +122,7 @@ export default function DossierOrdonnancement() {
         motif_rejet: targetStatut === 'Rejeté' ? statusComment : null,
         date_transmission_tresorier: targetStatut === 'Transmis au trésorier' ? statusDate : null,
         date_paiement: targetStatut === 'Payé' ? statusDate : null,
+        ordre_id: statusOrdreId,
       };
       await api.patch(`/ordonnancements/${id}/statut`, payload);
       setStatusModalOpen(false);
@@ -308,11 +311,11 @@ export default function DossierOrdonnancement() {
             <div className="flex flex-wrap items-center gap-3">
               {data.statut === 'À payer' && (
                 <button
-                  onClick={() => openStatusChange('Transmis au trésorier')}
+                  onClick={() => openStatusChange('Payé')}
                   className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center gap-2"
                 >
-                  <Send size={15} />
-                  Transmettre au trésorier
+                  <ShieldCheck size={15} />
+                  Valider par le fondé de pouvoir
                 </button>
               )}
 
@@ -325,8 +328,15 @@ export default function DossierOrdonnancement() {
                   Confirmer Paiement
                 </button>
               )}
-
-
+              {data.statut === 'À payer' && data.ordres?.some((ordre) => ordre.statut === 'À payer') && (
+                <button
+                  onClick={() => openStatusChange('Rejeté', data.ordres.find((ordre) => ordre.statut === 'À payer')?.id)}
+                  className="px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center gap-2"
+                >
+                  <X size={15} />
+                  Rejeter l'ordre
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -776,8 +786,10 @@ export default function DossierOrdonnancement() {
                       <td className="px-4 py-4 text-center">
                         <span className={`px-3 py-1 rounded-full text-xs font-bold ${ord.statut === 'Payé'
                             ? 'bg-emerald-100 text-emerald-800'
-                            : 'bg-amber-100 text-amber-800'
-                          }`}>
+                          : ord.statut === 'Rejeté'
+                            ? 'bg-rose-100 text-rose-800'
+                          : 'bg-amber-100 text-amber-800'
+                        }`}>
                           {ord.statut || 'Brouillon'}
                         </span>
                       </td>

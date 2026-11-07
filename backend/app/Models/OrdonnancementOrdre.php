@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Builder;
 
 class OrdonnancementOrdre extends Model
 {
@@ -15,6 +16,11 @@ class OrdonnancementOrdre extends Model
     protected $casts = [
         'montant' => 'decimal:2',
     ];
+
+    public function scopeActifs(Builder $query): Builder
+    {
+        return $query->whereNotIn('statut', ['Rejeté', 'Annulé']);
+    }
 
     public function ordonnancement(): BelongsTo
     {

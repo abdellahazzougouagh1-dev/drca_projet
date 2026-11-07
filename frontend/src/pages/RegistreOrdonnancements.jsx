@@ -245,6 +245,7 @@ export default function RegistreOrdonnancements() {
 
   // Client-side search filtering
   const filteredRows = rows.filter(r => {
+    if (statutFilter !== 'TOUS' && r.statut !== statutFilter) return false;
     if (!searchTerm) return true;
     const term = searchTerm.toLowerCase();
     return (
@@ -616,9 +617,8 @@ export default function RegistreOrdonnancements() {
       <ModalNouveauOrdonnancement
         isOpen={modalCreateOpen}
         onClose={() => setModalCreateOpen(false)}
-        onSuccess={(newOrd) => {
+        onSuccess={() => {
           fetchRegistre();
-          navigate(`/ordonnancements/${newOrd.id}`);
         }}
       />
 

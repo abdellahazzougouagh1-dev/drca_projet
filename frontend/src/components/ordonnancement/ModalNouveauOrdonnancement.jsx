@@ -16,6 +16,8 @@ export default function ModalNouveauOrdonnancement({ isOpen, onClose, onSuccess 
   const [selectedDispoIndex, setSelectedDispoIndex] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [createdDossierId, setCreatedDossierId] = useState(null);
+  const [decisionAccepted, setDecisionAccepted] = useState(false);
 
   // Retenues à la source state (NON SYSTÉMATIQUES - par défaut false)
   const [applyTva, setApplyTva] = useState(false);
@@ -93,6 +95,8 @@ export default function ModalNouveauOrdonnancement({ isOpen, onClose, onSuccess 
       fetchDisponibles();
       setStep(1);
       setErrorMsg('');
+      setCreatedDossierId(null);
+      setDecisionAccepted(false);
       setApplyTva(false);
       setApplyIas(false);
       setTvaMontantInput('');
@@ -306,7 +310,7 @@ export default function ModalNouveauOrdonnancement({ isOpen, onClose, onSuccess 
   const totalOrdres = formData.ordres.reduce((sum, o) => sum + Number(o.montant || 0), 0);
   const isBalanced = Math.abs(totalOrdres - Number(formData.montant_brut)) < 0.05;
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (decision = null) => {
     if (!formData.reference || !formData.beneficiaire_nom || formData.montant_brut <= 0) {
       setErrorMsg('Veuillez compléter toutes les informations requises à l\'étape 1.');
       setStep(1);
@@ -322,12 +326,98 @@ export default function ModalNouveauOrdonnancement({ isOpen, onClose, onSuccess 
     try {
       setSubmitting(true);
       setErrorMsg('');
-      const res = await api.post('/ordonnancements', formData);
-      if (onSuccess) onSuccess(res.data.data);
+      let dossier;
+      if (createdDossierId) {
+        const current = await api.get(`/ordonnancements/${createdDossierId}`);
+        dossier = current.data.data;
+      } else {
+        const res = await api.post('/ordonnancements', formData);
+        dossier = res.data.data;
+        setCreatedDossierId(dossier.id);
+      }
+
+      if (decision) {
+        const premierOrdre = dossier.ordres?.find((ordre) => ordre.statut === 'À payer')
+          || formData.ordres[0];
+        const statusResponse = await api.patch(`/ordonnancements/${dossier.id}/statut`, {
+          statut: decision,
+          ordre_id: premierOrdre?.id || null,
+          motif_rejet: decision === 'Rejeté' ? 'Refusé par le fondé de pouvoir.' : null,
+          date_paiement: decision === 'Payé' ? new Date().toISOString().split('T')[0] : null,
+        });
+        dossier = statusResponse.data.data;
+      }
+
+      if (decision === 'Rejeté') {
+        setFormData((previous) => ({
+          ...previous,
+          statut: dossier.statut,
+          ordres: dossier.ordres || previous.ordres,
+        }));
+        setErrorMsg('Ordre rejeté. Un nouvel ordre de paiement est à payer. Veuillez choisir Accepter ou Refuser.');
+        return;
+      }
+
+      if (decision === 'Payé') {
+        setDecisionAccepted(true);
+        setFormData((previous) => ({
+          ...previous,
+          statut: dossier.statut,
+          ordres: dossier.ordres || previous.ordres,
+        }));
+        setErrorMsg('Ordre accepté par le fondé de pouvoir. Vous pouvez maintenant compléter la liquidation.');
+        return;
+      }
+
+      if (onSuccess) onSuccess(dossier);
       onClose();
     } catch (err) {
       console.error('Erreur création ordonnancement:', err);
       setErrorMsg(err.response?.data?.message || 'Erreur lors de la création de l\'ordonnancement.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const createFirstOrderAndContinue = async () => {
+    if (!formData.reference || !formData.beneficiaire_nom || Number(formData.montant_brut) <= 0) {
+      setErrorMsg('Veuillez sélectionner une liquidation et compléter les informations générales obligatoires.');
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      setErrorMsg('');
+      const res = await api.post('/ordonnancements', formData);
+      setCreatedDossierId(res.data.data.id);
+      setFormData((previous) => ({
+        ...previous,
+        ordres: res.data.data.ordres || previous.ordres,
+        statut: res.data.data.statut,
+      }));
+      setStep(2);
+    } catch (err) {
+      console.error('Erreur création du premier ordre:', err);
+      setErrorMsg(err.response?.data?.message || 'Erreur lors de la création du premier ordre de paiement.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const finishWorkflow = async () => {
+    if (!createdDossierId) {
+      setErrorMsg('Aucun ordonnancement créé. Revenez à l’étape précédente.');
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      const res = await api.get(`/ordonnancements/${createdDossierId}`);
+      if (onSuccess) onSuccess(res.data.data);
+      onClose();
+    } catch (err) {
+      console.error('Erreur lors du retour au registre:', err);
+      setErrorMsg(err.response?.data?.message || 'Impossible de terminer le traitement.');
     } finally {
       setSubmitting(false);
     }
@@ -588,7 +678,7 @@ export default function ModalNouveauOrdonnancement({ isOpen, onClose, onSuccess 
                   </div>
 
                   {/* Right Column : Montants & Intitulé */}
-                  <div className="space-y-4 bg-white p-6 rounded-3xl border border-slate-200 shadow-xs flex flex-col justify-between">
+                  <div className="hidden">
                     <div>
                       <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 pb-2 border-b border-slate-100 flex items-center gap-2">
                         <Receipt size={16} className="text-blue-600" />
@@ -744,6 +834,60 @@ export default function ModalNouveauOrdonnancement({ isOpen, onClose, onSuccess 
             {/* STEP 2: PAIEMENTS À EFFECTUER / ORDRES MULTIPLES */}
             {step === 2 && (
               <div className="space-y-5">
+                {decisionAccepted && <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                  <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-xs space-y-3">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 pb-2 border-b border-slate-100 flex items-center gap-2">
+                      <Receipt size={16} className="text-blue-600" />
+                      Montants de la liquidation
+                    </h3>
+                    <div>
+                      <label className="block text-xs text-slate-700 font-bold mb-1">Montant TTC (Montant brut) *</label>
+                      <div className="relative">
+                        <input
+                          type="number"
+                          step="0.01"
+                          value={formData.montant_brut}
+                          onChange={(e) => handleBrutChange(e.target.value)}
+                          className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl font-black text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                        <span className="absolute right-3.5 top-2.5 font-bold text-slate-400">DH</span>
+                      </div>
+                    </div>
+                    <div className="p-3 bg-slate-50 border border-slate-200 rounded-2xl space-y-3">
+                      <div className="text-xs font-bold text-slate-800 uppercase tracking-wider">Retenues à la source</div>
+                      <label className="flex items-center gap-2.5 cursor-pointer text-xs font-bold text-slate-700">
+                        <input type="checkbox" checked={applyTva} onChange={(e) => handleToggleTva(e.target.checked)} className="w-4 h-4 rounded text-blue-600" />
+                        Appliquer une retenue TVA
+                      </label>
+                      {applyTva && (
+                        <input type="number" step="0.01" value={tvaMontantInput} onChange={(e) => handleTvaAmountChange(e.target.value)} className="w-full px-3 py-1.5 bg-white border border-rose-200 rounded-xl text-xs font-bold text-rose-700" />
+                      )}
+                      <label className="flex items-center gap-2.5 cursor-pointer text-xs font-bold text-slate-700 border-t border-slate-200 pt-2">
+                        <input type="checkbox" checked={applyIas} onChange={(e) => handleToggleIas(e.target.checked)} className="w-4 h-4 rounded text-blue-600" />
+                        Appliquer une retenue IAC
+                      </label>
+                      {applyIas && (
+                        <input type="number" step="0.01" value={iasMontantInput} onChange={(e) => handleIasAmountChange(e.target.value)} className="w-full px-3 py-1.5 bg-white border border-rose-200 rounded-xl text-xs font-bold text-rose-700" />
+                      )}
+                    </div>
+                    <div className="p-4 bg-blue-50 border-2 border-blue-200 rounded-2xl">
+                      <div className="text-[11px] font-bold text-blue-950 uppercase">Net à payer au bénéficiaire</div>
+                      <div className="text-2xl font-black text-blue-700 mt-1">{formatDH(formData.net_a_payer)}</div>
+                    </div>
+                  </div>
+                  <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-xs">
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Intitulé / Objet de la dépense *</label>
+                    <textarea
+                      rows={5}
+                      name="intitule_depense"
+                      value={formData.intitule_depense}
+                      onChange={handleInputChange}
+                      placeholder="Description exacte de la dépense..."
+                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
+                    />
+                  </div>
+                </div>}
+                {!decisionAccepted && <>
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pb-3 border-b border-slate-100">
                   <div>
                     <h3 className="text-sm font-bold text-slate-900">
@@ -871,6 +1015,34 @@ export default function ModalNouveauOrdonnancement({ isOpen, onClose, onSuccess 
                     Total : {formatDH(totalOrdres)}
                   </div>
                 </div>
+
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-4 bg-white border border-blue-200 rounded-2xl shadow-xs">
+                  <div>
+                    <p className="text-xs font-bold text-slate-800">Décision du fondé de pouvoir</p>
+                    <p className="text-[11px] text-slate-500 mt-1">
+                      Le premier ordre sera créé avec le statut « À payer » avant la décision.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => handleSubmit('Rejeté')}
+                      disabled={submitting || !isBalanced || formData.ordres.length === 0}
+                      className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold shadow-sm transition disabled:opacity-50"
+                    >
+                      Refuser
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleSubmit('Payé')}
+                      disabled={submitting || !isBalanced || formData.ordres.length === 0}
+                      className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm transition disabled:opacity-50"
+                    >
+                      Accepter
+                    </button>
+                  </div>
+                </div>
+                </>}
 
               </div>
             )}
@@ -1051,20 +1223,21 @@ export default function ModalNouveauOrdonnancement({ isOpen, onClose, onSuccess 
           {step < 3 ? (
             <button
               type="button"
-              onClick={() => setStep(step + 1)}
+              onClick={() => step === 1 ? createFirstOrderAndContinue() : setStep(step + 1)}
+              disabled={submitting}
               className="inline-flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-md hover:shadow-lg transition cursor-pointer"
             >
-              Suivant
+              {submitting && step === 1 ? 'Création...' : 'Suivant'}
               <ArrowRight size={16} />
             </button>
           ) : (
             <button
               type="button"
-              onClick={handleSubmit}
+              onClick={finishWorkflow}
               disabled={submitting}
               className="inline-flex items-center gap-2 px-7 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-md hover:shadow-lg transition disabled:opacity-50 cursor-pointer"
             >
-              {submitting ? 'Création en cours...' : 'Créer l\'ordonnancement'}
+              {submitting ? 'Traitement en cours...' : 'Fin'}
               <Check size={16} />
             </button>
           )}
