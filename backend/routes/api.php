@@ -82,6 +82,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Architecture 1:N - Appels d'Offres & Marchés
     Route::post('aoos/{aoo}/passer-commission', [\App\Http\Controllers\Api\AooController::class, 'passerCommissionOuverture']);
+    Route::post('aoos/{aoo}/deverrouiller-commission', [\App\Http\Controllers\Api\AooController::class, 'deverrouillerCommission']);
     Route::apiResource('aoos', \App\Http\Controllers\Api\AooController::class);
     Route::match(['get', 'post'], 'aoos/{id}/documents/{documentType}', [\App\Http\Controllers\Api\AooController::class, 'downloadDocument']);
     Route::get('aoos/{aoo}/documents-generes/{type}', [\App\Http\Controllers\Api\AooController::class, 'generateDocument']);

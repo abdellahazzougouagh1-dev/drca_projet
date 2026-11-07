@@ -2886,7 +2886,7 @@ const BonCommandePlateforme = () => {
   const phaseIndex = phases.findIndex((p) => p.id === activePhase);
   const goToPhase = (phaseId) => {
     if (phaseId === 'Ordonnancement') {
-      navigate('/ordonnancements');
+      navigate(isConventionRoute ? '/ordonnancements?procedure=Convention' : '/ordonnancements?procedure=Bon%20de%20commande');
       return;
     }
 
@@ -2991,8 +2991,8 @@ const BonCommandePlateforme = () => {
       </aside>
 
       {/* Main content */}
-      <main className="min-w-0 flex-1 w-full p-4 sm:p-6 lg:p-8 xl:p-10">
-        <div className="mx-auto w-full max-w-[1600px] space-y-8">
+      <main className="min-w-0 flex-1 w-full p-4 sm:p-5 lg:p-6 xl:p-8">
+        <div className="mx-auto w-full max-w-[1920px] 2xl:max-w-[2400px] space-y-8">
           {/* Header bar */}
           <div className="bc-heading border-b border-slate-200 pb-6 flex items-start sm:items-center justify-between gap-3">
             <div className="flex items-center gap-3">

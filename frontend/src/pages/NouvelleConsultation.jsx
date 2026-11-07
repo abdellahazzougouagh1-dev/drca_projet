@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import api from '../api/axios';
 import { Save, ArrowLeft, CheckCircle2, AlertCircle, FileText, Calculator, Loader2, BookOpen } from 'lucide-react';
 import LigneBudgetaireSelector from '../components/LigneBudgetaireSelector';
@@ -7,6 +7,10 @@ import TopNavButtons from '../components/TopNavButtons';
 
 const NouvelleConsultation = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const initialMode = searchParams.get('mode') || 'BC';
+  const resolvedMode = ['AO', 'Convention', 'BC'].includes(initialMode) ? initialMode : (initialMode.toUpperCase() === 'AO' ? 'AO' : 'BC');
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
@@ -31,7 +35,7 @@ const NouvelleConsultation = () => {
     categorie: 'Services',
     type_prestation: '',
     intitule: '',
-    mode_engagement: 'BC',
+    mode_engagement: resolvedMode,
     type_budget: 'Investissement',
     delai_execution: 30,
     statut_dossier: 'Programmation',
@@ -234,7 +238,7 @@ const NouvelleConsultation = () => {
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 bg-[#F5F7F5] min-h-screen text-[#172033]">
-      <div className="w-full max-w-[1500px] mx-auto space-y-6">
+      <div className="w-full max-w-[1800px] 2xl:max-w-[2400px] mx-auto space-y-6">
         <header className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <button

@@ -40,8 +40,11 @@ export function resolveOrdreDocument(ordre) {
     };
   }
 
-  // 2. Retenue à la source IAC
-  if (typeMouv.includes('ias') || typeMouv.includes('is') || typeMouv.includes('iac') || (typeMouv.includes('retenue') && (creance.includes('ias') || creance.includes('is') || creance.includes('iac')))) {
+  // 2. Retenue à la source IAC / IAS
+  const isIasIac = (typeMouv.includes('retenue') && (typeMouv.includes('ias') || typeMouv.includes('iac') || typeMouv.includes('is'))) ||
+                   creance.includes('iac') || creance.includes('ias') ||
+                   (/\b(ias|iac|is)\b/i.test(typeMouv) && !typeMouv.includes('fournisseur'));
+  if (isIasIac) {
     return {
       docType: 'op_ras_iac',
       title: 'Ordre de paiement (OP) — Retenue à la source IAC',
@@ -144,7 +147,7 @@ export function resolveOrdreDocumentsList(ordre) {
   const numOrdre = ordre.num_ordre || 'OP';
 
   // Si c'est un paiement fournisseur standard: inclure à la fois l'OP et l'OV
-  if (typeMouv.includes('fournisseur') || (!typeMouv.includes('retenue') && !typeMouv.includes('tva') && !typeMouv.includes('ias') && !typeMouv.includes('is') && !typeMouv.includes('imputation'))) {
+  if (typeMouv.includes('fournisseur') || (!typeMouv.includes('retenue') && !typeMouv.includes('tva') && !typeMouv.includes('ias') && !typeMouv.includes('iac') && !/\b(ias|iac|is)\b/i.test(typeMouv) && !typeMouv.includes('imputation'))) {
     const opDoc = resolveOrdreDocument(ordre);
     const ovDoc = {
       docType: 'ov',

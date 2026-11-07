@@ -383,7 +383,7 @@ class AooController extends Controller
             $request->validate([
                 'concurrents' => 'present|array',
                 'concurrents.*.id' => 'nullable|exists:ouverture_plis_concurrents,id',
-                'concurrents.*.fournisseur_id' => 'required|exists:fournisseurs,id',
+                'concurrents.*.fournisseur_id' => 'nullable',
                 'concurrents.*.nom_soumissionnaire' => 'nullable|string',
                 'concurrents.*.adresse' => 'nullable|string',
                 'concurrents.*.ville' => 'nullable|string',
@@ -406,18 +406,40 @@ class AooController extends Controller
         }
 
         $concurrents = collect($request->input('concurrents', []))
-            ->filter(fn ($c) => !empty($c['fournisseur_id']))
-            ->unique('fournisseur_id')
+            ->filter(fn ($c) => !empty($c['fournisseur_id']) || !empty($c['nom_soumissionnaire']))
             ->values();
 
         $saved = DB::transaction(function () use ($aoo, $concurrents) {
             $fournisseurIds = [];
 
             foreach ($concurrents as $concurrentData) {
-                // Determine if fournisseur_id is a valid ID
-                $fid = $concurrentData['fournisseur_id'];
-                
-                $fournisseur = \App\Models\Fournisseur::findOrFail($fid);
+                $fid = $concurrentData['fournisseur_id'] ?? null;
+                $nom = trim($concurrentData['nom_soumissionnaire'] ?? '');
+
+                $fournisseur = null;
+                if ($fid && is_numeric($fid)) {
+                    $fournisseur = \App\Models\Fournisseur::find($fid);
+                }
+                if (!$fournisseur && !empty($nom)) {
+                    $fournisseur = \App\Models\Fournisseur::where('raison_sociale', $nom)->first();
+                }
+                if (!$fournisseur && !empty($nom)) {
+                    $fournisseur = \App\Models\Fournisseur::create([
+                        'raison_sociale' => $nom,
+                        'ice' => $concurrentData['ice'] ?? '000000000000000',
+                        'if' => '00000000',
+                        'rc' => '0000',
+                        'adresse' => $concurrentData['adresse'] ?? 'Non renseignée',
+                        'ville' => $concurrentData['ville'] ?? 'Non renseignée',
+                        'telephone' => '0000000000',
+                        'email' => 'contact@' . \Illuminate\Support\Str::slug($nom) . '.ma',
+                        'actif' => true,
+                    ]);
+                }
+
+                if (!$fournisseur) {
+                    continue;
+                }
                 
                 $updateData = [];
                 if (!empty($concurrentData['adresse']) && ($fournisseur->adresse === 'Non renseignée' || empty($fournisseur->adresse))) {
@@ -941,6 +963,18 @@ class AooController extends Controller
 
         return response()->json([
             'message' => 'Commission validée avec succès.',
+            'aoo' => $aoo,
+        ], 200);
+    }
+
+    public function deverrouillerCommission(Request $request, Aoo $aoo)
+    {
+        $aoo->update([
+            'commission_validee' => false,
+        ]);
+
+        return response()->json([
+            'message' => 'Séance d\'ouverture déverrouillée avec succès.',
             'aoo' => $aoo,
         ], 200);
     }

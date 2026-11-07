@@ -60,6 +60,7 @@ export default function TopNavButtons({ current }) {
     {
       key: 'directeur',
       label: 'Directeur',
+      shortLabel: 'Directeur',
       route: '/directeur',
       title: "Accéder à l'Espace Directeur",
       icon: ShieldCheck,
@@ -69,6 +70,7 @@ export default function TopNavButtons({ current }) {
     {
       key: 'dashboard',
       label: "Appels d'offres",
+      shortLabel: "Appels d'offres",
       route: '/dashboard',
       title: "Accéder au Cycle des Appels d'offres",
       icon: FileText,
@@ -78,6 +80,7 @@ export default function TopNavButtons({ current }) {
     {
       key: 'bons-commande',
       label: 'Bons de commande',
+      shortLabel: 'Bons Cde',
       route: '/bons-commande',
       title: 'Accéder aux Bons de commande',
       icon: Receipt,
@@ -87,6 +90,7 @@ export default function TopNavButtons({ current }) {
     {
       key: 'convention',
       label: 'Conventions',
+      shortLabel: 'Conv.',
       route: '/convention',
       title: 'Accéder aux Conventions',
       icon: Handshake,
@@ -107,11 +111,12 @@ export default function TopNavButtons({ current }) {
             key={btn.key}
             type="button"
             onClick={() => handleNavigate(btn)}
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 text-[11px] sm:text-xs font-bold rounded-xl transition duration-150 active:scale-98 cursor-pointer whitespace-nowrap ${btn.style}`}
+            className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3 sm:py-2 xl:px-3.5 text-[11px] sm:text-xs font-bold rounded-xl transition duration-150 active:scale-98 cursor-pointer whitespace-nowrap shrink-0 ${btn.style}`}
             title={btn.title}
           >
             <Icon size={14} className={`shrink-0 sm:w-[15px] sm:h-[15px] ${btn.iconColor}`} />
-            <span>{btn.label}</span>
+            <span className="hidden xl:inline">{btn.label}</span>
+            <span className="xl:hidden">{btn.shortLabel}</span>
           </button>
         );
       })}

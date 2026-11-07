@@ -62,7 +62,7 @@ const ListeLiquidations = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans flex flex-col p-4 sm:p-6 lg:p-8">
-        <main className="flex-1 w-full max-w-[1920px] mx-auto space-y-6">
+        <main className="flex-1 w-full max-w-[1920px] 2xl:max-w-[2400px] mx-auto space-y-6">
           <div className="mb-2">
              <Link to="/dashboard" className="text-sm font-semibold text-blue-600 hover:text-blue-800 transition-colors">
                ← Retour au tableau de bord
@@ -113,7 +113,7 @@ const ListeLiquidations = () => {
 
             <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
               <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
+                <table className="w-full min-w-[900px] text-left border-collapse">
                   <thead>
                     <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 text-xs uppercase tracking-wider">
                       <th className="p-4 font-semibold">N° Marché</th>

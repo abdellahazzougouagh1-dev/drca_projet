@@ -135,7 +135,7 @@ export default function DetailsNotification() {
 
   return (
     <div className="min-h-screen bg-slate-50 py-5 px-3 sm:px-5 w-full">
-      <div className="w-full">
+      <div className="w-full max-w-[1920px] 2xl:max-w-[2400px] mx-auto">
         {/* Header */}
         <header className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
@@ -269,7 +269,7 @@ export default function DetailsNotification() {
                 notification.lignes.length > 0 &&
                 notification.lignes.every((l) => l.domaine === 'FONCTIONNEMENT')) ? (
                 <div className="overflow-x-auto border border-slate-200 rounded-xl shadow-2xs">
-                  <table className="w-full text-left border-collapse">
+                  <table className="w-full min-w-[700px] text-left border-collapse">
                     <thead>
                       <tr className="bg-[#1e3a8a] text-white text-xs font-bold">
                         <th className="p-3.5 border-r border-blue-800">Imputation Budgétaire</th>
@@ -335,7 +335,7 @@ export default function DetailsNotification() {
                 </div>
               ) : (
                 <div className="overflow-x-auto border border-slate-200 rounded-xl shadow-2xs">
-                  <table className="w-full text-left border-collapse">
+                  <table className="w-full min-w-[950px] text-left border-collapse">
                     <thead>
                       <tr className="bg-[#1e3a8a] text-white text-xs font-bold">
                         <th className="p-3.5 border-r border-blue-800">Imputation Budgétaire</th>
@@ -421,7 +421,7 @@ export default function DetailsNotification() {
                   <History className="text-[#1e40af]" size={22} /> Historique des Mouvements de Crédits
                 </h2>
                 <div className="overflow-x-auto border border-slate-200 rounded-xl">
-                  <table className="w-full text-left border-collapse text-xs">
+                  <table className="w-full min-w-[750px] text-left border-collapse text-xs">
                     <thead>
                       <tr className="bg-slate-100 text-slate-700 font-bold border-b">
                         <th className="p-3">Nature</th>
@@ -598,7 +598,7 @@ export default function DetailsNotification() {
                     </p>
                   ) : isFonct ? (
                     <div className="overflow-x-auto border border-slate-200 rounded-xl shadow-2xs">
-                      <table className="w-full text-left border-collapse text-xs">
+                      <table className="w-full min-w-[700px] text-left border-collapse text-xs">
                         <thead>
                           <tr className="bg-[#1e3a8a] text-white font-bold">
                             <th className="p-3.5 border-r border-blue-800">Imputation Budgétaire</th>
@@ -673,7 +673,7 @@ export default function DetailsNotification() {
                     </div>
                   ) : (
                     <div className="overflow-x-auto border border-slate-200 rounded-xl shadow-2xs">
-                      <table className="w-full text-left border-collapse text-xs">
+                      <table className="w-full min-w-[950px] text-left border-collapse text-xs">
                         <thead>
                           <tr className="bg-[#1e3a8a] text-white font-bold">
                             <th className="p-3.5 border-r border-blue-800">Imputation Budgétaire</th>

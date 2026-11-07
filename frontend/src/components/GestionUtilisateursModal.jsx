@@ -209,8 +209,8 @@ export default function GestionUtilisateursModal({ isOpen, onClose }) {
               </p>
             </div>
           ) : (
-            <div className="overflow-hidden border border-slate-200 rounded-2xl bg-white shadow-xs">
-              <table className="w-full text-left text-xs">
+            <div className="overflow-x-auto border border-slate-200 rounded-2xl bg-white shadow-xs">
+              <table className="w-full min-w-[700px] text-left text-xs">
                 <thead className="bg-slate-50/90 border-b border-slate-200 text-slate-500 font-bold uppercase tracking-wider text-[11px]">
                   <tr>
                     <th className="px-6 py-3.5">Utilisateur</th>

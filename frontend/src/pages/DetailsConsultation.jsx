@@ -782,8 +782,8 @@ const DetailsConsultation = () => {
   if (error || !consultation) return <div className="min-h-screen flex items-center justify-center"><div className="bg-red-50 p-6 text-red-600 font-bold">{error}</div></div>;
 
   return (
-    <div className="p-10 bg-gray-50 dark:bg-gray-900 min-h-screen pb-24">
-      <div className="max-w-none mx-auto xl:grid xl:grid-cols-[320px_1fr] xl:gap-10">
+    <div className="p-4 sm:p-6 lg:p-8 xl:p-10 bg-gray-50 dark:bg-gray-900 min-h-screen pb-24">
+      <div className="max-w-[1920px] 2xl:max-w-[2400px] mx-auto xl:grid xl:grid-cols-[280px_1fr] 2xl:grid-cols-[320px_1fr] xl:gap-8 2xl:gap-10">
         <aside className="mb-10 xl:mb-0">
           <div className="sticky top-8 space-y-6">
             <section className="rounded-3xl border border-slate-200 bg-white shadow-sm p-6">
@@ -1031,7 +1031,7 @@ const DetailsConsultation = () => {
                     </div>
                   </div>
                   <div className="overflow-x-auto flex-1">
-                    <table className="w-full text-left border-collapse">
+                    <table className="w-full min-w-[700px] text-left border-collapse">
                       <thead><tr className="bg-gray-50 border-b border-gray-100"><th className="px-4 py-3 text-xs font-bold text-gray-500 uppercase">Désignation</th><th className="px-4 py-3 text-xs font-bold text-gray-500 uppercase">Unité</th><th className="px-4 py-3 text-xs font-bold text-gray-500 uppercase">Qté</th><th className="px-4 py-3 text-xs font-bold text-gray-500 uppercase">Prix U. (HT)</th><th className="px-4 py-3 text-xs font-bold text-gray-500 uppercase">TVA</th><th className="px-4 py-3 text-xs font-bold text-gray-500 uppercase">TTC</th><th className="px-4 py-3 text-center"></th></tr></thead>
                       <tbody className="divide-y divide-gray-100">
                         {prestations.map(p => (
@@ -1106,7 +1106,7 @@ const DetailsConsultation = () => {
                   <div className="text-center py-8 text-gray-500">Aucun fournisseur n'a été consulté.</div>
                 ) : (
                   <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
+                    <table className="w-full min-w-[650px] text-left border-collapse">
                       <thead>
                         <tr className="bg-gray-50 border-b border-gray-100">
                           <th className="px-4 py-3 text-xs font-bold text-gray-500 uppercase">Fournisseur</th>

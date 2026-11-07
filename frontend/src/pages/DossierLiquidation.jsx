@@ -431,7 +431,7 @@ const DossierLiquidation = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans p-4 sm:p-6 lg:p-8">
-      <main className="flex-1 w-full max-w-[1920px] mx-auto space-y-6">
+      <main className="flex-1 w-full max-w-[1920px] 2xl:max-w-[2400px] mx-auto space-y-6">
         
         {/* Header */}
         <div className="flex flex-wrap items-center justify-between gap-4 bg-gradient-to-r from-blue-50/90 via-indigo-50/50 to-blue-50/70 p-5 rounded-2xl shadow-sm border border-blue-100">
@@ -758,7 +758,7 @@ const DossierLiquidation = () => {
               <section>
                 <h3 className="text-lg font-bold text-slate-800 mb-4 border-b border-slate-100 pb-2">2. Détail des Prestations (Bordereau)</h3>
                 <div className="overflow-x-auto border border-slate-200 rounded-xl">
-                  <table className="w-full text-left text-sm">
+                  <table className="w-full min-w-[700px] text-left text-sm">
                     <thead className="bg-slate-50 border-b border-slate-200">
                       <tr>
                         <th className="p-3 font-semibold text-slate-700">Désignation</th>
@@ -983,7 +983,7 @@ const DossierLiquidation = () => {
                   )}
 
                   {/* Tableau des membres */}
-                  <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xs">
+                  <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-xs">
                     <datalist id="qualites-reception-list-table">
                       <option value="Présidente" />
                       <option value="Président" />
@@ -992,7 +992,7 @@ const DossierLiquidation = () => {
                       <option value="Membre avec voix consultative" />
                     </datalist>
 
-                    <table className="w-full text-left border-collapse">
+                    <table className="w-full min-w-[650px] text-left border-collapse">
                       <thead>
                         <tr className="bg-slate-100 text-slate-700 text-xs uppercase font-black border-b border-slate-200">
                           <th className="px-4 py-3.5">Nom et prénom</th>

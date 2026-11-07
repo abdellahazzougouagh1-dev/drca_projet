@@ -169,7 +169,7 @@ const MembresCommission = () => {
       </aside>
 
       <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
-        <div className="w-full max-w-[1920px] mx-auto">
+        <div className="w-full max-w-[1920px] 2xl:max-w-[2400px] mx-auto">
           <header className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
               <h1 className="text-4xl font-extrabold tracking-tight text-blue-900">Membres de la Commission</h1>
@@ -208,7 +208,7 @@ const MembresCommission = () => {
 
           <div className="bg-white rounded-3xl shadow-md border border-slate-100 overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
+              <table className="w-full min-w-[600px] text-left border-collapse">
                 <thead>
                   <tr className="bg-slate-50 border-b border-slate-100">
                     <th className="px-6 py-4 text-sm font-bold uppercase tracking-wider text-slate-700">Nom & Prénom</th>

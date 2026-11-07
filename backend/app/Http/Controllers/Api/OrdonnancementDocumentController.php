@@ -52,19 +52,22 @@ class OrdonnancementDocumentController extends Controller
             $ordre = $ordonnancement->ordres()->find($ordreId);
         }
 
-        // If no specific ordre passed for OP, take first payment order
+        // If no specific ordre passed for OP, take last active payment order (excluding rejected)
         if (!$ordre) {
             if ($type === 'op') {
-                $ordre = $ordonnancement->ordres->where('type_mouvement', 'Paiement fournisseur')->first() 
-                         ?: $ordonnancement->ordres->first();
+                $ordre = $ordonnancement->ordres->whereNotIn('statut', ['Rejeté', 'Annulé'])->where('type_mouvement', 'Paiement fournisseur')->last() 
+                         ?: $ordonnancement->ordres->whereNotIn('statut', ['Rejeté', 'Annulé'])->last()
+                         ?: $ordonnancement->ordres->last();
             } elseif ($type === 'ov') {
-                $ordre = $ordonnancement->ordres->where('type_mouvement', 'Retenue à la source TVA')->first()
-                         ?: $ordonnancement->ordres->where('type_mouvement', 'Ordre de virement (OV)')->first()
-                         ?: $ordonnancement->ordres->first();
+                $ordre = $ordonnancement->ordres->whereNotIn('statut', ['Rejeté', 'Annulé'])->where('type_mouvement', 'Retenue à la source TVA')->last()
+                         ?: $ordonnancement->ordres->whereNotIn('statut', ['Rejeté', 'Annulé'])->where('type_mouvement', 'Ordre de virement (OV)')->last()
+                         ?: $ordonnancement->ordres->whereNotIn('statut', ['Rejeté', 'Annulé'])->last()
+                         ?: $ordonnancement->ordres->last();
             } elseif ($type === 'oi') {
-                $ordre = $ordonnancement->ordres->where('type_mouvement', 'Retenue à la source IAS')->first()
-                         ?: $ordonnancement->ordres->where('type_mouvement', 'Retenue à la source TVA')->first()
-                         ?: $ordonnancement->ordres->first();
+                $ordre = $ordonnancement->ordres->whereNotIn('statut', ['Rejeté', 'Annulé'])->where('type_mouvement', 'Retenue à la source IAS')->last()
+                         ?: $ordonnancement->ordres->whereNotIn('statut', ['Rejeté', 'Annulé'])->where('type_mouvement', 'Retenue à la source TVA')->last()
+                         ?: $ordonnancement->ordres->whereNotIn('statut', ['Rejeté', 'Annulé'])->last()
+                         ?: $ordonnancement->ordres->last();
             }
         }
 

@@ -97,7 +97,7 @@ const ListeAoo = () => {
 
   return (
     <div className="min-h-screen bg-[#F5F7F5] p-4 sm:p-6 lg:p-8 text-[#172033]">
-      <div className="w-full max-w-[1920px] mx-auto space-y-6">
+      <div className="w-full max-w-[1920px] 2xl:max-w-[2400px] mx-auto space-y-6">
         {/* Header */}
         <header className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div className="flex items-start sm:items-center gap-3">
@@ -188,7 +188,7 @@ const ListeAoo = () => {
           <div className="bg-white rounded-2xl shadow-sm overflow-hidden border border-slate-200">
             {filteredAoos.length > 0 ? (
               <div className="overflow-x-auto">
-                <table className="w-full">
+                <table className="w-full min-w-[900px]">
                   <thead>
                     <tr className="bg-[#101B2D] border-b-2 border-[#087F5B] text-white">
                       <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">N° AOO</th>

@@ -1053,7 +1053,7 @@ const GestionMarches = () => {
         </div>
       </header>
 
-      <main className="w-full px-3 sm:px-6 lg:px-8 mt-8 sm:mt-16">
+      <main className="w-full max-w-[1920px] 2xl:max-w-[2400px] mx-auto px-3 sm:px-6 lg:px-8 mt-8 sm:mt-16">
         <form onSubmit={handleSubmit} className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-10 shadow-sm border border-slate-200">
 
           <div className={activeTab === 'consultation' ? 'block animate-fade-in' : 'hidden'}>
@@ -1247,7 +1247,7 @@ const GestionMarches = () => {
                 </div>
 
                 <div className="overflow-x-auto rounded-2xl border border-slate-200">
-                  <table className="min-w-full text-sm">
+                  <table className="min-w-[850px] w-full text-sm">
                     <thead className="bg-slate-100 text-slate-700">
                       <tr>
                         <th className="px-3 py-3 text-left font-bold">N°</th>

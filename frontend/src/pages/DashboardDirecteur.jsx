@@ -670,7 +670,7 @@ export default function DashboardDirecteur() {
 
   return (
     <div className="min-h-screen bg-[#F5F7F5] text-slate-900">
-      <aside className="fixed inset-y-0 left-0 z-40 hidden w-72 flex-col border-r border-[#172B46] bg-[#101B2D] p-5 text-slate-300 lg:flex">
+      <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 xl:w-72 flex-col border-r border-[#172B46] bg-[#101B2D] p-5 text-slate-300 lg:flex">
         <Link to="/directeur" className="flex items-center gap-3 border-b border-white/10 pb-6">
           <span className="grid h-11 w-11 place-items-center rounded-xl bg-gradient-to-br from-[#087F5B] to-[#06694A] text-sm font-black text-white shadow-md shadow-[#087F5B]/30">DR</span>
           <span><b className="block text-sm text-white">DRCA · RSK</b><small className="text-xs text-emerald-400 font-medium">Espace de direction · ERP ONCA</small></span>
@@ -702,9 +702,9 @@ export default function DashboardDirecteur() {
         </div>
       </aside>
 
-      <div className="lg:pl-72">
+      <div className="lg:pl-64 xl:pl-72">
         <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur">
-          <div className="mx-auto flex max-w-[1600px] items-center justify-between px-4 py-4 sm:px-7">
+          <div className="mx-auto flex max-w-[1920px] 2xl:max-w-[2400px] items-center justify-between px-4 py-4 sm:px-7">
             <Link to="/directeur" className="flex items-center gap-3 lg:hidden">
               <span className="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-[#087F5B] to-[#06694A] text-sm font-black text-white shadow-sm shadow-[#087F5B]/30">DR</span>
               <span><b className="block text-sm">DRCA · RSK</b><small className="text-xs text-slate-500">Plateforme Directeur</small></span>
@@ -771,7 +771,7 @@ export default function DashboardDirecteur() {
           </div>
         )}
 
-        <main className="mx-auto max-w-[1920px] px-4 py-7 sm:px-7">
+        <main className="mx-auto max-w-[1920px] 2xl:max-w-[2400px] px-4 py-7 sm:px-7">
           <div className="flex flex-col justify-between gap-5 xl:flex-row xl:items-end">
             <div>
               <p className="text-sm font-semibold text-blue-700">DIRECTION RÉGIONALE</p>

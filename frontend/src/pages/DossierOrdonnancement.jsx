@@ -136,7 +136,7 @@ export default function DossierOrdonnancement() {
   };
 
   const montantLiquidation = Number(data?.liquidation?.montant_brut_ttc || data?.liquidation?.montant_ttc || data?.montant_brut || 0);
-  const totalOrdres = (data?.ordres || []).reduce((sum, o) => sum + Number(o.montant || 0), 0);
+  const totalOrdres = (data?.ordres || []).filter((o) => o.statut !== 'Rejeté' && o.statut !== 'Annulé').reduce((sum, o) => sum + Number(o.montant || 0), 0);
   const resteAOrdonnancer = Math.max(0, montantLiquidation - totalOrdres);
 
   // Order CRUD
@@ -330,7 +330,7 @@ export default function DossierOrdonnancement() {
               )}
               {data.statut === 'À payer' && data.ordres?.some((ordre) => ordre.statut === 'À payer') && (
                 <button
-                  onClick={() => openStatusChange('Rejeté', data.ordres.find((ordre) => ordre.statut === 'À payer')?.id)}
+                  onClick={() => openStatusChange('Rejeté', [...(data.ordres || [])].reverse().find((ordre) => ordre.statut === 'À payer')?.id)}
                   className="px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center gap-2"
                 >
                   <X size={15} />
@@ -342,7 +342,7 @@ export default function DossierOrdonnancement() {
         </div>
       </header>
 
-      <main className="w-full px-3 sm:px-5 py-6 space-y-6">
+      <main className="w-full max-w-[1920px] 2xl:max-w-[2400px] mx-auto px-3 sm:px-5 py-6 space-y-6">
 
         {/* RÉSUMÉ DU DOSSIER D'ORDONNANCEMENT (HERO BANNER) */}
         <div className="bg-gradient-to-r from-blue-50/90 via-indigo-50/50 to-blue-50/70 rounded-2xl p-5 sm:p-6 shadow-sm border border-blue-100 space-y-4">
@@ -684,8 +684,8 @@ export default function DossierOrdonnancement() {
                 {data.liquidation.lignes && data.liquidation.lignes.length > 0 && (
                   <div>
                     <h4 className="text-xs font-bold text-slate-800 mb-3 uppercase tracking-wider">Lignes du décompte</h4>
-                    <div className="border border-slate-200 rounded-2xl overflow-hidden">
-                      <table className="w-full text-sm text-left">
+                    <div className="border border-slate-200 rounded-2xl overflow-x-auto">
+                      <table className="w-full min-w-[650px] text-sm text-left">
                         <thead className="bg-slate-50 text-slate-700 font-bold border-b border-slate-200 text-xs uppercase tracking-wider">
                           <tr>
                             <th className="px-5 py-3.5">Désignation</th>
@@ -741,8 +741,8 @@ export default function DossierOrdonnancement() {
               </button>
             </div>
 
-            <div className="border border-slate-200 rounded-2xl overflow-hidden shadow-xs">
-              <table className="w-full text-sm text-left">
+            <div className="border border-slate-200 rounded-2xl overflow-x-auto shadow-xs">
+              <table className="w-full min-w-[750px] text-sm text-left">
                 <thead className="bg-slate-50 text-slate-700 font-extrabold uppercase tracking-wider text-xs border-b border-slate-200">
                   <tr>
                     <th className="px-4 py-4 text-center">#</th>
@@ -756,21 +756,29 @@ export default function DossierOrdonnancement() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {data.ordres?.map((ord, idx) => (
-                    <tr key={ord.id || idx} className="hover:bg-blue-50/40 transition">
+                  {data.ordres?.map((ord, idx) => {
+                    const isRejete = ord.statut === 'Rejeté';
+                    const isPaye = ord.statut === 'Payé';
+
+                    return (
+                    <tr key={ord.id || idx} className={`transition ${
+                      isRejete ? 'bg-rose-50/20 hover:bg-rose-50/40 text-slate-500' : isPaye ? 'bg-emerald-50/20 hover:bg-emerald-50/40' : 'hover:bg-blue-50/40'
+                    }`}>
                       <td className="px-4 py-4 text-center font-bold text-slate-400">
                         {idx + 1}
                       </td>
-                      <td className="px-5 py-4 font-semibold text-slate-800">
+                      <td className={`px-5 py-4 font-semibold ${isRejete ? 'text-slate-500 line-through' : 'text-slate-800'}`}>
                         {ord.type_mouvement}
                       </td>
-                      <td className="px-4 py-4 font-mono font-bold text-blue-900">
-                        <span className="px-2.5 py-1 bg-blue-50 text-blue-800 border border-blue-200 rounded-lg font-bold text-xs">
+                      <td className="px-4 py-4 font-mono font-bold">
+                        <span className={`px-2.5 py-1 border rounded-lg font-bold text-xs ${
+                          isRejete ? 'bg-rose-50 text-rose-800 border-rose-200 line-through' : 'bg-blue-50 text-blue-800 border-blue-200'
+                        }`}>
                           {ord.num_ordre || `OP-${String(idx + 1).padStart(3, '0')}`}
                         </span>
                       </td>
                       <td className="px-5 py-4">
-                        <div className="font-bold text-slate-900">{ord.beneficiaire}</div>
+                        <div className={`font-bold ${isRejete ? 'text-slate-500' : 'text-slate-900'}`}>{ord.beneficiaire}</div>
                         {ord.rib_compte && (
                           <div className="font-mono text-[11px] text-slate-400 tracking-wider mt-0.5">{ord.rib_compte}</div>
                         )}
@@ -780,8 +788,10 @@ export default function DossierOrdonnancement() {
                           {ord.creance || 'Reste à payer'}
                         </span>
                       </td>
-                      <td className="px-5 py-4 text-right font-mono font-black text-blue-700 text-base">
-                        {formatDH(ord.montant)}
+                      <td className="px-5 py-4 text-right font-mono font-black text-base">
+                        <span className={isRejete ? 'line-through text-slate-400 font-normal' : 'text-blue-700'}>
+                          {formatDH(ord.montant)}
+                        </span>
                       </td>
                       <td className="px-4 py-4 text-center">
                         <span className={`px-3 py-1 rounded-full text-xs font-bold ${ord.statut === 'Payé'
@@ -821,7 +831,8 @@ export default function DossierOrdonnancement() {
                         </div>
                       </td>
                     </tr>
-                  ))}
+                  );
+                })}
                   {(!data.ordres || data.ordres.length === 0) && (
                     <tr>
                       <td colSpan={8} className="px-6 py-12 text-center text-slate-400 italic">

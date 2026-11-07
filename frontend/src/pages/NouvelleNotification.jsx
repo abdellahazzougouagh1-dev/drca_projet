@@ -760,7 +760,7 @@ export default function NouvelleNotification() {
 
   return (
     <div className="min-h-screen bg-slate-50 py-5 px-3 sm:px-5 w-full">
-      <div className="w-full">
+      <div className="w-full max-w-[1920px] 2xl:max-w-[2400px] mx-auto">
         {/* Header */}
         <header className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
@@ -1413,7 +1413,7 @@ export default function NouvelleNotification() {
                 if (isFonctionnementOnly) {
                   return (
                     <div className="overflow-x-auto border border-slate-200 rounded-xl shadow-2xs">
-                      <table className="w-full text-left border-collapse">
+                      <table className="w-full min-w-[700px] text-left border-collapse">
                         <thead>
                           <tr className="bg-[#1e3a8a] text-white text-xs font-bold">
                             <th className="p-3.5 border-r border-blue-800">Ligne Budgétaire</th>
@@ -1517,7 +1517,7 @@ export default function NouvelleNotification() {
                 // Pour INVESTISSEMENT ou MIXTE (7 colonnes)
                 return (
                   <div className="overflow-x-auto border border-slate-200 rounded-xl shadow-2xs">
-                    <table className="w-full text-left border-collapse">
+                    <table className="w-full min-w-[950px] text-left border-collapse">
                       <thead>
                         <tr className="bg-[#1e3a8a] text-white text-xs font-bold">
                           <th className="p-3.5 border-r border-blue-800">Ligne Budgétaire</th>
@@ -1703,7 +1703,7 @@ export default function NouvelleNotification() {
                         </p>
                       ) : (
                         <div className="overflow-x-auto border border-slate-200 rounded-xl shadow-2xs">
-                          <table className="w-full text-left border-collapse text-xs">
+                          <table className="w-full min-w-[700px] text-left border-collapse text-xs">
                             <thead>
                               <tr className="bg-[#1e3a8a] text-white font-bold">
                                 <th className="p-3 border-r border-blue-800">Imputation Budgétaire</th>
@@ -1799,7 +1799,7 @@ export default function NouvelleNotification() {
                         </p>
                       ) : (
                         <div className="overflow-x-auto border border-slate-200 rounded-xl shadow-2xs">
-                          <table className="w-full text-left border-collapse text-xs">
+                          <table className="w-full min-w-[700px] text-left border-collapse text-xs">
                             <thead>
                               <tr className="bg-[#1e3a8a] text-white font-bold">
                                 <th className="p-3 border-r border-blue-800">Imputation Budgétaire</th>

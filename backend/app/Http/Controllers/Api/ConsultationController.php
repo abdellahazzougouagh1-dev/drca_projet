@@ -13,9 +13,31 @@ use Illuminate\Validation\Rule;
 
 class ConsultationController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        return response()->json(Consultation::with(['fournisseur', 'budget', 'notificationLigne', 'prestations', 'receptionCommission', 'registreEngagement'])->get());
+        $query = Consultation::with(['fournisseur', 'budget', 'notificationLigne', 'prestations', 'receptionCommission', 'registreEngagement']);
+
+        if ($request->filled('mode_engagement')) {
+            $mode = trim($request->query('mode_engagement'));
+            if (in_array(strtoupper($mode), ['AO', 'AOO', 'MARCHE', 'MARCHÉ', 'APPEL', "APPEL D'OFFRES"], true)) {
+                $query->whereIn('mode_engagement', ['AO', "Appel d'offres", "Appel d'Offres", "Appel d'offre"]);
+            } elseif (in_array(strtoupper($mode), ['CONV', 'CONVENTION'], true)) {
+                $query->where(function ($q) {
+                    $q->where('mode_engagement', 'Convention')
+                      ->orWhere('numero_consultation', 'like', 'CONV%')
+                      ->orWhere('numero_bc', 'like', 'CONV%');
+                });
+            } elseif (in_array(strtoupper($mode), ['BC', 'BON', 'BON_DE_COMMANDE', 'BON DE COMMANDE'], true)) {
+                $query->where(function ($q) {
+                    $q->whereIn('mode_engagement', ['BC', 'Bon de commande'])
+                      ->where('numero_consultation', 'not like', 'CONV%');
+                });
+            } else {
+                $query->where('mode_engagement', $mode);
+            }
+        }
+
+        return response()->json($query->get());
     }
 
     public function findByBonCommande(string $numeroBc)

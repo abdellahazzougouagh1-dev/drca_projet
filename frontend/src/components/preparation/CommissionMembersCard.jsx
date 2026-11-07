@@ -280,7 +280,7 @@ export default function CommissionMembersCard({
         )}
 
         {/* Tableau des membres */}
-        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+        <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
           <datalist id="qualites-list-table">
             <option value="Président" />
             <option value="Membre" />
@@ -288,7 +288,7 @@ export default function CommissionMembersCard({
             <option value="Membre avec voix consultative" />
           </datalist>
 
-          <table className="w-full text-left border-collapse">
+          <table className="w-full min-w-[550px] text-left border-collapse">
             <thead>
               <tr className="bg-slate-100 text-slate-700 text-xs uppercase font-black border-b border-slate-200">
                 <th className="px-4 py-3.5">Nom et prénom</th>

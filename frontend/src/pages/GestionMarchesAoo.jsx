@@ -166,7 +166,7 @@ const GestionMarchesAoo = () => {
       </header>
 
       {/* FORM CONTENT */}
-      <main className="w-full px-3 sm:px-6 lg:px-8 mt-5 sm:mt-8">
+      <main className="w-full max-w-[1920px] 2xl:max-w-[2400px] mx-auto px-3 sm:px-6 lg:px-8 mt-5 sm:mt-8">
         <form onSubmit={handleSubmit} className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 shadow-sm border border-slate-200">
 
           {/* TAB 1 : AOO */}

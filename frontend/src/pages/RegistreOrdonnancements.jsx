@@ -1,12 +1,12 @@
 import RegistreScroll from '../components/RegistreScroll';
-import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { 
   Search, Filter, Plus, Eye, Printer, Trash2, 
   CheckCircle2, Clock, Send, AlertTriangle, ChevronRight,
   WalletCards, Layers, Landmark, ArrowUpDown, Download,
   Building, RefreshCw, Calculator, FileText, Check,
-  ChevronDown, Receipt, ArrowLeft
+  ChevronDown, Receipt, ArrowLeft, Handshake
 } from 'lucide-react';
 import api from '../api/axios';
 import ModalNouveauOrdonnancement from '../components/ordonnancement/ModalNouveauOrdonnancement';
@@ -14,6 +14,19 @@ import DocumentPreviewModal from '../components/ordonnancement/DocumentPreviewMo
 
 export default function RegistreOrdonnancements() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const searchParams = useMemo(() => new URLSearchParams(location.search), [location.search]);
+  const initialProcParam = location.state?.procedure || searchParams.get('procedure');
+
+  const normalizeProcedure = (p) => {
+    if (!p) return 'TOUS';
+    const low = String(p).toLowerCase();
+    if (low.includes('march') || low.includes('aoo') || low.includes('appel')) return 'Marché';
+    if (low.includes('bon') || low.includes('bc')) return 'Bon de commande';
+    if (low.includes('conv')) return 'Convention';
+    return 'TOUS';
+  };
+
   const [ordonnancements, setOrdonnancements] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -22,8 +35,14 @@ export default function RegistreOrdonnancements() {
   const [exercice, setExercice] = useState('2026');
   const [searchTerm, setSearchTerm] = useState('');
   const [statutFilter, setStatutFilter] = useState('TOUS');
-  const [procedureFilter, setProcedureFilter] = useState('TOUS');
+  const [procedureFilter, setProcedureFilter] = useState(() => normalizeProcedure(initialProcParam));
   const [showFilters, setShowFilters] = useState(false);
+
+  useEffect(() => {
+    if (initialProcParam) {
+      setProcedureFilter(normalizeProcedure(initialProcParam));
+    }
+  }, [initialProcParam]);
 
   // Modals
   const [modalCreateOpen, setModalCreateOpen] = useState(false);
@@ -269,7 +288,7 @@ export default function RegistreOrdonnancements() {
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(14,165,233,0.10),_transparent_30%),linear-gradient(135deg,_#f8fafc_0%,_#eef6ff_100%)] font-sans flex flex-col p-3 sm:p-5 pb-24 w-full">
-      <main className="flex-1 w-full space-y-6">
+      <main className="flex-1 w-full max-w-[1920px] 2xl:max-w-[2400px] mx-auto space-y-6">
         
         {/* Back Link */}
         <div>
@@ -319,6 +338,60 @@ export default function RegistreOrdonnancements() {
               + Nouvel ordonnancement
             </button>
           </div>
+        </div>
+
+        {/* PROCEDURE SELECTOR TABS (Appels d'offres / Bons de commande / Conventions / Toutes) */}
+        <div className="flex flex-wrap items-center gap-2 p-1.5 bg-white rounded-2xl border border-slate-200 shadow-xs">
+          <button
+            type="button"
+            onClick={() => setProcedureFilter('TOUS')}
+            className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
+              procedureFilter === 'TOUS'
+                ? 'bg-[#101B2D] text-white shadow-xs'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+            }`}
+          >
+            <span>Toutes les procédures</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setProcedureFilter('Marché')}
+            className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
+              procedureFilter === 'Marché'
+                ? 'bg-blue-600 text-white shadow-xs'
+                : 'text-blue-700 hover:bg-blue-50 border border-blue-200/60'
+            }`}
+          >
+            <FileText size={15} />
+            <span>Appels d’offres (Marchés)</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setProcedureFilter('Bon de commande')}
+            className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
+              procedureFilter === 'Bon de commande'
+                ? 'bg-[#087F5B] text-white shadow-xs'
+                : 'text-[#087F5B] hover:bg-[#E7F5EF] border border-[#087F5B]/30'
+            }`}
+          >
+            <Receipt size={15} />
+            <span>Bons de commande</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setProcedureFilter('Convention')}
+            className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
+              procedureFilter === 'Convention'
+                ? 'bg-emerald-700 text-white shadow-xs'
+                : 'text-emerald-800 hover:bg-emerald-50 border border-emerald-200'
+            }`}
+          >
+            <Handshake size={15} />
+            <span>Conventions</span>
+          </button>
         </div>
 
 
@@ -421,7 +494,7 @@ export default function RegistreOrdonnancements() {
         {/* REGISTRY TABLE - Official Moroccan DRCA Columns */}
         <div className="bg-white rounded-3xl border border-slate-300 shadow-sm overflow-hidden flex flex-col">
           <RegistreScroll className="min-h-[420px]">
-            <table className="w-full text-left border-collapse text-xs md:text-sm">
+            <table className="w-full min-w-[1550px] text-left border-collapse text-xs md:text-sm">
               
               {/* Header - Styled in Institutional Green */}
               <thead className="bg-emerald-700 text-white font-extrabold uppercase tracking-wider border-b-2 border-emerald-800 select-none text-[11px] md:text-xs text-center shadow-xs">
@@ -604,6 +677,7 @@ export default function RegistreOrdonnancements() {
       <ModalNouveauOrdonnancement
         isOpen={modalCreateOpen}
         onClose={() => setModalCreateOpen(false)}
+        defaultProcedure={procedureFilter !== 'TOUS' ? procedureFilter : null}
         onSuccess={() => {
           fetchRegistre();
         }}

@@ -774,7 +774,7 @@ const GestionAoo = () => {
     return (
       <div className="space-y-4">
         <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
-          <table className="w-full text-sm text-left">
+          <table className="w-full min-w-[700px] text-sm text-left">
             <thead className="text-xs uppercase bg-slate-100 text-slate-600 border-b border-slate-200">
               <tr>
                 <th className="px-3 py-3 w-12 text-center font-bold">N°</th>
@@ -1778,7 +1778,7 @@ const GestionAoo = () => {
         </div>
       </header>
 
-      <main className="w-full px-3 sm:px-6 lg:px-8 mt-8 sm:mt-16">
+      <main className="w-full max-w-[1920px] 2xl:max-w-[2400px] mx-auto px-3 sm:px-6 lg:px-8 mt-8 sm:mt-16">
         <Card className="rounded-2xl border-slate-200 bg-white shadow-sm sm:rounded-3xl">
           <form onSubmit={handleSubmit} className="p-4 sm:p-6 lg:p-8">
 

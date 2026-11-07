@@ -84,7 +84,7 @@ const ListeNotifications = () => {
 
   return (
     <div className="p-4 sm:p-6 bg-[#F5F7F5] min-h-screen w-full">
-      <div className="w-full">
+      <div className="w-full max-w-[1920px] 2xl:max-w-[2400px] mx-auto">
         {/* Header */}
         <header className="mb-6 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div>
@@ -276,7 +276,7 @@ const ListeNotifications = () => {
                         notif.lignes.every((l) => l.domaine === 'FONCTIONNEMENT')) ? (
                       /* TABLEAU 5 COLONNES - FONCTIONNEMENT */
                       <div className="overflow-x-auto border border-slate-200 rounded-xl shadow-2xs">
-                        <table className="w-full text-left border-collapse text-xs">
+                        <table className="w-full min-w-[700px] text-left border-collapse text-xs">
                           <thead>
                             <tr className="bg-[#1e3a8a] text-white font-bold">
                               <th className="p-3 border-r border-blue-800">Imputation Budgétaire</th>
@@ -374,7 +374,7 @@ const ListeNotifications = () => {
                     ) : (
                       /* TABLEAU 7 COLONNES - INVESTISSEMENT */
                       <div className="overflow-x-auto border border-slate-200 rounded-xl shadow-2xs">
-                        <table className="w-full text-left border-collapse text-xs">
+                        <table className="w-full min-w-[950px] text-left border-collapse text-xs">
                           <thead>
                             <tr className="bg-[#1e3a8a] text-white font-bold">
                               <th className="p-3 border-r border-blue-800">Imputation Budgétaire</th>
@@ -635,7 +635,7 @@ const ListeNotifications = () => {
                     </p>
                   ) : isFonct ? (
                     <div className="overflow-x-auto border border-slate-200 rounded-xl shadow-2xs">
-                      <table className="w-full text-left border-collapse text-xs">
+                      <table className="w-full min-w-[700px] text-left border-collapse text-xs">
                         <thead>
                           <tr className="bg-[#1e3a8a] text-white font-bold">
                             <th className="p-3.5 border-r border-blue-800">Imputation Budgétaire</th>
@@ -710,7 +710,7 @@ const ListeNotifications = () => {
                     </div>
                   ) : (
                     <div className="overflow-x-auto border border-slate-200 rounded-xl shadow-2xs">
-                      <table className="w-full text-left border-collapse text-xs">
+                      <table className="w-full min-w-[950px] text-left border-collapse text-xs">
                         <thead>
                           <tr className="bg-[#1e3a8a] text-white font-bold">
                             <th className="p-3.5 border-r border-blue-800">Imputation Budgétaire</th>
@@ -832,7 +832,7 @@ const ListeNotifications = () => {
           /* VUE 3 : LISTE DES DOSSIERS */
           <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
+              <table className="w-full min-w-[850px] text-left border-collapse">
                 <thead>
                   <tr className="bg-slate-50 border-b border-slate-200">
                     <th className="px-6 py-5 text-xs font-bold text-slate-600 uppercase">Numéro</th>

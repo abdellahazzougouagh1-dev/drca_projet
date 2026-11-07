@@ -655,6 +655,14 @@ export default function CommissionOuvertureStep({
           setImportPreview(parsedCompanies);
         }
 
+        // Si la séance était verrouillée, la déverrouiller automatiquement lors de l'import
+        if (typeof handleChange === 'function' && formData.commission_validee) {
+          handleChange({ target: { name: 'commission_validee', value: false } });
+          if (id && id !== 'nouveau') {
+            api.post(`/aoos/${id}/deverrouiller-commission`).catch(console.error);
+          }
+        }
+
         addToast('success', `${parsedCompanies.length} soumissionnaire(s) importé(s) avec succès !`);
         logAction(`Import CSV : ${parsedCompanies.length} soumissionnaires`, 'bg-emerald-100 text-emerald-800');
       } catch (err) {
@@ -1085,7 +1093,7 @@ export default function CommissionOuvertureStep({
       {isLocked && (
         <div className="rounded-2xl border border-emerald-300 bg-emerald-50/90 p-5 shadow-sm flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 text-emerald-900">
-            <div className="grid h-10 w-10 place-items-center rounded-xl bg-emerald-600 text-white">
+            <div className="grid h-10 w-10 place-items-center rounded-xl bg-emerald-600 text-white shrink-0">
               <Lock size={20} />
             </div>
             <div>
@@ -1179,7 +1187,7 @@ export default function CommissionOuvertureStep({
             </div>
 
             {/* Action CSV Import */}
-            {!isLocked && (
+            {(!isLocked || analyzedCompanies.length === 0) && (
               <div className="flex items-center gap-2">
                 <label
                   htmlFor="excel-main-import-input"
@@ -1252,7 +1260,7 @@ export default function CommissionOuvertureStep({
                         <p className="text-xs text-slate-500 max-w-md mx-auto">
                           Importez directement le fichier Excel de la commission pour charger les soumissionnaires et les offres.
                         </p>
-                        {!isLocked && (
+                        {(!isLocked || analyzedCompanies.length === 0) && (
                           <div className="flex items-center justify-center pt-2">
                             <label
                               htmlFor="fournisseur-import-input"
@@ -1769,30 +1777,32 @@ export default function CommissionOuvertureStep({
               {/* Soumissionnaires Analysis Summary */}
               <div className="space-y-2">
                 <h4 className="font-extrabold text-slate-800 text-sm border-b border-slate-200 pb-1">2. Synthèse de l'Évaluation des Soumissionnaires</h4>
-                <table className="w-full border-collapse border border-slate-200 text-[11px] bg-white">
-                  <thead className="bg-slate-100 font-bold text-slate-700">
-                    <tr>
-                      <th className="border border-slate-200 p-2">Entreprise</th>
-                      <th className="border border-slate-200 p-2">Dossier Admin</th>
-                      <th className="border border-slate-200 p-2">Offre Tech</th>
-                      <th className="border border-slate-200 p-2">Montant TTC</th>
-                      <th className="border border-slate-200 p-2">Classement</th>
-                      <th className="border border-slate-200 p-2">Décision</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {analyzedCompanies.map(c => (
-                      <tr key={c.id || c.raison_sociale}>
-                        <td className="border border-slate-200 p-2 font-bold">{c.raison_sociale}</td>
-                        <td className="border border-slate-200 p-2">{c.isAdminConforme ? 'Conforme' : 'Non Conforme (' + (c.admin_motif_rejet || 'Rejet') + ')'}</td>
-                        <td className="border border-slate-200 p-2">{c.isTechConforme ? 'Acceptée' : 'Rejetée'}</td>
-                        <td className="border border-slate-200 p-2 font-mono">{c.computedTTC > 0 ? c.computedTTC.toLocaleString('fr-FR') + ' dh' : '—'}</td>
-                        <td className="border border-slate-200 p-2 text-center font-bold">{c.classementDisplay}</td>
-                        <td className="border border-slate-200 p-2 font-bold text-blue-900">{c.finalStatus}</td>
+                <div className="overflow-x-auto border border-slate-200 rounded-xl">
+                  <table className="w-full min-w-[650px] border-collapse text-[11px] bg-white">
+                    <thead className="bg-slate-100 font-bold text-slate-700">
+                      <tr>
+                        <th className="border border-slate-200 p-2">Entreprise</th>
+                        <th className="border border-slate-200 p-2">Dossier Admin</th>
+                        <th className="border border-slate-200 p-2">Offre Tech</th>
+                        <th className="border border-slate-200 p-2">Montant TTC</th>
+                        <th className="border border-slate-200 p-2">Classement</th>
+                        <th className="border border-slate-200 p-2">Décision</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {analyzedCompanies.map(c => (
+                        <tr key={c.id || c.raison_sociale}>
+                          <td className="border border-slate-200 p-2 font-bold">{c.raison_sociale}</td>
+                          <td className="border border-slate-200 p-2">{c.isAdminConforme ? 'Conforme' : 'Non Conforme (' + (c.admin_motif_rejet || 'Rejet') + ')'}</td>
+                          <td className="border border-slate-200 p-2">{c.isTechConforme ? 'Acceptée' : 'Rejetée'}</td>
+                          <td className="border border-slate-200 p-2 font-mono">{c.computedTTC > 0 ? c.computedTTC.toLocaleString('fr-FR') + ' dh' : '—'}</td>
+                          <td className="border border-slate-200 p-2 text-center font-bold">{c.classementDisplay}</td>
+                          <td className="border border-slate-200 p-2 font-bold text-blue-900">{c.finalStatus}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
 

@@ -254,6 +254,11 @@ class OrdonnancementController extends Controller
                 ?: ($consultation->receptionCommission?->date_decision
                 ?: ($consultation->date_consultation ?: $consultation->created_at?->format('Y-m-d'))));
 
+            $refBc = $consultation->numero_bc ?: ($consultation->numero_consultation ?: "BC #{$consultation->id}");
+            $typeProcBc = (stripos((string)$refBc, 'CONV') !== false || stripos((string)($consultation->type_consultation ?? ''), 'conv') !== false)
+                ? 'Convention'
+                : 'Bon de commande';
+
             $disponibles[] = [
                 'type_source' => 'consultation_liquidation',
                 'liquidation_id' => null,
@@ -264,8 +269,8 @@ class OrdonnancementController extends Controller
                 'notification_ligne_id' => $consultation->notification_ligne_id,
                 'num_liquidation' => $numLiq,
                 'date_liquidation' => $dateLiq,
-                'reference' => $consultation->numero_bc ?: ($consultation->numero_consultation ?: "BC #{$consultation->id}"),
-                'type_procedure' => 'Bon de commande',
+                'reference' => $refBc,
+                'type_procedure' => $typeProcBc,
                 'beneficiaire' => $consultation->fournisseur?->raison_sociale ?? 'Fournisseur non spécifié',
                 'rib' => $consultation->fournisseur?->rib ?? ($consultation->fournisseur?->compte_bancaire ?? ''),
                 'banque' => $consultation->fournisseur?->banque ?? '',
@@ -293,6 +298,23 @@ class OrdonnancementController extends Controller
         $disponibles = array_values(array_filter($disponibles, function($item) {
             return ($item['reste_disponible'] ?? 0) > 0;
         }));
+
+        if ($request->filled('type_procedure') && $request->type_procedure !== 'TOUS') {
+            $filterProc = strtolower($request->type_procedure);
+            $disponibles = array_values(array_filter($disponibles, function($item) use ($filterProc) {
+                $p = strtolower($item['type_procedure'] ?? '');
+                if (str_contains($filterProc, 'march') || str_contains($filterProc, 'aoo')) {
+                    return str_contains($p, 'march');
+                }
+                if (str_contains($filterProc, 'bon') || str_contains($filterProc, 'bc')) {
+                    return str_contains($p, 'bon');
+                }
+                if (str_contains($filterProc, 'conv')) {
+                    return str_contains($p, 'conv');
+                }
+                return true;
+            }));
+        }
 
         return response()->json(['data' => $disponibles]);
     }
@@ -414,9 +436,28 @@ class OrdonnancementController extends Controller
                 }
             }
 
-            // 2. Generate unique ORD number
-            $count = Ordonnancement::where('exercice', $year)->count() + 1;
-            $numOrdonnancement = "ORD-{$year}-" . str_pad($count, 3, '0', STR_PAD_LEFT);
+            // 2. Generate unique ORD number & OP number
+            $maxOrdSeq = 0;
+            $existingOrds = Ordonnancement::pluck('num_ordonnancement')->filter();
+            foreach ($existingOrds as $existing) {
+                if (preg_match('/ORD-(?:' . $year . '-)?(\d+)/', $existing, $matches)) {
+                    $val = (int) $matches[1];
+                    if ($val > $maxOrdSeq) {
+                        $maxOrdSeq = $val;
+                    }
+                }
+            }
+
+            $nextOrdSeq = max($maxOrdSeq + 1, Ordonnancement::count() + 1);
+            do {
+                $candidateOrd = "ORD-{$year}-" . str_pad((string) $nextOrdSeq, 3, '0', STR_PAD_LEFT);
+                $exists = Ordonnancement::where('num_ordonnancement', $candidateOrd)->exists();
+                if ($exists) {
+                    $nextOrdSeq++;
+                }
+            } while ($exists);
+
+            $numOrdonnancement = $candidateOrd;
 
             // 3. Compute Ordonnancement status
             $statutOrdonnance = 'Totalement ordonnancée';
@@ -427,7 +468,7 @@ class OrdonnancementController extends Controller
             }
 
             $validated['num_ordonnancement'] = $numOrdonnancement;
-            $validated['num_op'] = "OP-" . str_pad($count, 3, '0', STR_PAD_LEFT);
+            $validated['num_op'] = "OP-" . str_pad((string) $nextOrdSeq, 3, '0', STR_PAD_LEFT);
             $validated['exercice'] = $year;
             $validated['statut'] = $validated['statut'] ?? $statutOrdonnance;
             $validated['montant_brut'] = $totalOrdres; // The total of orders in this dossier
@@ -758,7 +799,7 @@ class OrdonnancementController extends Controller
             if ($newStatut === 'Rejeté') {
                 $ordre = $request->filled('ordre_id')
                     ? $ordonnancement->ordres->firstWhere('id', (int) $request->ordre_id)
-                    : $ordonnancement->ordres->first(fn ($item) => !in_array($item->statut, ['Payé', 'Rejeté', 'Annulé'], true));
+                    : $ordonnancement->ordres->whereNotIn('statut', ['Payé', 'Rejeté', 'Annulé'])->last();
 
                 if (!$ordre) {
                     throw ValidationException::withMessages([

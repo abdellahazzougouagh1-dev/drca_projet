@@ -123,7 +123,7 @@ const ListeEngagements = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-4 sm:p-6 lg:p-8">
-      <div className="max-w-[1920px] w-full mx-auto">
+      <div className="max-w-[1920px] 2xl:max-w-[2400px] w-full mx-auto">
         {/* Header */}
         <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
@@ -214,7 +214,7 @@ const ListeEngagements = () => {
               <div className="bg-white rounded-2xl shadow-sm overflow-hidden border border-slate-200">
                 {filteredMarches.length > 0 ? (
                   <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
+                    <table className="w-full min-w-[950px] text-left border-collapse">
                       <thead className="bg-slate-50 border-b border-slate-200 text-xs font-bold text-slate-600 uppercase">
                         <tr>
                           <th className="px-4 py-3.5 whitespace-nowrap">N° Marché</th>
