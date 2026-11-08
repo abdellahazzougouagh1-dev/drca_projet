@@ -1,8 +1,9 @@
 import { useEffect, useState, useMemo } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import api from '../api/axios';
-import { ArrowLeft, Loader2, Plus, AlertCircle, Eye, Trash2, Edit3, ClipboardList, Search, FileText, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, Loader2, Plus, AlertCircle, Eye, Trash2, Edit3, ClipboardList, Search, FileText, CheckCircle2, FileSpreadsheet } from 'lucide-react';
 import TopNavButtons from '../components/TopNavButtons';
+import { exportRegistreConsultationsExcel } from '../utils/exportRegistreExcel';
 
 const ListeConsultations = () => {
   const navigate = useNavigate();
@@ -284,6 +285,30 @@ const ListeConsultations = () => {
           </div>
           <div className="flex flex-wrap items-center gap-2.5">
             <TopNavButtons current="dashboard" />
+            <button
+              type="button"
+              onClick={() => {
+                exportRegistreConsultationsExcel({
+                  procedure: activeFilter,
+                  exercice: '2026',
+                  rows: filteredConsultations.map(c => ({
+                    numero_consultation: c.numero_consultation || '-',
+                    date_consultation: c.date_consultation,
+                    mode_engagement: c.mode_engagement || '-',
+                    objet_consultation: c.objet_consultation || '-',
+                    fournisseur_nom: c.fournisseur?.raison_sociale || '-',
+                    type_budget: c.type_budget || '-',
+                    statut_dossier: c.statut_dossier || '-',
+                    total_estime: c.total_estime || 0,
+                  })),
+                });
+              }}
+              className="inline-flex items-center gap-2 px-3.5 py-2 sm:px-4 sm:py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white text-xs sm:text-sm font-bold rounded-xl shadow-md transition transform active:scale-98 cursor-pointer"
+              title="Télécharger le registre des consultations au format Excel"
+            >
+              <FileSpreadsheet size={17} />
+              <span>Télécharger Excel</span>
+            </button>
             <Link 
               to={newConsultationUrl}
               className="inline-flex items-center gap-2 px-4 py-2 sm:px-5 sm:py-2.5 bg-[#087F5B] hover:bg-[#06694A] text-white text-xs sm:text-sm font-bold rounded-xl shadow-md shadow-[#087F5B]/20 transition transform active:scale-98 cursor-pointer"

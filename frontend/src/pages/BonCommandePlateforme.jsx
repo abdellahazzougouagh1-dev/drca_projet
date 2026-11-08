@@ -1,4 +1,5 @@
 import { creditDisponible } from '../utils/creditDisponible';
+import { exportRegistreEngagementExcel } from '../utils/exportRegistreExcel';
 import RegistreScroll from '../components/RegistreScroll';
 import RegistreFonctionnement, { fonctionnementRow } from '../components/RegistreFonctionnement';
 import { useMemo, useState, useEffect } from 'react';
@@ -1136,6 +1137,73 @@ const BonCommandePlateforme = () => {
   const [editingSaving, setEditingSaving] = useState(false);
   const [editingError, setEditingError] = useState('');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isExportingExcel, setIsExportingExcel] = useState(false);
+
+  const getEngagementExportRows = (targetBudget) => {
+    return consultationsList
+      .filter((c) => c.registre_engagement && (targetBudget ? c.type_budget === targetBudget : true))
+      .map((c) => {
+        const reg = c.registre_engagement || {};
+        if (targetBudget === 'Fonctionnement') {
+          return fonctionnementRow(reg, c);
+        }
+        return {
+          ...reg,
+          numero_ordre: reg.numero_ordre,
+          numero_rubrique: reg.numero_rubrique,
+          date_engagement: reg.date_engagement,
+          mode_engagement: reg.mode_engagement || (isConventionActive ? (c.type_budget === 'Fonctionnement' ? 'Contrat' : 'Convention') : 'BC'),
+          reference: reg.reference || c.numero_consultation,
+          reference_2: reg.reference_2 || '-',
+          budget: reg.budget || c.type_budget || 'Investissement',
+          code: reg.code || '-',
+          art: reg.art || '-',
+          par: reg.par || '-',
+          lig: reg.lig || '-',
+          s_lig: reg.s_lig || '-',
+          intitule: reg.intitule || c.objet_consultation || '-',
+          credit_ouvert_cp: reg.credit_ouvert_cp || 0,
+          credit_ouvert_ce: reg.credit_ouvert_ce || 0,
+          depenses_anterieures_ce: reg.depenses_anterieures_ce || 0,
+          depenses_anterieures_cp: reg.depenses_anterieures_cp || 0,
+          depenses_credits_engagement: reg.depenses_credits_engagement || 0,
+          depenses_credits_consolides: reg.depenses_credits_consolides || 0,
+          depenses_rap: reg.depenses_rap || 0,
+          montant_depense_neuf: reg.montant_depense_neuf || 0,
+          interets_moratoires: reg.interets_moratoires || 0,
+          montant_engager_neuf: reg.montant_engager_neuf || 0,
+          objet: reg.objet || c.objet_consultation || '-',
+          beneficiaire: reg.beneficiaire || c.fournisseur?.raison_sociale || c.engagement?.fournisseur?.raison_sociale || '-',
+        };
+      });
+  };
+
+  const handleExportRegistreExcel = async (downloadAll = false) => {
+    try {
+      setIsExportingExcel(true);
+      const mode = isConventionActive ? 'convention' : 'bc';
+      const rowsInv = getEngagementExportRows('Investissement');
+      const rowsFnc = getEngagementExportRows('Fonctionnement');
+      const activeRows = registreBudget === 'Fonctionnement' ? rowsFnc : rowsInv;
+
+      await exportRegistreEngagementExcel({
+        mode,
+        budget: downloadAll ? 'all' : registreBudget,
+        exercice: String(new Date().getFullYear()),
+        rows: activeRows,
+        rowsInvestissement: rowsInv,
+        rowsFonctionnement: rowsFnc,
+      });
+      setMessage(`Le registre ${downloadAll ? 'complet' : registreBudget} a été téléchargé avec succès.`);
+      setTimeout(() => setMessage(''), 4000);
+    } catch (err) {
+      console.error('Erreur téléchargement registre Excel:', err);
+      setError("Erreur lors du téléchargement du registre Excel.");
+      setTimeout(() => setError(''), 4000);
+    } finally {
+      setIsExportingExcel(false);
+    }
+  };
 
   const fetchMembresCatalog = async () => {
     try {
@@ -3081,10 +3149,27 @@ const BonCommandePlateforme = () => {
                   <h2 className="text-xl font-semibold text-slate-900 flex items-center gap-2">
                     <FileSpreadsheet className="text-blue-700" /> Registre des engagements
                   </h2>
+                  <p className="text-slate-500 text-xs mt-1">
+                    {isConventionActive
+                      ? 'Registre officiel des fiches d’engagement pour conventions et contrats.'
+                      : 'Registre officiel des fiches d’engagement pour bons de commande.'}
+                  </p>
                 </div>
-                <span className="px-3 py-1.5 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-xs font-bold whitespace-nowrap">
-                  {consultationsList.filter((consultation) => consultation.registre_engagement && consultation.type_budget === registreBudget).length} ligne(s)
-                </span>
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <span className="px-3 py-1.5 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-xs font-bold whitespace-nowrap">
+                    {consultationsList.filter((consultation) => consultation.registre_engagement && consultation.type_budget === registreBudget).length} ligne(s)
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => handleExportRegistreExcel(false)}
+                    disabled={isExportingExcel}
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs sm:text-sm font-bold shadow-sm transition-all transform active:scale-98 cursor-pointer disabled:opacity-50"
+                    title={`Télécharger le registre ${registreBudget} au format Excel officiel`}
+                  >
+                    {isExportingExcel ? <Loader2 size={16} className="animate-spin" /> : <FileSpreadsheet size={16} />}
+                    <span>Télécharger Excel</span>
+                  </button>
+                </div>
               </div>
 
               <div className="px-6 py-4 border-b border-slate-200 bg-slate-50 flex flex-wrap gap-2 items-center">

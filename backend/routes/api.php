@@ -70,6 +70,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('notifications', \App\Http\Controllers\Api\NotificationController::class);
     Route::get('dashboard/budget', [\App\Http\Controllers\Api\NotificationController::class, 'getDashboardStats']);
     Route::match(['get', 'post'], 'dashboard/budget/export-excel', [\App\Http\Controllers\Api\DashboardController::class, 'exportBudgetExcel']);
+    Route::match(['get', 'post'], 'registres/engagement/export-excel', [\App\Http\Controllers\Api\RegistreExportController::class, 'exportEngagementExcel']);
+    Route::match(['get', 'post'], 'registres/ordonnancement/export-excel', [\App\Http\Controllers\Api\RegistreExportController::class, 'exportOrdonnancementExcel']);
     Route::get('notification-lignes', [\App\Http\Controllers\Api\NotificationController::class, 'getLignes']);
     Route::put('notification-lignes/{id}', [\App\Http\Controllers\Api\NotificationController::class, 'updateLigne']);
 

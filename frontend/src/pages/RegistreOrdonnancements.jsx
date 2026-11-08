@@ -1,4 +1,5 @@
 import RegistreScroll from '../components/RegistreScroll';
+import { exportRegistreOrdonnancementExcel } from '../utils/exportRegistreExcel';
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { 
@@ -6,7 +7,7 @@ import {
   CheckCircle2, Clock, Send, AlertTriangle, ChevronRight,
   WalletCards, Layers, Landmark, ArrowUpDown, Download,
   Building, RefreshCw, Calculator, FileText, Check,
-  ChevronDown, Receipt, ArrowLeft, Handshake
+  ChevronDown, Receipt, ArrowLeft, Handshake, FileSpreadsheet
 } from 'lucide-react';
 import api from '../api/axios';
 import ModalNouveauOrdonnancement from '../components/ordonnancement/ModalNouveauOrdonnancement';
@@ -284,6 +285,48 @@ export default function RegistreOrdonnancements() {
   const totalCNeufsGlobal = filteredRows.reduce((sum, r) => sum + r.montant_c_neufs, 0);
   const totalRasGlobal = filteredRows.reduce((sum, r) => sum + r.montant_ras, 0);
   const totalRapGlobal = filteredRows.reduce((sum, r) => sum + r.montant_rap, 0);
+
+  const [isExportingExcel, setIsExportingExcel] = useState(false);
+
+  const handleExportExcel = async () => {
+    try {
+      setIsExportingExcel(true);
+      const exportRows = filteredRows.map(r => ({
+        index: r.index,
+        num_op: r.num_op,
+        date_op: r.date_op,
+        beneficiaire: r.beneficiaire,
+        reference: r.reference,
+        type_procedure: r.type_procedure || procedureFilter,
+        budget: r.budget,
+        creance: r.creance,
+        code: r.code,
+        art: r.art,
+        par: r.par,
+        lig: r.lig,
+        slig: r.slig,
+        intitule: r.intitule,
+        paiement_reports: r.montant_reports,
+        paiement_credits_consolides: r.montant_credit_consolides,
+        paiement_c_neufs: r.montant_c_neufs,
+        paiement_retenue_source: r.montant_ras,
+        paiement_rap: r.montant_rap,
+        montant_total: r.montant_total,
+        statut: r.statut,
+      }));
+
+      await exportRegistreOrdonnancementExcel({
+        procedure: procedureFilter,
+        exercice: String(exercice),
+        rows: exportRows,
+      });
+    } catch (err) {
+      console.error('Erreur export registre ordonnancements:', err);
+      alert("Erreur lors de l'export Excel du registre des ordonnancements.");
+    } finally {
+      setIsExportingExcel(false);
+    }
+  };
   const totalOrdonneGlobal = totalReportsGlobal + totalCreditConsolidesGlobal + totalCNeufsGlobal + totalRasGlobal + totalRapGlobal;
 
   return (
@@ -329,10 +372,20 @@ export default function RegistreOrdonnancements() {
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            <button
+              type="button"
+              onClick={handleExportExcel}
+              disabled={isExportingExcel}
+              className="inline-flex items-center gap-2 px-4 sm:px-5 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs sm:text-sm font-bold shadow-md transition transform active:scale-98 cursor-pointer disabled:opacity-50"
+              title={`Télécharger le registre des ordonnancements (${procedureFilter}) au format Excel officiel`}
+            >
+              {isExportingExcel ? <RefreshCw size={16} className="animate-spin" /> : <FileSpreadsheet size={16} />}
+              <span>Télécharger Excel</span>
+            </button>
             <button
               onClick={() => setModalCreateOpen(true)}
-              className="inline-flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-bold shadow-md hover:shadow-lg transition transform active:scale-98 cursor-pointer"
+              className="inline-flex items-center gap-2 px-5 sm:px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs sm:text-sm font-bold shadow-md hover:shadow-lg transition transform active:scale-98 cursor-pointer"
             >
               <Plus size={18} />
               + Nouvel ordonnancement

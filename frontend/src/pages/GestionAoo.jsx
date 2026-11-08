@@ -1,4 +1,5 @@
 import { creditDisponible } from '../utils/creditDisponible';
+import { exportRegistreEngagementExcel } from '../utils/exportRegistreExcel';
 import RegistreScroll from '../components/RegistreScroll';
 import RegistreFonctionnement, { fonctionnementRow } from '../components/RegistreFonctionnement';
 import React, { useState, useEffect } from 'react';
@@ -1733,6 +1734,33 @@ const GestionAoo = () => {
   ];
   const registreRowsFiltres = registreRows.filter(({ row }) => row.budget === registreBudget);
 
+  const [isExportingExcel, setIsExportingExcel] = useState(false);
+  const handleExportAooRegistreExcel = async (downloadAll = false) => {
+    try {
+      setIsExportingExcel(true);
+      const rowsInv = registreRows.filter(({ row }) => row.budget !== 'Fonctionnement').map(({ row }) => row);
+      const rowsFnc = registreRows.filter(({ row }) => row.budget === 'Fonctionnement').map(({ row }) => fonctionnementRow(row, row));
+      const activeRows = registreBudget === 'Fonctionnement' ? rowsFnc : rowsInv;
+
+      await exportRegistreEngagementExcel({
+        mode: 'aoo',
+        budget: downloadAll ? 'all' : registreBudget,
+        exercice: String(aooData?.annee || new Date().getFullYear()),
+        rows: activeRows,
+        rowsInvestissement: rowsInv,
+        rowsFonctionnement: rowsFnc,
+      });
+      setMessage(`Le registre ${downloadAll ? 'complet' : registreBudget} a été téléchargé avec succès.`);
+      setTimeout(() => setMessage(''), 4000);
+    } catch (err) {
+      console.error('Erreur export registre AOO:', err);
+      setError("Erreur lors de l'export Excel du registre.");
+      setTimeout(() => setError(''), 4000);
+    } finally {
+      setIsExportingExcel(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-50/50 pb-24">
       <header className="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
@@ -1916,12 +1944,24 @@ const GestionAoo = () => {
           </div>
 
           <div className={activeTab === 'registre' ? 'block animate-fade-in' : 'hidden'}>
-            <div className="mb-8 flex items-center justify-between border-b border-slate-100 pb-4">
+            <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
               <div>
                 <h2 className="flex items-center gap-2 text-xl font-extrabold text-slate-800">
                   <FileSpreadsheet className="text-blue-700" /> Registre d'engagement
                 </h2>
                 <p className="mt-1 text-sm text-slate-500">Registre identique à celui des bons de commande, filtré sur cet appel d'offres.</p>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleExportAooRegistreExcel(false)}
+                  disabled={isExportingExcel}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs sm:text-sm font-bold shadow-sm transition-all transform active:scale-98 cursor-pointer disabled:opacity-50"
+                  title={`Télécharger le registre (${registreBudget}) en format Excel`}
+                >
+                  {isExportingExcel ? <Loader2 size={16} className="animate-spin" /> : <FileSpreadsheet size={16} />}
+                  <span>Télécharger Excel</span>
+                </button>
               </div>
             </div>
             <div className="mb-5 flex flex-wrap gap-2">

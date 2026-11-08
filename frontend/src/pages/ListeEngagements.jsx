@@ -1,11 +1,13 @@
 import RegistreScroll from '../components/RegistreScroll';
 import RegistreFonctionnement, { fonctionnementRow } from '../components/RegistreFonctionnement';
+import { exportRegistreEngagementExcel } from '../utils/exportRegistreExcel';
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 import {
   Search, Plus, Eye, Edit2, Trash2, Calendar, DollarSign, FileText,
-  AlertCircle, Loader2, ReceiptText, ArrowLeft, FileSpreadsheet, CheckSquare
+  AlertCircle, Loader2, ReceiptText, ArrowLeft, FileSpreadsheet, CheckSquare,
+  Download
 } from 'lucide-react';
 
 const ListeEngagements = () => {
@@ -18,6 +20,71 @@ const ListeEngagements = () => {
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [registreBudget, setRegistreBudget] = useState('Investissement');
+  const [isExportingExcel, setIsExportingExcel] = useState(false);
+
+  const mapMarcheToExportRow = (m) => {
+    const r = m.registre_engagement || {};
+    const depenseNeuf = m.montant_depense_neuf || m.montant || 0;
+    const interets = m.interets_moratoires || (depenseNeuf ? (Number(depenseNeuf) * 0.01).toFixed(2) : 0);
+    const aEngager = m.engagement_propose_cp || (depenseNeuf ? (Number(depenseNeuf) * 1.01).toFixed(2) : 0);
+    return {
+      ...r,
+      numero_ordre: r.numero_ordre || m.id,
+      numero_rubrique: m.num_engagement || r.numero_rubrique || '-',
+      date_engagement: m.date_engagement || r.date_engagement,
+      mode_engagement: r.mode_engagement || "Appel d'offres",
+      reference: m.num_marche || r.reference || '-',
+      reference_2: r.reference_2 || (m.aoo?.num_aoo ? `AOO: ${m.aoo.num_aoo}` : '-'),
+      budget: m.type_budget || r.budget || 'Investissement',
+      code: r.code || '-',
+      art: m.article_budget || r.art || '415',
+      par: m.paragraphe_budget || r.par || '20',
+      lig: m.ligne_budget || r.lig || '16',
+      s_lig: r.s_lig || '-',
+      intitule: r.intitule || m.objet_marche || '-',
+      credit_ouvert_cp: m.credit_budget_cp || r.credit_ouvert_cp || 0,
+      credit_ouvert_ce: r.credit_ouvert_ce || 0,
+      depenses_anterieures_ce: r.depenses_anterieures_ce || 0,
+      depenses_anterieures_cp: m.depenses_engagees_cp || r.depenses_anterieures_cp || 0,
+      depenses_credits_engagement: r.depenses_credits_engagement || 0,
+      depenses_credits_consolides: r.depenses_credits_consolides || 0,
+      depenses_rap: r.depenses_rap || 0,
+      montant_depense_neuf: depenseNeuf,
+      interets_moratoires: interets,
+      montant_engager_neuf: aEngager,
+      objet: m.objet_marche || r.objet || '-',
+      beneficiaire: m.titulaire || r.beneficiaire || '-',
+    };
+  };
+
+  const handleExportExcel = async (downloadAll = false) => {
+    try {
+      setIsExportingExcel(true);
+      const rowsInv = marches.filter((m) => (m.type_budget || m.registre_engagement?.budget || 'Investissement') !== 'Fonctionnement').map(mapMarcheToExportRow);
+      const rowsFnc = marches.filter((m) => (m.type_budget || m.registre_engagement?.budget) === 'Fonctionnement').map((m) => {
+        const base = mapMarcheToExportRow(m);
+        return m.registre_engagement ? fonctionnementRow(m.registre_engagement, m, true) : base;
+      });
+      const activeRows = registreBudget === 'Fonctionnement' ? rowsFnc : rowsInv;
+
+      await exportRegistreEngagementExcel({
+        mode: 'aoo',
+        budget: downloadAll ? 'all' : registreBudget,
+        exercice: String(new Date().getFullYear()),
+        rows: activeRows,
+        rowsInvestissement: rowsInv,
+        rowsFonctionnement: rowsFnc,
+      });
+      setSuccessMessage(`Le registre ${downloadAll ? 'complet' : registreBudget} a été téléchargé avec succès.`);
+      setTimeout(() => setSuccessMessage(''), 4000);
+    } catch (err) {
+      console.error('Erreur export Excel marchés:', err);
+      setErrorMessage("Erreur lors de l'export Excel du registre.");
+      setTimeout(() => setErrorMessage(''), 4000);
+    } finally {
+      setIsExportingExcel(false);
+    }
+  };
 
   useEffect(() => {
     fetchMarches();
@@ -309,7 +376,7 @@ const ListeEngagements = () => {
                 </h2>
                 <p className="text-slate-500 text-xs mt-1">Registre consolidé des fiches d'engagement pour les marchés et consultations.</p>
               </div>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 {['Investissement', 'Fonctionnement'].map((budgetType) => (
                   <button
                     key={budgetType}
@@ -324,6 +391,16 @@ const ListeEngagements = () => {
                     Registre {budgetType}
                   </button>
                 ))}
+                <button
+                  type="button"
+                  onClick={() => handleExportExcel(false)}
+                  disabled={isExportingExcel}
+                  className="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-sm font-bold shadow-sm transition-all transform active:scale-98 cursor-pointer disabled:opacity-50"
+                  title={`Télécharger le registre ${registreBudget} au format Excel officiel`}
+                >
+                  {isExportingExcel ? <Loader2 size={16} className="animate-spin" /> : <FileSpreadsheet size={16} />}
+                  <span>Télécharger Excel</span>
+                </button>
               </div>
             </div>
 
