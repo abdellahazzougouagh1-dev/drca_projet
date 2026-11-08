@@ -10,12 +10,15 @@
         }
         * { box-sizing: border-box; }
         body {
-            font-family: "DejaVu Sans", Arial, sans-serif;
-            font-size: 10.5px;
-            line-height: 1.25;
+            font-family: "Times New Roman", Times, serif;
+            font-size: 11px;
+            line-height: 1.3;
             margin: 0;
             padding: 0;
             color: #000;
+        }
+        td, th {
+            font-family: "Times New Roman", Times, serif;
         }
 
         /* ── HEADER ── */
@@ -388,7 +391,7 @@
             <td class="fval" style="text-transform:uppercase;">{{ $beneficiaire }}</td>
         </tr>
         <tr>
-            <td class="flabel">Montant de la depense en dirhams</td>
+            <td class="flabel">Montant de la dépense en dirhams</td>
             <td class="fval">{{ number_format($montantDepense, 2, ',', ' ') }}</td>
         </tr>
         <tr>
@@ -403,7 +406,7 @@
             <td class="fval" style="font-size:11px;">{{ number_format($montantTotal, 2, ',', ' ') }}</td>
         </tr>
         <tr>
-            <td class="flabel" style="text-align:center;">En Lettre</td>
+            <td class="flabel" style="text-align:center;">En lettres :</td>
             <td class="fval" style="font-style:italic;">{{ $montantEnLettres }}</td>
         </tr>
     </table>

@@ -139,11 +139,11 @@
         @if($isConvention)
         • Vu {{ $isMultipleLettres ? 'les lettres' : 'la lettre' }} <span class="bold">{{ $lettresRefsClean }}</span> ;<br>
         @endif
-        • Vu le budget de fonctionnement de l’ONCA au titre de l’exercice 2025 ;<br>
+        • Vu le budget de fonctionnement de l’ONCA au titre de l’exercice {{ $consultation->annee ?? date('Y') }} ;<br>
         @if(!$isConvention)
         • Vu l'avis d'achat n° {{ $doc['numero_consultation'] }} ;<br>
         @endif
-        • Vu le budget d'investissement de l'ONCA délégué et notifié à la DRCA-RSK au titre de l’exercice 2025.
+        • Vu le budget d'investissement de l'ONCA délégué et notifié à la DRCA-RSK au titre de l’exercice {{ $consultation->annee ?? date('Y') }}.
     </p>
 
     <h1 class="decide-title">DÉCIDE</h1>
@@ -168,7 +168,7 @@
         @endforeach
     </table>
     <p><span class="section">Article 3 :</span><br>
-        La-dite commission se réunira le <span class="bold">{{ $doc['date_reunion'] }}</span>
+        Ladite commission se réunira le <span class="bold">{{ $doc['date_reunion'] }}</span>
         à <span class="bold">{{ $doc['heure_reunion'] }}</span> au siège de la DRCA-RSK pour procéder à l’ouverture des plis.
     </p>
 

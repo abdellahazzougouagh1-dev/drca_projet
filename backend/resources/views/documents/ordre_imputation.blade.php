@@ -6,7 +6,8 @@
     <style>
         @page { margin: 8mm 10mm 8mm 10mm; size: A4 portrait; }
         * { box-sizing: border-box; }
-        body { font-family: "DejaVu Sans", Arial, sans-serif; font-size: 10px; line-height: 1.25; margin: 0; padding: 0; color: #000; }
+        body { font-family: "Times New Roman", Times, serif; font-size: 11px; line-height: 1.3; margin: 0; padding: 0; color: #000; }
+        td, th { font-family: "Times New Roman", Times, serif; }
 
         /* ── Header ── */
         .hdr { width: 100%; border-collapse: collapse; margin-bottom: 3px; }
@@ -114,7 +115,7 @@
 <table class="budget-box">
     <tr><td>BUDGET</td><td class="val">{{ $typeBudget }}</td></tr>
     <tr><td>EXERCICE :</td><td class="val">{{ $exercice }}</td></tr>
-    <tr><td>ANNEE D'ORIGINE :</td><td class="val">{{ $anneeOrig }}</td></tr>
+    <tr><td>ANNÉE D'ORIGINE :</td><td class="val">{{ $anneeOrig }}</td></tr>
 </table>
 
 <!-- TITRE -->
@@ -123,12 +124,12 @@
 <!-- N° + DATE -->
 <table class="num-box" style="width:55%; margin-left:auto; margin-bottom:10px;">
     <tr>
-        <td style="font-weight:bold; width:20%;">N°:</td>
+        <td style="font-weight:bold; width:20%;">N° :</td>
         <td style="width:25%; text-align:center; font-weight:bold; font-size:13px;">{{ $numOI }}</td>
         <td style="font-weight:bold; width:20%; text-align:center;">{{ $suffixe }}</td>
     </tr>
     <tr>
-        <td style="font-weight:bold;">DATE</td>
+        <td style="font-weight:bold;">DATE :</td>
         <td colspan="2" style="text-align:center;">{{ $dateDoc }}</td>
     </tr>
 </table>
@@ -149,15 +150,15 @@
         <td class="value">{{ $formeEngagement }}</td>
     </tr>
     <tr>
-        <td class="label">Reférence (N°)</td>
+        <td class="label">Référence (N°)</td>
         <td class="value" style="font-weight:bold;">{{ $referenceBc }}</td>
     </tr>
     <tr>
-        <td class="label">Montant (Dh)</td>
+        <td class="label">Montant (DH)</td>
         <td class="value" style="font-weight:bold; font-size:11px;">{{ number_format($montant, 2, ',', ' ') }}</td>
     </tr>
     <tr>
-        <td class="label">Montant en lettre</td>
+        <td class="label">Montant en lettres :</td>
         <td class="value" style="font-style:italic;">{{ $montantLettres }}</td>
     </tr>
     <tr>
@@ -170,7 +171,7 @@
 <table class="imput-table">
     <tr><th colspan="8" style="font-size:11px; padding:6px;">IMPUTATION COMPTABLE</th></tr>
     <tr>
-        <th colspan="3" style="width:40%;">COMPTABILITE GENERALE</th>
+        <th colspan="3" style="width:40%;">COMPTABILITÉ GÉNÉRALE</th>
         <th colspan="5" style="width:60%;"> </th>
     </tr>
     <tr>

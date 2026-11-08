@@ -5,8 +5,8 @@
     <title>PV d'ouverture des plis</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
-            font-size: 13px;
+            font-family: "Times New Roman", Times, serif;
+            font-size: 11.5px;
             color: #000;
             margin: 10px;
             line-height: 1.4;
@@ -116,6 +116,7 @@
             height: 100px;
         }
     </style>
+    @include('documents.partials.bc_typography')
 </head>
 <body>
 
@@ -163,7 +164,7 @@
     <div class="blue-line"></div>
 
     <div class="title-box">
-        PROCES VERBAL D'OUVERTURE DE PLIS
+        PROCÈS-VERBAL D'OUVERTURE DES PLIS
     </div>
 
     <table class="info-grid">
@@ -228,7 +229,7 @@
     </table>
 
     <div class="text-block">
-        S'est réunie au siège de la DRCA-RSK en vue de procéder à l'ouverture des plis concernant l'offre de prix N° <span class="border-cell" style="display:inline-block; padding:0 5px;">{{ $consultation->numero_consultation }}</span> relative au prestation de :
+        S'est réunie au siège de la DRCA-RSK en vue de procéder à l'ouverture des plis concernant l'offre de prix N° <span class="border-cell" style="display:inline-block; padding:0 5px;">{{ $consultation->numero_consultation }}</span> relative à la prestation de :
     </div>
 
     <div class="text-block bold-text" style="font-size: 14px;">
@@ -240,7 +241,7 @@
     </div>
 
     <div class="text-block">
-        La liste des fournisseurs qui ont été respectivement consultés sont:
+        La liste des fournisseurs qui ont été respectivement consultés est la suivante :
     </div>
 
     <table class="data-table">
@@ -265,7 +266,7 @@
     </table>
 
     <div class="text-block">
-        L'ouverture des plis contenant les propositions faites par les concurrents et parvenus par courrier ou déposés auprès de la DRCA-RSK a donné les résultats suivants:
+        L'ouverture des plis contenant les propositions faites par les concurrents et parvenues par courrier ou déposées auprès de la DRCA-RSK a donné les résultats suivants :
     </div>
 
     <table class="data-table">
@@ -299,7 +300,7 @@
         </div>
         @if(!empty(data_get($doc ?? [], 'motif_attribution')) || !empty(data_get($documentData ?? [], 'motif_attribution')))
         <div style="margin: 5px 0; font-size: 11px; font-style: italic;">
-            <strong>Motif de retenu :</strong> {{ data_get($doc ?? [], 'motif_attribution', data_get($documentData ?? [], 'motif_attribution', '')) }}
+            <strong>Motif de retenue :</strong> {{ data_get($doc ?? [], 'motif_attribution', data_get($documentData ?? [], 'motif_attribution', '')) }}
         </div>
         @endif
         Pour un montant global (TTC) de <div class="amount-box">{{ number_format($gagnant->montant_apres_verification ?? data_get($doc ?? [], 'montant_retenu', 0), 2, ',', ' ') }}</div> DH<br>
@@ -314,7 +315,7 @@
             <td style="width: 5%; text-align: center;">à</td>
             <td class="border-cell" style="width: 15%;">{{ \Carbon\Carbon::parse($consultation->heure_reunion ?? '10:00')->addMinutes(45)->format('H:i') }}</td>
             <td style="width: 10%;"></td>
-            <td style="width: 15%; text-align: right;">Fait à Kénitra le:</td>
+            <td style="width: 15%; text-align: right;">Fait à Kénitra, le :</td>
             <td style="width: 25%;">{{ \Carbon\Carbon::parse($consultation->date_reunion ?? now())->format('d/m/Y') }}</td>
         </tr>
     </table>

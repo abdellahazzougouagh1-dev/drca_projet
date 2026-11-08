@@ -5,8 +5,8 @@
     <title>Estimation administrative</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
-            font-size: 13px;
+            font-family: "Times New Roman", Times, serif;
+            font-size: 11.5px;
             color: #000;
             margin: 20px;
             line-height: 1.4;
@@ -109,6 +109,7 @@
             margin-right: 50px;
         }
     </style>
+    @include('documents.partials.bc_typography')
 </head>
 <body>
 
@@ -139,12 +140,12 @@
     </table>
 
     <div class="title-box">
-        Estimation administrative
+        ESTIMATION ADMINISTRATIVE
     </div>
 
     <table class="info-table">
         <tr>
-            <td class="info-label">Consultations N° :</td>
+            <td class="info-label">Consultation N° :</td>
             <td>{{ $consultation->numero_consultation }}</td>
             <td class="info-label">Ayant pour objet :</td>
             <td>{{ $consultation->objet }}</td>
@@ -155,10 +156,10 @@
         <tr>
             <td class="info-label" style="border-top: none;">Délai d'exécution :</td>
             <td style="border-top: none;">{{ $consultation->delai_execution ?? '0' }}</td>
-            <td colspan="2" style="border-top: none;">A compter de la date de notification de la commande</td>
+            <td colspan="2" style="border-top: none;">À compter de la date de notification de la commande</td>
         </tr>
         <tr>
-            <td colspan="4" style="border-top: none;">Detail de la consultation</td>
+            <td colspan="4" style="border-top: none;">Détail de la consultation</td>
         </tr>
     </table>
 
@@ -166,7 +167,7 @@
         <thead>
             <tr>
                 <th style="width: 5%;">N°</th>
-                <th style="width: 45%;">Designation</th>
+                <th style="width: 45%;">Désignation</th>
                 <th style="width: 10%;">Unité</th>
                 <th style="width: 10%;">Qt</th>
                 <th style="width: 15%;">P.U HT</th>
@@ -201,11 +202,11 @@
 
     <table class="totals-table">
         <tr>
-            <td class="label">Total Hors Taxe</td>
+            <td class="label">Total Hors Taxes (HT)</td>
             <td class="amount">{{ number_format($consultation->montant_estime ?? 0, 2, ',', ' ') }}</td>
         </tr>
         <tr>
-            <td class="label">Montant TVA(20%)</td>
+            <td class="label">Montant TVA (20%)</td>
             <td class="amount">{{ number_format(($consultation->montant_estime ?? 0) * 0.20, 2, ',', ' ') }}</td>
         </tr>
         <tr>
@@ -215,12 +216,12 @@
     </table>
 
     <div class="footer-text">
-        La présente Estimation est arretée à la somme de : <br>
-        <span style="font-weight: normal;">En lettre {{ $montantEnLettres ?? '#NOM?' }}</span>
+        La présente estimation est arrêtée à la somme de : <br>
+        <span style="font-weight: normal;">En lettres : {{ $montantEnLettres ?? '#NOM?' }}</span>
     </div>
 
     <div class="signature">
-        Le Maitre d'ouvrage
+        Le Maître d'ouvrage
     </div>
 
     @include('documents.partials.bc_footer')

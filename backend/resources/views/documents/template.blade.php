@@ -29,6 +29,7 @@
         .data-table th { background-color: #f5f7fa; width: 35%; font-weight: bold; color: #444; }
         .footer { position: fixed; bottom: -10px; left: 0; right: 0; text-align: center; font-size: 10px; color: #999; border-top: 1px solid #eee; padding-top: 10px; }
     </style>
+    @include('documents.partials.bc_typography')
 </head>
 <body>
 
@@ -103,9 +104,9 @@
         <div class="section-title">Prestations</div>
         <table class="data-table">
             <tr>
-                <th>DÃ©signation</th>
-                <th>UnitÃ©</th>
-                <th>QuantitÃ©</th>
+                <th>Désignation</th>
+                <th>Unité</th>
+                <th>Quantité</th>
                 <th>Prix unitaire HT</th>
                 <th>Montant TTC</th>
             </tr>

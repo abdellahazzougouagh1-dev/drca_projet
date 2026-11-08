@@ -92,7 +92,7 @@
     @endphp
 
     <div class="header-desc">
-        Nomination de la commission de réception {{ strtolower($doc['type_reception'] ?? 'définitive') }}<br>
+        De nomination de la commission de réception {{ strtolower($doc['type_reception'] ?? 'définitive') }}<br>
         {{ $labelEngagement }} N° : {{ $refNum }}
     </div>
 
@@ -105,13 +105,13 @@
         • Vu la décision n°277/ONCA/DRHS/DRH/SGAP du 08 Février 2023, portant nomination de M. BOUDRA Abdelâali Directeur Régional de l’ONCA de la région de Rabat-Salé-Kénitra ;<br>
         • Vu la décision n° 567 /ONCA/DRHS/DRH/SGAP du 17 Mars 2025 portant nomination de M. BOUDRA Abdelâali Directeur Régional de l’ONCA de la région de Rabat-Salé-Kénitra en tant que sous-ordonnateur ;<br>
         • Vu la décision n° 568/ONCA/DRHS/DRH/SGAP du 17 Mars 2025 portant délégation de signature à M. BOUDRA Abdelâali, Directeur Régional de l’ONCA de la région de Rabat-Salé-Kénitra ; <br>
-        • Vu le budget de fonctionnement de l’ONCA au titre de l’exercice 2025 ;<br>
+        • Vu le budget de fonctionnement de l’ONCA au titre de l’exercice {{ $consultation->annee ?? date('Y') }} ;<br>
         @if($isConvention)
         • Vu la consultation n° {{ $doc['numero_consultation'] }} ;<br>
         @else
         • Vu l'avis d'achat n° {{ $doc['numero_consultation'] }} ;<br>
         @endif
-        • Vu le budget d'investissement de l'ONCA délégué et notifié à la DRCA-RSK au titre de l’exercice 2025 ;<br>
+        • Vu le budget d'investissement de l'ONCA délégué et notifié à la DRCA-RSK au titre de l’exercice {{ $consultation->annee ?? date('Y') }} ;<br>
         • Vu {{ $labelEngagementLower }} N° {{ $refNum }} ;
     </p>
 
@@ -136,7 +136,7 @@
     </table>
 
     <p><span class="section">Article 3 :</span>
-        La-dite commission se réunira le <span class="bold">{{ $doc['date_reunion'] }}</span>
+        Ladite commission se réunira le <span class="bold">{{ $doc['date_reunion'] }}</span>
         à <span class="bold">{{ $doc['heure_reunion'] }}</span> au siège de la DRCA-RSK pour procéder à la réception {{ strtolower($doc['type_reception'] ?? 'définitive') }} desdites prestations.
     </p>
 @php

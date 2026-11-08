@@ -9,10 +9,10 @@
             size: A4 portrait;
         }
         body {
-            font-family: Arial, Helvetica, sans-serif;
-            font-size: 11px;
+            font-family: "Times New Roman", Times, serif;
+            font-size: 11.5px;
             color: #000;
-            line-height: 1.35;
+            line-height: 1.4;
             margin: 0;
             padding: 0;
         }
@@ -22,6 +22,7 @@
         }
         td, th {
             vertical-align: middle;
+            font-family: "Times New Roman", Times, serif;
         }
         .bold {
             font-weight: bold;
@@ -35,9 +36,9 @@
         }
         .header-center {
             text-align: center;
-            font-size: 12.5px;
+            font-size: 13px;
             font-weight: bold;
-            line-height: 1.3;
+            line-height: 1.35;
         }
         .header-line {
             border-bottom: 1.5px solid #000080;
@@ -48,7 +49,7 @@
             margin-bottom: 8px;
         }
         .sender-title {
-            font-size: 12.5px;
+            font-size: 13px;
             font-weight: bold;
             text-align: center;
             margin-bottom: 2px;
@@ -72,8 +73,8 @@
         }
         .grid-bordered td {
             border: 1px solid #000;
-            padding: 3px 6px;
-            font-size: 11px;
+            padding: 4px 6px;
+            font-size: 11.5px;
         }
         .divider {
             border-top: 1.5px solid #000;
@@ -83,15 +84,17 @@
             text-align: center;
             font-weight: bold;
             text-decoration: underline;
-            font-size: 13px;
+            font-size: 13.5px;
             margin-bottom: 6px;
+            text-transform: uppercase;
         }
         .accus-table td {
-            padding: 2px 0;
-            font-size: 11px;
+            padding: 2.5px 0;
+            font-size: 11.5px;
             vertical-align: top;
         }
     </style>
+    @include('documents.partials.bc_typography')
 </head>
 <body>
 @php
@@ -167,14 +170,14 @@
                 N° &nbsp;&nbsp; {{ $numeroOs }}
             </td>
             <td style="width: 45%; text-align: right; font-size: 12px;">
-                Kénitra le: &nbsp;&nbsp; <span class="bold">{{ $dateDoc }}</span>
+                Kénitra, le : &nbsp;&nbsp; <span class="bold">{{ $dateDoc }}</span>
             </td>
         </tr>
     </table>
 
     <!-- 3. Expéditeur -->
     <div class="sender-title">
-        Le Directeur Régional du Conseil Agricole RABAT-SALE
+        Le Directeur Régional du Conseil Agricole de Rabat-Salé-Kénitra
     </div>
     <div class="sender-city">
         Kénitra
@@ -182,7 +185,7 @@
 
     <!-- 4. Destinataire -->
     <div class="recipient-box">
-        <div class="bold" style="font-size: 13px; margin-bottom: 2px;">A</div>
+        <div class="bold" style="font-size: 13px; margin-bottom: 2px;">À</div>
         <div class="bold" style="font-size: 12px; margin-bottom: 1px;">{{ $destinataireNom }}</div>
         <div class="bold uppercase" style="font-size: 12.5px; margin-bottom: 1px;">{{ $societe }}</div>
         <div class="bold" style="font-size: 11.5px; margin-bottom: 1px;">{{ $adresseSociete }}</div>
@@ -202,7 +205,7 @@
         </tr>
         <tr>
             <td style="font-weight: bold;">Référence</td>
-            <td style="font-weight: bold;">{{ $termeDoc }} numéro:</td>
+            <td style="font-weight: bold;">{{ $termeDoc }} numéro :</td>
             <td style="font-weight: bold;">{{ $numeroConvention }}</td>
         </tr>
     </table>
@@ -213,49 +216,49 @@
 
         @if($isNotification)
             <div style="margin-bottom: 4px;">
-                J'ai l'honneur de demander de notifier l'approbation {{ $isContrat ? 'du Contrat' : 'de la Convention' }} numéro : <span class="bold">{{ $numeroConvention }}</span> ayant pour objet :
+                J'ai l'honneur de vous notifier l'approbation {{ $isContrat ? 'du Contrat' : 'de la Convention' }} N° : <span class="bold">{{ $numeroConvention }}</span> ayant pour objet :
             </div>
             <div class="bold" style="margin: 4px 0 6px 0; line-height: 1.3;">
                 {{ $objet }}
             </div>
             <div style="line-height: 1.35; margin-bottom: 4px;">
-                Je vous informe que {{ $termeDocLedit }} a été approuvé{{ $isContrat ? '' : 'e' }} par l'autorité compétente et je vous invite à signer la présente notification de l'approbation et à enregistrer {{ $termeDocCe }} dans les délais réglementaires
+                Je vous informe que {{ $termeDocLedit }} a été approuvé{{ $isContrat ? '' : 'e' }} par l'autorité compétente et je vous invite à signer la présente notification de l'approbation et à enregistrer {{ $termeDocCe }} dans les délais réglementaires.
             </div>
         @elseif($isCommencement)
             <div style="margin-bottom: 4px;">
-                J'ai l'honneur de demander de commencer l'exécution {{ $isContrat ? 'du Contrat' : 'de la Convention' }} N° : <span class="bold">{{ $numeroConvention }}</span> ayant pour objet
+                J'ai l'honneur de vous prescrire de commencer l'exécution {{ $isContrat ? 'du Contrat' : 'de la Convention' }} N° : <span class="bold">{{ $numeroConvention }}</span> ayant pour objet :
             </div>
             <div class="bold" style="margin: 4px 0 6px 0; line-height: 1.3;">
                 {{ $objet }}
             </div>
             <div style="line-height: 1.35; margin-bottom: 4px;">
-                Le commencement de l'exécution de {{ $termeDocCe }} prendra effet à compter de la date de la réception du présent ordre de service
+                La prise d'effet du commencement de l'exécution de {{ $termeDocCe }} aura lieu à compter de la date de réception du présent ordre de service.
             </div>
         @elseif($isAjournement)
             <div style="margin-bottom: 4px;">
-                J'ai l'honneur de demander d'arreter l'execution {{ $isContrat ? 'du Contrat' : 'de la Convention' }} N° : <span class="bold">{{ $numeroConvention }}</span> ayant pour objet
+                J'ai l'honneur de vous prescrire d'arrêter l'exécution {{ $isContrat ? 'du Contrat' : 'de la Convention' }} N° : <span class="bold">{{ $numeroConvention }}</span> ayant pour objet :
             </div>
             <div class="bold" style="margin: 4px 0 6px 0; line-height: 1.3;">
                 {{ $objet }}
             </div>
             <div style="line-height: 1.35; margin-bottom: 5px;">
-                L'arrêt de l'exécution de {{ $termeDocCe }} prendra effet à compter de la date de la réception du présent ordre de service
+                L'arrêt de l'exécution de {{ $termeDocCe }} prendra effet à compter de la date de réception du présent ordre de service.
             </div>
-            <div class="bold" style="margin-top: 4px;">Motif de l'ajournement</div>
+            <div class="bold" style="margin-top: 4px;">Motif de l'ajournement :</div>
             <div class="bold" style="margin-top: 2px;">{{ $motifAjournement }}</div>
         @elseif($isReprise)
             <div style="margin-bottom: 4px;">
-                J'ai l'honneur de demander de reprendre l'exécution {{ $isContrat ? 'du Contrat' : 'de la Convention' }} N° : <span class="bold">{{ $numeroConvention }}</span> ayant pour objet
+                J'ai l'honneur de vous prescrire de reprendre l'exécution {{ $isContrat ? 'du Contrat' : 'de la Convention' }} N° : <span class="bold">{{ $numeroConvention }}</span> ayant pour objet :
             </div>
             <div class="bold" style="margin: 4px 0 6px 0; line-height: 1.3;">
                 {{ $objet }}
             </div>
             <div style="line-height: 1.35; margin-bottom: 4px;">
-                La reprise de l'exécution de {{ $termeDocCe }} prendra effet à compter de la date de la réception du présent ordre de service
+                La reprise de l'exécution de {{ $termeDocCe }} prendra effet à compter de la date de réception du présent ordre de service.
             </div>
         @else
             <div style="margin-bottom: 4px;">
-                J'ai l'honneur de demander l'exécution {{ $isContrat ? 'du Contrat' : 'de la Convention' }} N° : <span class="bold">{{ $numeroConvention }}</span> ayant pour objet
+                J'ai l'honneur de vous prescrire l'exécution {{ $isContrat ? 'du Contrat' : 'de la Convention' }} N° : <span class="bold">{{ $numeroConvention }}</span> ayant pour objet :
             </div>
             <div class="bold" style="margin: 4px 0 6px 0;">
                 {{ $objet }}
@@ -268,14 +271,14 @@
 
     <!-- 8. Section Accusé de réception -->
     <div class="accus-title">
-        Accusé de reception
+        Accusé de réception
     </div>
 
-    <div style="margin-bottom: 4px;">Je soussigne, Monsieur</div>
+    <div style="margin-bottom: 4px;">Je soussigné, Monsieur</div>
 
     <table class="accus-table" style="width: 100%; margin-bottom: 4px;">
         <tr>
-            <td style="width: 48%;">Gérant/ agissant au nom et pour le compte de la société :</td>
+            <td style="width: 48%;">Gérant / agissant au nom et pour le compte de la société :</td>
             <td class="bold uppercase" style="width: 52%;">{{ $societe }}</td>
         </tr>
         <tr>
@@ -286,21 +289,21 @@
 
     <div style="margin-bottom: 3px;">
         @if($isNotification)
-            Atteste avoir reçu du directeur régional du conseil agricole Rabat-Salé-Kénitra la notification de l'approbation de:
+            Atteste avoir reçu du Directeur Régional du Conseil Agricole de Rabat-Salé-Kénitra la notification de l'approbation de :
         @elseif($isCommencement)
-            Atteste avoir reçu du directeur régional du conseil agricole Rabat-Salé-Kénitra l'ordre de commencement de l'exécution
+            Atteste avoir reçu du Directeur Régional du Conseil Agricole de Rabat-Salé-Kénitra l'ordre de commencement de l'exécution
         @elseif($isAjournement)
-            Atteste avoir reçu du directeur régional du conseil agricole Rabat-Salé-Kénitra l'ordre d'arrêt de l'execution
+            Atteste avoir reçu du Directeur Régional du Conseil Agricole de Rabat-Salé-Kénitra l'ordre d'arrêt de l'exécution
         @elseif($isReprise)
-            Atteste avoir reçu du directeur régional du conseil agricole Rabat-Salé-Kénitra l'ordre de reprise de l'exécution
+            Atteste avoir reçu du Directeur Régional du Conseil Agricole de Rabat-Salé-Kénitra l'ordre de reprise de l'exécution
         @else
-            Atteste avoir reçu du directeur régional du conseil agricole Rabat-Salé-Kénitra l'ordre de service concernant :
+            Atteste avoir reçu du Directeur Régional du Conseil Agricole de Rabat-Salé-Kénitra l'ordre de service concernant :
         @endif
     </div>
 
     <table style="width: 100%; margin-bottom: 3px;">
         <tr>
-            <td style="width: 24%; font-weight: bold;">{{ $termeDoc }} numéro:</td>
+            <td style="width: 24%; font-weight: bold;">{{ $termeDoc }} numéro :</td>
             <td class="bold" style="width: 76%;">{{ $numeroConvention }}</td>
         </tr>
     </table>
@@ -312,16 +315,17 @@
 
     <div style="line-height: 1.35; margin-bottom: 8px;">
         @if($isNotification)
-            J'accuse par la présente, la réception de la notification de l'approbation {{ $termeDocSus }}
+            J'accuse par la présente, la réception de la notification de l'approbation {{ $termeDocSus }}.
         @elseif($isCommencement)
-            J'accuse par la présente, la réception de l'ordre de service de commencement {{ $termeDocSus }}
+            J'accuse par la présente, la réception de l'ordre de service de commencement {{ $termeDocSus }}.
         @elseif($isAjournement)
-            J'accuse par la présente, la réception de l'ordre de service d'arrêt de l'execution {{ $termeDocSus }}
+            J'accuse par la présente, la réception de l'ordre de service d'arrêt de l'exécution {{ $termeDocSus }}.
         @elseif($isReprise)
-            J'accuse par la présente, la réception de l'ordre de service de reprise de l'exécution {{ $termeDocSus }}
+            J'accuse par la présente, la réception de l'ordre de service de reprise de l'exécution {{ $termeDocSus }}.
         @else
-            J'accuse par la présente, la réception de l'ordre de service {{ $termeDocSus }}
+            J'accuse par la présente, la réception de l'ordre de service {{ $termeDocSus }}.
         @endif
+    </div>
     </div>
 
     <!-- 9. Pied de page officiel ONCA -->

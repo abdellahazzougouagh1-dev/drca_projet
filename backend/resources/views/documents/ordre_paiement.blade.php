@@ -6,7 +6,8 @@
     <style>
         @page { margin: 7mm 10mm 7mm 10mm; size: A4 portrait; }
         * { box-sizing: border-box; }
-        body { font-family: "DejaVu Sans", Arial, sans-serif; font-size: 9.5px; line-height: 1.25; margin: 0; padding: 0; color: #000; }
+        body { font-family: "Times New Roman", Times, serif; font-size: 10.5px; line-height: 1.3; margin: 0; padding: 0; color: #000; }
+        td, th { font-family: "Times New Roman", Times, serif; }
 
         .hdr { width: 100%; border-collapse: collapse; margin-bottom: 3px; }
         .hdr td { vertical-align: middle; padding: 0; }
@@ -144,9 +145,9 @@
 
 <!-- RENSEIGNEMENTS SUR LA DEPENSE -->
 <table class="main-table">
-    <tr><th colspan="3" style="font-size:10.5px; padding:6px;">RENSEIGNEMENTS SUR LA DEPENSE</th></tr>
+    <tr><th colspan="3" style="font-size:10.5px; padding:6px;">RENSEIGNEMENTS SUR LA DÉPENSE</th></tr>
     <tr>
-        <td class="label-col" rowspan="2">BENEFICIAIRE</td>
+        <td class="label-col" rowspan="2">BÉNÉFICIAIRE</td>
         <td colspan="2" style="font-weight:bold; text-transform:uppercase; font-size:10px;">{{ $beneficiaire }}</td>
     </tr>
     <tr>
@@ -172,7 +173,7 @@
             <table class="pieces-table">
                 <tr>
                     <td class="num" style="background:#f0f0f0; font-weight:bold; border-bottom:1px solid #000;"></td>
-                    <td class="pj" style="background:#d9d9d9; font-weight:bold; font-size:10px; padding:4px; border-bottom:1px solid #000;">PIECES JOINTES:</td>
+                    <td class="pj" style="background:#d9d9d9; font-weight:bold; font-size:10px; padding:4px; border-bottom:1px solid #000;">PIÈCES JOINTES :</td>
                     <td class="mode-cell" style="background:#d9d9d9; font-weight:bold; font-size:10px; border-bottom:1px solid #000;">MODE DE PAIEMENT</td>
                 </tr>
                 @foreach($pjLines as $idx => $pj)
@@ -192,7 +193,7 @@
         <td colspan="2" style="padding:0;">
             <table style="width:100%; border-collapse:collapse;">
                 <tr>
-                    <td style="padding:5px 7px; font-weight:bold; font-size:10px; border:none;">SOMME A PAYER<br><span style="font-size:8.5px; font-weight:normal;">(en lettres)</span></td>
+                    <td style="padding:5px 7px; font-weight:bold; font-size:10px; border:none;">SOMME À PAYER<br><span style="font-size:8.5px; font-weight:normal;">(en lettres)</span></td>
                     <td style="padding:5px 7px; font-style:italic;">{{ $sommeALettres }}</td>
                 </tr>
             </table>
@@ -220,8 +221,8 @@
         <td>{{ number_format($montantOp, 2, ',', ' ') }}</td>
     </tr>
     <tr>
-        <th colspan="3" style="text-align:left; font-size:9px; padding:4px 6px;">INTITULE DE LA RUBRIQUE</th>
-        <th colspan="3" style="text-align:left; font-size:9px; padding:4px 6px;">PRETSATION DE MEME NATURE</th>
+        <th colspan="3" style="text-align:left; font-size:9px; padding:4px 6px;">INTITULÉ DE LA RUBRIQUE</th>
+        <th colspan="3" style="text-align:left; font-size:9px; padding:4px 6px;">PRESTATION DE MÊME NATURE</th>
     </tr>
     <tr>
         <td colspan="3" style="font-size:9px; text-align:left;">{{ $intituleRubrique }}</td>
@@ -233,7 +234,7 @@
 <table class="visa-row">
     <tr>
         <th style="width:50%;">VISA DU SOUS-ORDONNATEUR</th>
-        <th style="width:50%;">VISA DU FONDE DE POUVOIRS</th>
+        <th style="width:50%;">VISA DU FONDÉ DE POUVOIR</th>
     </tr>
     <tr>
         <td style="height:60px;"></td>

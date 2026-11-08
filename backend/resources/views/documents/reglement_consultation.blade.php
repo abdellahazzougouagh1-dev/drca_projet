@@ -5,9 +5,9 @@
     <title>Règlement de la Consultation</title>
     <style>
         body {
-            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-            font-size: 14px;
-            line-height: 1.6;
+            font-family: "Times New Roman", Times, serif;
+            font-size: 12px;
+            line-height: 1.5;
             color: #000;
             margin: 20px;
         }
@@ -94,6 +94,7 @@
             margin-bottom: 6px;
         }
     </style>
+    @include('documents.partials.bc_typography')
 </head>
 <body>
 
@@ -113,9 +114,9 @@
     <div class="blue-line"></div>
 
     <div class="title-box">
-        <h1>REGLEMENT DE LA CONSULTATION</h1>
+        <h1>RÈGLEMENT DE LA CONSULTATION</h1>
         <div class="ref-box">
-            Consultation N°: {{ $consultation->numero_consultation }}
+            Consultation N° : {{ $consultation->numero_consultation }}
         </div>
     </div>
 
@@ -127,21 +128,21 @@
                 <strong>• L’Offre financière doit être :</strong>
                 <ul class="list-bullets">
                     <li>Conforme au modèle de bordereau des prix en annexe,</li>
-                    <li>Imprimé sur papier à entête du soumissionnaire avec n° de :</li>
+                    <li>Imprimée sur papier à en-tête du soumissionnaire avec n° de :</li>
                 </ul>
                 
                 <div class="checkbox-item"><span class="checkbox-box"></span>La Taxe professionnelle,</div>
-                <div class="checkbox-item"><span class="checkbox-box"></span>L’identifiant fiscale,</div>
+                <div class="checkbox-item"><span class="checkbox-box"></span>L’identifiant fiscal,</div>
                 <div class="checkbox-item"><span class="checkbox-box"></span>Le Registre du commerce,</div>
                 <div class="checkbox-item"><span class="checkbox-box"></span>L’affiliation à la CNSS,</div>
                 <div class="checkbox-item"><span class="checkbox-box"></span>Le RIB,</div>
-                <div class="checkbox-item"><span class="checkbox-box"></span>L’Identifiant Commun de l’entreprise (ICE).</div>
+                <div class="checkbox-item"><span class="checkbox-box"></span>L’Identifiant Commun de l’Entreprise (ICE).</div>
             </li>
             
             <li>
                 <strong>•</strong> Fermée dans une enveloppe cachetée portant le nom et l'adresse du candidat, et la mention très apparente : <br>
                 <div style="margin-top: 10px; margin-left: 20px; font-weight: bold;">
-                    « Offre de Prix N° {{ $consultation->numero_consultation }} à n’ouvrir qu’en commission ».
+                    « Offre de prix N° {{ $consultation->numero_consultation }} à n’ouvrir qu’en commission ».
                 </div>
             </li>
             
@@ -152,10 +153,10 @@
             <li>
                 <strong>•</strong> L’attributaire sera appelé à présenter un dossier administratif composé des pièces suivantes :
                 <ol class="letter-list">
-                    <li>Une copie du Statut de la société (ou pouvoirs conférés),</li>
+                    <li>Une copie des statuts de la société (ou des pouvoirs conférés),</li>
                     <li>Une copie d'une attestation fiscale pour soumissionnaires aux marchés publics,</li>
-                    <li>Une copie d'une attestation d'inscription au registre de commerce,</li>
-                    <li>Une copie de l'attestation d'affiliation à la CNSS,</li>
+                    <li>Une copie d'une attestation d'inscription au registre du commerce,</li>
+                    <li>Une copie de l'attestation d'affiliation à la CNSS.</li>
                 </ol>
             </li>
         </ul>

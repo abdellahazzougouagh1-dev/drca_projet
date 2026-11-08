@@ -5,8 +5,8 @@
     <title>Bordereau des prix</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
-            font-size: 13px;
+            font-family: "Times New Roman", Times, serif;
+            font-size: 11.5px;
             color: #000;
             margin: 20px;
             line-height: 1.4;
@@ -101,6 +101,7 @@
             border-bottom: 1px dotted #000;
         }
     </style>
+    @include('documents.partials.bc_typography')
 </head>
 <body>
 
@@ -136,7 +137,7 @@
         <thead>
             <tr>
                 <th style="width: 5%;">N°</th>
-                <th style="width: 45%;">Designation</th>
+                <th style="width: 45%;">Désignation</th>
                 <th style="width: 10%;">Unité</th>
                 <th style="width: 10%;">Qt</th>
                 <th style="width: 15%;">P.U HT</th>
@@ -179,7 +180,7 @@
 
     <table class="totals-table">
         <tr>
-            <td class="label">Total Hors Taxe</td>
+            <td class="label">Total Hors Taxes (HT)</td>
             <td class="amount">-</td>
         </tr>
         <tr>
@@ -193,8 +194,8 @@
     </table>
 
     <div class="footer-text">
-        Le présent Bordereau est arreté à la somme de: <span class="dots"></span> <br>
-        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;En lettre <span class="long-dots"></span>
+        Le présent bordereau est arrêté à la somme de : <span class="dots"></span> <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;En lettres : <span class="long-dots"></span>
     </div>
 
     @include('documents.partials.bc_footer')

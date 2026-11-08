@@ -4,9 +4,8 @@
         font-family: "Times New Roman", Times, serif !important;
     }
 
-    body,
-    body * {
-        font-size: 12px !important;
+    body {
+        font-size: 12px;
     }
 
     h1,
@@ -24,6 +23,6 @@
     .section-title-box,
     .header-desc,
     .document-title {
-        font-size: 14px !important;
+        font-size: 14px;
     }
 </style>

@@ -209,7 +209,7 @@
     </table>
 
     <div class="section-title-box">
-        Détail du bon de commande
+        {{ $isConvention ? ($isContrat ? 'Détail du contrat' : 'Détail de la convention') : 'Détail du bon de commande' }}
     </div>
 
     <table class="data-table">
@@ -248,7 +248,7 @@
 
     <table class="totals-table">
         <tr>
-            <td style="width: 60%;">Total Hors Taxe</td>
+            <td style="width: 60%;">Total Hors Taxes (HT)</td>
             <td class="right" style="width: 40%;">{{ number_format($doc['total_ht'], 2, ',', ' ') }}</td>
         </tr>
         <tr>
@@ -261,9 +261,15 @@
         </tr>
     </table>
 
+    @php
+        $arreteTexte = $isConvention 
+            ? ($isContrat ? 'Le présent contrat est arrêté à la somme de :' : 'La présente convention est arrêtée à la somme de :') 
+            : 'Le présent bon de commande est arrêté à la somme de :';
+    @endphp
+
     <div style="margin-top: 10px; font-size: 11px;">
-        <span class="bold">Le présent Bon de Commande est arrêté à la somme de :</span>
-        <span class="bold" style="margin-left: 25px;">{{ number_format($doc['total_ttc'], 2, ',', ' ') }}</span>
+        <span class="bold">{{ $arreteTexte }}</span>
+        <span class="bold" style="margin-left: 25px;">{{ number_format($doc['total_ttc'], 2, ',', ' ') }} DH TTC</span>
     </div>
     <div style="margin-top: 4px; font-size: 11px;">
         <span>En lettres :</span>

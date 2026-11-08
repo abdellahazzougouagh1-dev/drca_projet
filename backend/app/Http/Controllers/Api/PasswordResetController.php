@@ -52,7 +52,7 @@ class PasswordResetController extends Controller
             $user = User::where('email', trim($data['email']))->first();
             $token = DB::table('password_reset_tokens')->where('email', $user?->email ?? trim($data['email']))->lockForUpdate()->first();
             if (! $user || ! $token || ! $token->created_at
-                || Carbon::parse($token->created_at)->addMinutes(10)->isPast()
+                || Carbon::parse($token->created_at)->addMinutes(6)->isPast()
                 || ! Hash::check($data['code'], $token->token)) {
                 throw ValidationException::withMessages(['code' => 'Code incorrect ou expiré.']);
             }

@@ -146,7 +146,7 @@
         </tr>
     </table>
 
-    <p class="bold" style="margin-left: 7%;">Bordereaux des prix :</p>
+    <p class="bold" style="margin-left: 7%;">Bordereau des prix :</p>
     <table class="box">
         <tr>
             <th style="width: 7%;">Prix N°</th>
@@ -162,7 +162,7 @@
                     <td class="center bold">{{ data_get($ligne, 'numero_prix', $index + 1) }}</td>
                     <td class="center">{{ data_get($ligne, 'designation') ?: $doc['objet'] }}</td>
                     <td class="center">{{ data_get($ligne, 'specification') ?: data_get($ligne, 'designation') ?: $doc['objet'] }}</td>
-                    <td class="center">{{ data_get($ligne, 'unite_mesure', 'Unite') }}</td>
+                    <td class="center">{{ data_get($ligne, 'unite_mesure', 'Unité') }}</td>
                     <td class="center">{{ data_get($ligne, 'quantite', 1) }}</td>
                     <td class="center">{{ data_get($ligne, 'garantie_exigee') ?: '-' }}</td>
                 </tr>
@@ -173,7 +173,7 @@
                     <td class="center bold">{{ $doc['numero_prix'] ?: ($index + 1) }}</td>
                     <td class="center">{{ $doc['designation'] ?: $article->designation }}</td>
                     <td class="center">{{ $doc['specification'] ?: $article->designation }}</td>
-                    <td class="center">{{ $doc['unite_mesure'] ?: ($article->unite ?? 'Unite') }}</td>
+                    <td class="center">{{ $doc['unite_mesure'] ?: ($article->unite ?? 'Unité') }}</td>
                     <td class="center">{{ $doc['quantite'] ?: ($article->quantite ?? 1) }}</td>
                     <td class="center">{{ $doc['garantie_exigee'] ?: ($article->garantie_exigee ?? '-') }}</td>
                 </tr>
@@ -182,7 +182,7 @@
                     <td class="center bold">{{ $doc['numero_prix'] ?: 1 }}</td>
                     <td class="center">{{ $doc['designation'] ?: $doc['objet'] }}</td>
                     <td class="center">{{ $doc['specification'] ?: $doc['objet'] }}</td>
-                    <td class="center">{{ $doc['unite_mesure'] ?: 'Unite' }}</td>
+                    <td class="center">{{ $doc['unite_mesure'] ?: 'Unité' }}</td>
                     <td class="center">{{ $doc['quantite'] ?: 1 }}</td>
                     <td class="center">{{ $doc['garantie_exigee'] ?: '-' }}</td>
                 </tr>
@@ -196,7 +196,7 @@
         <tr><td>Date et heure limites de réception des devis :</td><td class="right bold">{{ $doc['date_limite'] }} à {{ $doc['heure_limite'] }}</td></tr>
     </table>
 
-    <p class="small">Les plis des concurrents sont déposés par voie électronique dans le portail des marchés publics accessible via l'adresse www.marchespublics.gov.ma</p>
+    <p class="small">Les plis des concurrents sont déposés par voie électronique sur le portail des marchés publics accessible à l'adresse : www.marchespublics.gov.ma</p>
 
     <table class="meta mt">
         <tr>

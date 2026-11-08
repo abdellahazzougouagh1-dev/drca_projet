@@ -9,10 +9,10 @@
             margin: 15mm 10mm; 
         }
         body { 
-            font-family: Arial, sans-serif; 
-            font-size: 13px; 
+            font-family: "Times New Roman", Times, serif; 
+            font-size: 11.5px; 
             color: #000; 
-            line-height: 1.5; 
+            line-height: 1.45; 
         }
         table { 
             width: 100%; 
@@ -107,6 +107,7 @@
             height: 80px;
         }
     </style>
+    @include('documents.partials.bc_typography')
 </head>
 <body>
 
@@ -157,16 +158,16 @@
     <table class="top-info-table">
         <tr>
             <td style="width: 50%;">
-                <strong>N° OS :</strong> ...... /{{ date('Y') }}/DRCA-RSK
+                <strong>N° OS :</strong> ...... /{{ $consultation->annee ?? date('Y') }}/DRCA-RSK
             </td>
             <td style="width: 50%; text-align: right;">
-                Kénitra le : <strong>{{ $dateNotif }}</strong>
+                Kénitra, le : <strong>{{ $dateNotif }}</strong>
             </td>
         </tr>
     </table>
 
     <div class="destinataire-box">
-        <strong>A Monsieur le Gérant de la société :</strong><br>
+        <strong>À Monsieur le Gérant de la société :</strong><br>
         <strong>{{ $fournisseur->raison_sociale }}</strong><br>
         {{ $fournisseur->adresse }}<br>
         {{ $fournisseur->ville ?? '' }}
@@ -179,7 +180,7 @@
     <table class="subject-table">
         <tr>
             <td class="subject-label">Objet :</td>
-            <td>Notification de l'approbation du {{ $typeEng }}.</td>
+            <td>Notification de l'approbation {{ $typeEng === 'Bon de commande' ? 'du Bon de Commande' : 'de la Convention' }}.</td>
         </tr>
         <tr>
             <td class="subject-label">Référence :</td>
@@ -188,7 +189,7 @@
     </table>
 
     <div class="content">
-        J'ai l'honneur de vous faire connaître que le {{ strtolower($typeEng) }} cité en référence, dont le montant s'élève à <strong>{{ number_format($consultation->engagement->montant_engagement ?? 0, 2, ',', ' ') }} MAD TTC</strong>, a été approuvé le : <strong>{{ \Carbon\Carbon::parse($consultation->engagement->date_engagement ?? now())->format('d/m/Y') }}</strong>.
+        J'ai l'honneur de vous faire connaître que {{ $typeEng === 'Bon de commande' ? 'le bon de commande cité en référence' : 'la convention citée en référence' }}, dont le montant s'élève à <strong>{{ number_format($consultation->engagement->montant_engagement ?? 0, 2, ',', ' ') }} MAD TTC</strong>, a été approuvé{{ $typeEng === 'Bon de commande' ? '' : 'e' }} le : <strong>{{ \Carbon\Carbon::parse($consultation->engagement->date_engagement ?? now())->format('d/m/Y') }}</strong>.
         <br><br>
         Je vous invite en conséquence à prendre toutes les dispositions nécessaires pour l'exécution des prestations qui vous sont confiées dans les délais impartis.
     </div>
@@ -200,12 +201,12 @@
     <!-- ACCUSE DE RECEPTION ENCADRÉ -->
     <div class="accuse-box">
         <div class="accuse-title">
-            ACCUSE DE RECEPTION
+            ACCUSÉ DE RÉCEPTION
         </div>
         <div class="accuse-content">
             Je soussigné(e) : ............................................................................................................................................................<br>
             Agissant en qualité de Gérant de la société : <strong>{{ $fournisseur->raison_sociale }}</strong><br>
-            Atteste avoir reçu en date du : ...... / ...... / 20...... l'Ordre de Service de Notification de l'approbation relatif au {{ $typeEng }} N° {{ $numeroRef }}.
+            Atteste avoir reçu en date du : ...... / ...... / 20...... l'Ordre de Service de Notification de l'approbation {{ $typeEng === 'Bon de commande' ? 'relatif au Bon de Commande' : 'relative à la Convention' }} N° {{ $numeroRef }}.
         </div>
         <div class="accuse-signature">
             Signature et Cachet du Fournisseur

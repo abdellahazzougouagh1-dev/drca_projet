@@ -145,14 +145,14 @@
 
         @if($isAjournement)
             <p style="margin: 0 0 6px 0;">
-                J'ai l'honneur de demander d'arrêter l'exécution du bon de commande N° : <span class="bold">{{ $doc['numero_bc'] }}</span>
+                J'ai l'honneur de vous prescrire d'arrêter l'exécution du bon de commande N° : <span class="bold">{{ $doc['numero_bc'] }}</span>
             </p>
             <p style="margin: 0 0 6px 0;">ayant pour objet :</p>
             <p class="bold justify" style="margin: 0 0 10px 0;">
                 {{ $doc['objet'] }}
             </p>
             <p style="margin: 0 0 10px 0;">
-                L'arrêt de l'exécution de ce bon de commande prendra effet à compter de la date de la réception du présent ordre de service.
+                L'arrêt de l'exécution de ce bon de commande prendra effet à compter de la date de réception du présent ordre de service.
             </p>
             @if(!empty($doc['motif_ajournement']))
                 <p style="margin: 10px 0 2px 0;"><span class="bold">Motif de l'ajournement :</span></p>
@@ -160,18 +160,18 @@
             @endif
         @elseif($isReprise)
             <p style="margin: 0 0 6px 0;">
-                J'ai l'honneur de demander de reprendre l'exécution du bon de commande N° : <span class="bold">{{ $doc['numero_bc'] }}</span>
+                J'ai l'honneur de vous prescrire de reprendre l'exécution du bon de commande N° : <span class="bold">{{ $doc['numero_bc'] }}</span>
             </p>
             <p style="margin: 0 0 6px 0;">ayant pour objet :</p>
             <p class="bold justify" style="margin: 0 0 10px 0;">
                 {{ $doc['objet'] }}
             </p>
             <p style="margin: 0 0 10px 0;">
-                La reprise de l'exécution de ce bon de commande prendra effet à compter de la date de la réception du présent ordre de service.
+                La reprise de l'exécution de ce bon de commande prendra effet à compter de la date de réception du présent ordre de service.
             </p>
         @elseif($isNotification)
             <p style="margin: 0 0 6px 0;">
-                J'ai l'honneur de demander de notifier l'approbation du bon de commande N° : <span class="bold">{{ $doc['numero_bc'] }}</span>
+                J'ai l'honneur de vous notifier l'approbation du bon de commande N° : <span class="bold">{{ $doc['numero_bc'] }}</span>
             </p>
             <p style="margin: 0 0 6px 0;">ayant pour objet :</p>
             <p class="bold justify" style="margin: 0 0 10px 0;">
@@ -182,14 +182,14 @@
             </p>
         @else
             <p style="margin: 0 0 6px 0;">
-                J'ai l'honneur de  vous demander de bien vouloir  proceder au Commencement de l'exécution du bon de commande N° : <span class="bold">{{ $doc['numero_bc'] }}</span>
+                J'ai l'honneur de vous prescrire de commencer l'exécution du bon de commande N° : <span class="bold">{{ $doc['numero_bc'] }}</span>
             </p>
             <p style="margin: 0 0 6px 0;">ayant pour objet :</p>
             <p class="bold justify" style="margin: 0 0 10px 0;">
                 {{ $doc['objet'] }}
             </p>
             <p style="margin: 0 0 10px 0;">
-                Le commencement de l'exécution de ce bon de commande prendra effet à compter de la date de la réception du présent ordre de service.
+                Le commencement de l'exécution de ce bon de commande prendra effet à compter de la date de réception du présent ordre de service.
             </p>
         @endif
     </div>
@@ -218,19 +218,19 @@
 
         @if($isAjournement)
             <p style="margin: 0 0 6px 0;">
-                Atteste avoir reçu du directeur régional du conseil agricole Rabat-Salé-Kénitra l'ordre d'arrêt de l'exécution
+                Atteste avoir reçu du Directeur Régional du Conseil Agricole de Rabat-Salé-Kénitra l'ordre d'arrêt de l'exécution
             </p>
         @elseif($isReprise)
             <p style="margin: 0 0 6px 0;">
-                Atteste avoir reçu du directeur régional du conseil agricole Rabat-Salé-Kénitra l'ordre de reprise de l'exécution
+                Atteste avoir reçu du Directeur Régional du Conseil Agricole de Rabat-Salé-Kénitra l'ordre de reprise de l'exécution
             </p>
         @elseif($isNotification)
             <p style="margin: 0 0 6px 0;">
-                Atteste avoir reçu du directeur régional du conseil agricole Rabat-Salé-Kénitra la notification de l'approbation de :
+                Atteste avoir reçu du Directeur Régional du Conseil Agricole de Rabat-Salé-Kénitra la notification de l'approbation de :
             </p>
         @else
             <p style="margin: 0 0 6px 0;">
-                Atteste avoir reçu du directeur régional du conseil agricole Rabat-Salé-Kénitra l'ordre de commencement de l'exécution
+                Atteste avoir reçu du Directeur Régional du Conseil Agricole de Rabat-Salé-Kénitra l'ordre de commencement de l'exécution
             </p>
         @endif
 

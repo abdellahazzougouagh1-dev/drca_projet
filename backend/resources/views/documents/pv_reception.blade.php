@@ -90,7 +90,7 @@
         </tbody>
     </table>
 
-    <p style="margin-bottom: 6px;">S’est réunie au siège de la DRCA-RSK en vue de procéder à la réception des prestations relatives au :</p>
+    <p style="margin-bottom: 6px;">S’est réunie au siège de la DRCA-RSK en vue de procéder à la réception des prestations relatives à :</p>
 
     <p class="bold center" style="margin-bottom: 12px; font-size: 12px;">
         {{ $doc['objet'] }}
@@ -100,7 +100,7 @@
         <tr>
             <td style="width: 22%;">{{ $labelEngagement }} N° :</td>
             <td style="width: 38%; font-weight: bold;">{{ $refNum }}</td>
-            <td style="width: 22%;">établi(e) en date du</td>
+            <td style="width: 22%;">{{ $isConvention ? ($isContrat ? 'établi en date du :' : 'établie en date du :') : 'établi en date du :' }}</td>
             <td style="width: 18%; font-weight: bold;">{{ $doc['date_document'] }}</td>
         </tr>
     </table>
@@ -158,7 +158,7 @@
     </p>
 
     @if(in_array(strtolower($doc['type_reception'] ?? ''), ['partielle', 'provisoire']))
-    <p class="bold" style="margin-bottom: 6px;">Comme suivant :</p>
+    <p class="bold" style="margin-bottom: 6px;">Selon le détail suivant :</p>
     <table class="box tight" style="margin-bottom: 14px;">
         <thead>
             <tr>
@@ -239,7 +239,7 @@
                     @php
                         $qualite = data_get($m, 'qualite', '');
                         if ($index === 0) {
-                            $headerTitle = !empty($qualite) ? $qualite : 'Présidente';
+                            $headerTitle = !empty($qualite) ? $qualite : ($isPresFem ? 'Présidente' : 'Président');
                         } else {
                             $headerTitle = 'Membre ' . $index;
                         }

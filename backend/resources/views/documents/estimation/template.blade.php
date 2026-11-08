@@ -27,9 +27,9 @@
     <!-- Ligne pleine sous l'en-tête -->
     <div class="header-line"></div>
 
-    <!-- Le titre encadré avec la faute de frappe intentionnelle reproduite du modèle -->
+    <!-- Le titre encadré -->
     <div class="titre-encadre">
-        ESTIMATION DE L'ADMINISTRTATION
+        ESTIMATION DE L'ADMINISTRATION
     </div>
 
     <div class="info-box">

@@ -36,8 +36,8 @@
     <p>
         <strong>Le {{ \Carbon\Carbon::parse($ao->date_ouverture)->format('d/m/Y') }} à {{ $ao->heure_ouverture }} Heures</strong>,
         il sera procédé, à {{ $ao->lieu_ouverture }}
-        à l'ouverture des plis relatif à l'appel d'offres ouvert national sur offres de prix
-        n°{{ $ao->num_aoo }}, ayant pour objet {{ $ao->objet }}
+        à l'ouverture des plis relatifs à l'appel d'offres ouvert national sur offres de prix
+        n° {{ $ao->num_aoo }}, ayant pour objet {{ $ao->objet }}
         @if($lots->count() > 1)
             en {{ $lots->count() }} lots
             ({{ $lots->map(fn($lot, $i) => 'Lot ' . ($i + 1) . ' : ' . $lot->objet_lot)->implode(' et ') }}).
@@ -52,7 +52,7 @@
     </p>
 
     {{-- ===== ESTIMATION PAR LOT ===== --}}
-    <p>L'estimation des coûts des prestations établie par le maitre d'ouvrage est fixée à la somme de :</p>
+    <p>L'estimation des coûts des prestations établie par le maître d'ouvrage est fixée à la somme de :</p>
     <ul class="lots-list">
         @foreach($lots as $index => $lot)
         <li>

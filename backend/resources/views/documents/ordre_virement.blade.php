@@ -6,7 +6,8 @@
     <style>
         @page { margin: 8mm 12mm 8mm 12mm; size: A4 portrait; }
         * { box-sizing: border-box; }
-        body { font-family: "DejaVu Sans", Arial, sans-serif; font-size: 10.5px; line-height: 1.35; margin: 0; padding: 0; color: #000; }
+        body { font-family: "Times New Roman", Times, serif; font-size: 11.5px; line-height: 1.4; margin: 0; padding: 0; color: #000; }
+        td, th { font-family: "Times New Roman", Times, serif; }
 
         .hdr { width: 100%; border-collapse: collapse; margin-bottom: 3px; }
         .hdr td { vertical-align: middle; padding: 0; }
@@ -101,19 +102,19 @@
 
 <!-- RÉFÉRENCE OV -->
 <div class="ref-line">
-    /Référence: OV N° &nbsp;&nbsp;
+    Référence : OV N° &nbsp;&nbsp;
     <strong style="font-size:13px;">{{ $numOV }}</strong>
     &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {{ $suffixe }}
     &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-    Date: &nbsp;&nbsp; {{ $dateDoc }}
+    Date : &nbsp;&nbsp; {{ $dateDoc }}
 </div>
 
 <!-- TITRE PRINCIPAL -->
 <div class="main-title">ORDRE DE VIREMENT</div>
-<div class="sub-title">A</div>
+<div class="sub-title">À</div>
 <div class="dest-title">
-    MONSIEUR LE TRESORIER GENERAL DU ROYAUME<br>
-    CHEF DE L'AGENCE BANCAIRE DE KENITRA
+    MONSIEUR LE TRÉSORIER GÉNÉRAL DU ROYAUME<br>
+    CHEF DE L'AGENCE BANCAIRE DE KÉNITRA
 </div>
 
 <!-- TEXTE INTRODUCTIF -->
@@ -129,10 +130,10 @@
     <tr>
         <td class="flabel">La somme de</td>
         <td class="fsep">:</td>
-        <td class="fval" style="font-size:12px;">{{ number_format($montantOv, 2, ',', ' ') }}</td>
+        <td class="fval" style="font-size:12px;">{{ number_format($montantOv, 2, ',', ' ') }} DH</td>
     </tr>
     <tr>
-        <td class="flabel">En lettres</td>
+        <td class="flabel">En lettres :</td>
         <td class="fsep">:</td>
         <td class="fval" style="font-style:italic; font-weight:normal;">{{ $montantLettres }}</td>
     </tr>
@@ -162,19 +163,19 @@
 <!-- TEXTE DE CLÔTURE -->
 <div class="closing-text">
     &nbsp;&nbsp;&nbsp;&nbsp;Dans l'attente de votre avis de débit, veuillez agréer,
-    Monsieur le Trésorier Général Du Royaume, l'expression de nos salutations distinguées.
+    Monsieur le Trésorier Général du Royaume, l'expression de nos salutations distinguées.
 </div>
 
 <!-- SIGNATURES -->
 <table class="sig-table">
     <tr>
         <th style="width:50%;">
-            LE DIRECTEUR REGIONAL DE L'OFFICE NATIONALE DU CONSEIL<br>
-            AGRICOLE DU Rabat-Salé-Kénitra
+            LE DIRECTEUR RÉGIONAL DE L'OFFICE NATIONAL DU CONSEIL<br>
+            AGRICOLE DE RABAT-SALÉ-KÉNITRA
         </th>
         <th style="width:50%;">
-            LE FONDE DE POUVOIRS DU TRESORIER PAYEUR DE L'ONCA<br>
-            AUPRES DE LA DIRECTION REGIONALE DU Rabat-Salé-Kénitra
+            LE FONDÉ DE POUVOIR DU TRÉSORIER-PAYEUR DE L'ONCA<br>
+            AUPRÈS DE LA DIRECTION RÉGIONALE DE RABAT-SALÉ-KÉNITRA
         </th>
     </tr>
     <tr>

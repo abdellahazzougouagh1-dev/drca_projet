@@ -11,6 +11,12 @@ import {
   Loader2,
   AlertCircle,
   CheckCircle2,
+  Mail,
+  Send,
+  Eye,
+  EyeOff,
+  ShieldCheck,
+  RefreshCw,
 } from 'lucide-react';
 import api from '../api/axios';
 
@@ -57,11 +63,26 @@ export default function UserMenu({ className = '' }) {
   // Notifications Count (mock/dynamic)
   const [unreadCount] = useState(3);
 
+  // Mode de changement : 'email' (code SMTP recommandé) ou 'current' (mot de passe actuel)
+  const [pwdMode, setPwdMode] = useState('email');
+  const [codeSent, setCodeSent] = useState(false);
+  const [sendingCode, setSendingCode] = useState(false);
+  const [codeCooldown, setCodeCooldown] = useState(0);
+  const [showPassword, setShowPassword] = useState(false);
+
   // Password Modal form
-  const [passwordForm, setPasswordForm] = useState({ current: '', new: '', confirm: '' });
+  const [passwordForm, setPasswordForm] = useState({ current: '', new: '', confirm: '', code: '' });
   const [passwordLoading, setPasswordLoading] = useState(false);
   const [passwordError, setPasswordError] = useState('');
   const [passwordSuccess, setPasswordSuccess] = useState('');
+
+  // Compteur de renvoi du code
+  useEffect(() => {
+    if (codeCooldown > 0) {
+      const timer = setTimeout(() => setCodeCooldown(codeCooldown - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [codeCooldown]);
 
   // Close when clicking outside
   useClickOutside(containerRef, () => setIsOpen(false), isOpen);
@@ -84,7 +105,27 @@ export default function UserMenu({ className = '' }) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [activeModal]);
 
-  // Password update submit
+  // Envoi du code de vérification par email SMTP
+  const handleSendCode = async () => {
+    setPasswordError('');
+    setPasswordSuccess('');
+    setSendingCode(true);
+    try {
+      const res = await api.post('/user/send-password-code');
+      setCodeSent(true);
+      setCodeCooldown(60);
+      setPasswordSuccess(res.data.message || 'Code envoyé avec succès par email !');
+    } catch (err) {
+      setPasswordError(
+        err.response?.data?.message ||
+        'Erreur lors de l’envoi de l’email. Vérifiez la configuration SMTP dans backend/.env.'
+      );
+    } finally {
+      setSendingCode(false);
+    }
+  };
+
+  // Soumission du formulaire
   const handlePasswordSubmit = async (e) => {
     e.preventDefault();
     setPasswordError('');
@@ -94,21 +135,38 @@ export default function UserMenu({ className = '' }) {
       setPasswordError('Le nouveau mot de passe et sa confirmation ne correspondent pas.');
       return;
     }
-    if (passwordForm.new.length < 6) {
-      setPasswordError('Le nouveau mot de passe doit comporter au moins 6 caractères.');
+    if (passwordForm.new.length < 8) {
+      setPasswordError('Le nouveau mot de passe doit comporter au moins 8 caractères.');
       return;
+    }
+
+    if (pwdMode === 'email') {
+      if (!passwordForm.code || passwordForm.code.trim().length !== 6) {
+        setPasswordError('Veuillez saisir le code de vérification à 6 chiffres reçu par email.');
+        return;
+      }
+    } else {
+      if (!passwordForm.current) {
+        setPasswordError('Veuillez saisir votre mot de passe actuel.');
+        return;
+      }
     }
 
     try {
       setPasswordLoading(true);
-      await api.post('/change-password', {
-        current_password: passwordForm.current,
+      const payload = {
         new_password: passwordForm.new,
-      });
+        ...(pwdMode === 'email' ? { code: passwordForm.code.trim() } : { current_password: passwordForm.current }),
+      };
+
+      const res = await api.post('/user/change-password', payload);
       setPasswordLoading(false);
-      setPasswordSuccess('Mot de passe modifié avec succès !');
-      setPasswordForm({ current: '', new: '', confirm: '' });
-      setTimeout(() => setActiveModal(null), 1500);
+      setPasswordSuccess(res.data.message || 'Mot de passe modifié avec succès !');
+      setPasswordForm({ current: '', new: '', confirm: '', code: '' });
+      setTimeout(() => {
+        setActiveModal(null);
+        setPasswordSuccess('');
+      }, 2000);
     } catch (err) {
       setPasswordLoading(false);
       setPasswordError(
@@ -258,28 +316,69 @@ export default function UserMenu({ className = '' }) {
       </div>
 
       {/* ========================================================================= */}
-      {/* MODALE : MODIFIER LE MOT DE PASSE */}
+      {/* MODALE : MODIFIER LE MOT DE PASSE (AVEC CODE SMTP & ANCIEN MOT DE PASSE) */}
       {/* ========================================================================= */}
       {activeModal === 'password' && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-sm animate-fadeIn">
-          <div className="relative w-full max-w-md overflow-hidden rounded-3xl bg-[#1e252b] border border-slate-700 shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fadeIn">
+          <div className="relative w-full max-w-lg overflow-hidden rounded-3xl bg-[#1e252b] border border-slate-700 shadow-2xl">
+            {/* Header */}
             <div className="flex items-center justify-between border-b border-slate-700/80 px-6 py-5 bg-[#2d3741]/60">
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-600/20 text-amber-400 border border-amber-500/30">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-600/20 text-emerald-400 border border-emerald-500/30">
                   <KeyRound size={20} />
                 </div>
                 <div>
                   <h3 className="text-base font-bold text-white">Sécurité du compte</h3>
-                  <p className="text-xs text-slate-400">Modifier votre mot de passe</p>
+                  <p className="text-xs text-slate-400">Modifier votre mot de passe ({userEmail})</p>
                 </div>
               </div>
               <button
                 type="button"
-                onClick={() => setActiveModal(null)}
+                onClick={() => {
+                  setActiveModal(null);
+                  setPasswordError('');
+                  setPasswordSuccess('');
+                }}
                 className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-700/60 hover:text-white cursor-pointer"
               >
                 <X size={18} />
               </button>
+            </div>
+
+            {/* Onglets de sélection du mode */}
+            <div className="px-6 pt-5">
+              <div className="grid grid-cols-2 gap-2 p-1 bg-[#151c22] rounded-2xl border border-slate-700/60">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPwdMode('email');
+                    setPasswordError('');
+                  }}
+                  className={`flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    pwdMode === 'email'
+                      ? 'bg-[#087F5B] text-white shadow-md shadow-[#087F5B]/30'
+                      : 'text-slate-400 hover:text-white hover:bg-slate-800/40'
+                  }`}
+                >
+                  <Mail size={14} />
+                  <span>Code par Email (SMTP)</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPwdMode('current');
+                    setPasswordError('');
+                  }}
+                  className={`flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    pwdMode === 'current'
+                      ? 'bg-[#087F5B] text-white shadow-md shadow-[#087F5B]/30'
+                      : 'text-slate-400 hover:text-white hover:bg-slate-800/40'
+                  }`}
+                >
+                  <Lock size={14} />
+                  <span>Mot de passe actuel</span>
+                </button>
+              </div>
             </div>
 
             <form onSubmit={handlePasswordSubmit} className="p-6 space-y-4">
@@ -297,44 +396,128 @@ export default function UserMenu({ className = '' }) {
                 </div>
               )}
 
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                  Mot de passe actuel
-                </label>
-                <div className="relative">
-                  <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
-                    <Lock size={15} />
-                  </span>
-                  <input
-                    type="password"
-                    required
-                    value={passwordForm.current}
-                    onChange={(e) => setPasswordForm({ ...passwordForm, current: e.target.value })}
-                    placeholder="••••••••"
-                    className="w-full rounded-xl border border-slate-700 bg-[#2d3741] py-2.5 pl-9 pr-3 text-sm text-white focus:border-[#087F5B] focus:outline-none focus:ring-1 focus:ring-[#087F5B]"
-                  />
-                </div>
-              </div>
+              {/* MODE EMAIL (SMTP) */}
+              {pwdMode === 'email' && (
+                <div className="space-y-4">
+                  <div className="rounded-2xl border border-slate-700 bg-[#2d3741]/40 p-3.5">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div>
+                        <p className="text-xs font-bold text-white flex items-center gap-1.5">
+                          <ShieldCheck size={14} className="text-emerald-400" />
+                          Vérification d’identité par Email
+                        </p>
+                        <p className="text-[11px] text-slate-400 mt-1">
+                          Code envoyé à : <span className="text-white font-medium underline">{userEmail}</span>
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleSendCode}
+                        disabled={sendingCode || codeCooldown > 0}
+                        className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600/20 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-600 hover:text-white text-xs font-bold transition disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                      >
+                        {sendingCode ? (
+                          <>
+                            <Loader2 size={13} className="animate-spin" />
+                            <span>Envoi...</span>
+                          </>
+                        ) : codeCooldown > 0 ? (
+                          <>
+                            <RefreshCw size={13} className="animate-spin" />
+                            <span>Renvoyer ({codeCooldown}s)</span>
+                          </>
+                        ) : (
+                          <>
+                            <Send size={13} />
+                            <span>{codeSent ? 'Renvoyer le code' : 'Envoyer le code'}</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
 
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                      Code de vérification (6 chiffres reçus par email)
+                    </label>
+                    <div className="relative">
+                      <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+                        <Mail size={15} />
+                      </span>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]{6}"
+                        maxLength={6}
+                        required
+                        value={passwordForm.code}
+                        onChange={(e) => setPasswordForm({ ...passwordForm, code: e.target.value.replace(/\D/g, '') })}
+                        placeholder="Ex: 849201"
+                        className="w-full rounded-xl border border-slate-700 bg-[#2d3741] py-2.5 pl-9 pr-3 text-sm text-center tracking-[0.3em] font-mono font-bold text-emerald-300 focus:border-[#087F5B] focus:outline-none focus:ring-1 focus:ring-[#087F5B]"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* MODE MOT DE PASSE ACTUEL */}
+              {pwdMode === 'current' && (
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                    Mot de passe actuel
+                  </label>
+                  <div className="relative">
+                    <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+                      <Lock size={15} />
+                    </span>
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      required
+                      value={passwordForm.current}
+                      onChange={(e) => setPasswordForm({ ...passwordForm, current: e.target.value })}
+                      placeholder="••••••••"
+                      className="w-full rounded-xl border border-slate-700 bg-[#2d3741] py-2.5 pl-9 pr-10 text-sm text-white focus:border-[#087F5B] focus:outline-none focus:ring-1 focus:ring-[#087F5B]"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-white cursor-pointer"
+                    >
+                      {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* NOUVEAU MOT DE PASSE */}
               <div>
                 <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                  Nouveau mot de passe
+                  Nouveau mot de passe <span className="text-slate-400 font-normal">(8 caractères minimum)</span>
                 </label>
                 <div className="relative">
                   <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
                     <Lock size={15} />
                   </span>
                   <input
-                    type="password"
+                    type={showPassword ? 'text' : 'password'}
                     required
+                    minLength={8}
                     value={passwordForm.new}
                     onChange={(e) => setPasswordForm({ ...passwordForm, new: e.target.value })}
-                    placeholder="Au moins 6 caractères"
-                    className="w-full rounded-xl border border-slate-700 bg-[#2d3741] py-2.5 pl-9 pr-3 text-sm text-white focus:border-[#087F5B] focus:outline-none focus:ring-1 focus:ring-[#087F5B]"
+                    placeholder="Nouveau mot de passe sécurisé"
+                    className="w-full rounded-xl border border-slate-700 bg-[#2d3741] py-2.5 pl-9 pr-10 text-sm text-white focus:border-[#087F5B] focus:outline-none focus:ring-1 focus:ring-[#087F5B]"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-white cursor-pointer"
+                  >
+                    {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                  </button>
                 </div>
               </div>
 
+              {/* CONFIRMER LE NOUVEAU MOT DE PASSE */}
               <div>
                 <label className="block text-xs font-semibold text-slate-300 mb-1.5">
                   Confirmer le nouveau mot de passe
@@ -344,12 +527,13 @@ export default function UserMenu({ className = '' }) {
                     <Lock size={15} />
                   </span>
                   <input
-                    type="password"
+                    type={showPassword ? 'text' : 'password'}
                     required
+                    minLength={8}
                     value={passwordForm.confirm}
                     onChange={(e) => setPasswordForm({ ...passwordForm, confirm: e.target.value })}
-                    placeholder="••••••••"
-                    className="w-full rounded-xl border border-slate-700 bg-[#2d3741] py-2.5 pl-9 pr-3 text-sm text-white focus:border-[#087F5B] focus:outline-none focus:ring-1 focus:ring-[#087F5B]"
+                    placeholder="Retapez le nouveau mot de passe"
+                    className="w-full rounded-xl border border-slate-700 bg-[#2d3741] py-2.5 pl-9 pr-10 text-sm text-white focus:border-[#087F5B] focus:outline-none focus:ring-1 focus:ring-[#087F5B]"
                   />
                 </div>
               </div>
@@ -357,7 +541,11 @@ export default function UserMenu({ className = '' }) {
               <div className="flex items-center justify-end gap-3 pt-3">
                 <button
                   type="button"
-                  onClick={() => setActiveModal(null)}
+                  onClick={() => {
+                    setActiveModal(null);
+                    setPasswordError('');
+                    setPasswordSuccess('');
+                  }}
                   disabled={passwordLoading}
                   className="px-4 py-2 text-xs font-bold text-slate-400 hover:text-white cursor-pointer"
                 >
@@ -371,10 +559,10 @@ export default function UserMenu({ className = '' }) {
                   {passwordLoading ? (
                     <>
                       <Loader2 size={15} className="animate-spin" />
-                      <span>Enregistrement...</span>
+                      <span>Validation en cours...</span>
                     </>
                   ) : (
-                    <span>Mettre à jour</span>
+                    <span>Valider et modifier le mot de passe</span>
                   )}
                 </button>
               </div>

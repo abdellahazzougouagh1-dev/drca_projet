@@ -123,14 +123,14 @@
     @include('documents.partials.bc_footer')
 <div class="page">
 
-    <div class="title">Ordre d'imputation, paiement et virement</div>
+    <div class="title">ORDRE D'IMPUTATION, DE PAIEMENT ET DE VIREMENT</div>
     <table class="box">
         <tr><td class="bold">Exercice</td><td>{{ $consultation->annee ?? date('Y') }}</td><td class="bold">Budget</td><td>{{ $consultation->type_budget ?? 'Investissement' }}</td></tr>
         <tr><td class="bold">N° d'ordre</td><td>{{ $doc['numero_engagement'] }}</td><td class="bold">Date</td><td>{{ $doc['date_document'] }}</td></tr>
         <tr><td class="bold">Objet</td><td colspan="3">{{ $doc['objet'] }}</td></tr>
         <tr><td class="bold">Imputation</td><td colspan="3">ART {{ $consultation->budget->art ?? '' }} / PAR {{ $consultation->budget->par ?? '' }} / LIG {{ $consultation->budget->lig ?? '' }} / Code {{ $consultation->budget->code_imputation ?? '' }}</td></tr>
-        <tr><td class="bold">Bénéficiaire</td><td>{{ $doc['societe'] }}</td><td class="bold">Montant TTC</td><td class="right bold">{{ number_format($doc['total_ttc'], 2, ',', ' ') }}</td></tr>
-        <tr><td class="bold">En lettres</td><td colspan="3">{{ $doc['montant_en_lettres'] }}</td></tr>
+        <tr><td class="bold">Bénéficiaire</td><td>{{ $doc['societe'] }}</td><td class="bold">Montant TTC</td><td class="right bold">{{ number_format($doc['total_ttc'], 2, ',', ' ') }} DH</td></tr>
+        <tr><td class="bold">En lettres :</td><td colspan="3">{{ $doc['montant_en_lettres'] }}</td></tr>
         <tr><td class="bold">RIB</td><td colspan="3">{{ $doc['rib'] ?: ($doc['fournisseur']->rib ?? '........................................') }}</td></tr>
         <tr><td class="bold">Facture N°</td><td>{{ $doc['numero_facture'] }}</td><td class="bold">Bon à payer</td><td>{{ $doc['date_bon_payer'] }}</td></tr>
     </table>

@@ -85,8 +85,8 @@
     <!-- TITRE PRINCIPAL ET NUMERO D'AVIS -->
     <table style="width: 100%; border: 1.5px solid #000; border-collapse: collapse; text-align: center; margin-top: 4px; margin-bottom: 9px;">
         <tr>
-            <td style="padding: 5px; font-size: 12px; font-weight: bold; text-transform: uppercase; border-bottom: 1.5px solid #000;">
-                PV d'examen des devis
+            <td style="padding: 5px; font-size: 13px; font-weight: bold; text-transform: uppercase; border-bottom: 1.5px solid #000;">
+                PROCÈS-VERBAL D'EXAMEN DES DEVIS
             </td>
         </tr>
         <tr>
@@ -117,7 +117,7 @@
                 <table style="width: 100%; border-collapse: collapse;">
                     <tr>
                         <td style="vertical-align: top; width: 70%; padding-right: 6px;">
-                            Une commission s'est réunie au siège de la Direction Régionale du Conseil Agricole de Rabat-Salé-Kénitra pour procéder au déchiffrement des plis concernant l'avis d'achat sur bon de commande N° :{{ $doc['numero_bc'] }}
+                            Une commission s'est réunie au siège de la Direction Régionale du Conseil Agricole de Rabat-Salé-Kénitra pour procéder au déchiffrement des plis concernant l'avis d'achat sur bon de commande N° : {{ $doc['numero_bc'] }}
                         </td>
                        
                     </tr>
@@ -136,7 +136,7 @@
 
     <!-- DISCOURS INTRODUCTIF -->
     <div style="text-align: center; margin: 6px 0 8px 0; font-size: 9.5px;">
-        Le déchiffrement des plis contenant les propositions faites par les concurrents déposés auprès du portail des marchés publics
+        Le déchiffrement des plis contenant les propositions faites par les concurrents et déposées sur le portail des marchés publics a donné les résultats suivants :
     </div>
 
     <!-- TABLEAU 1: CONCURRENTS (N° auto-incrémenté) -->
@@ -187,7 +187,7 @@
 
     <!-- SECTION 3: SOCIETES AYANT REFUSE ET MOTIF DE REFUS -->
     <div style="font-weight: bold; margin-top: 5px; margin-bottom: 3px; font-size: 9.5px;">
-        Les sociétés ayant écarter sant :
+        Les sociétés écartées sont :
     </div>
     <table class="grid-table" style="margin-bottom: 9px;">
         <thead>
@@ -228,7 +228,7 @@
     </div>
     @if(!empty($doc['motif_attribution']))
     <div style="margin: 4px 0; font-size: 9.5px; text-align: center;">
-        <span style="font-weight: bold;">Motif de retenu :</span> 
+        <span style="font-weight: bold;">Motif de retenue :</span> 
         <span style="font-style: italic;">{{ $doc['motif_attribution'] }}</span>
     </div>
     @endif

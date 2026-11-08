@@ -21,6 +21,11 @@ Route::middleware('auth:sanctum')->group(function () {
         return $request->user();
     });
 
+    // Modification de mot de passe & code par email (SMTP)
+    Route::post('/user/send-password-code', [UserController::class, 'sendPasswordCode'])->middleware('throttle:3,1');
+    Route::post('/user/change-password', [UserController::class, 'changePassword'])->middleware('throttle:10,1');
+    Route::post('/change-password', [UserController::class, 'changePassword'])->middleware('throttle:10,1');
+
     Route::apiResource('users', UserController::class)->only(['update', 'destroy']);
 
     Route::apiResource('fournisseurs', FournisseurController::class);

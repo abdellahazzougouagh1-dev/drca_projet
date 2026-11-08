@@ -6,7 +6,8 @@
     <style>
         @page { margin: 8mm 10mm 8mm 10mm; size: A4 portrait; }
         * { box-sizing: border-box; }
-        body { font-family: "DejaVu Sans", Arial, sans-serif; font-size: 10px; line-height: 1.3; margin: 0; padding: 0; color: #000; }
+        body { font-family: "Times New Roman", Times, serif; font-size: 11px; line-height: 1.35; margin: 0; padding: 0; color: #000; }
+        td, th { font-family: "Times New Roman", Times, serif; }
 
         .hdr { width: 100%; border-collapse: collapse; margin-bottom: 3px; }
         .hdr td { vertical-align: middle; padding: 0; }
@@ -35,6 +36,7 @@
         .sig-table th { background: #d9d9d9; font-weight: bold; text-align: center; padding: 5px; border: 1px solid #000; font-size: 10.5px; }
         .sig-table td { height: 70px; border: 1px solid #000; vertical-align: top; }
     </style>
+    @include('documents.partials.bc_typography')
 </head>
 <body>
 
@@ -146,7 +148,7 @@
         <td class="tvalue">{{ number_format($montantNet, 2, ',', ' ') }}</td>
     </tr>
     <tr>
-        <td class="tlabel" style="background:#fff;">En lettres</td>
+        <td class="tlabel" style="background:#fff;">En lettres :</td>
         <td class="tvalue" style="background:#fff; font-style:italic; font-weight:normal; text-align:left; font-size:9px;">{{ $netLettres }}</td>
     </tr>
 </table>

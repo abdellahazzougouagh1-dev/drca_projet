@@ -10,9 +10,9 @@
         }
         body { 
             font-family: 'Times New Roman', Times, serif; 
-            font-size: 15px; 
+            font-size: 13.5px; 
             color: #000; 
-            line-height: 1.6; 
+            line-height: 1.5; 
             margin: 0; 
             padding: 0; 
         }
@@ -39,9 +39,9 @@
         }
         
         .ref-date-table { 
-            margin-bottom: 40px; 
+            margin-bottom: 30px; 
             margin-top: 10px; 
-            font-family: Arial, sans-serif; 
+            font-family: 'Times New Roman', Times, serif; 
             font-size: 13px; 
         }
         .ref-date-table td { 
@@ -98,6 +98,7 @@
             line-height: 1.4;
         }
     </style>
+    @include('documents.partials.bc_typography')
 </head>
 <body>
 
@@ -162,42 +163,42 @@
                 N° ........ /DRCA-RSK/{{ $annee }}
             </td>
             <td style="width: 50%; text-align: right;">
-                Kénitra le: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <strong>{{ $dateJour }}</strong>
+                Kénitra, le : &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <strong>{{ $dateJour }}</strong>
             </td>
         </tr>
     </table>
 
     <div class="title-container">
-        <div class="title">ATTESTATION DE REFERENCE</div>
+        <div class="title">ATTESTATION DE RÉFÉRENCE</div>
         <div class="ornament">&#10086; &sim;&sim;&sim; &#10086; &sim;&sim;&sim; &#10086;</div>
     </div>
 
     <div style="margin-bottom: 20px; text-indent: 40px;">
-        Je soussigné Monsieur Le Directeur Régional de l'office National du Conseil agricole de Rabat-Salé-Kénitra
+        Je soussigné, Monsieur le Directeur Régional de l'Office National du Conseil Agricole de Rabat-Salé-Kénitra,
     </div>
 
     <table class="content-table">
         <tr>
-            <td class="label">Attestons que la Société</td>
+            <td class="label">Atteste que la société :</td>
             <td class="value">{{ $fournisseur->raison_sociale }}</td>
         </tr>
         <tr>
-            <td class="label">Faisant élection de domicile à</td>
+            <td class="label">Faisant élection de domicile à :</td>
             <td class="value">{{ $fournisseur->adresse }}</td>
         </tr>
         <tr>
-            <td class="label">Ville</td>
+            <td class="label">Ville :</td>
             <td class="value">{{ $fournisseur->ville ?? '' }}</td>
         </tr>
     </table>
 
     <div class="paragraph">
-        A exécuté pour le compte de notre Direction durant l'année {{ $anneePrecedente }}-{{ $annee }}<br><br>
-        Les prestations objet du {{ $typeEng }} N° <strong>{{ $numeroRef }}</strong>
+        a exécuté pour le compte de notre Direction durant les années {{ $anneePrecedente }}-{{ $annee }} :<br><br>
+        les prestations objet {{ $typeEng === 'Bon de Commande' ? 'du Bon de Commande' : 'de la Convention' }} N° <strong>{{ $numeroRef }}</strong>
     </div>
 
     <div class="paragraph">
-        Ayant pour objet:
+        Ayant pour objet :
     </div>
     <div class="paragraph" style="font-weight: bold; margin-bottom: 30px;">
         {{ $consultation->objet_consultation }}
@@ -205,18 +206,18 @@
 
     <table class="content-table">
         <tr>
-            <td class="label">Pour un montant de:</td>
-            <td class="value">{{ number_format($montantTotal, 2, ',', ' ') }} MAD</td>
+            <td class="label">Pour un montant de :</td>
+            <td class="value">{{ number_format($montantTotal, 2, ',', ' ') }} MAD TTC</td>
         </tr>
         <tr>
-            <td class="label">En lettres</td>
+            <td class="label">En lettres :</td>
             <td class="value">{{ $montantEnLettres ?? '#NOM?' }}</td>
         </tr>
     </table>
 
     <div class="paragraph" style="margin-top: 40px;">
-        Les prestations sont réalisées conformément aux règles de l'art.<br>
-        La présente attestation est délivrée sur demande dudit prestataire pour servir et valoir ce que de droit
+        Les prestations ont été réalisées conformément aux règles de l'art.<br>
+        La présente attestation est délivrée sur la demande dudit prestataire pour servir et valoir ce que de droit.
     </div>
 
     <div class="signature-box">

@@ -9,12 +9,12 @@
             margin: 10mm 15mm 24mm 15mm;
         }
         body {
-            font-family: Arial, Helvetica, sans-serif;
-            font-size: 12.5px;
+            font-family: "Times New Roman", Times, serif;
+            font-size: 12px;
             color: #000;
             margin: 0;
             padding: 0;
-            line-height: 1.35;
+            line-height: 1.4;
         }
         .page-break {
             page-break-after: always;
@@ -171,6 +171,7 @@
             margin-bottom: 2px;
         }
     </style>
+    @include('documents.partials.bc_typography')
 </head>
 <body>
 
@@ -283,20 +284,20 @@
                     N° &nbsp;&nbsp; {{ $lettreNumero }}
                 </td>
                 <td style="width: 50%; text-align: right; font-weight: bold; font-size: 13px;">
-                    Kénitra le: {{ \Carbon\Carbon::parse($dateLettre)->format('d/m/Y') }}
+                    Kénitra, le : {{ \Carbon\Carbon::parse($dateLettre)->format('d/m/Y') }}
                 </td>
             </tr>
         </table>
 
         <!-- Expéditeur -->
         <div class="sender-section">
-            <div class="sender-title">Le Directeur Régional du Conseil Agricole Rabat-Salé-Kénitra</div>
+            <div class="sender-title">Le Directeur Régional du Conseil Agricole de Rabat-Salé-Kénitra</div>
             <div class="sender-city">Kénitra</div>
         </div>
 
         <!-- Destinataire -->
         <div class="recipient-section">
-            <div class="recipient-label">A</div>
+            <div class="recipient-label">À</div>
             <div class="recipient-title">{{ $destinataireNom }}</div>
             <div class="recipient-company">{{ $societe }}</div>
             <div class="recipient-address">{{ $destinataireAdresse }}</div>
@@ -321,7 +322,7 @@
         <div class="salutation-text">Monsieur,</div>
 
         <div class="body-p">
-            J’ai l’honneur de vous informer que la Direction Régionale du Conseil Agricole de Rabat-Salé-Kénitra envisage la réalisation des prestations relatives au:
+            J’ai l’honneur de vous informer que la Direction Régionale du Conseil Agricole de Rabat-Salé-Kénitra envisage la réalisation des prestations relatives à :
         </div>
 
         <!-- Objet de la consultation -->
@@ -331,19 +332,19 @@
 
         <!-- Paragraphe 2 (Annexe) -->
         <div class="body-p">
-            Les prestations objet de la présente consultation figurent dans l’annexe ci-joint.
+            Les prestations objet de la présente consultation figurent dans l’annexe ci-jointe.
         </div>
 
         <!-- Encadré d'instructions -->
         <div class="framed-instructions">
-            Si vous êtes intéressés par cette offre, je vous demanderais de bien vouloir faire parvenir à la direction régionale du conseil agricole de Rabat-Salé-Kénitra, sise au Angle rue Sebta bd mohamed V (à coteé de bank el maghreb)-Kénitra, votre meilleure offre de prix (toutes taxes comprises) sous pli fermé et cacheté portant mention suivante:
+            Si vous êtes intéressé par cette offre, je vous prie de bien vouloir faire parvenir à la Direction Régionale du Conseil Agricole de Rabat-Salé-Kénitra, sise à l'angle de la rue Sebta et du boulevard Mohammed V (à côté de Bank Al-Maghrib) - Kénitra, votre meilleure offre de prix (toutes taxes comprises), sous pli fermé et cacheté portant la mention suivante :
         </div>
 
         <!-- Tableau mention « Offre de Prix N° ... » -->
         <table class="mention-box-table">
             <tr>
                 <td style="width: 28%; text-align: center; text-decoration: underline; font-weight: bold;">
-                    «Offre de Prix N°
+                    « Offre de prix N°
                 </td>
                 <td style="width: 36%; text-align: center; text-decoration: underline; font-weight: bold;">
                     {{ $numeroConsultationClean }}
@@ -378,7 +379,7 @@
         @endphp
         @if(!empty($pjItems))
         <div class="attachments">
-            <div style="font-weight: bold; text-decoration: underline; margin-bottom: 3px;">Pièces Jointes :</div>
+            <div style="font-weight: bold; text-decoration: underline; margin-bottom: 3px;">Pièces jointes :</div>
             <ul>
                 @foreach($pjItems as $piece)
                     <li>- {{ trim($piece) }}</li>

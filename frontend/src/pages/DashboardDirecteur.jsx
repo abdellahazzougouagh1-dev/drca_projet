@@ -839,7 +839,6 @@ export default function DashboardDirecteur() {
             </Link>
             <div className="hidden lg:flex items-center gap-4">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Plateforme sécurisée</p>
                 <p className="mt-1 flex items-center gap-2 text-sm font-bold text-slate-700"><ShieldCheck size={16} className="text-[#087F5B]" /> Espace décisionnel Directeur</p>
               </div>
             </div>
