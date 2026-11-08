@@ -12,7 +12,7 @@
             font-family: "Times New Roman", Times, serif;
             font-size: 10.5px;
             color: #000;
-            line-height: 1.3;
+            line-height: 1.45;
             margin: 0;
             padding: 0;
         }
@@ -40,20 +40,20 @@
             width: 100%;
             border: 1px solid #000;
             border-collapse: collapse;
-            margin-bottom: 5px;
+            margin-bottom: 10px;
             font-size: 10px;
         }
         .bordered-table th {
             border: 1px solid #000;
             background-color: #f8fafc;
-            padding: 3px 4px;
+            padding: 5px 4px;
             font-weight: bold;
             text-align: center;
             font-size: 10px;
         }
         .bordered-table td {
             border: 1px solid #000;
-            padding: 3px 4px;
+            padding: 5px 4px;
             font-size: 10px;
         }
     </style>
@@ -126,7 +126,7 @@
 @endphp
 
     <!-- 1. EN-TÊTE OFFICIEL -->
-    <table style="width: 100%; border-collapse: collapse; margin-bottom: 5px;">
+    <table style="width: 100%; border-collapse: collapse; margin-bottom: 10px;">
         <tr>
             <td style="width: 25%; text-align: left; vertical-align: middle;">
                 @if($logoOnca)
@@ -145,29 +145,29 @@
     </table>
 
     <!-- 2. TITRE PRINCIPAL ENCADRE -->
-    <div style="border: 2px solid #000; padding: 5px 8px; text-align: center; font-weight: bold; font-size: 13px; text-transform: uppercase; margin-bottom: 5px;">
+    <div style="border: 2px solid #000; padding: 7px 8px; text-align: center; font-weight: bold; font-size: 13px; text-transform: uppercase; margin-bottom: 10px;">
         PROCÈS-VERBAL D'OUVERTURE DES PLIS
     </div>
 
     <!-- 3. REFERENCE DE LA CONSULTATION -->
-    <table style="width: 100%; border: 1px solid #000; border-collapse: collapse; margin-bottom: 5px;">
+    <table style="width: 100%; border: 1px solid #000; border-collapse: collapse; margin-bottom: 10px;">
         <tr>
-            <td style="width: 50%; text-align: right; padding: 3px 12px; font-size: 10px; font-weight: bold; border-right: 1px solid #000;">
+            <td style="width: 50%; text-align: right; padding: 5px 12px; font-size: 10px; font-weight: bold; border-right: 1px solid #000;">
                 Consultation
             </td>
-            <td style="width: 50%; text-align: left; padding: 3px 12px; font-size: 10px; font-weight: bold;">
+            <td style="width: 50%; text-align: left; padding: 5px 12px; font-size: 10px; font-weight: bold;">
                 {{ $numeroConsultationClean }}
             </td>
         </tr>
     </table>
 
     <!-- 4. TEXTE DE PRESENTATION DE LA COMMISSION -->
-    <div style="font-size: 9.5px; line-height: 1.35; margin-bottom: 4px;">
+    <div style="font-size: 9.5px; line-height: 1.45; margin-bottom: 8px;">
         En date du <strong>{{ $doc['date_reunion'] }}</strong> &nbsp; à &nbsp; <strong>{{ $doc['heure_reunion'] }}</strong> &nbsp; la commission d’ouverture des plis instituée par la décision N° &nbsp; <strong>{{ $doc['numero_decision'] }}</strong> &nbsp; en date du &nbsp; <strong>{{ $doc['date_decision'] }}</strong> &nbsp; composée de :
     </div>
 
     <!-- 5. TABLEAU DE LA COMMISSION -->
-    <table class="bordered-table" style="margin-bottom: 5px;">
+    <table class="bordered-table" style="margin-bottom: 10px;">
         <thead>
             <tr>
                 <th style="width: 35%; text-align: left;">Nom et Prénom</th>
@@ -178,25 +178,25 @@
         <tbody>
             @foreach($comm as $m)
             <tr>
-                <td style="padding: 2.5px 5px;">{{ data_get($m, 'nom') }}</td>
-                <td style="padding: 2.5px 5px;">{{ data_get($m, 'fonction') }}</td>
-                <td style="padding: 2.5px 5px;">{{ data_get($m, 'qualite', 'Membre') }}</td>
+                <td style="padding: 4px 5px;">{{ data_get($m, 'nom') }}</td>
+                <td style="padding: 4px 5px;">{{ data_get($m, 'fonction') }}</td>
+                <td style="padding: 4px 5px;">{{ data_get($m, 'qualite', 'Membre') }}</td>
             </tr>
             @endforeach
         </tbody>
     </table>
 
     <!-- 6. DETAILS DE LA PRESTATION ET DES LETTRES -->
-    <div style="font-size: 10px; line-height: 1.35; margin-bottom: 2px;">
+    <div style="font-size: 10px; line-height: 1.45; margin-bottom: 7px;">
         S’est réunie au siège de la DRCA-RSK en vue de procéder à l’ouverture des plis concernant l’offre de prix N° &nbsp; <strong>{{ $numeroConsultationClean }}</strong> &nbsp; relative à la prestation de :
     </div>
-    <div style="font-size: 10.5px; font-weight: bold; margin: 3px 0 3px 10px;">
+    <div style="font-size: 10.5px; font-weight: bold; margin: 6px 0 7px 10px;">
         {{ $doc['objet'] }}
     </div>
-    <div style="font-size: 10px; margin-bottom: 2px;">
+    <div style="font-size: 10px; margin-bottom: 7px;">
         {{ $isMultipleLettres ? 'Numéros des lettres de consultation' : 'Numéro de la lettre de consultation' }} : &nbsp; <strong>{{ $lettresRefsClean }}</strong>
     </div>
-    <div style="font-size: 10px; margin-bottom: 4px;">
+    <div style="font-size: 10px; margin-bottom: 8px;">
         La liste des fournisseurs qui ont été respectivement consultés est la suivante :
     </div>
 
@@ -214,7 +214,7 @@
             @php $countF = max(3, count($fournisseursConsultes)); @endphp
             @for($i = 0; $i < $countF; $i++)
             @php $f = $fournisseursConsultes[$i] ?? null; @endphp
-            <tr style="height: 22px;">
+            <tr style="height: 28px;">
                 <td style="text-align: center;">{{ $i + 1 }}</td>
                 <td style="text-align: center; font-weight: bold; text-transform: uppercase;">
                     {{ $f ? data_get($f, 'nom', data_get($f, 'raison_sociale', '')) : '' }}
@@ -231,7 +231,7 @@
     </table>
 
     <!-- 8. PHRASE INTRODUCTIVE DES OFFRES REÇUES -->
-    <div style="font-size: 10px; line-height: 1.35; margin-bottom: 4px;">
+    <div style="font-size: 10px; line-height: 1.45; margin-bottom: 8px;">
         L’ouverture des plis contenant les propositions faites par les concurrents et parvenues par courrier ou déposées auprès de la DRCA-RSK a donné les résultats suivants :
     </div>
 
@@ -257,7 +257,7 @@
                 $mAvant = $c ? (data_get($c, 'montant_avant') ?? data_get($c, 'montant')) : null;
                 $mApres = $c ? (data_get($c, 'montant_apres') ?? data_get($c, 'montant')) : null;
             @endphp
-            <tr style="height: 20px;">
+            <tr style="height: 26px;">
                 <td style="text-align: center;">{{ $i + 1 }}</td>
                 <td style="font-weight: bold; text-transform: uppercase; padding-left: 6px;">
                     {{ $nomC }}
@@ -282,35 +282,35 @@
     </table>
 
     <!-- 10. DECISION D'ATTRIBUTION ET MONTANT -->
-    <div style="font-size: 10px; line-height: 1.35; margin-bottom: 2px;">
+    <div style="font-size: 10px; line-height: 1.45; margin-bottom: 7px;">
         Enfin, la commission a décidé de proposer à l’autorité compétente de retenir l’offre qu’elle juge la plus avantageuse pour l’administration, présentée par la société :
     </div>
-    <table class="bordered-table" style="margin-bottom: 4px;">
+    <table class="bordered-table" style="margin-bottom: 10px;">
         <tr>
-            <td colspan="2" style="text-align: center; font-weight: bold; font-size: 11px; text-transform: uppercase; padding: 4px 6px; background-color: #ffffff;">
+            <td colspan="2" style="text-align: center; font-weight: bold; font-size: 11px; text-transform: uppercase; padding: 6px; background-color: #ffffff;">
                 {{ $doc['attributaire'] ?? '' }}
             </td>
         </tr>
         <tr>
-            <td style="width: 45%; padding: 3px 6px;">
+            <td style="width: 45%; padding: 5px 6px;">
                 Pour un montant global (TTC) de :
             </td>
-            <td style="width: 55%; padding: 3px 6px; font-weight: bold; text-align: center;">
+            <td style="width: 55%; padding: 5px 6px; font-weight: bold; text-align: center;">
                 {{ (float)($doc['montant_retenu'] ?? 0) > 0 ? number_format((float)$doc['montant_retenu'], 2, ',', ' ') . ' DH TTC' : '-' }}
             </td>
         </tr>
         <tr>
-            <td style="width: 45%; padding: 3px 6px;">
+            <td style="width: 45%; padding: 5px 6px;">
                 En lettres :
             </td>
-            <td style="width: 55%; padding: 3px 6px; font-weight: bold;">
+            <td style="width: 55%; padding: 5px 6px; font-weight: bold;">
                 {{ (float)($doc['montant_retenu'] ?? 0) > 0 ? ($doc['montant_en_lettres'] ?? '-') : '-' }}
             </td>
         </tr>
     </table>
 
     <!-- 11. CLÔTURE DE SEANCE ET DATE -->
-    <table style="width: 100%; margin-bottom: 4px; font-size: 10px;">
+    <table style="width: 100%; margin-bottom: 10px; font-size: 10px;">
         <tr>
             <td style="width: 50%; vertical-align: middle;">
                 La séance est levée le même jour &nbsp;&nbsp; à &nbsp;&nbsp; <strong>{{ $doc['heure_fin'] ?? '13:15' }}</strong>
@@ -325,18 +325,18 @@
     <table class="bordered-table" style="text-align: center; margin-bottom: 0;">
         <thead>
             <tr style="background-color: #f8fafc; font-weight: bold;">
-                <th style="width: 33.33%; text-align: center; padding: 2.5px 4px;">Président</th>
-                <th style="width: 33.33%; text-align: center; padding: 2.5px 4px;">Membre 1</th>
-                <th style="width: 33.33%; text-align: center; padding: 2.5px 4px;">Membre 2</th>
+                <th style="width: 33.33%; text-align: center; padding: 5px 4px;">Président</th>
+                <th style="width: 33.33%; text-align: center; padding: 5px 4px;">Membre 1</th>
+                <th style="width: 33.33%; text-align: center; padding: 5px 4px;">Membre 2</th>
             </tr>
         </thead>
         <tbody>
             <tr style="font-weight: bold;">
-                <td style="padding: 3px 4px;">{{ $presidentName }}</td>
-                <td style="padding: 3px 4px;">{{ $membre1Name }}</td>
-                <td style="padding: 3px 4px;">{{ $membre2Name }}</td>
+                <td style="padding: 5px 4px;">{{ $presidentName }}</td>
+                <td style="padding: 5px 4px;">{{ $membre1Name }}</td>
+                <td style="padding: 5px 4px;">{{ $membre2Name }}</td>
             </tr>
-            <tr style="height: 48px;">
+            <tr style="height: 78px;">
                 <td style="vertical-align: bottom; padding-bottom: 3px; font-size: 7.5px; color: #888;">(Signature)</td>
                 <td style="vertical-align: bottom; padding-bottom: 3px; font-size: 7.5px; color: #888;">(Signature)</td>
                 <td style="vertical-align: bottom; padding-bottom: 3px; font-size: 7.5px; color: #888;">(Signature)</td>
@@ -346,4 +346,3 @@
 
 </body>
 </html>
-
