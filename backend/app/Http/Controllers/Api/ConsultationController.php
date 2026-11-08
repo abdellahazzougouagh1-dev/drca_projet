@@ -344,32 +344,30 @@ class ConsultationController extends Controller
                 ];
             }, $validated['prestations']);
 
-            DB::transaction(function () use ($consultation, $prestations) {
-                // Remove old prestations
+            // Keep the delete and inserts as separate statements so PostgreSQL
+            // exposes the original constraint error instead of only 25P02.
+            try {
+                $consultation->prestations()->delete();
+            } catch (\Throwable $e) {
+                Log::error('Échec de la suppression des prestations', [
+                    'consultation_id' => $consultation->id,
+                    'exception' => $this->exceptionDetails($e),
+                ]);
+                throw $e;
+            }
+
+            foreach ($prestations as $prestationData) {
                 try {
-                    $consultation->prestations()->delete();
+                    $consultation->prestations()->create($prestationData);
                 } catch (\Throwable $e) {
-                    Log::error('Échec de la suppression des prestations', [
+                    Log::error('Échec de la création d’une prestation', [
                         'consultation_id' => $consultation->id,
+                        'data' => $prestationData,
                         'exception' => $this->exceptionDetails($e),
                     ]);
                     throw $e;
                 }
-
-                // Create new ones
-                foreach ($prestations as $prestationData) {
-                    try {
-                        $consultation->prestations()->create($prestationData);
-                    } catch (\Throwable $e) {
-                        Log::error('Échec de la création d’une prestation', [
-                            'consultation_id' => $consultation->id,
-                            'data' => $prestationData,
-                            'exception' => $this->exceptionDetails($e),
-                        ]);
-                        throw $e;
-                    }
-                }
-            });
+            }
 
             return response()->json([
                 'message' => 'Prestations enregistrées avec succès.',
