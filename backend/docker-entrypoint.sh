@@ -5,9 +5,13 @@ set -e
 PORT="${PORT:-80}"
 sed -i "s/80/$PORT/g" /etc/apache2/ports.conf /etc/apache2/sites-available/*.conf
 
-# Automatically run database migrations & realistic seeders on Neon / PostgreSQL
+# Run schema migrations before starting Apache. Seeders are opt-in because some
+# production seeders are large and must not delay the web server startup.
 php artisan migrate --force
-php artisan db:seed --force || true
+
+if [ "${RUN_SEEDERS:-false}" = "true" ]; then
+    php artisan db:seed --force
+fi
 
 # Optimize configuration and routes
 php artisan config:cache || true
