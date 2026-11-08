@@ -385,7 +385,7 @@ class ConsultationController extends Controller
             return response()->json([
                 'error' => 'Erreur lors de l\'enregistrement des prestations.',
                 'message' => app()->hasDebugModeEnabled()
-                    ? $this->exceptionDetails($e)['message']
+                    ? $this->exceptionDetails($e)['root_cause']
                     : 'Une erreur base de données est survenue.',
             ], 500);
         }
@@ -394,16 +394,14 @@ class ConsultationController extends Controller
     private function exceptionDetails(\Throwable $exception): array
     {
         $previous = $exception->getPrevious();
+        $previousDetails = $previous ? $this->exceptionDetails($previous) : null;
 
         return [
             'class' => $exception::class,
             'message' => $exception->getMessage(),
             'code' => $exception->getCode(),
-            'previous' => $previous ? [
-                'class' => $previous::class,
-                'message' => $previous->getMessage(),
-                'code' => $previous->getCode(),
-            ] : null,
+            'previous' => $previousDetails,
+            'root_cause' => $previousDetails['root_cause'] ?? $exception->getMessage(),
         ];
     }
 
