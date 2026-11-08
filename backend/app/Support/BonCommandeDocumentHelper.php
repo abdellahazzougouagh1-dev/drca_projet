@@ -142,7 +142,7 @@ class BonCommandeDocumentHelper
 
         $finalNumeroConsultation = self::value($documentData, 'numero_consultation', $consultation->numero_consultation);
         $isConventionDoc = (!empty($consultation) && (in_array($consultation->mode_engagement, ['Convention', 'Contrat']) || str_starts_with(strtoupper($consultation->numero_consultation ?? ''), 'CONV')))
-            || in_array($type, ['lettre_consultation', 'decision_commission_ouverture', 'pv_ouverture_convention', 'pv_ouverture_attribution', 'ordre_service_convention'], true)
+            || in_array($documentType, ['lettre_consultation', 'decision_commission_ouverture', 'pv_ouverture_convention', 'pv_ouverture_attribution', 'ordre_service_convention'], true)
             || str_starts_with(strtoupper((string)$finalNumeroConsultation), 'CONV');
 
         if ($isConventionDoc && $finalNumeroConsultation) {
