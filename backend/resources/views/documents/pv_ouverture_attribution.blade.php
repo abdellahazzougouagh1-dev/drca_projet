@@ -7,9 +7,9 @@
         @page { margin: 115px 40px 70px 40px; }
         body {
             font-family: 'Times New Roman', Times, serif;
-            font-size: 14px;
+            font-size: 16px;
             color: #000;
-            line-height: 1.5;
+            line-height: 1.6;
             margin: 0;
         }
         table { width: 100%; border-collapse: collapse; }
@@ -22,7 +22,7 @@
 
         /* HEADER LOGOS STYLING */
         .header-table { width: 100%; border-collapse: collapse; margin-bottom: 5px; margin-top: 0; }
-        .header-center { text-align: center; font-size: 12px; font-weight: bold; line-height: 1.25; }
+        .header-center { text-align: center;         font-size: 14px; font-weight: bold; line-height: 1.25; }
         .header-logo { height: 45px; width: auto; }
         .header-line {
             border-bottom: 2px solid #000080;
@@ -53,18 +53,18 @@
             border: 1.5px solid #000;
             border-collapse: collapse;
             margin-bottom: 9px;
-            font-size: 9.5px;
+            font-size: 11px;
         }
         .grid-table th {
             border: 1px solid #000;
             background-color: #f1f5f9;
-            padding: 4px 6px;
+            padding: 6px 7px;
             font-weight: bold;
             text-align: center;
         }
         .grid-table td {
             border: 1px solid #000;
-            padding: 4px 6px;
+            padding: 6px 7px;
             vertical-align: middle;
         }
     </style>
@@ -85,7 +85,7 @@
     <!-- TITRE PRINCIPAL ET NUMERO D'AVIS -->
     <table style="width: 100%; border: 1.5px solid #000; border-collapse: collapse; text-align: center; margin-top: 4px; margin-bottom: 9px;">
         <tr>
-            <td style="padding: 5px; font-size: 13px; font-weight: bold; text-transform: uppercase; border-bottom: 1.5px solid #000;">
+            <td style="padding: 5px;             font-size: 15px; font-weight: bold; text-transform: uppercase; border-bottom: 1.5px solid #000;">
                 PROCÈS-VERBAL D'EXAMEN DES DEVIS
             </td>
         </tr>
@@ -93,10 +93,10 @@
             <td style="padding: 0;">
                 <table style="width: 100%; border-collapse: collapse;">
                     <tr>
-                        <td style="width: 50%; text-align: center; border-right: 1.5px solid #000; padding: 3px; font-weight: bold; text-transform: uppercase; font-size: 10px;">
+                        <td style="width: 50%; text-align: center; border-right: 1.5px solid #000; padding: 3px; font-weight: bold; text-transform: uppercase;                         font-size: 11px;">
                             AVIS D'ACHAT N° :
                         </td>
-                        <td style="width: 50%; text-align: center; padding: 3px; font-weight: bold; font-size: 10px;">
+                        <td style="width: 50%; text-align: center; padding: 3px; font-weight: bold;                         font-size: 11px;">
                             {{ $numeroConsultationDisplay }}
                         </td>
                     </tr>
@@ -106,12 +106,12 @@
     </table>
 
     <!-- DATE ET HEURE DE SEANCE -->
-    <div style="margin-bottom: 8px; font-weight: bold; font-size: 10px;">
+    <div style="margin-bottom: 8px;     font-weight: bold; font-size: 11px;">
         En date du {{ $doc['date_reunion'] }} &nbsp;&nbsp;&nbsp;&nbsp; : &nbsp;&nbsp;&nbsp;&nbsp; {{ $doc['heure_reunion'] }}
     </div>
 
     <!-- EN-TETE COMMISSION ET PRESTATION -->
-    <table style="width: 100%; border: 1.5px solid #000; border-collapse: collapse; margin-bottom: 9px; font-size: 9.5px;">
+    <table style="width: 100%; border: 1.5px solid #000; border-collapse: collapse; margin-bottom: 9px;     font-size: 11px;">
         <tr>
             <td style="padding: 5px; border-bottom: 1.5px solid #000;">
                 <table style="width: 100%; border-collapse: collapse;">
@@ -127,7 +127,7 @@
         <tr>
             <td style="padding: 4px 6px;">
                 <div>relative à la prestation de :</div>
-                <div style="text-align: center; font-weight: bold; margin-top: 3px; padding: 0 6px; font-size: 10px;">
+                <div style="text-align: center; font-weight: bold; margin-top: 3px; padding: 0 6px; font-size: 11px;">
                     {{ $doc['objet'] }}
                 </div>
             </td>
@@ -135,7 +135,7 @@
     </table>
 
     <!-- DISCOURS INTRODUCTIF -->
-    <div style="text-align: center; margin: 6px 0 8px 0; font-size: 9.5px;">
+    <div style="text-align: center; margin: 8px 0 10px 0; font-size: 11px;">
         Le déchiffrement des plis contenant les propositions faites par les concurrents et déposées sur le portail des marchés publics a donné les résultats suivants :
     </div>
 
@@ -160,7 +160,7 @@
     </table>
 
     <!-- TABLEAU 2: SOCIETES INVITEES PAR ORDRE D'OFFRE LA PLUS AVANTAGEUSE -->
-    <div style="font-weight: bold; margin-bottom: 3px; font-size: 9.5px;">
+    <div style="font-weight: bold; margin-bottom: 4px; font-size: 11px;">
         Le maître d'ouvrage invite par ordre les sociétés qui présentent l'offre la plus avantageuse :
     </div>
     <table class="grid-table" style="margin-bottom: 9px;">
@@ -186,7 +186,7 @@
     </table>
 
     <!-- SECTION 3: SOCIETES AYANT REFUSE ET MOTIF DE REFUS -->
-    <div style="font-weight: bold; margin-top: 5px; margin-bottom: 3px; font-size: 9.5px;">
+    <div style="font-weight: bold; margin-top: 7px; margin-bottom: 4px; font-size: 11px;">
         Les sociétés écartées sont :
     </div>
     <table class="grid-table" style="margin-bottom: 9px;">
@@ -217,30 +217,30 @@
     </table>
 
     <!-- SECTION 4: DECISION D'ATTRIBUTION ET MONTANT -->
-    <div style="margin-top: 5px; margin-bottom: 3px; font-size: 9.5px;">
+    <div style="margin-top: 7px; margin-bottom: 4px; font-size: 11px;">
         Le maître d'ouvrage décide de retenir l'offre qu'il juge la plus avantageuse présentée ici par la société :
     </div>
-    <div style="font-weight: bold; margin-bottom: 3px; font-size: 9.5px;">
+    <div style="font-weight: bold; margin-bottom: 4px; font-size: 11px;">
         ayant confirmé son offre
     </div>
     <div style="text-align: center; font-weight: bold; font-size: 11.5px; text-transform: uppercase; margin: 4px 0;">
         {{ $doc['attributaire'] }}
     </div>
     @if(!empty($doc['motif_attribution']))
-    <div style="margin: 4px 0; font-size: 9.5px; text-align: center;">
+    <div style="margin: 6px 0; font-size: 11px; text-align: center;">
         <span style="font-weight: bold;">Motif de retenue :</span> 
         <span style="font-style: italic;">{{ $doc['motif_attribution'] }}</span>
     </div>
     @endif
-    <div style="margin: 4px 0; font-size: 10px;">
+    <div style="margin: 6px 0; font-size: 11px;">
         Pour un montant global (TTC) de &nbsp;&nbsp;&nbsp;&nbsp;<span style="font-weight: bold; font-size: 11px;">{{ number_format((float) $doc['montant_retenu'], 2, ',', ' ') }}</span> &nbsp;&nbsp;&nbsp;&nbsp; <strong>DH</strong>
     </div>
-    <div style="margin-bottom: 8px; font-size: 9.5px;">
+    <div style="margin-bottom: 10px; font-size: 11px;">
         En lettres : <span style="font-weight: bold;">{{ $doc['montant_en_lettres'] }}</span>
     </div>
 
     <!-- SECTION 5: HEURE LEVEE DE SEANCE ET DATE -->
-    <table style="width: 100%; margin: 6px 0 9px 0; font-size: 9.5px;">
+    <table style="width: 100%; margin: 8px 0 11px 0; font-size: 11px;">
         <tr>
             <td style="width: 50%;">
                 La séance est levée &nbsp;&nbsp;&nbsp;&nbsp; à &nbsp;&nbsp;&nbsp;&nbsp; <span class="bold">{{ $doc['heure_fin'] }}</span>
@@ -252,10 +252,10 @@
     </table>
 
     <!-- SECTION 6: MEMBRES DE LA COMMISSION -->
-    <div style="font-weight: bold; margin-bottom: 4px; font-size: 9.5px;">
+    <div style="font-weight: bold; margin-bottom: 5px; font-size: 11px;">
         Membres de la commission :
     </div>
-    <table style="width: 100%; border: 1.5px solid #000; border-collapse: collapse; margin-bottom: 9px; font-size: 9.5px;">
+    <table style="width: 100%; border: 1.5px solid #000; border-collapse: collapse; margin-bottom: 11px; font-size: 11px;">
         <tr style="background: #f8fafc;">
             @foreach($doc['commission'] as $m)
                 <td style="border: 1px solid #000; padding: 4px; text-align: center; font-weight: bold; width: {{ 100 / max(1, count($doc['commission'])) }}%;">
