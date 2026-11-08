@@ -10,9 +10,9 @@
         }
         body {
             font-family: "Times New Roman", Times, serif;
-            font-size: 10.5px;
+            font-size: 12px;
             color: #000;
-            line-height: 1.45;
+            line-height: 1.6;
             margin: 0;
             padding: 0;
         }
@@ -40,21 +40,21 @@
             width: 100%;
             border: 1px solid #000;
             border-collapse: collapse;
-            margin-bottom: 10px;
-            font-size: 10px;
+            margin-bottom: 12px;
+            font-size: 12.5px;
         }
         .bordered-table th {
             border: 1px solid #000;
             background-color: #f8fafc;
-            padding: 5px 4px;
+            padding: 7px 5px;
             font-weight: bold;
             text-align: center;
-            font-size: 10px;
+            font-size: 12.5px;
         }
         .bordered-table td {
             border: 1px solid #000;
-            padding: 5px 4px;
-            font-size: 10px;
+            padding: 7px 5px;
+            font-size: 12.5px;
         }
     </style>
     @include('documents.partials.bc_typography')
@@ -152,10 +152,10 @@
     <!-- 3. REFERENCE DE LA CONSULTATION -->
     <table style="width: 100%; border: 1px solid #000; border-collapse: collapse; margin-bottom: 10px;">
         <tr>
-            <td style="width: 50%; text-align: right; padding: 5px 12px; font-size: 10px; font-weight: bold; border-right: 1px solid #000;">
+            <td style="width: 50%; text-align: right; padding: 6px 12px; font-size: 11px; font-weight: bold; border-right: 1px solid #000;">
                 Consultation
             </td>
-            <td style="width: 50%; text-align: left; padding: 5px 12px; font-size: 10px; font-weight: bold;">
+            <td style="width: 50%; text-align: left; padding: 6px 12px; font-size: 11px; font-weight: bold;">
                 {{ $numeroConsultationClean }}
             </td>
         </tr>
@@ -187,16 +187,16 @@
     </table>
 
     <!-- 6. DETAILS DE LA PRESTATION ET DES LETTRES -->
-    <div style="font-size: 10px; line-height: 1.45; margin-bottom: 7px;">
+    <div style="font-size: 11px; line-height: 1.55; margin-bottom: 9px;">
         S’est réunie au siège de la DRCA-RSK en vue de procéder à l’ouverture des plis concernant l’offre de prix N° &nbsp; <strong>{{ $numeroConsultationClean }}</strong> &nbsp; relative à la prestation de :
     </div>
-    <div style="font-size: 10.5px; font-weight: bold; margin: 6px 0 7px 10px;">
+    <div style="font-size: 11.5px; font-weight: bold; margin: 8px 0 9px 10px;">
         {{ $doc['objet'] }}
     </div>
-    <div style="font-size: 10px; margin-bottom: 7px;">
+    <div style="font-size: 11px; margin-bottom: 9px;">
         {{ $isMultipleLettres ? 'Numéros des lettres de consultation' : 'Numéro de la lettre de consultation' }} : &nbsp; <strong>{{ $lettresRefsClean }}</strong>
     </div>
-    <div style="font-size: 10px; margin-bottom: 8px;">
+    <div style="font-size: 11px; margin-bottom: 10px;">
         La liste des fournisseurs qui ont été respectivement consultés est la suivante :
     </div>
 
@@ -231,7 +231,7 @@
     </table>
 
     <!-- 8. PHRASE INTRODUCTIVE DES OFFRES REÇUES -->
-    <div style="font-size: 10px; line-height: 1.45; margin-bottom: 8px;">
+    <div style="font-size: 11px; line-height: 1.55; margin-bottom: 10px;">
         L’ouverture des plis contenant les propositions faites par les concurrents et parvenues par courrier ou déposées auprès de la DRCA-RSK a donné les résultats suivants :
     </div>
 
@@ -282,7 +282,7 @@
     </table>
 
     <!-- 10. DECISION D'ATTRIBUTION ET MONTANT -->
-    <div style="font-size: 10px; line-height: 1.45; margin-bottom: 7px;">
+    <div style="font-size: 11px; line-height: 1.55; margin-bottom: 9px;">
         Enfin, la commission a décidé de proposer à l’autorité compétente de retenir l’offre qu’elle juge la plus avantageuse pour l’administration, présentée par la société :
     </div>
     <table class="bordered-table" style="margin-bottom: 10px;">
@@ -310,7 +310,7 @@
     </table>
 
     <!-- 11. CLÔTURE DE SEANCE ET DATE -->
-    <table style="width: 100%; margin-bottom: 10px; font-size: 10px;">
+    <table style="width: 100%; margin-bottom: 12px; font-size: 11px;">
         <tr>
             <td style="width: 50%; vertical-align: middle;">
                 La séance est levée le même jour &nbsp;&nbsp; à &nbsp;&nbsp; <strong>{{ $doc['heure_fin'] ?? '13:15' }}</strong>

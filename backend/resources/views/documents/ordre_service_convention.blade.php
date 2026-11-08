@@ -10,9 +10,9 @@
         }
         body {
             font-family: "Times New Roman", Times, serif;
-            font-size: 11.5px;
+            font-size: 13px;
             color: #000;
-            line-height: 1.4;
+            line-height: 1.55;
             margin: 0;
             padding: 0;
         }
@@ -42,7 +42,7 @@
         }
         .header-line {
             border-bottom: 1.5px solid #000080;
-            margin-bottom: 8px;
+            margin-bottom: 10px;
         }
         .meta-table {
             width: 100%;
@@ -73,24 +73,24 @@
         }
         .grid-bordered td {
             border: 1px solid #000;
-            padding: 4px 6px;
-            font-size: 11.5px;
+            padding: 6px 7px;
+            font-size: 13px;
         }
         .divider {
             border-top: 1.5px solid #000;
-            margin: 10px 0 8px 0;
+            margin: 14px 0 10px 0;
         }
         .accus-title {
             text-align: center;
             font-weight: bold;
             text-decoration: underline;
-            font-size: 13.5px;
-            margin-bottom: 6px;
+            font-size: 15px;
+            margin-bottom: 9px;
             text-transform: uppercase;
         }
         .accus-table td {
-            padding: 2.5px 0;
-            font-size: 11.5px;
+            padding: 4px 0;
+            font-size: 13px;
             vertical-align: top;
         }
     </style>
@@ -188,7 +188,7 @@
         <div class="bold" style="font-size: 13px; margin-bottom: 2px;">À</div>
         <div class="bold" style="font-size: 12px; margin-bottom: 1px;">{{ $destinataireNom }}</div>
         <div class="bold uppercase" style="font-size: 12.5px; margin-bottom: 1px;">{{ $societe }}</div>
-        <div class="bold" style="font-size: 11.5px; margin-bottom: 1px;">{{ $adresseSociete }}</div>
+        <div class="bold" style="font-size: 13px; margin-bottom: 2px;">{{ $adresseSociete }}</div>
         @if($villeSociete)
             <div style="text-align: right; font-weight: bold; font-size: 12px; padding-right: 40px;" class="uppercase">
                 {{ $villeSociete }}
