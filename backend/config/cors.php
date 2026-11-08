@@ -20,7 +20,7 @@ return [
     'allowed_methods' => ['*'],
 
     'allowed_origins' => [
-        'https://drca-projet-tne2.vercel.app',
+        'https://drca-projet-zeta.vercel.app',
     ],
 
     'allowed_origins_patterns' => [],
