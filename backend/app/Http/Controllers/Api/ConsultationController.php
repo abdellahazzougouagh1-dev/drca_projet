@@ -346,11 +346,28 @@ class ConsultationController extends Controller
 
             DB::transaction(function () use ($consultation, $prestations) {
                 // Remove old prestations
-                $consultation->prestations()->delete();
+                try {
+                    $consultation->prestations()->delete();
+                } catch (\Throwable $e) {
+                    Log::error('Échec de la suppression des prestations', [
+                        'consultation_id' => $consultation->id,
+                        'exception' => $this->exceptionDetails($e),
+                    ]);
+                    throw $e;
+                }
 
                 // Create new ones
                 foreach ($prestations as $prestationData) {
-                    $consultation->prestations()->create($prestationData);
+                    try {
+                        $consultation->prestations()->create($prestationData);
+                    } catch (\Throwable $e) {
+                        Log::error('Échec de la création d’une prestation', [
+                            'consultation_id' => $consultation->id,
+                            'data' => $prestationData,
+                            'exception' => $this->exceptionDetails($e),
+                        ]);
+                        throw $e;
+                    }
                 }
             });
 
@@ -362,16 +379,32 @@ class ConsultationController extends Controller
             Log::error('Échec de l’enregistrement des prestations', [
                 'consultation_id' => $consultation->id,
                 'prestations_count' => count($validated['prestations']),
-                'exception' => $e,
+                'exception' => $this->exceptionDetails($e),
             ]);
 
             return response()->json([
                 'error' => 'Erreur lors de l\'enregistrement des prestations.',
                 'message' => app()->hasDebugModeEnabled()
-                    ? $e->getMessage()
+                    ? $this->exceptionDetails($e)['message']
                     : 'Une erreur base de données est survenue.',
             ], 500);
         }
+    }
+
+    private function exceptionDetails(\Throwable $exception): array
+    {
+        $previous = $exception->getPrevious();
+
+        return [
+            'class' => $exception::class,
+            'message' => $exception->getMessage(),
+            'code' => $exception->getCode(),
+            'previous' => $previous ? [
+                'class' => $previous::class,
+                'message' => $previous->getMessage(),
+                'code' => $previous->getCode(),
+            ] : null,
+        ];
     }
 
     public function generatePdf(Consultation $consultation)
