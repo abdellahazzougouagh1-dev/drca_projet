@@ -69,6 +69,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('notifications/lignes-existantes', [\App\Http\Controllers\Api\NotificationController::class, 'getLignesExistantes']);
     Route::apiResource('notifications', \App\Http\Controllers\Api\NotificationController::class);
     Route::get('dashboard/budget', [\App\Http\Controllers\Api\NotificationController::class, 'getDashboardStats']);
+    Route::match(['get', 'post'], 'dashboard/budget/export-excel', [\App\Http\Controllers\Api\DashboardController::class, 'exportBudgetExcel']);
     Route::get('notification-lignes', [\App\Http\Controllers\Api\NotificationController::class, 'getLignes']);
     Route::put('notification-lignes/{id}', [\App\Http\Controllers\Api\NotificationController::class, 'updateLigne']);
 

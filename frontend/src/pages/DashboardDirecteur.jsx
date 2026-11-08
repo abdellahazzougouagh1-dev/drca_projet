@@ -531,35 +531,6 @@ export default function DashboardDirecteur() {
     }));
   }, [store.budget, store.lines, store.notifications]);
 
-  const budgetTableRef = useRef(null);
-  const downloadBudgetExcel = () => {
-    const table = budgetTableRef.current.cloneNode(true);
-    table.querySelectorAll('tbody tr').forEach((row) => {
-      if (row.cells.length !== 13) row.remove();
-    });
-    const sheet = XLSX.utils.table_to_sheet(table, { raw: true });
-    const range = XLSX.utils.decode_range(sheet['!ref']);
-    for (let row = 1; row <= range.e.r; row += 1) {
-      for (let column = 2; column <= range.e.c; column += 1) {
-        const cell = sheet[XLSX.utils.encode_cell({ r: row, c: column })];
-        if (!cell || cell.v === '') continue;
-        const value = String(cell.v);
-        const number = Number(value.replace(/\s/g, '').replace(/DH|%/g, '').replace(',', '.'));
-        if (!Number.isFinite(number)) continue;
-        const isRate = value.includes('%');
-        cell.t = 'n';
-        cell.v = isRate ? number / 100 : number;
-        cell.z = isRate ? '0.00%' : '#,##0.00';
-        delete cell.w;
-      }
-    }
-    sheet['!cols'] = budgetColumns.map((label, index) => ({ wch: index === 1 ? 60 : Math.max(18, label.length + 2) }));
-    sheet['!autofilter'] = { ref: `A1:M${budgetRows.length + 1}` };
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, sheet, 'Synthèse budgétaire');
-    XLSX.writeFile(workbook, `Synthese_budgetaire_${year}_${domaine}.xlsx`);
-  };
-
   const budgetColumns = ['DOMAINE', 'LIGNE BUDGÉTAIRE', 'NOTIFIÉ', 'TOTAL ENGAGEMENTS', 'TAUX ENG.', 'DISPONIBLE', 'TOTAL ORDONNANCEMENT', 'TAUX ORD./ENG.', 'TAUX ORD./NOT.', 'TOTAL PAIEMENTS', 'TAUX PAI./ORD.', 'TAUX PAI./ENG.', 'TAUX PAI./NOT.'];
 
   const budgetRows = useMemo(() => {
@@ -572,6 +543,163 @@ export default function DashboardDirecteur() {
   const fncBudgetRows = useMemo(() => realRows.filter((r) => r.domaine === 'FONCTIONNEMENT'), [realRows]);
   const invSummary = useMemo(() => summaryOf(invBudgetRows), [invBudgetRows]);
   const fncSummary = useMemo(() => summaryOf(fncBudgetRows), [fncBudgetRows]);
+
+  const budgetTableRef = useRef(null);
+  const [downloadingExcel, setDownloadingExcel] = useState(false);
+
+  const downloadBudgetExcel = async () => {
+    setDownloadingExcel(true);
+    try {
+      // 1. Export Excel natif haute fidélité via l'API PhpSpreadsheet (Thème Vert Émeraude officiel)
+      const response = await api.post('/dashboard/budget/export-excel', {
+        exercice: year,
+        domaine: domaine,
+        rows: budgetRows,
+        summary: budgetSummary,
+      }, {
+        responseType: 'blob',
+      });
+
+      const blob = new Blob([response.data], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `Synthese_budgetaire_${year || 'tous'}_${domaine}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.warn('Export Excel serveur indisponible, utilisation du générateur stylé de secours:', err);
+      generateClientStyledExcel();
+    } finally {
+      setDownloadingExcel(false);
+    }
+  };
+
+  const generateClientStyledExcel = () => {
+    const htmlContent = `
+      <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+      <head>
+        <meta charset="utf-8" />
+        <!--[if gte mso 9]>
+        <xml>
+          <x:ExcelWorkbook>
+            <x:ExcelWorksheets>
+              <x:ExcelWorksheet>
+                <x:Name>Synthèse budgétaire</x:Name>
+                <x:WorksheetOptions>
+                  <x:DisplayGridlines/>
+                  <x:FreezePanes/>
+                  <x:FrozenNoSplit/>
+                  <x:SplitPositionRow>5</x:SplitPositionRow>
+                  <x:SplitPositionColumn>0</x:SplitPositionColumn>
+                </x:WorksheetOptions>
+              </x:ExcelWorksheet>
+            </x:ExcelWorksheets>
+          </x:ExcelWorkbook>
+        </xml>
+        <![endif]-->
+        <style>
+          body { font-family: Calibri, 'Segoe UI', Arial, sans-serif; font-size: 11pt; color: #1e293b; }
+          .title-inst { font-size: 9pt; font-weight: bold; color: #475569; }
+          .title-main { font-size: 16pt; font-weight: bold; color: #047857; }
+          .title-meta { font-size: 10pt; font-style: italic; color: #64748b; }
+          table { border-collapse: collapse; width: 100%; }
+          th { background-color: #047857; color: #ffffff; font-weight: bold; font-size: 10.5pt; text-align: right; border: 1px solid #059669; padding: 10px; height: 35px; }
+          th.left { text-align: left; }
+          th.center { text-align: center; }
+          td { border: 1px solid #e2e8f0; padding: 6px 10px; font-size: 10pt; vertical-align: middle; }
+          .row-even { background-color: #ffffff; }
+          .row-odd { background-color: #f0fdf4; }
+          .badge-fnc { background-color: #dbeafe; color: #1e40af; font-weight: bold; text-align: center; }
+          .badge-inv { background-color: #e0e7ff; color: #4338ca; font-weight: bold; text-align: center; }
+          .text-left { text-align: left; }
+          .text-right { text-align: right; }
+          .bold { font-weight: bold; }
+          .text-emerald { color: #047857; font-weight: bold; }
+          .text-violet { color: #6d28d9; font-weight: bold; }
+          .text-amber { color: #b45309; font-weight: bold; }
+          .num-currency { mso-number-format: "#,##0.00 \\D\\H"; }
+          .num-percent { mso-number-format: "0.00%"; }
+          tfoot tr td { background-color: #ecfdf5; color: #064e3b; font-weight: bold; font-size: 11pt; border-top: 2px solid #047857; border-bottom: 3px double #064e3b; padding: 10px; }
+        </style>
+      </head>
+      <body>
+        <table>
+          <tr><td colspan="13" class="title-inst">ROYAUME DU MAROC • DIRECTION RÉGIONALE DE COORDINATION DE L'AGRICULTURE</td></tr>
+          <tr><td colspan="13" class="title-main">SYNTHÈSE PAR LIGNE BUDGÉTAIRE</td></tr>
+          <tr><td colspan="13" class="title-meta">Exercice : ${year || 'Tous'} | Domaine : ${domaine === 'ALL' ? 'Tous les domaines' : domaine} | Montants en Dirhams (DH) | Exporté le ${new Date().toLocaleDateString('fr-FR')}</td></tr>
+          <tr><td colspan="13" style="height: 10px;"></td></tr>
+          <thead>
+            <tr>
+              <th class="center">DOMAINE</th>
+              <th class="left" style="min-width: 350px;">LIGNE BUDGÉTAIRE</th>
+              <th>NOTIFIÉ</th>
+              <th>TOTAL ENGAGEMENTS</th>
+              <th>TAUX ENG.</th>
+              <th>DISPONIBLE</th>
+              <th>TOTAL ORDONNANCEMENT</th>
+              <th>TAUX ORD./ENG.</th>
+              <th>TAUX ORD./NOT.</th>
+              <th>TOTAL PAIEMENTS</th>
+              <th>TAUX PAI./ORD.</th>
+              <th>TAUX PAI./ENG.</th>
+              <th>TAUX PAI./NOT.</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${budgetRows.map((r, idx) => `
+              <tr class="${idx % 2 === 0 ? 'row-even' : 'row-odd'}">
+                <td class="${r.domaine === 'FONCTIONNEMENT' ? 'badge-fnc' : 'badge-inv'}">${r.domaine}</td>
+                <td class="text-left bold">${r.imputation} <span style="font-weight: normal; color: #64748b;">${r.libelle || ''}</span></td>
+                <td class="text-right num-currency">${Number(r.total_credits || 0)}</td>
+                <td class="text-right text-emerald num-currency">${Number(r.credits_engages || 0)}</td>
+                <td class="text-right num-percent">${((Number(r.taux_engagement) || 0) / 100)}</td>
+                <td class="text-right num-currency">${Number(r.credits_disponibles || 0)}</td>
+                <td class="text-right text-violet num-currency">${Number(r.total_ordonnance || 0)}</td>
+                <td class="text-right num-percent">${((Number(r.taux_ordonnancement) || 0) / 100)}</td>
+                <td class="text-right text-emerald num-percent">${((Number(r.taux_ordonnancement_notifie) || 0) / 100)}</td>
+                <td class="text-right text-amber num-currency">${Number(r.total_paiements || 0)}</td>
+                <td class="text-right num-percent">${((Number(r.taux_paiement_ordonnancement) || 0) / 100)}</td>
+                <td class="text-right num-percent">${((Number(r.taux_paiement_engagement) || 0) / 100)}</td>
+                <td class="text-right text-emerald num-percent">${((Number(r.taux_paiement_notifie) || 0) / 100)}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+          <tfoot>
+            <tr>
+              <td colspan="2" class="text-left">TOTAL ${domaine === 'ALL' ? 'GLOBAL' : domaine}</td>
+              <td class="text-right num-currency">${Number(budgetSummary?.total_notifie || 0)}</td>
+              <td class="text-right text-emerald num-currency">${Number(budgetSummary?.total_engage || 0)}</td>
+              <td class="text-right num-percent">${((Number(budgetSummary?.taux_consommation) || 0) / 100)}</td>
+              <td class="text-right num-currency">${Number(budgetSummary?.total_disponible || 0)}</td>
+              <td class="text-right text-violet num-currency">${Number(budgetSummary?.total_ordonnance || 0)}</td>
+              <td class="text-right num-percent">${((Number(budgetSummary?.taux_ordonnancement) || 0) / 100)}</td>
+              <td class="text-right text-emerald num-percent">${((Number(budgetSummary?.taux_ordonnancement_notifie || pct(budgetSummary?.total_ordonnance, budgetSummary?.total_notifie)) || 0) / 100)}</td>
+              <td class="text-right text-amber num-currency">${Number(budgetSummary?.total_paiement || 0)}</td>
+              <td class="text-right num-percent">${((Number(budgetSummary?.taux_paiement_ordonnancement) || 0) / 100)}</td>
+              <td class="text-right num-percent">${((Number(budgetSummary?.taux_paiement_engagement) || 0) / 100)}</td>
+              <td class="text-right text-emerald num-percent">${((Number(budgetSummary?.taux_paiement_notifie || pct(budgetSummary?.total_paiement, budgetSummary?.total_notifie)) || 0) / 100)}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </body>
+      </html>
+    `;
+
+    const blob = new Blob(['\ufeff' + htmlContent], { type: 'application/vnd.ms-excel;charset=utf-8' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `Synthese_budgetaire_${year || 'tous'}_${domaine}.xls`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  };
 
   const dashboard = useMemo(() => {
     const matchYear = (item) => !year || String(item.annee || item.exercice || new Date(item.date_consultation || item.date_lancement || item.created_at || 0).getFullYear()) === String(year);
@@ -1297,10 +1425,11 @@ export default function DashboardDirecteur() {
                     <p className="mt-1 text-xs text-slate-500">Montants totaux et taux de passage pour {domaine === 'ALL' ? 'Investissement et Fonctionnement' : `le domaine ${domaine}`}.</p>
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
-                    <button type="button" onClick={downloadBudgetExcel} disabled={loading} className="inline-flex items-center gap-2 rounded-xl bg-emerald-700 px-4 py-2 text-sm font-bold text-white hover:bg-emerald-800 disabled:opacity-40">
-                      <Download size={16} /> Télécharger Excel
+                    <button type="button" onClick={downloadBudgetExcel} disabled={loading || downloadingExcel} className="inline-flex items-center gap-2 rounded-xl bg-emerald-700 px-4 py-2 text-sm font-bold text-white hover:bg-emerald-800 disabled:opacity-40 transition-all shadow-sm">
+                      {downloadingExcel ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
+                      {downloadingExcel ? 'Génération...' : 'Télécharger Excel'}
                     </button>
-                  <span className={`text-xs px-3 py-1 rounded-full font-bold self-start sm:self-auto ${domaine === 'FONCTIONNEMENT' ? 'bg-blue-100 text-blue-800' :
+                    <span className={`text-xs px-3 py-1 rounded-full font-bold self-start sm:self-auto ${domaine === 'FONCTIONNEMENT' ? 'bg-blue-100 text-blue-800' :
                     domaine === 'INVESTISSEMENT' ? 'bg-indigo-100 text-indigo-800' :
                       'bg-slate-100 text-slate-700'
                     }`}>
