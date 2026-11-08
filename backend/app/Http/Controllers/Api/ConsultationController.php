@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Consultation;
 use App\Models\Budget;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -333,12 +334,22 @@ class ConsultationController extends Controller
         ]);
 
         try {
-            DB::transaction(function () use ($consultation, $validated) {
+            $prestations = array_map(static function (array $prestation): array {
+                return [
+                    'designation' => $prestation['designation'],
+                    'unite' => $prestation['unite'],
+                    'quantite' => (float) $prestation['quantite'],
+                    'prix_unitaire_ht' => (float) $prestation['prix_unitaire_ht'],
+                    'tva' => (float) $prestation['tva'],
+                ];
+            }, $validated['prestations']);
+
+            DB::transaction(function () use ($consultation, $prestations) {
                 // Remove old prestations
                 $consultation->prestations()->delete();
 
                 // Create new ones
-                foreach ($validated['prestations'] as $prestationData) {
+                foreach ($prestations as $prestationData) {
                     $consultation->prestations()->create($prestationData);
                 }
             });
@@ -347,10 +358,18 @@ class ConsultationController extends Controller
                 'message' => 'Prestations enregistrées avec succès.',
                 'consultation' => $consultation->load('prestations')
             ]);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
+            Log::error('Échec de l’enregistrement des prestations', [
+                'consultation_id' => $consultation->id,
+                'prestations_count' => count($validated['prestations']),
+                'exception' => $e,
+            ]);
+
             return response()->json([
                 'error' => 'Erreur lors de l\'enregistrement des prestations.',
-                'message' => $e->getMessage()
+                'message' => app()->hasDebugModeEnabled()
+                    ? $e->getMessage()
+                    : 'Une erreur base de données est survenue.',
             ], 500);
         }
     }

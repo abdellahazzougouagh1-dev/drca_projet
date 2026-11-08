@@ -17,11 +17,20 @@ class Prestation extends Model
         'montant_ttc',
     ];
 
+    protected $casts = [
+        'quantite' => 'decimal:2',
+        'prix_unitaire_ht' => 'decimal:2',
+        'montant_ht' => 'decimal:2',
+        'tva' => 'decimal:2',
+        'montant_ttc' => 'decimal:2',
+    ];
+
     protected static function booted(): void
     {
         static::saving(function (Prestation $prestation) {
-            $prestation->montant_ht = $prestation->quantite * $prestation->prix_unitaire_ht;
-            $prestation->montant_ttc = $prestation->montant_ht * (1 + ($prestation->tva / 100));
+            $montantHt = (float) $prestation->quantite * (float) $prestation->prix_unitaire_ht;
+            $prestation->montant_ht = round($montantHt, 2);
+            $prestation->montant_ttc = round($montantHt * (1 + ((float) $prestation->tva / 100)), 2);
         });
     }
 
