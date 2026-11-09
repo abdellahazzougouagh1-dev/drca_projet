@@ -477,11 +477,33 @@ function PiecesJointesManager({
     setNewPiece('');
   };
 
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);
   const handleRemove = (idxToRemove) => {
     const next = items.filter((_, i) => i !== idxToRemove);
     onChange(next.join('\n'));
   };
 
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);
   const handleKeyDown = (e) => {
     if (e.key === 'Enter') {
       e.preventDefault();
@@ -489,6 +511,17 @@ function PiecesJointesManager({
     }
   };
 
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);
   return (
     <div className={`col-span-full border rounded-2xl p-5 shadow-xs transition-all ${hasError ? 'border-red-500 bg-red-50/20' : 'border-slate-200/90 bg-slate-50/70'}`}>
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-200/60">
@@ -785,6 +818,17 @@ function LettresConsultationManager({
     onChange(updatedList);
   };
 
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);
   const updateLetter = (idx, key, val, formatOnBlur = false) => {
     let cleanVal = val;
     if (key === 'numero_lettre' && typeof val === 'string') {
@@ -802,6 +846,17 @@ function LettresConsultationManager({
     syncLetters(updated);
   };
 
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);
   const addLetter = () => {
     const lastLetter = letters[letters.length - 1];
     const prevNum = lastLetter?.numero_lettre || baseNumero || '';
@@ -813,15 +868,48 @@ function LettresConsultationManager({
       destinataire_adresse: '',
       ville: '',
     };
-    syncLetters([...letters, newLetter]);
+
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);    syncLetters([...letters, newLetter]);
   };
 
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);
   const removeLetter = (idx) => {
     if (letters.length <= 1) return;
     const updated = letters.filter((_, i) => i !== idx);
     syncLetters(updated);
   };
 
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);
   const selectExistingFournisseur = (idx, fournisseurId) => {
     if (!fournisseurId) return;
     const f = availableFournisseurs.find((item) => String(item.id) === String(fournisseurId));
@@ -834,10 +922,32 @@ function LettresConsultationManager({
         destinataire_adresse: f.adresse || '',
         ville: f.ville || '',
       };
-    });
+
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);    });
     syncLetters(updated);
   };
 
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);
   const isBlankRowField = (letter, key) => Boolean(hasError && (!letter?.[key] || !String(letter[key]).trim()));
 
   return (
@@ -1015,7 +1125,18 @@ const BonCommandePlateforme = () => {
     const ref = String(consultation?.numero_consultation || consultation?.numero_bc || '').toUpperCase();
     return mode === 'convention' || mode === 'contrat' || ref.startsWith('CONV');
   };
-  const isBonCommandeConsultation = (consultation) => !isConventionConsultation(consultation);
+
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);  const isBonCommandeConsultation = (consultation) => !isConventionConsultation(consultation);
   const isVisibleConsultation = (consultation) => isConventionRoute
     ? isConventionConsultation(consultation)
     : isBonCommandeConsultation(consultation);
@@ -1094,6 +1215,17 @@ const BonCommandePlateforme = () => {
     return documentId;
   };
 
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);
   useEffect(() => {
     if (savedConsultation?.id) {
       localStorage.setItem('drca_selected_consultation_id', String(savedConsultation.id));
@@ -1139,7 +1271,18 @@ const BonCommandePlateforme = () => {
         // silently fallback
       }
     };
-    fetchFournisseurs();
+
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);    fetchFournisseurs();
   }, []);
 
   const [consultationsList, setConsultationsList] = useState([]);
@@ -1224,9 +1367,31 @@ const BonCommandePlateforme = () => {
           objet: reg.objet || c.objet_consultation || '-',
           beneficiaire: reg.beneficiaire || c.fournisseur?.raison_sociale || c.engagement?.fournisseur?.raison_sociale || '-',
         };
-      });
+
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);      });
   };
 
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);
   const handleExportRegistreExcel = async (downloadAll = false) => {
     try {
       setIsExportingExcel(true);
@@ -1254,6 +1419,17 @@ const BonCommandePlateforme = () => {
     }
   };
 
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);
   const fetchMembresCatalog = async () => {
     try {
       const res = await api.get('/commission-membres');
@@ -1263,6 +1439,17 @@ const BonCommandePlateforme = () => {
     }
   };
 
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);
   useEffect(() => {
     const fetchConsultations = async () => {
       setConsultationsLoading(true);
@@ -1302,7 +1489,18 @@ const BonCommandePlateforme = () => {
         setConsultationsLoading(false);
       }
     };
-    fetchConsultations();
+
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);    fetchConsultations();
     fetchMembresCatalog();
   }, [location.state, location.search]);
 
@@ -1344,6 +1542,17 @@ const BonCommandePlateforme = () => {
     }
   };
 
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);
   const openEditConsultationModal = (consultation) => {
     setEditingConsultationData({
       id: consultation.id,
@@ -1385,6 +1594,17 @@ const BonCommandePlateforme = () => {
     setIsEditConsultationModalOpen(true);
   };
 
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);
   const handleEditPrestationChange = (index, field, value) => {
     setEditingPrestations((prev) => prev.map((line, lineIndex) => {
       if (field === 'tva' && index === 0) {
@@ -1394,6 +1614,17 @@ const BonCommandePlateforme = () => {
     }));
   };
 
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);
   const addEditPrestationLine = () => {
     setEditingPrestations((prev) => {
       const firstTva = prev[0]?.tva ?? 20;
@@ -1401,10 +1632,32 @@ const BonCommandePlateforme = () => {
     });
   };
 
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);
   const removeEditPrestationLine = (index) => {
     setEditingPrestations((prev) => prev.filter((_, i) => i !== index));
   };
 
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);
   const validateEditConsultationForm = (data) => {
     const errors = {};
     const effectiveMode = isConventionActive
@@ -1467,6 +1720,17 @@ const BonCommandePlateforme = () => {
     return errors;
   };
 
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);
   const handleSaveEditedConsultation = async (e) => {
     e.preventDefault();
     if (!editingConsultationData?.id) return;
@@ -1512,6 +1776,17 @@ const BonCommandePlateforme = () => {
         exercice_budgetaire: editingConsultationData.exercice_budgetaire !== '' ? Number(editingConsultationData.exercice_budgetaire) : null,
       };
 
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);
       await api.put(`/consultations/${editingConsultationData.id}`, updatePayload);
 
       const cleanPrestations = editingPrestations
@@ -1561,6 +1836,17 @@ const BonCommandePlateforme = () => {
     }
   };
 
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);
   const handleDeleteConsultation = async (consultation) => {
     if (!window.confirm(`Êtes-vous sûr de vouloir supprimer la consultation "${consultation.numero_consultation}" ? Cette action est irréversible.`)) {
       return;
@@ -1584,6 +1870,17 @@ const BonCommandePlateforme = () => {
     }
   };
 
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);
   const addMembreToDocumentCommission = (documentId, fieldName) => {
     if (documentId === 'pv_ouverture_attribution' || documentId === 'pv_ouverture_convention') {
       documentId = 'decision_commission_ouverture';
@@ -1604,6 +1901,17 @@ const BonCommandePlateforme = () => {
       qualite: nouveauMembreForm.qualite || 'Membre',
     };
 
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);
     if (!currentList.some((m) => String(m.id || m.nom) === String(newMemberEntry.id))) {
       currentList.push(newMemberEntry);
     }
@@ -1612,6 +1920,17 @@ const BonCommandePlateforme = () => {
     setNouveauMembreForm({ membre_id: '', qualite: 'Membre' });
   };
 
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);
   const removeMembreFromDocumentCommission = (documentId, fieldName, indexToRemove) => {
     if (documentId === 'pv_ouverture_attribution' || documentId === 'pv_ouverture_convention') {
       documentId = 'decision_commission_ouverture';
@@ -1623,6 +1942,17 @@ const BonCommandePlateforme = () => {
     handleDocumentFieldChange(documentId, fieldName, updated);
   };
 
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);
   const totalHT = useMemo(() => prestations.reduce((sum, item) => {
     return sum + ((Number(item.quantite) || 0) * (Number(item.prix_unitaire_ht) || 0));
   }, 0), [prestations]);
@@ -1637,12 +1967,34 @@ const BonCommandePlateforme = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);
   const handleLineChange = (index, field, value) => {
     setPrestations((prev) => prev.map((line, lineIndex) => (
       lineIndex === index ? { ...line, [field]: value } : line
     )));
   };
 
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);
   const handleDocumentFieldChange = (documentId, field, value) => {
     let cleanVal = value;
     if (fieldMaxLengthMap[field] && typeof value === 'string') {
@@ -1657,7 +2009,18 @@ const BonCommandePlateforme = () => {
           [field]: cleanVal,
         },
       };
-      if (documentId === 'decision_commission_ouverture') {
+
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);      if (documentId === 'decision_commission_ouverture') {
         const openingSyncMap = {
           membres_commission: 'membres_commission',
           date_reunion: 'date_reunion',
@@ -1666,17 +2029,50 @@ const BonCommandePlateforme = () => {
           numero_decision: 'numero_decision',
           date_document: 'date_decision',
         };
-        if (openingSyncMap[field]) {
+
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);        if (openingSyncMap[field]) {
           const targetKey = openingSyncMap[field];
           updated.pv_ouverture_attribution = {
             ...(prev.pv_ouverture_attribution || {}),
             [targetKey]: cleanVal,
           };
-          updated.pv_ouverture_convention = {
+
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);          updated.pv_ouverture_convention = {
             ...(prev.pv_ouverture_convention || {}),
             [targetKey]: cleanVal,
           };
-        }
+
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);        }
       }
       if (documentId === 'pv_ouverture_attribution' || documentId === 'pv_ouverture_convention') {
         const siblingId = documentId === 'pv_ouverture_attribution' ? 'pv_ouverture_convention' : 'pv_ouverture_attribution';
@@ -1688,16 +2084,49 @@ const BonCommandePlateforme = () => {
           numero_decision: 'numero_decision',
           date_decision: 'date_document',
         };
-        if (reverseSyncMap[field]) {
+
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);        if (reverseSyncMap[field]) {
           updated.decision_commission_ouverture = {
             ...(prev.decision_commission_ouverture || {}),
             [reverseSyncMap[field]]: cleanVal,
           };
-          updated[siblingId] = {
+
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);          updated[siblingId] = {
             ...(prev[siblingId] || {}),
             [field]: cleanVal,
           };
-        }
+
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);        }
       }
       if (field === 'numero_consultation' && typeof cleanVal === 'string' && (isConventionActive || ['lettre_consultation', 'decision_commission_ouverture', 'pv_ouverture_convention', 'pv_ouverture_attribution'].includes(documentId))) {
         const cleanedNum = cleanVal.replace(/\bCONV\s*[-_]?\s*/i, '').trim().replace(/^[-_\s]+|[-_\s]+$/, '');
@@ -1705,7 +2134,18 @@ const BonCommandePlateforme = () => {
           ...updated[documentId],
           numero_consultation: cleanedNum,
         };
-      }
+
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);      }
       const isConsultationLettersDoc = documentId === 'lettre_consultation' || (isConventionActive && documentId === 'avis_achat');
       if (isConsultationLettersDoc && field === 'numero_lettre' && typeof cleanVal === 'string') {
         const cleaned = cleanVal.replace(/^CONV\s*[-_]?\s*/i, '');
@@ -1724,7 +2164,18 @@ const BonCommandePlateforme = () => {
               numero_lettre: i === 0 ? cleaned : (baseForIncrement ? incrementNumeroLettre(baseForIncrement, i) : (l.numero_lettre || '')),
             })),
           };
-        } else {
+
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);        } else {
           patched = { numero_lettre: cleaned };
         }
 
@@ -1743,7 +2194,18 @@ const BonCommandePlateforme = () => {
               ...updated.decision_commission_ouverture,
               lettres_consultation_refs: newCompact,
             };
-          }
+
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);          }
 
           // Synchroniser les participants et les concurrents dans l'ordre exact des lettres
           const prevPvSuppliers = updated.pv_ouverture_convention?.fournisseurs_consultes
@@ -1762,7 +2224,18 @@ const BonCommandePlateforme = () => {
                 montant_avant: matched.montant_avant || defaultAmt,
                 montant_apres: matched.montant_apres || defaultAmt,
               };
-            });
+
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);            });
 
           const syncedConcurrents = syncedSuppliers.map((s) => ({
             nom: s.nom,
@@ -1777,15 +2250,48 @@ const BonCommandePlateforme = () => {
             concurrents: syncedConcurrents,
           };
 
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);
           updated.pv_ouverture_convention = {
             ...(updated.pv_ouverture_convention || {}),
             ...pvPatch,
           };
-          updated.pv_ouverture_attribution = {
+
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);          updated.pv_ouverture_attribution = {
             ...(updated.pv_ouverture_attribution || {}),
             ...pvPatch,
           };
-        }
+
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);        }
       }
       if (documentId === 'decision_commission_reception') {
         const fieldMap = {
@@ -1801,12 +2307,34 @@ const BonCommandePlateforme = () => {
           heure_reunion: 'heure_reunion',
           membres_commission: 'membres_commission',
         };
-        if (fieldMap[field]) {
+
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);        if (fieldMap[field]) {
           updated.pv_reception = {
             ...(prev.pv_reception || {}),
             [fieldMap[field]]: value,
           };
-        }
+
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);        }
       }
       if (documentId === 'pv_reception') {
         const fieldMap = {
@@ -1822,12 +2350,34 @@ const BonCommandePlateforme = () => {
           heure_reunion: 'heure_reunion',
           membres_commission: 'membres_commission',
         };
-        if (fieldMap[field]) {
+
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);        if (fieldMap[field]) {
           updated.decision_commission_reception = {
             ...(prev.decision_commission_reception || {}),
             [fieldMap[field]]: value,
           };
-        }
+
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);        }
       }
       if (field === 'adresse_societe' || field === 'adresse_1') {
         ['ordre_commande', 'accuse_reception', 'pv_reception', 'bon_commande'].forEach((docKey) => {
@@ -1836,7 +2386,18 @@ const BonCommandePlateforme = () => {
               ...(prev[docKey] || {}),
               adresse_societe: value,
             };
-          }
+
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);          }
         });
       }
       if (field === 'ville_societe' || field === 'ville_1') {
@@ -1846,7 +2407,18 @@ const BonCommandePlateforme = () => {
               ...(prev[docKey] || {}),
               ville_societe: value,
             };
-          }
+
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);          }
         });
       }
       if (field === 'titulaire_nom' || field === 'societe' || field === 'attributaire') {
@@ -1857,7 +2429,18 @@ const BonCommandePlateforme = () => {
               societe: value,
               titulaire_nom: value,
             };
-          }
+
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);          }
         });
       }
 
@@ -1870,7 +2453,18 @@ const BonCommandePlateforme = () => {
               interets_moratoires: '',
               montant_engager_neuf: '',
             };
-          } else {
+
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);          } else {
             const m = Number(value);
             const im = Number((m * 0.01).toFixed(2));
             const total = Number((m + im).toFixed(2));
@@ -1880,7 +2474,18 @@ const BonCommandePlateforme = () => {
               interets_moratoires: im,
               montant_engager_neuf: total,
             };
-          }
+
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);          }
         }
         if (field === 'credit_ouvert_cp' || field === 'depenses_anterieures_cp') {
           const c = updated.fiche_engagement?.credit_ouvert_cp;
@@ -1889,7 +2494,18 @@ const BonCommandePlateforme = () => {
             ...(updated.fiche_engagement || {}),
             disponible_cp: creditDisponible(c, d),
           };
-        }
+
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);        }
         if (field === 'credit_ouvert_ce' || field === 'depenses_anterieures_ce') {
           const c = updated.fiche_engagement?.credit_ouvert_ce;
           const d = updated.fiche_engagement?.depenses_anterieures_ce;
@@ -1897,7 +2513,18 @@ const BonCommandePlateforme = () => {
             ...(updated.fiche_engagement || {}),
             disponible_ce: creditDisponible(c, d),
           };
-        }
+
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);        }
       }
 
       return updated;
@@ -1914,6 +2541,17 @@ const BonCommandePlateforme = () => {
     }
   };
 
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);
   const getSourcePrestations = () => (
     savedConsultation?.prestations?.length > 0
       ? savedConsultation.prestations
@@ -1945,6 +2583,17 @@ const BonCommandePlateforme = () => {
       : [{ numero_prix: '1', designation: '', specification: '', unite_mesure: 'Unite', quantite: '', prix_unitaire_ht: '', tva: '20', garantie_exigee: '' }];
   };
 
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);
   const resolveFournisseursConsultes = (documentId, forms = documentForms) => {
     const rawList = forms[documentId]?.fournisseurs_consultes
       ?? forms.pv_ouverture_convention?.fournisseurs_consultes
@@ -1970,7 +2619,18 @@ const BonCommandePlateforme = () => {
             montant_avant: defaultAmt,
             montant_apres: defaultAmt,
           };
-        });
+
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);        });
     }
 
     if (Array.isArray(savedConsultation?.offres) && savedConsultation.offres.length > 0) {
@@ -1984,7 +2644,18 @@ const BonCommandePlateforme = () => {
           montant_avant: o.montant_propose !== undefined && o.montant_propose !== null ? String(o.montant_propose) : (amt !== '' ? String(amt) : ''),
           montant_apres: amt !== '' ? String(amt) : '',
         };
-      });
+
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);      });
     }
 
     if (savedConsultation?.fournisseur?.raison_sociale) {
@@ -2004,6 +2675,17 @@ const BonCommandePlateforme = () => {
     return [];
   };
 
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);
   const resolveConcurrentsList = (documentId, forms = documentForms) => {
     const rawList = forms[documentId]?.concurrents
       ?? (documentId === 'pv_ouverture_convention' || isConventionActive
@@ -2035,6 +2717,17 @@ const BonCommandePlateforme = () => {
     return [];
   };
 
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);
   const resolvePrestationsReceptionnees = (documentId, forms = documentForms) => {
     const savedList = forms[documentId]?.prestations_receptionnees
       ?? forms.decision_commission_reception?.prestations_receptionnees
@@ -2055,6 +2748,17 @@ const BonCommandePlateforme = () => {
     }));
   };
 
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);
   const resolveCommissionMembres = (documentId, forms = documentForms) => {
     if (documentId === 'pv_reception') {
       return forms.pv_reception?.membres_commission
@@ -2080,6 +2784,17 @@ const BonCommandePlateforme = () => {
       ?? [];
   };
 
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);
   const computeAutoFillDefaults = (documentId, baseForms = {}) => {
     const fields = documentFieldGroups[documentFieldsId(documentId)] || [];
     const defaults = {};
@@ -2463,7 +3178,18 @@ const BonCommandePlateforme = () => {
                 montant_avant: defaultAmt,
                 montant_apres: defaultAmt,
               };
-            });
+
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);            });
         } else if (savedConsultation?.offres && savedConsultation.offres.length > 0) {
           defaults.fournisseurs_consultes = savedConsultation.offres.map((o) => {
             const amt = o.montant_apres_verification ?? o.montant_propose ?? '';
@@ -2475,7 +3201,18 @@ const BonCommandePlateforme = () => {
               montant_avant: amt !== '' ? String(amt) : '',
               montant_apres: amt !== '' ? String(amt) : '',
             };
-          });
+
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);          });
         } else if (savedConsultation?.fournisseur?.raison_sociale) {
           defaults.fournisseurs_consultes = [{
             nom: savedConsultation.fournisseur.raison_sociale,
@@ -2503,7 +3240,18 @@ const BonCommandePlateforme = () => {
                 montant_apres: defaultAmt,
                 montant: defaultAmt,
               };
-            });
+
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);            });
         } else if (isConventionActive && savedConsultation?.fournisseur?.raison_sociale) {
           defaults.concurrents = [{
             nom: savedConsultation.fournisseur.raison_sociale,
@@ -2653,6 +3401,17 @@ const BonCommandePlateforme = () => {
     return defaults;
   };
 
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);
   useEffect(() => {
     if (!savedConsultation?.id) {
       setDocumentForms({});
@@ -2896,8 +3655,30 @@ const BonCommandePlateforme = () => {
       isValid: Object.keys(errors).length === 0,
       missingLabels,
     };
-  };
 
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);  };
+
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);
   const buildDocumentData = (documentId) => {
     const values = documentForms[documentId] || {};
     const montantDepenseNeuf = Number(values.montant_depense_neuf) || 0;
@@ -2933,6 +3714,17 @@ const BonCommandePlateforme = () => {
       ville_societe: values.ville_societe || values.ville_1 || documentForms['bon_commande']?.ville_societe || savedConsultation?.fournisseur?.ville || savedConsultation?.engagement?.fournisseur?.ville || '',
     };
 
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);
     if ((documentId === 'decision_commission_ouverture' || documentId === 'pv_ouverture_convention' || documentId === 'pv_ouverture_attribution') && isConventionActive) {
       const lettresList = documentForms.lettre_consultation?.lettres_consultation
         || documentForms.avis_achat?.lettres_consultation;
@@ -3052,11 +3844,33 @@ const BonCommandePlateforme = () => {
     return data;
   };
 
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);
   const addLine = () => setPrestations((prev) => [...prev, emptyLine()]);
   const removeLine = (index) => {
     setPrestations((prev) => prev.length === 1 ? prev : prev.filter((_, lineIndex) => lineIndex !== index));
   };
 
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);
   const saveDossier = async (event) => {
     if (event) event.preventDefault();
     if (savedConsultation) {
@@ -3078,6 +3892,17 @@ const BonCommandePlateforme = () => {
         tva: prestations[0]?.tva || 20,
       };
 
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);
       const consultationResponse = await api.post('/consultations', payload);
       const consultation = consultationResponse.data;
 
@@ -3105,6 +3930,17 @@ const BonCommandePlateforme = () => {
     }
   };
 
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);
   const getErrorMessage = async (err, defaultMsg) => {
     if (err.response?.data instanceof Blob) {
       try {
@@ -3118,6 +3954,17 @@ const BonCommandePlateforme = () => {
     return err.response?.data?.message || err.response?.data?.error || defaultMsg;
   };
 
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);
   const selectConsultation = (consultation) => {
     if (!isVisibleConsultation(consultation)) {
       setError(isConventionRoute
@@ -3139,6 +3986,17 @@ const BonCommandePlateforme = () => {
     }
   };
 
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);
   const findBonCommande = async () => {
     const numeroBc = String(documentForms.fiche_engagement?.numero_bc || '').trim();
     if (!numeroBc) {
@@ -3166,6 +4024,17 @@ const BonCommandePlateforme = () => {
     }
   };
 
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);
   const saveDocumentDataToDatabase = async (documentId, isExplicitSave = false) => {
     if (!savedConsultation?.id) return false;
 
@@ -3429,7 +4298,18 @@ const BonCommandePlateforme = () => {
             prestations_receptionnees: values.prestations_receptionnees || null,
           } : {}),
         };
-        const recRes = await api.post(`/consultations/${savedConsultation.id}/reception-commission`, recData);
+
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);        const recRes = await api.post(`/consultations/${savedConsultation.id}/reception-commission`, recData);
         if (recRes.data?.consultation) {
           setSavedConsultation(recRes.data.consultation);
           setConsultationsList((prev) => prev.map((c) => (c.id === recRes.data.consultation.id ? recRes.data.consultation : c)));
@@ -3478,7 +4358,18 @@ const BonCommandePlateforme = () => {
           prestations: 'consistance_lignes',
           type_prestation: 'intitule',
         };
-        Object.entries(backendErrors).forEach(([k, msgs]) => {
+
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);        Object.entries(backendErrors).forEach(([k, msgs]) => {
           const baseKey = k.split('.')[0];
           const targetKey = keyMap[baseKey] || baseKey;
           if (!mappedErrors[targetKey] && Array.isArray(msgs) && msgs[0]) {
@@ -3498,6 +4389,17 @@ const BonCommandePlateforme = () => {
     }
   };
 
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);
   const downloadDocument = async (document) => {
     if (!savedConsultation) {
       setError("Veuillez d'abord sélectionner un dossier depuis la liste des consultations.");
@@ -3546,12 +4448,34 @@ const BonCommandePlateforme = () => {
     }
   };
 
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);
   const isLastDocumentOfPhase = (docId, phaseId) => {
     const docs = documentsByPhase[phaseId] || [];
     if (docs.length === 0) return false;
     return docs[docs.length - 1].id === docId;
   };
 
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);
   const isPhaseFullyFilled = (phaseId) => {
     if (!savedConsultation) return false;
     const docs = documentsByPhase[phaseId] || [];
@@ -3561,6 +4485,17 @@ const BonCommandePlateforme = () => {
     return !!(lastFormData && Object.keys(lastFormData).length > 0);
   };
 
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);
   const downloadArchive = async (phaseParam = null) => {
     if (!savedConsultation) {
       setError("Veuillez d'abord sélectionner un dossier.");
@@ -3605,12 +4540,70 @@ const BonCommandePlateforme = () => {
     }
   };
 
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);
   const selectDocument = (documentId) => {
     setSelectedDocumentId(documentId);
   };
 
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);
   const phaseIndex = phases.findIndex((p) => p.id === activePhase);
-  const goToPhase = (phaseId) => {
+  // Navigate to a phase and sync URL query
+const goToPhase = (phaseId) => {
+  if (phaseId === 'Ordonnancement') {
+    navigate(isConventionRoute ? '/ordonnancements?procedure=Convention' : '/ordonnancements?procedure=Bon%20de%20commande');
+    return;
+  }
+  const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+  // Update URL with phase query param
+  navigate(`${basePath}?phase=${encodeURIComponent(phaseId)}`);
+  setActivePhase(phaseId);
+  setIsSidebarOpen(false);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+};
+
+// Keep activePhase in sync with URL query param and reset when entering module root
+useEffect(() => {
+  const urlPhase = new URLSearchParams(location.search).get('phase');
+  const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+  if (location.pathname === basePath) {
+    // On base module route, default to consultation phase
+    setActivePhase('consultation');
+    setIsSidebarOpen(false);
+  } else if (urlPhase && urlPhase !== activePhase) {
+    setActivePhase(urlPhase);
+  }
+}, [location.pathname, location.search]);
+    if (phaseId === 'Ordonnancement') {
+      navigate(isConventionRoute ? '/ordonnancements?procedure=Convention' : '/ordonnancements?procedure=Bon%20de%20commande');
+      return;
+    }
+    // Sync URL with phase query parameter
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    navigate(`${basePath}?phase=${encodeURIComponent(phaseId)}`);
+    setActivePhase(phaseId);
+    setIsSidebarOpen(false);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
     if (phaseId === 'Ordonnancement') {
       navigate(isConventionRoute ? '/ordonnancements?procedure=Convention' : '/ordonnancements?procedure=Bon%20de%20commande');
       return;
@@ -3620,17 +4613,50 @@ const BonCommandePlateforme = () => {
     setIsSidebarOpen(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
-  const goNext = () => {
+
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);  const goNext = () => {
     if (phaseIndex >= 0 && phaseIndex < phases.length - 1) {
       goToPhase(phases[phaseIndex + 1].id);
     }
   };
-  const goPrev = () => {
+
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);  const goPrev = () => {
     if (phaseIndex > 0) {
       goToPhase(phases[phaseIndex - 1].id);
     }
   };
 
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);
   const selectedDocument = selectedDocumentId
     ? allDocuments.find((d) => d.id === selectedDocumentId)
     : null;
@@ -4355,6 +5381,17 @@ const BonCommandePlateforme = () => {
                             handleDocumentFieldChange(selectedDocument.id, field.name, updated);
                           };
 
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);
                           return (
                             <div key={`${selectedDocument.id}-${field.name}`} className={`col-span-full border rounded-2xl p-5 shadow-sm ${hasError ? 'bg-red-50/20 border-red-500' : 'bg-slate-50 border-slate-200'}`}>
                               <div className="flex items-center justify-between mb-3">
@@ -4468,7 +5505,18 @@ const BonCommandePlateforme = () => {
                             if (selectedDocument.id !== 'avis_achat') handleDocumentFieldChange('avis_achat', field.name, updated);
                             if (selectedDocument.id !== 'bon_commande') handleDocumentFieldChange('bon_commande', field.name, updated);
                           };
-                          const addLigne = () => {
+
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);                          const addLigne = () => {
                             const firstTva = lignes[0]?.tva ?? '20';
                             const updated = [
                               ...lignes,
@@ -4478,7 +5526,18 @@ const BonCommandePlateforme = () => {
                             if (selectedDocument.id !== 'avis_achat') handleDocumentFieldChange('avis_achat', field.name, updated);
                             if (selectedDocument.id !== 'bon_commande') handleDocumentFieldChange('bon_commande', field.name, updated);
                           };
-                          const removeLigne = (idx) => {
+
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);                          const removeLigne = (idx) => {
                             if (lignes.length <= 1) return;
                             const updated = lignes.filter((_, i) => i !== idx);
                             handleDocumentFieldChange(selectedDocument.id, field.name, updated);
@@ -4486,6 +5545,17 @@ const BonCommandePlateforme = () => {
                             if (selectedDocument.id !== 'bon_commande') handleDocumentFieldChange('bon_commande', field.name, updated);
                           };
 
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);
                           const colStyle = { fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px', display: 'block' };
 
                           const isAvisAchat = selectedDocument.id === 'avis_achat';
@@ -4508,6 +5578,17 @@ const BonCommandePlateforme = () => {
                             } text-xs font-semibold outline-none transition-all`;
                           };
 
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);
                           return (
                             <div key={`${selectedDocument.id}-${field.name}`} className={`col-span-full rounded-2xl p-4 border ${hasError ? 'border-red-500 bg-red-50/20' : 'border-transparent'}`}>
                               <div className="flex items-center justify-between mb-3">
@@ -4618,12 +5699,34 @@ const BonCommandePlateforme = () => {
                             }
                           };
 
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);
                           const updateConcurrent = (idx, key, val) => {
                             const updated = list.map((c, i) => (i === idx ? { ...c, [key]: val } : c));
                             handleDocumentFieldChange(selectedDocument.id, field.name, updated);
                             syncRefusedWithAttr(updated);
                           };
-                          const addConcurrent = () => {
+
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);                          const addConcurrent = () => {
                             const updated = [
                               ...list,
                               { nom: '', montant: '' },
@@ -4631,12 +5734,34 @@ const BonCommandePlateforme = () => {
                             handleDocumentFieldChange(selectedDocument.id, field.name, updated);
                             syncRefusedWithAttr(updated);
                           };
-                          const removeConcurrent = (idx) => {
+
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);                          const removeConcurrent = (idx) => {
                             const updated = list.filter((_, i) => i !== idx);
                             handleDocumentFieldChange(selectedDocument.id, field.name, updated);
                             syncRefusedWithAttr(updated);
                           };
 
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);
                           const handleExcelImport = (e) => {
                             const file = e.target.files?.[0];
                             if (!file) return;
@@ -4728,6 +5853,17 @@ const BonCommandePlateforme = () => {
                                   return isNaN(parsed) ? 0 : parsed;
                                 };
 
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);
                                 const imported = [];
                                 const startRow = headerRowIndex !== -1 ? headerRowIndex + 1 : 0;
 
@@ -4821,6 +5957,17 @@ const BonCommandePlateforme = () => {
                               }
                             };
 
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);
                             const extension = file.name.toLowerCase();
                             if (extension.endsWith('.xlsx') || extension.endsWith('.xls')) {
                               reader.readAsArrayBuffer(file);
@@ -4830,6 +5977,17 @@ const BonCommandePlateforme = () => {
                             e.target.value = '';
                           };
 
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);
                           return (
                             <div key={`${selectedDocument.id}-${field.name}`} className={`col-span-full border rounded-2xl p-5 shadow-sm ${hasError ? 'bg-red-50/20 border-red-500' : 'bg-slate-50 border-slate-200'}`}>
                               <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
@@ -4980,6 +6138,17 @@ const BonCommandePlateforme = () => {
                             }
                           };
 
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);
                           const addRefusedCompany = (companyName = '') => {
                             const defaultMotif = "Refus d'invitation du maître d'ouvrage";
                             let targetName = companyName;
@@ -4995,6 +6164,17 @@ const BonCommandePlateforme = () => {
                             syncAutoAttributaire(updated);
                           };
 
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);
                           const updateRefused = (idx, key, value) => {
                             const updated = currentList.map((item, i) => (i === idx ? { ...item, [key]: value } : item));
                             handleDocumentFieldChange(selectedDocument.id, field.name, updated);
@@ -5003,12 +6183,34 @@ const BonCommandePlateforme = () => {
                             }
                           };
 
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);
                           const removeRefused = (idx) => {
                             const updated = currentList.filter((_, i) => i !== idx);
                             handleDocumentFieldChange(selectedDocument.id, field.name, updated);
                             syncAutoAttributaire(updated);
                           };
 
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);
                           return (
                             <div key={`${selectedDocument.id}-${field.name}`} className={`col-span-full border rounded-2xl p-5 shadow-sm ${hasError ? 'bg-red-50/20 border-red-500' : 'bg-slate-50 border-slate-200'}`}>
                               <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
@@ -5179,6 +6381,17 @@ const BonCommandePlateforme = () => {
                             }
                           };
 
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);
                           return (
                             <div key={`${selectedDocument.id}-${field.name}`} className={`col-span-full border rounded-2xl p-5 shadow-sm space-y-3 ${hasError ? 'bg-red-50/20 border-red-500' : 'bg-slate-50 border-slate-200'}`}>
                               <div className="flex items-center justify-between">
@@ -5293,6 +6506,17 @@ const BonCommandePlateforme = () => {
                             }
                           };
 
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);
                           return (
                             <div key={`${selectedDocument.id}-${field.name}`} className={`col-span-full space-y-2 p-4 rounded-xl border ${hasError ? 'bg-red-50/20 border-red-500' : 'bg-slate-50/70 border-slate-200'}`}>
                               <div className="flex items-center justify-between">
@@ -5383,6 +6607,17 @@ const BonCommandePlateforme = () => {
                             }
                           };
 
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);
                           return (
                             <LettresConsultationManager
                               key={`${selectedDocument.id}-${field.name}`}
@@ -5420,7 +6655,18 @@ const BonCommandePlateforme = () => {
                                   montant_avant: matched.montant_avant || amount,
                                   montant_apres: matched.montant_apres || amount,
                                 };
-                              });
+
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);                              });
 
                             const concs = synced.map((s) => ({
                               nom: s.nom,
@@ -5441,6 +6687,17 @@ const BonCommandePlateforme = () => {
                             }
                           };
 
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);
                           const updateParticipant = (idx, key, val) => {
                             const updated = currentList.map((p, i) => {
                               if (i !== idx) return p;
@@ -5469,7 +6726,18 @@ const BonCommandePlateforme = () => {
                                 montant_avant: prevC.montant_avant ?? p.montant_avant ?? p.montant ?? '',
                                 montant_apres: key === 'montant' ? val : (p.montant_apres ?? prevC.montant_apres ?? p.montant ?? ''),
                               };
-                            });
+
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);                            });
 
                             handleDocumentFieldChange(docId, 'concurrents', updatedConcs);
                             if (docId !== 'pv_ouverture_convention') {
@@ -5491,6 +6759,17 @@ const BonCommandePlateforme = () => {
                             }
                           };
 
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);
                           const addParticipant = () => {
                             const updated = [...currentList, { nom: '', adresse: '', ville: '', montant: '', montant_avant: '', montant_apres: '' }];
                             handleDocumentFieldChange(docId, field.name, updated);
@@ -5511,6 +6790,17 @@ const BonCommandePlateforme = () => {
                             }
                           };
 
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);
                           const removeParticipant = (idx) => {
                             const updated = currentList.filter((_, i) => i !== idx);
                             handleDocumentFieldChange(docId, field.name, updated);
@@ -5531,6 +6821,17 @@ const BonCommandePlateforme = () => {
                             }
                           };
 
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);
                           return (
                             <div key={`${selectedDocument.id}-${field.name}`} className={`col-span-full border rounded-2xl p-5 shadow-sm space-y-3 ${hasError ? 'bg-red-50/20 border-red-500' : 'bg-slate-50 border-slate-200'}`}>
                               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
@@ -5690,7 +6991,18 @@ const BonCommandePlateforme = () => {
                                 montant_apres: key === 'montant_apres' ? val : (existingParts[idx].montant_apres ?? ''),
                                 montant_avant: key === 'montant_avant' ? val : (existingParts[idx].montant_avant ?? ''),
                               };
-                              handleDocumentFieldChange(docId, 'fournisseurs_consultes', existingParts);
+
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);                              handleDocumentFieldChange(docId, 'fournisseurs_consultes', existingParts);
                               if (docId !== 'pv_ouverture_convention') {
                                 handleDocumentFieldChange('pv_ouverture_convention', 'fournisseurs_consultes', existingParts);
                               }
@@ -5711,6 +7023,17 @@ const BonCommandePlateforme = () => {
                             }
                           };
 
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);
                           const addConcurrent = () => {
                             const updated = [...currentList, { nom: '', montant_avant: '', montant_apres: '', montant: '' }];
                             handleDocumentFieldChange(docId, field.name, updated);
@@ -5718,6 +7041,17 @@ const BonCommandePlateforme = () => {
                             if (docId !== 'pv_ouverture_attribution') handleDocumentFieldChange('pv_ouverture_attribution', field.name, updated);
                           };
 
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);
                           const removeConcurrent = (idx) => {
                             const updated = currentList.filter((_, i) => i !== idx);
                             handleDocumentFieldChange(docId, field.name, updated);
@@ -5725,6 +7059,17 @@ const BonCommandePlateforme = () => {
                             if (docId !== 'pv_ouverture_attribution') handleDocumentFieldChange('pv_ouverture_attribution', field.name, updated);
                           };
 
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);
                           return (
                             <div key={`${selectedDocument.id}-${field.name}`} className={`col-span-full border rounded-2xl p-5 shadow-sm space-y-3 ${hasError ? 'bg-red-50/20 border-red-500' : 'bg-slate-50 border-slate-200'}`}>
                               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
@@ -6228,7 +7573,18 @@ const BonCommandePlateforme = () => {
             return changed ? next : prev;
           });
         };
-        const getEditCls = (key, extra = 'px-3 py-2') => `w-full ${extra} rounded-xl border text-xs font-semibold outline-none focus:ring-2 ${editFormErrors[key]
+
+  // Sync activePhase with URL query param on mount / URL change
+  useEffect(() => {
+    const urlPhase = new URLSearchParams(location.search).get('phase');
+    if (urlPhase && urlPhase !== activePhase) {
+      setActivePhase(urlPhase);
+    }
+    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
+    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
+      setActivePhase('consultation');
+    }
+  }, [location.search, location.pathname]);        const getEditCls = (key, extra = 'px-3 py-2') => `w-full ${extra} rounded-xl border text-xs font-semibold outline-none focus:ring-2 ${editFormErrors[key]
           ? 'border-red-400 bg-red-50/30 focus:border-red-500 focus:ring-red-100'
           : 'border-slate-200 focus:border-blue-600 focus:ring-blue-100'
           }`;
