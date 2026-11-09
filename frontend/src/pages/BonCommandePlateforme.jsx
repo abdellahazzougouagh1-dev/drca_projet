@@ -478,32 +478,14 @@ function PiecesJointesManager({
   };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);
+
   const handleRemove = (idxToRemove) => {
     const next = items.filter((_, i) => i !== idxToRemove);
     onChange(next.join('\n'));
   };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);
+
   const handleKeyDown = (e) => {
     if (e.key === 'Enter') {
       e.preventDefault();
@@ -512,16 +494,7 @@ function PiecesJointesManager({
   };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);
+
   return (
     <div className={`col-span-full border rounded-2xl p-5 shadow-xs transition-all ${hasError ? 'border-red-500 bg-red-50/20' : 'border-slate-200/90 bg-slate-50/70'}`}>
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-200/60">
@@ -819,16 +792,7 @@ function LettresConsultationManager({
   };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);
+
   const updateLetter = (idx, key, val, formatOnBlur = false) => {
     let cleanVal = val;
     if (key === 'numero_lettre' && typeof val === 'string') {
@@ -847,16 +811,7 @@ function LettresConsultationManager({
   };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);
+
   const addLetter = () => {
     const lastLetter = letters[letters.length - 1];
     const prevNum = lastLetter?.numero_lettre || baseNumero || '';
@@ -870,29 +825,11 @@ function LettresConsultationManager({
     };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);    syncLetters([...letters, newLetter]);
+    syncLetters([...letters, newLetter]);
   };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);
+
   const removeLetter = (idx) => {
     if (letters.length <= 1) return;
     const updated = letters.filter((_, i) => i !== idx);
@@ -900,16 +837,7 @@ function LettresConsultationManager({
   };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);
+
   const selectExistingFournisseur = (idx, fournisseurId) => {
     if (!fournisseurId) return;
     const f = availableFournisseurs.find((item) => String(item.id) === String(fournisseurId));
@@ -924,30 +852,12 @@ function LettresConsultationManager({
       };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);    });
+    });
     syncLetters(updated);
   };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);
+
   const isBlankRowField = (letter, key) => Boolean(hasError && (!letter?.[key] || !String(letter[key]).trim()));
 
   return (
@@ -1127,16 +1037,7 @@ const BonCommandePlateforme = () => {
   };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);  const isBonCommandeConsultation = (consultation) => !isConventionConsultation(consultation);
+  const isBonCommandeConsultation = (consultation) => !isConventionConsultation(consultation);
   const isVisibleConsultation = (consultation) => isConventionRoute
     ? isConventionConsultation(consultation)
     : isBonCommandeConsultation(consultation);
@@ -1216,16 +1117,7 @@ const BonCommandePlateforme = () => {
   };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);
+
   useEffect(() => {
     if (savedConsultation?.id) {
       localStorage.setItem('drca_selected_consultation_id', String(savedConsultation.id));
@@ -1273,16 +1165,7 @@ const BonCommandePlateforme = () => {
     };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);    fetchFournisseurs();
+    fetchFournisseurs();
   }, []);
 
   const [consultationsList, setConsultationsList] = useState([]);
@@ -1369,29 +1252,11 @@ const BonCommandePlateforme = () => {
         };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);      });
+      });
   };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);
+
   const handleExportRegistreExcel = async (downloadAll = false) => {
     try {
       setIsExportingExcel(true);
@@ -1420,16 +1285,7 @@ const BonCommandePlateforme = () => {
   };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);
+
   const fetchMembresCatalog = async () => {
     try {
       const res = await api.get('/commission-membres');
@@ -1440,16 +1296,7 @@ const BonCommandePlateforme = () => {
   };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);
+
   useEffect(() => {
     const fetchConsultations = async () => {
       setConsultationsLoading(true);
@@ -1491,16 +1338,7 @@ const BonCommandePlateforme = () => {
     };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);    fetchConsultations();
+    fetchConsultations();
     fetchMembresCatalog();
   }, [location.state, location.search]);
 
@@ -1543,16 +1381,7 @@ const BonCommandePlateforme = () => {
   };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);
+
   const openEditConsultationModal = (consultation) => {
     setEditingConsultationData({
       id: consultation.id,
@@ -1595,16 +1424,7 @@ const BonCommandePlateforme = () => {
   };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);
+
   const handleEditPrestationChange = (index, field, value) => {
     setEditingPrestations((prev) => prev.map((line, lineIndex) => {
       if (field === 'tva' && index === 0) {
@@ -1615,16 +1435,7 @@ const BonCommandePlateforme = () => {
   };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);
+
   const addEditPrestationLine = () => {
     setEditingPrestations((prev) => {
       const firstTva = prev[0]?.tva ?? 20;
@@ -1633,31 +1444,13 @@ const BonCommandePlateforme = () => {
   };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);
+
   const removeEditPrestationLine = (index) => {
     setEditingPrestations((prev) => prev.filter((_, i) => i !== index));
   };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);
+
   const validateEditConsultationForm = (data) => {
     const errors = {};
     const effectiveMode = isConventionActive
@@ -1721,16 +1514,7 @@ const BonCommandePlateforme = () => {
   };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);
+
   const handleSaveEditedConsultation = async (e) => {
     e.preventDefault();
     if (!editingConsultationData?.id) return;
@@ -1777,16 +1561,7 @@ const BonCommandePlateforme = () => {
       };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);
+
       await api.put(`/consultations/${editingConsultationData.id}`, updatePayload);
 
       const cleanPrestations = editingPrestations
@@ -1837,16 +1612,7 @@ const BonCommandePlateforme = () => {
   };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);
+
   const handleDeleteConsultation = async (consultation) => {
     if (!window.confirm(`Êtes-vous sûr de vouloir supprimer la consultation "${consultation.numero_consultation}" ? Cette action est irréversible.`)) {
       return;
@@ -1871,16 +1637,7 @@ const BonCommandePlateforme = () => {
   };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);
+
   const addMembreToDocumentCommission = (documentId, fieldName) => {
     if (documentId === 'pv_ouverture_attribution' || documentId === 'pv_ouverture_convention') {
       documentId = 'decision_commission_ouverture';
@@ -1902,16 +1659,7 @@ const BonCommandePlateforme = () => {
     };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);
+
     if (!currentList.some((m) => String(m.id || m.nom) === String(newMemberEntry.id))) {
       currentList.push(newMemberEntry);
     }
@@ -1921,16 +1669,7 @@ const BonCommandePlateforme = () => {
   };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);
+
   const removeMembreFromDocumentCommission = (documentId, fieldName, indexToRemove) => {
     if (documentId === 'pv_ouverture_attribution' || documentId === 'pv_ouverture_convention') {
       documentId = 'decision_commission_ouverture';
@@ -1943,16 +1682,7 @@ const BonCommandePlateforme = () => {
   };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);
+
   const totalHT = useMemo(() => prestations.reduce((sum, item) => {
     return sum + ((Number(item.quantite) || 0) * (Number(item.prix_unitaire_ht) || 0));
   }, 0), [prestations]);
@@ -1968,16 +1698,7 @@ const BonCommandePlateforme = () => {
   };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);
+
   const handleLineChange = (index, field, value) => {
     setPrestations((prev) => prev.map((line, lineIndex) => (
       lineIndex === index ? { ...line, [field]: value } : line
@@ -1985,16 +1706,7 @@ const BonCommandePlateforme = () => {
   };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);
+
   const handleDocumentFieldChange = (documentId, field, value) => {
     let cleanVal = value;
     if (fieldMaxLengthMap[field] && typeof value === 'string') {
@@ -2011,16 +1723,7 @@ const BonCommandePlateforme = () => {
       };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);      if (documentId === 'decision_commission_ouverture') {
+      if (documentId === 'decision_commission_ouverture') {
         const openingSyncMap = {
           membres_commission: 'membres_commission',
           date_reunion: 'date_reunion',
@@ -2031,16 +1734,7 @@ const BonCommandePlateforme = () => {
         };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);        if (openingSyncMap[field]) {
+        if (openingSyncMap[field]) {
           const targetKey = openingSyncMap[field];
           updated.pv_ouverture_attribution = {
             ...(prev.pv_ouverture_attribution || {}),
@@ -2048,31 +1742,13 @@ const BonCommandePlateforme = () => {
           };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);          updated.pv_ouverture_convention = {
+          updated.pv_ouverture_convention = {
             ...(prev.pv_ouverture_convention || {}),
             [targetKey]: cleanVal,
           };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);        }
+        }
       }
       if (documentId === 'pv_ouverture_attribution' || documentId === 'pv_ouverture_convention') {
         const siblingId = documentId === 'pv_ouverture_attribution' ? 'pv_ouverture_convention' : 'pv_ouverture_attribution';
@@ -2086,47 +1762,20 @@ const BonCommandePlateforme = () => {
         };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);        if (reverseSyncMap[field]) {
+        if (reverseSyncMap[field]) {
           updated.decision_commission_ouverture = {
             ...(prev.decision_commission_ouverture || {}),
             [reverseSyncMap[field]]: cleanVal,
           };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);          updated[siblingId] = {
+          updated[siblingId] = {
             ...(prev[siblingId] || {}),
             [field]: cleanVal,
           };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);        }
+        }
       }
       if (field === 'numero_consultation' && typeof cleanVal === 'string' && (isConventionActive || ['lettre_consultation', 'decision_commission_ouverture', 'pv_ouverture_convention', 'pv_ouverture_attribution'].includes(documentId))) {
         const cleanedNum = cleanVal.replace(/\bCONV\s*[-_]?\s*/i, '').trim().replace(/^[-_\s]+|[-_\s]+$/, '');
@@ -2136,16 +1785,7 @@ const BonCommandePlateforme = () => {
         };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);      }
+      }
       const isConsultationLettersDoc = documentId === 'lettre_consultation' || (isConventionActive && documentId === 'avis_achat');
       if (isConsultationLettersDoc && field === 'numero_lettre' && typeof cleanVal === 'string') {
         const cleaned = cleanVal.replace(/^CONV\s*[-_]?\s*/i, '');
@@ -2166,16 +1806,7 @@ const BonCommandePlateforme = () => {
           };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);        } else {
+        } else {
           patched = { numero_lettre: cleaned };
         }
 
@@ -2196,16 +1827,7 @@ const BonCommandePlateforme = () => {
             };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);          }
+          }
 
           // Synchroniser les participants et les concurrents dans l'ordre exact des lettres
           const prevPvSuppliers = updated.pv_ouverture_convention?.fournisseurs_consultes
@@ -2226,16 +1848,7 @@ const BonCommandePlateforme = () => {
               };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);            });
+            });
 
           const syncedConcurrents = syncedSuppliers.map((s) => ({
             nom: s.nom,
@@ -2251,47 +1864,20 @@ const BonCommandePlateforme = () => {
           };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);
+
           updated.pv_ouverture_convention = {
             ...(updated.pv_ouverture_convention || {}),
             ...pvPatch,
           };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);          updated.pv_ouverture_attribution = {
+          updated.pv_ouverture_attribution = {
             ...(updated.pv_ouverture_attribution || {}),
             ...pvPatch,
           };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);        }
+        }
       }
       if (documentId === 'decision_commission_reception') {
         const fieldMap = {
@@ -2309,32 +1895,14 @@ const BonCommandePlateforme = () => {
         };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);        if (fieldMap[field]) {
+        if (fieldMap[field]) {
           updated.pv_reception = {
             ...(prev.pv_reception || {}),
             [fieldMap[field]]: value,
           };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);        }
+        }
       }
       if (documentId === 'pv_reception') {
         const fieldMap = {
@@ -2352,32 +1920,14 @@ const BonCommandePlateforme = () => {
         };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);        if (fieldMap[field]) {
+        if (fieldMap[field]) {
           updated.decision_commission_reception = {
             ...(prev.decision_commission_reception || {}),
             [fieldMap[field]]: value,
           };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);        }
+        }
       }
       if (field === 'adresse_societe' || field === 'adresse_1') {
         ['ordre_commande', 'accuse_reception', 'pv_reception', 'bon_commande'].forEach((docKey) => {
@@ -2388,16 +1938,7 @@ const BonCommandePlateforme = () => {
             };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);          }
+          }
         });
       }
       if (field === 'ville_societe' || field === 'ville_1') {
@@ -2409,16 +1950,7 @@ const BonCommandePlateforme = () => {
             };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);          }
+          }
         });
       }
       if (field === 'titulaire_nom' || field === 'societe' || field === 'attributaire') {
@@ -2431,16 +1963,7 @@ const BonCommandePlateforme = () => {
             };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);          }
+          }
         });
       }
 
@@ -2455,16 +1978,7 @@ const BonCommandePlateforme = () => {
             };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);          } else {
+          } else {
             const m = Number(value);
             const im = Number((m * 0.01).toFixed(2));
             const total = Number((m + im).toFixed(2));
@@ -2476,16 +1990,7 @@ const BonCommandePlateforme = () => {
             };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);          }
+          }
         }
         if (field === 'credit_ouvert_cp' || field === 'depenses_anterieures_cp') {
           const c = updated.fiche_engagement?.credit_ouvert_cp;
@@ -2496,16 +2001,7 @@ const BonCommandePlateforme = () => {
           };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);        }
+        }
         if (field === 'credit_ouvert_ce' || field === 'depenses_anterieures_ce') {
           const c = updated.fiche_engagement?.credit_ouvert_ce;
           const d = updated.fiche_engagement?.depenses_anterieures_ce;
@@ -2515,16 +2011,7 @@ const BonCommandePlateforme = () => {
           };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);        }
+        }
       }
 
       return updated;
@@ -2542,16 +2029,7 @@ const BonCommandePlateforme = () => {
   };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);
+
   const getSourcePrestations = () => (
     savedConsultation?.prestations?.length > 0
       ? savedConsultation.prestations
@@ -2584,16 +2062,7 @@ const BonCommandePlateforme = () => {
   };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);
+
   const resolveFournisseursConsultes = (documentId, forms = documentForms) => {
     const rawList = forms[documentId]?.fournisseurs_consultes
       ?? forms.pv_ouverture_convention?.fournisseurs_consultes
@@ -2621,16 +2090,7 @@ const BonCommandePlateforme = () => {
           };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);        });
+        });
     }
 
     if (Array.isArray(savedConsultation?.offres) && savedConsultation.offres.length > 0) {
@@ -2646,16 +2106,7 @@ const BonCommandePlateforme = () => {
         };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);      });
+      });
     }
 
     if (savedConsultation?.fournisseur?.raison_sociale) {
@@ -2676,16 +2127,7 @@ const BonCommandePlateforme = () => {
   };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);
+
   const resolveConcurrentsList = (documentId, forms = documentForms) => {
     const rawList = forms[documentId]?.concurrents
       ?? (documentId === 'pv_ouverture_convention' || isConventionActive
@@ -2718,16 +2160,7 @@ const BonCommandePlateforme = () => {
   };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);
+
   const resolvePrestationsReceptionnees = (documentId, forms = documentForms) => {
     const savedList = forms[documentId]?.prestations_receptionnees
       ?? forms.decision_commission_reception?.prestations_receptionnees
@@ -2749,16 +2182,7 @@ const BonCommandePlateforme = () => {
   };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);
+
   const resolveCommissionMembres = (documentId, forms = documentForms) => {
     if (documentId === 'pv_reception') {
       return forms.pv_reception?.membres_commission
@@ -2785,16 +2209,7 @@ const BonCommandePlateforme = () => {
   };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);
+
   const computeAutoFillDefaults = (documentId, baseForms = {}) => {
     const fields = documentFieldGroups[documentFieldsId(documentId)] || [];
     const defaults = {};
@@ -3180,16 +2595,7 @@ const BonCommandePlateforme = () => {
               };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);            });
+            });
         } else if (savedConsultation?.offres && savedConsultation.offres.length > 0) {
           defaults.fournisseurs_consultes = savedConsultation.offres.map((o) => {
             const amt = o.montant_apres_verification ?? o.montant_propose ?? '';
@@ -3203,16 +2609,7 @@ const BonCommandePlateforme = () => {
             };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);          });
+          });
         } else if (savedConsultation?.fournisseur?.raison_sociale) {
           defaults.fournisseurs_consultes = [{
             nom: savedConsultation.fournisseur.raison_sociale,
@@ -3242,16 +2639,7 @@ const BonCommandePlateforme = () => {
               };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);            });
+            });
         } else if (isConventionActive && savedConsultation?.fournisseur?.raison_sociale) {
           defaults.concurrents = [{
             nom: savedConsultation.fournisseur.raison_sociale,
@@ -3402,16 +2790,7 @@ const BonCommandePlateforme = () => {
   };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);
+
   useEffect(() => {
     if (!savedConsultation?.id) {
       setDocumentForms({});
@@ -3657,28 +3036,10 @@ const BonCommandePlateforme = () => {
     };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);  };
+  };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);
+
   const buildDocumentData = (documentId) => {
     const values = documentForms[documentId] || {};
     const montantDepenseNeuf = Number(values.montant_depense_neuf) || 0;
@@ -3715,16 +3076,7 @@ const BonCommandePlateforme = () => {
     };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);
+
     if ((documentId === 'decision_commission_ouverture' || documentId === 'pv_ouverture_convention' || documentId === 'pv_ouverture_attribution') && isConventionActive) {
       const lettresList = documentForms.lettre_consultation?.lettres_consultation
         || documentForms.avis_achat?.lettres_consultation;
@@ -3845,32 +3197,14 @@ const BonCommandePlateforme = () => {
   };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);
+
   const addLine = () => setPrestations((prev) => [...prev, emptyLine()]);
   const removeLine = (index) => {
     setPrestations((prev) => prev.length === 1 ? prev : prev.filter((_, lineIndex) => lineIndex !== index));
   };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);
+
   const saveDossier = async (event) => {
     if (event) event.preventDefault();
     if (savedConsultation) {
@@ -3893,16 +3227,7 @@ const BonCommandePlateforme = () => {
       };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);
+
       const consultationResponse = await api.post('/consultations', payload);
       const consultation = consultationResponse.data;
 
@@ -3931,16 +3256,7 @@ const BonCommandePlateforme = () => {
   };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);
+
   const getErrorMessage = async (err, defaultMsg) => {
     if (err.response?.data instanceof Blob) {
       try {
@@ -3955,16 +3271,7 @@ const BonCommandePlateforme = () => {
   };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);
+
   const selectConsultation = (consultation) => {
     if (!isVisibleConsultation(consultation)) {
       setError(isConventionRoute
@@ -3987,16 +3294,7 @@ const BonCommandePlateforme = () => {
   };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);
+
   const findBonCommande = async () => {
     const numeroBc = String(documentForms.fiche_engagement?.numero_bc || '').trim();
     if (!numeroBc) {
@@ -4025,16 +3323,7 @@ const BonCommandePlateforme = () => {
   };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);
+
   const saveDocumentDataToDatabase = async (documentId, isExplicitSave = false) => {
     if (!savedConsultation?.id) return false;
 
@@ -4300,16 +3589,7 @@ const BonCommandePlateforme = () => {
         };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);        const recRes = await api.post(`/consultations/${savedConsultation.id}/reception-commission`, recData);
+        const recRes = await api.post(`/consultations/${savedConsultation.id}/reception-commission`, recData);
         if (recRes.data?.consultation) {
           setSavedConsultation(recRes.data.consultation);
           setConsultationsList((prev) => prev.map((c) => (c.id === recRes.data.consultation.id ? recRes.data.consultation : c)));
@@ -4360,16 +3640,7 @@ const BonCommandePlateforme = () => {
         };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);        Object.entries(backendErrors).forEach(([k, msgs]) => {
+        Object.entries(backendErrors).forEach(([k, msgs]) => {
           const baseKey = k.split('.')[0];
           const targetKey = keyMap[baseKey] || baseKey;
           if (!mappedErrors[targetKey] && Array.isArray(msgs) && msgs[0]) {
@@ -4390,16 +3661,7 @@ const BonCommandePlateforme = () => {
   };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);
+
   const downloadDocument = async (document) => {
     if (!savedConsultation) {
       setError("Veuillez d'abord sélectionner un dossier depuis la liste des consultations.");
@@ -4449,16 +3711,7 @@ const BonCommandePlateforme = () => {
   };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);
+
   const isLastDocumentOfPhase = (docId, phaseId) => {
     const docs = documentsByPhase[phaseId] || [];
     if (docs.length === 0) return false;
@@ -4466,16 +3719,7 @@ const BonCommandePlateforme = () => {
   };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);
+
   const isPhaseFullyFilled = (phaseId) => {
     if (!savedConsultation) return false;
     const docs = documentsByPhase[phaseId] || [];
@@ -4486,16 +3730,7 @@ const BonCommandePlateforme = () => {
   };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);
+
   const downloadArchive = async (phaseParam = null) => {
     if (!savedConsultation) {
       setError("Veuillez d'abord sélectionner un dossier.");
@@ -4541,31 +3776,13 @@ const BonCommandePlateforme = () => {
   };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);
+
   const selectDocument = (documentId) => {
     setSelectedDocumentId(documentId);
   };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);
+
   const phaseIndex = phases.findIndex((p) => p.id === activePhase);
   // Navigate to a phase and sync URL query
 const goToPhase = (phaseId) => {
@@ -4593,70 +3810,25 @@ useEffect(() => {
     setActivePhase(urlPhase);
   }
 }, [location.pathname, location.search]);
-    if (phaseId === 'Ordonnancement') {
-      navigate(isConventionRoute ? '/ordonnancements?procedure=Convention' : '/ordonnancements?procedure=Bon%20de%20commande');
-      return;
-    }
-    // Sync URL with phase query parameter
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    navigate(`${basePath}?phase=${encodeURIComponent(phaseId)}`);
-    setActivePhase(phaseId);
-    setIsSidebarOpen(false);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }
-    if (phaseId === 'Ordonnancement') {
-      navigate(isConventionRoute ? '/ordonnancements?procedure=Convention' : '/ordonnancements?procedure=Bon%20de%20commande');
-      return;
-    }
 
-    setActivePhase(phaseId);
-    setIsSidebarOpen(false);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);  const goNext = () => {
+  const goNext = () => {
     if (phaseIndex >= 0 && phaseIndex < phases.length - 1) {
       goToPhase(phases[phaseIndex + 1].id);
     }
   };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);  const goPrev = () => {
+  const goPrev = () => {
     if (phaseIndex > 0) {
       goToPhase(phases[phaseIndex - 1].id);
     }
   };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);
+
   const selectedDocument = selectedDocumentId
     ? allDocuments.find((d) => d.id === selectedDocumentId)
     : null;
@@ -5382,16 +4554,7 @@ useEffect(() => {
                           };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);
+
                           return (
                             <div key={`${selectedDocument.id}-${field.name}`} className={`col-span-full border rounded-2xl p-5 shadow-sm ${hasError ? 'bg-red-50/20 border-red-500' : 'bg-slate-50 border-slate-200'}`}>
                               <div className="flex items-center justify-between mb-3">
@@ -5507,16 +4670,7 @@ useEffect(() => {
                           };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);                          const addLigne = () => {
+                          const addLigne = () => {
                             const firstTva = lignes[0]?.tva ?? '20';
                             const updated = [
                               ...lignes,
@@ -5528,16 +4682,7 @@ useEffect(() => {
                           };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);                          const removeLigne = (idx) => {
+                          const removeLigne = (idx) => {
                             if (lignes.length <= 1) return;
                             const updated = lignes.filter((_, i) => i !== idx);
                             handleDocumentFieldChange(selectedDocument.id, field.name, updated);
@@ -5546,16 +4691,7 @@ useEffect(() => {
                           };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);
+
                           const colStyle = { fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px', display: 'block' };
 
                           const isAvisAchat = selectedDocument.id === 'avis_achat';
@@ -5579,16 +4715,7 @@ useEffect(() => {
                           };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);
+
                           return (
                             <div key={`${selectedDocument.id}-${field.name}`} className={`col-span-full rounded-2xl p-4 border ${hasError ? 'border-red-500 bg-red-50/20' : 'border-transparent'}`}>
                               <div className="flex items-center justify-between mb-3">
@@ -5700,16 +4827,7 @@ useEffect(() => {
                           };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);
+
                           const updateConcurrent = (idx, key, val) => {
                             const updated = list.map((c, i) => (i === idx ? { ...c, [key]: val } : c));
                             handleDocumentFieldChange(selectedDocument.id, field.name, updated);
@@ -5717,16 +4835,7 @@ useEffect(() => {
                           };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);                          const addConcurrent = () => {
+                          const addConcurrent = () => {
                             const updated = [
                               ...list,
                               { nom: '', montant: '' },
@@ -5736,32 +4845,14 @@ useEffect(() => {
                           };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);                          const removeConcurrent = (idx) => {
+                          const removeConcurrent = (idx) => {
                             const updated = list.filter((_, i) => i !== idx);
                             handleDocumentFieldChange(selectedDocument.id, field.name, updated);
                             syncRefusedWithAttr(updated);
                           };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);
+
                           const handleExcelImport = (e) => {
                             const file = e.target.files?.[0];
                             if (!file) return;
@@ -5854,16 +4945,7 @@ useEffect(() => {
                                 };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);
+
                                 const imported = [];
                                 const startRow = headerRowIndex !== -1 ? headerRowIndex + 1 : 0;
 
@@ -5958,16 +5040,7 @@ useEffect(() => {
                             };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);
+
                             const extension = file.name.toLowerCase();
                             if (extension.endsWith('.xlsx') || extension.endsWith('.xls')) {
                               reader.readAsArrayBuffer(file);
@@ -5978,16 +5051,7 @@ useEffect(() => {
                           };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);
+
                           return (
                             <div key={`${selectedDocument.id}-${field.name}`} className={`col-span-full border rounded-2xl p-5 shadow-sm ${hasError ? 'bg-red-50/20 border-red-500' : 'bg-slate-50 border-slate-200'}`}>
                               <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
@@ -6139,16 +5203,7 @@ useEffect(() => {
                           };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);
+
                           const addRefusedCompany = (companyName = '') => {
                             const defaultMotif = "Refus d'invitation du maître d'ouvrage";
                             let targetName = companyName;
@@ -6165,16 +5220,7 @@ useEffect(() => {
                           };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);
+
                           const updateRefused = (idx, key, value) => {
                             const updated = currentList.map((item, i) => (i === idx ? { ...item, [key]: value } : item));
                             handleDocumentFieldChange(selectedDocument.id, field.name, updated);
@@ -6184,16 +5230,7 @@ useEffect(() => {
                           };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);
+
                           const removeRefused = (idx) => {
                             const updated = currentList.filter((_, i) => i !== idx);
                             handleDocumentFieldChange(selectedDocument.id, field.name, updated);
@@ -6201,16 +5238,7 @@ useEffect(() => {
                           };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);
+
                           return (
                             <div key={`${selectedDocument.id}-${field.name}`} className={`col-span-full border rounded-2xl p-5 shadow-sm ${hasError ? 'bg-red-50/20 border-red-500' : 'bg-slate-50 border-slate-200'}`}>
                               <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
@@ -6382,16 +5410,7 @@ useEffect(() => {
                           };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);
+
                           return (
                             <div key={`${selectedDocument.id}-${field.name}`} className={`col-span-full border rounded-2xl p-5 shadow-sm space-y-3 ${hasError ? 'bg-red-50/20 border-red-500' : 'bg-slate-50 border-slate-200'}`}>
                               <div className="flex items-center justify-between">
@@ -6507,16 +5526,7 @@ useEffect(() => {
                           };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);
+
                           return (
                             <div key={`${selectedDocument.id}-${field.name}`} className={`col-span-full space-y-2 p-4 rounded-xl border ${hasError ? 'bg-red-50/20 border-red-500' : 'bg-slate-50/70 border-slate-200'}`}>
                               <div className="flex items-center justify-between">
@@ -6608,16 +5618,7 @@ useEffect(() => {
                           };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);
+
                           return (
                             <LettresConsultationManager
                               key={`${selectedDocument.id}-${field.name}`}
@@ -6657,16 +5658,7 @@ useEffect(() => {
                                 };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);                              });
+                              });
 
                             const concs = synced.map((s) => ({
                               nom: s.nom,
@@ -6688,16 +5680,7 @@ useEffect(() => {
                           };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);
+
                           const updateParticipant = (idx, key, val) => {
                             const updated = currentList.map((p, i) => {
                               if (i !== idx) return p;
@@ -6728,16 +5711,7 @@ useEffect(() => {
                               };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);                            });
+                            });
 
                             handleDocumentFieldChange(docId, 'concurrents', updatedConcs);
                             if (docId !== 'pv_ouverture_convention') {
@@ -6760,16 +5734,7 @@ useEffect(() => {
                           };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);
+
                           const addParticipant = () => {
                             const updated = [...currentList, { nom: '', adresse: '', ville: '', montant: '', montant_avant: '', montant_apres: '' }];
                             handleDocumentFieldChange(docId, field.name, updated);
@@ -6791,16 +5756,7 @@ useEffect(() => {
                           };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);
+
                           const removeParticipant = (idx) => {
                             const updated = currentList.filter((_, i) => i !== idx);
                             handleDocumentFieldChange(docId, field.name, updated);
@@ -6822,16 +5778,7 @@ useEffect(() => {
                           };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);
+
                           return (
                             <div key={`${selectedDocument.id}-${field.name}`} className={`col-span-full border rounded-2xl p-5 shadow-sm space-y-3 ${hasError ? 'bg-red-50/20 border-red-500' : 'bg-slate-50 border-slate-200'}`}>
                               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
@@ -6993,16 +5940,7 @@ useEffect(() => {
                               };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);                              handleDocumentFieldChange(docId, 'fournisseurs_consultes', existingParts);
+                              handleDocumentFieldChange(docId, 'fournisseurs_consultes', existingParts);
                               if (docId !== 'pv_ouverture_convention') {
                                 handleDocumentFieldChange('pv_ouverture_convention', 'fournisseurs_consultes', existingParts);
                               }
@@ -7024,16 +5962,7 @@ useEffect(() => {
                           };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);
+
                           const addConcurrent = () => {
                             const updated = [...currentList, { nom: '', montant_avant: '', montant_apres: '', montant: '' }];
                             handleDocumentFieldChange(docId, field.name, updated);
@@ -7042,16 +5971,7 @@ useEffect(() => {
                           };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);
+
                           const removeConcurrent = (idx) => {
                             const updated = currentList.filter((_, i) => i !== idx);
                             handleDocumentFieldChange(docId, field.name, updated);
@@ -7060,16 +5980,7 @@ useEffect(() => {
                           };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);
+
                           return (
                             <div key={`${selectedDocument.id}-${field.name}`} className={`col-span-full border rounded-2xl p-5 shadow-sm space-y-3 ${hasError ? 'bg-red-50/20 border-red-500' : 'bg-slate-50 border-slate-200'}`}>
                               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
@@ -7575,16 +6486,7 @@ useEffect(() => {
         };
 
   // Sync activePhase with URL query param on mount / URL change
-  useEffect(() => {
-    const urlPhase = new URLSearchParams(location.search).get('phase');
-    if (urlPhase && urlPhase !== activePhase) {
-      setActivePhase(urlPhase);
-    }
-    const basePath = isConventionRoute ? '/convention' : '/bons-commande';
-    if (location.pathname === basePath && (!urlPhase || urlPhase !== activePhase)) {
-      setActivePhase('consultation');
-    }
-  }, [location.search, location.pathname]);        const getEditCls = (key, extra = 'px-3 py-2') => `w-full ${extra} rounded-xl border text-xs font-semibold outline-none focus:ring-2 ${editFormErrors[key]
+        const getEditCls = (key, extra = 'px-3 py-2') => `w-full ${extra} rounded-xl border text-xs font-semibold outline-none focus:ring-2 ${editFormErrors[key]
           ? 'border-red-400 bg-red-50/30 focus:border-red-500 focus:ring-red-100'
           : 'border-slate-200 focus:border-blue-600 focus:ring-blue-100'
           }`;
