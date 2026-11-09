@@ -5,7 +5,8 @@
     }
 
     body {
-        font-size: 12px;
+        font-size: 13px;
+        line-height: 1.55;
     }
 
     h1,
@@ -23,6 +24,6 @@
     .section-title-box,
     .header-desc,
     .document-title {
-        font-size: 14px;
+        font-size: 16px;
     }
 </style>
