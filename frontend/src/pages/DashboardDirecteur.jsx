@@ -105,10 +105,11 @@ const pct = (part, total) => {
   const t = Number(total || 0);
   if (!t || p <= 0) return 0;
   const raw = (p / t) * 100;
-  if (raw > 0 && raw < 0.01) {
-    return Number(raw.toFixed(4));
+  const capped = Math.min(raw, 100);
+  if (capped > 0 && capped < 0.01) {
+    return Number(capped.toFixed(4));
   }
-  return Math.round(raw * 100) / 100;
+  return Math.round(capped * 100) / 100;
 };
 
 const rate = (v) => {

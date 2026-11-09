@@ -294,7 +294,7 @@
 
         <!-- Expéditeur -->
         <div class="sender-section">
-            <div class="sender-title">Le Directeur Régional du Conseil Agricole de Rabat-Salé-Kénitra</div>
+            <div class="sender-title">Chef de SAF (Service Financier et Administratif)</div>
             <div class="sender-city">Kénitra</div>
         </div>
 

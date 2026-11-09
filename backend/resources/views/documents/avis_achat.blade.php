@@ -142,7 +142,7 @@
 
     <table class="meta" style="margin-top: 28px;">
         <tr>
-            <td class="bold">Le Directeur Régional du Conseil Agricole de Rabat-Salé-Kénitra</td>
+            <td class="bold">Chef de SAF (Service Financier et Administratif)</td>
             <td class="center bold" style="width: 15%;">Date</td>
             <td class="center bold" style="width: 18%;">{{ $doc['date_document'] }}</td>
         </tr>
