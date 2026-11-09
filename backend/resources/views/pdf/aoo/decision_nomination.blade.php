@@ -4,12 +4,6 @@
     <meta charset="UTF-8">
     <title>Décision de Nomination - {{ $num_aoo }}</title>
     <style>
-        @page {
-            margin-top: 8mm;
-            margin-bottom: 27mm;
-            margin-left: 15mm;
-            margin-right: 15mm;
-        }
         body {
             font-family: 'Times New Roman', Times, serif;
             font-size: 9.5pt;

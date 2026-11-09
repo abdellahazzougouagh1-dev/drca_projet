@@ -30,7 +30,7 @@
 
         td, th {
             border: 1px solid #000;
-            padding: 4px 6px;
+            padding: 3px 6px;
             vertical-align: middle;
         }
 
@@ -59,7 +59,7 @@
             text-align: right;
             font-weight: bold;
             font-size: 10px;
-            margin: 6px 0 8px;
+            margin: 4px 0 5px;
         }
 
         .label-blue {
@@ -106,14 +106,14 @@
         }
 
         .manual-cell {
-            height: 35px;
+            height: 25px;
         }
 
         .observations-box {
             border: 1px solid #000;
-            min-height: 150px;
-            padding: 8px;
-            margin-top: 8px;
+            min-height: 92px;
+            padding: 6px;
+            margin-top: 5px;
         }
 
         .observations-title {
@@ -123,7 +123,7 @@
         }
 
         .section-gap {
-            margin-top: 6px;
+            margin-top: 4px;
         }
 
         .montant {

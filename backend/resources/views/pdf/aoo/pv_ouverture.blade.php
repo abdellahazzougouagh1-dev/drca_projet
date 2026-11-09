@@ -4,15 +4,15 @@
     <meta charset="UTF-8">
     <title>Extrait du Procès-Verbal - {{ $num_aoo }}</title>
     <style>
+        @if(($pdfEngine ?? 'mpdf') === 'dompdf')
         @page {
-            @if(($pdfEngine ?? 'mpdf') === 'dompdf')
             size: A4 portrait;
-            @endif
             margin-top: 12mm;
             margin-bottom: 27mm;
             margin-left: 15mm;
             margin-right: 15mm;
         }
+        @endif
         body {
             font-family: 'Times New Roman', Times, serif;
             font-size: 10.5pt;

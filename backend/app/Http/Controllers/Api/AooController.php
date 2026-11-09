@@ -735,7 +735,7 @@ class AooController extends Controller
                     'format' => 'A4',
                     'margin_left' => 15,
                     'margin_right' => 15,
-                    'margin_top' => 12,
+                    'margin_top' => 8,
                     'margin_bottom' => 27,
                     'margin_footer' => 4,
                     'autoScriptToLang' => true,

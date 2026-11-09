@@ -4,9 +4,6 @@
     <meta charset="UTF-8">
     <title>Lettre d'écartement - {{ $entreprise_nom }}</title>
     <style>
-        @page {
-            margin: 12mm 15mm 27mm 15mm;
-        }
         body {
             font-family: Arial, sans-serif;
             font-size: 10.5pt;

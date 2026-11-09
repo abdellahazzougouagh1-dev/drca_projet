@@ -4,12 +4,12 @@
     <meta charset="UTF-8">
     <title>Résultat d'Appel d'Offres Ouvert</title>
     <style>
+        @if(($pdfEngine ?? 'mpdf') === 'dompdf')
         @page {
-            @if(($pdfEngine ?? 'mpdf') === 'dompdf')
             size: A4 portrait;
-            @endif
             margin: 10mm 12mm 27mm 12mm;
         }
+        @endif
         body {
             font-family: Arial, Helvetica, sans-serif;
             font-size: 13px;
