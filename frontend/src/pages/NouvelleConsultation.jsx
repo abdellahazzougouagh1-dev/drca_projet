@@ -9,7 +9,9 @@ const NouvelleConsultation = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const initialMode = searchParams.get('mode') || 'BC';
-  const resolvedMode = ['AO', 'Convention', 'BC'].includes(initialMode) ? initialMode : (initialMode.toUpperCase() === 'AO' ? 'AO' : 'BC');
+  const resolvedMode = ['AO', 'Convention', 'Contrat', 'BC'].includes(initialMode)
+    ? initialMode
+    : (initialMode.toUpperCase() === 'AO' ? 'AO' : 'BC');
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -134,19 +136,31 @@ const NouvelleConsultation = () => {
 
   const validateForm = () => {
     const errors = {};
+    const isAoMode = formData.mode_engagement === 'AO' || formData.mode_engagement === "Appel d'offres" || formData.mode_engagement === "Appel d'offre";
+    const numeroRefLabel = formData.mode_engagement === 'Contrat'
+      ? 'Numéro de contrat'
+      : formData.mode_engagement === 'Convention'
+        ? 'Numéro de convention'
+        : 'Numéro de bon de commande';
+
     const fieldsToValidate = [
-      { name: 'numero_consultation', label: 'Numéro de consultation' },
-      { name: 'numero_decision', label: "Numéro de décision d'ouverture de commission" },
-      ...(formData.mode_engagement === 'BC' || formData.mode_engagement === 'Convention' ? [{ name: 'numero_bc', label: formData.mode_engagement === 'Convention' ? 'Numéro de convention' : 'Numéro de bon de commande' }] : []),
-      { name: 'date_limite_devis', label: 'Date limite de réception des devis' },
-      { name: 'heure_limite_devis', label: 'Heure limite' },
-      { name: 'lieu_execution', label: "Lieu d'exécution" },
+      { name: 'mode_engagement', label: "Mode d'engagement" },
+      ...(isAoMode ? [] : [
+        { name: 'numero_consultation', label: 'Numéro de consultation' },
+        { name: 'numero_decision', label: "Numéro de décision d'ouverture de commission" },
+        { name: 'numero_bc', label: numeroRefLabel },
+        { name: 'date_limite_devis', label: 'Date limite de réception des devis' },
+        { name: 'heure_limite_devis', label: 'Heure limite' },
+        { name: 'lieu_execution', label: "Lieu d'exécution" },
+        { name: 'intitule', label: 'Intitulé (Nature de la prestation)' },
+      ]),
       { name: 'annee', label: 'Année' },
       { name: 'date_consultation', label: 'Date de consultation' },
       { name: 'objet_consultation', label: 'Objet de la consultation' },
-      { name: 'intitule', label: 'Intitulé (Nature de la prestation)' },
+      { name: 'categorie', label: 'Catégorie' },
+      { name: 'type_budget', label: 'Type de budget' },
       { name: 'delai_execution', label: "Délai d'exécution" },
-      ...(formData.mode_engagement !== 'AO' ? [
+      ...(!isAoMode ? [
         { name: 'art', label: 'Article (ART)' },
         { name: 'par', label: 'Paragraphe (PAR)' },
         { name: 'lig', label: 'Ligne (LIG)' },
@@ -161,29 +175,53 @@ const NouvelleConsultation = () => {
       }
     });
 
-    // Validation spécifique des dates (Toutes les dates doivent être >= 2026-01-01)
-    const minDate = new Date('2026-01-01');
-
-    if (formData.date_consultation) {
-      const dConsultation = new Date(formData.date_consultation);
-      if (!isNaN(dConsultation.getTime()) && dConsultation < minDate) {
-        errors.date_consultation = "La date de consultation doit être supérieure ou égale au 01/01/2026.";
+    if (!errors.delai_execution) {
+      const delaiNum = Number(formData.delai_execution);
+      if (!Number.isInteger(delaiNum) || delaiNum < 1) {
+        errors.delai_execution = "Le délai d'exécution doit être un entier supérieur ou égal à 1 jour.";
       }
     }
 
-    if (formData.date_limite_devis) {
-      const dLimite = new Date(formData.date_limite_devis);
-      if (!isNaN(dLimite.getTime()) && dLimite < minDate) {
-        errors.date_limite_devis = "La date limite des devis doit être supérieure ou égale au 01/01/2026.";
+    if (!errors.annee) {
+      const anneeNum = Number(formData.annee);
+      const minYear = isAoMode ? 2000 : 2026;
+      if (!Number.isInteger(anneeNum) || anneeNum < minYear || anneeNum > 2099) {
+        errors.annee = `L'année doit être comprise entre ${minYear} et 2099.`;
       }
     }
 
-    if (formData.date_consultation && formData.date_limite_devis) {
-      const dConsultation = new Date(formData.date_consultation);
-      const dLimite = new Date(formData.date_limite_devis);
-      if (!isNaN(dConsultation.getTime()) && !isNaN(dLimite.getTime())) {
-        if (dLimite < dConsultation) {
-          errors.date_limite_devis = 'La date limite des devis doit être égale ou postérieure à la date de consultation.';
+    if (!isAoMode && !errors.exercice_budgetaire) {
+      const exNum = Number(formData.exercice_budgetaire);
+      if (!Number.isInteger(exNum) || exNum < 2026 || exNum > 2099) {
+        errors.exercice_budgetaire = "L'exercice budgétaire doit être compris entre 2026 et 2099.";
+      }
+    }
+
+    // Validation spécifique des dates (Pour BC / Convention / Contrat : >= 2026-01-01)
+    if (!isAoMode) {
+      const minDate = new Date('2026-01-01');
+
+      if (formData.date_consultation) {
+        const dConsultation = new Date(formData.date_consultation);
+        if (!isNaN(dConsultation.getTime()) && dConsultation < minDate) {
+          errors.date_consultation = "La date de consultation doit être supérieure ou égale au 01/01/2026.";
+        }
+      }
+
+      if (formData.date_limite_devis) {
+        const dLimite = new Date(formData.date_limite_devis);
+        if (!isNaN(dLimite.getTime()) && dLimite < minDate) {
+          errors.date_limite_devis = "La date limite des devis doit être supérieure ou égale au 01/01/2026.";
+        }
+      }
+
+      if (formData.date_consultation && formData.date_limite_devis) {
+        const dConsultation = new Date(formData.date_consultation);
+        const dLimite = new Date(formData.date_limite_devis);
+        if (!isNaN(dConsultation.getTime()) && !isNaN(dLimite.getTime())) {
+          if (dLimite < dConsultation) {
+            errors.date_limite_devis = 'La date limite des devis doit être égale ou postérieure à la date de consultation.';
+          }
         }
       }
     }
@@ -215,7 +253,7 @@ const NouvelleConsultation = () => {
       setTimeout(() => {
         if (formData.mode_engagement === 'AO' || formData.mode_engagement === 'Appel d\'offres' || formData.mode_engagement === 'Appel d\'offre') {
           navigate('/aoos/nouveau', { state: { autoSelectId: created?.id, createdConsultation: created } });
-        } else if (formData.mode_engagement === 'Convention') {
+        } else if (formData.mode_engagement === 'Convention' || formData.mode_engagement === 'Contrat') {
           navigate('/convention', { state: { autoSelectId: created?.id, createdConsultation: created } });
         } else {
           navigate('/bons-commande', { state: { autoSelectId: created?.id } });
@@ -223,6 +261,14 @@ const NouvelleConsultation = () => {
       }, 1000);
     } catch (err) {
       console.error(err);
+      const serverErrors = err.response?.data?.errors;
+      if (serverErrors && typeof serverErrors === 'object') {
+        const mapped = {};
+        Object.entries(serverErrors).forEach(([k, v]) => {
+          mapped[k] = Array.isArray(v) ? v[0] : String(v);
+        });
+        setFieldErrors((prev) => ({ ...prev, ...mapped }));
+      }
       setError(
         err.response?.data?.message || 'Une erreur est survenue lors de la création de la consultation.'
       );
@@ -235,6 +281,12 @@ const NouvelleConsultation = () => {
       ? 'border-red-500 bg-red-50/20 text-red-900 focus:ring-red-200'
       : 'border-slate-200 text-slate-800 focus:border-[#087F5B] focus:ring-2 focus:ring-[#087F5B]/20'
     } outline-none transition-all`;
+
+  const renderFieldError = (fieldName) => fieldErrors[fieldName] ? (
+    <span role="alert" className="mt-1.5 block text-xs font-medium text-red-600">
+      {fieldErrors[fieldName]}
+    </span>
+  ) : null;
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 bg-[#F5F7F5] min-h-screen text-[#172033]">
@@ -306,61 +358,81 @@ const NouvelleConsultation = () => {
                 <label className="block text-sm font-semibold text-slate-700 mb-2">
                   Mode d'engagement <span className="text-red-600 font-bold ml-0.5">*</span>
                 </label>
-                <select name="mode_engagement" value={formData.mode_engagement} onChange={handleChange} className="w-full px-4 py-3 rounded-xl bg-white border border-slate-200 focus:ring-2 focus:ring-[#087F5B]/20 focus:border-[#087F5B] outline-none transition-all text-slate-800 font-semibold cursor-pointer">
+                <select name="mode_engagement" value={formData.mode_engagement} onChange={handleChange} className={`${getInputClass('mode_engagement')} font-semibold cursor-pointer`}>
                   <option value="BC">Bon de commande</option>
                   <option value="Convention">Convention</option>
+                  <option value="Contrat">Contrat</option>
                   <option value="AO">Appel d'offres</option>
                 </select>
+                {renderFieldError('mode_engagement')}
               </div>
 
               <div>
                 <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                  Numéro de consultation <span className="text-red-600 font-bold ml-0.5">*</span>
+                  Numéro de consultation {formData.mode_engagement !== 'AO' && <span className="text-red-600 font-bold ml-0.5">*</span>}
                 </label>
                 <input type="text" name="numero_consultation" value={formData.numero_consultation} onChange={handleChange} placeholder="Ex: 04/2026/DRCA-RSK" className={getInputClass('numero_consultation')} />
+                {renderFieldError('numero_consultation')}
               </div>
 
               <div>
                 <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                  Numéro de la décision de la commission d'ouverture <span className="text-red-600 font-bold ml-0.5">*</span>
+                  Numéro de la décision de la commission d'ouverture {formData.mode_engagement !== 'AO' && <span className="text-red-600 font-bold ml-0.5">*</span>}
                 </label>
                 <input type="text" name="numero_decision" value={formData.numero_decision} onChange={handleChange} placeholder="Ex: 06/2026/DRCA-RSK" className={getInputClass('numero_decision')} />
+                {renderFieldError('numero_decision')}
               </div>
 
               <div>
                 <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                  {formData.mode_engagement === 'AO' ? 'Numéro de marché' : formData.mode_engagement === 'Convention' ? 'Numéro de convention' : 'Numéro de bon de commande'}{' '}
-                  {(formData.mode_engagement === 'BC' || formData.mode_engagement === 'Convention') && <span className="text-red-600 font-bold ml-0.5">*</span>}
+                  {formData.mode_engagement === 'AO'
+                    ? 'Numéro de marché'
+                    : formData.mode_engagement === 'Contrat'
+                      ? 'Numéro de contrat'
+                      : formData.mode_engagement === 'Convention'
+                        ? 'Numéro de convention'
+                        : 'Numéro de bon de commande'}{' '}
+                  {['BC', 'Convention', 'Contrat'].includes(formData.mode_engagement) && <span className="text-red-600 font-bold ml-0.5">*</span>}
                 </label>
                 <input
                   type="text"
                   name="numero_bc"
                   value={formData.numero_bc}
                   onChange={handleChange}
-                  placeholder={formData.mode_engagement === 'AO' ? 'Ex: M-05/2026/DRCA-RSK' : formData.mode_engagement === 'Convention' ? 'Ex: CONV-05/2026/DRCA-RSK' : 'Ex: BC CONS-2026-0001'}
+                  placeholder={formData.mode_engagement === 'AO'
+                    ? 'Ex: M-05/2026/DRCA-RSK'
+                    : formData.mode_engagement === 'Contrat'
+                      ? 'Ex: CT-05/2026/DRCA-RSK'
+                      : formData.mode_engagement === 'Convention'
+                        ? 'Ex: CONV-05/2026/DRCA-RSK'
+                        : 'Ex: BC CONS-2026-0001'}
                   className={getInputClass('numero_bc')}
                 />
+                {renderFieldError('numero_bc')}
               </div>
 
               <div>
                 <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                  Date limite de réception des devis <span className="text-red-600 font-bold ml-0.5">*</span>
+                  Date limite de réception des devis {formData.mode_engagement !== 'AO' && <span className="text-red-600 font-bold ml-0.5">*</span>}
                 </label>
                 <input type="date" name="date_limite_devis" min="2026-01-01" max="2099-12-31" value={formData.date_limite_devis} onChange={handleChange} className={getInputClass('date_limite_devis')} />
+                {renderFieldError('date_limite_devis')}
               </div>
 
               <div>
                 <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                  Heure limite <span className="text-red-600 font-bold ml-0.5">*</span>
+                  Heure limite {formData.mode_engagement !== 'AO' && <span className="text-red-600 font-bold ml-0.5">*</span>}
                 </label>
                 <input type="text" name="heure_limite_devis" value={formData.heure_limite_devis} onChange={handleChange} placeholder="Ex: 10:00" className={getInputClass('heure_limite_devis')} />
+                {renderFieldError('heure_limite_devis')}
               </div>
 
               <div>
                 <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                  Lieu d'exécution <span className="text-red-600 font-bold ml-0.5">*</span>
+                  Lieu d'exécution {formData.mode_engagement !== 'AO' && <span className="text-red-600 font-bold ml-0.5">*</span>}
                 </label>
                 <input type="text" name="lieu_execution" value={formData.lieu_execution} onChange={handleChange} placeholder="Ex: REGION DE RABAT SALE KENITRA" className={getInputClass('lieu_execution')} />
+                {renderFieldError('lieu_execution')}
               </div>
 
               <div>
@@ -368,6 +440,7 @@ const NouvelleConsultation = () => {
                   Année <span className="text-red-600 font-bold ml-0.5">*</span>
                 </label>
                 <input type="number" name="annee" min="2026" max="2099" onInput={(e) => { if (e.target.value.length > 4) e.target.value = e.target.value.slice(0, 4); }} value={formData.annee} onChange={handleChange} className={getInputClass('annee')} />
+                {renderFieldError('annee')}
               </div>
 
               <div>
@@ -375,6 +448,7 @@ const NouvelleConsultation = () => {
                   Date de consultation <span className="text-red-600 font-bold ml-0.5">*</span>
                 </label>
                 <input type="date" name="date_consultation" min="2026-01-01" max="2099-12-31" value={formData.date_consultation} onChange={handleChange} className={getInputClass('date_consultation')} />
+                {renderFieldError('date_consultation')}
               </div>
 
               <div className="md:col-span-2">
@@ -382,22 +456,24 @@ const NouvelleConsultation = () => {
                   Objet de la consultation <span className="text-red-600 font-bold ml-0.5">*</span>
                 </label>
                 <input type="text" name="objet_consultation" value={formData.objet_consultation} onChange={handleChange} placeholder="Ex: Achat de matériel informatique..." className={getInputClass('objet_consultation')} />
+                {renderFieldError('objet_consultation')}
               </div>
 
               <div>
                 <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                   Catégorie <span className="text-red-600 font-bold ml-0.5">*</span>
                 </label>
-                <select name="categorie" value={formData.categorie} onChange={handleChange} className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all dark:text-white">
+                <select name="categorie" value={formData.categorie} onChange={handleChange} className={getInputClass('categorie')}>
                   <option value="Travaux">Travaux</option>
                   <option value="Fournitures">Fournitures</option>
                   <option value="Services">Services</option>
                 </select>
+                {renderFieldError('categorie')}
               </div>
 
               <div className="md:col-span-2">
                 <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                  Intitulé (Nature de la prestation) <span className="text-red-600 font-bold ml-0.5">*</span>
+                  Intitulé (Nature de la prestation) {formData.mode_engagement !== 'AO' && <span className="text-red-600 font-bold ml-0.5">*</span>}
                 </label>
                 <input type="text" name="intitule" value={formData.intitule} onChange={(e) => {
                   const val = e.target.value;
@@ -406,16 +482,18 @@ const NouvelleConsultation = () => {
                     setFieldErrors((prev) => ({ ...prev, intitule: null }));
                   }
                 }} placeholder="Ex: Prestation de même nature / Achat de matériel technique..." className={getInputClass('intitule')} />
+                {renderFieldError('intitule')}
               </div>
 
               <div>
                 <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                   Type de budget <span className="text-red-600 font-bold ml-0.5">*</span>
                 </label>
-                <select name="type_budget" value={formData.type_budget} onChange={handleChange} className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all dark:text-white">
+                <select name="type_budget" value={formData.type_budget} onChange={handleChange} className={getInputClass('type_budget')}>
                   <option value="Investissement">Investissement</option>
                   <option value="Fonctionnement">Fonctionnement</option>
                 </select>
+                {renderFieldError('type_budget')}
               </div>
 
               <div>
@@ -423,6 +501,7 @@ const NouvelleConsultation = () => {
                   Délai d'exécution (en jours) <span className="text-red-600 font-bold ml-0.5">*</span>
                 </label>
                 <input type="number" min="1" name="delai_execution" value={formData.delai_execution} onChange={handleChange} className={getInputClass('delai_execution')} />
+                {renderFieldError('delai_execution')}
               </div>
             </div>
           </section>
@@ -460,6 +539,7 @@ const NouvelleConsultation = () => {
                     Article (ART) <span className="text-red-600 font-bold ml-0.5">*</span>
                   </label>
                   <input type="text" name="art" value={formData.art} onChange={handleChange} placeholder="Ex: 415" className={getInputClass('art')} />
+                  {renderFieldError('art')}
                 </div>
 
                 <div>
@@ -467,6 +547,7 @@ const NouvelleConsultation = () => {
                     Paragraphe (PAR) <span className="text-red-600 font-bold ml-0.5">*</span>
                   </label>
                   <input type="text" name="par" value={formData.par} onChange={handleChange} placeholder="Ex: 10" className={getInputClass('par')} />
+                  {renderFieldError('par')}
                 </div>
 
                 <div>
@@ -474,6 +555,7 @@ const NouvelleConsultation = () => {
                     Ligne (LIG) <span className="text-red-600 font-bold ml-0.5">*</span>
                   </label>
                   <input type="text" name="lig" value={formData.lig} onChange={handleChange} placeholder="Ex: 10" className={getInputClass('lig')} />
+                  {renderFieldError('lig')}
                 </div>
 
                 <div>
@@ -486,6 +568,7 @@ const NouvelleConsultation = () => {
                     Exercice budgétaire <span className="text-red-600 font-bold ml-0.5">*</span>
                   </label>
                   <input type="number" name="exercice_budgetaire" min="2026" max="2099" onInput={(e) => { if (e.target.value.length > 4) e.target.value = e.target.value.slice(0, 4); }} value={formData.exercice_budgetaire} onChange={handleChange} className={getInputClass('exercice_budgetaire')} />
+                  {renderFieldError('exercice_budgetaire')}
                 </div>
               </div>
             </section>

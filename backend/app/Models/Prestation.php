@@ -8,13 +8,16 @@ class Prestation extends Model
 {
     protected $fillable = [
         'consultation_id',
+        'numero_prix',
         'designation',
+        'specification',
         'unite',
         'quantite',
         'prix_unitaire_ht',
         'montant_ht',
         'tva',
         'montant_ttc',
+        'garantie_exigee',
     ];
 
     protected $casts = [

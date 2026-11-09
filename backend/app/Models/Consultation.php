@@ -13,6 +13,7 @@ class Consultation extends Model
 
     protected $fillable = [
         'numero_consultation',
+        'numero_decision',
         'annee',
         'date_consultation',
         'objet_consultation',
@@ -25,6 +26,7 @@ class Consultation extends Model
         'delai_execution',
         'statut_dossier',
         'fournisseur_id',
+        'notification_ligne_id',
         'numero_avis',
         'date_limite_devis',
         'heure_limite_devis',

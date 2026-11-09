@@ -22,16 +22,24 @@ class CommissionMembreController extends Controller
         return response()->json($query->orderBy('nom_prenom')->get());
     }
 
+    public static function storeRules(): array
+    {
+        return [
+            'nom_prenom' => ['required', 'string', 'max:255', 'not_regex:/\A\s*\z/u'],
+            'fonction' => ['required', 'string', 'max:255', 'not_regex:/\A\s*\z/u'],
+        ];
+    }
+
+    public static function updateRules(): array
+    {
+        return self::storeRules();
+    }
+
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'nom_prenom' => 'required|string|max:255',
-            'fonction' => 'nullable|string|max:255',
-        ]);
-
-        if (empty($validated['fonction'])) {
-            $validated['fonction'] = 'Membre de commission';
-        }
+        $validated = $request->validate(self::storeRules());
+        $validated['nom_prenom'] = trim($validated['nom_prenom']);
+        $validated['fonction'] = trim($validated['fonction']);
 
         $membre = CommissionMembre::create($validated);
 
@@ -45,10 +53,9 @@ class CommissionMembreController extends Controller
 
     public function update(Request $request, CommissionMembre $commissionMembre)
     {
-        $validated = $request->validate([
-            'nom_prenom' => 'required|string|max:255',
-            'fonction' => 'required|string|max:255',
-        ]);
+        $validated = $request->validate(self::updateRules());
+        $validated['nom_prenom'] = trim($validated['nom_prenom']);
+        $validated['fonction'] = trim($validated['fonction']);
 
         $commissionMembre->update($validated);
 

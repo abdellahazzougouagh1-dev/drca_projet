@@ -239,7 +239,7 @@ function Kpi({ label, value, icon: Icon, tone = 'blue', detail }) {
 
 export default function DashboardDirecteur() {
   const navigate = useNavigate();
-  const { currentUser, logout, openLoginModal } = useAuth();
+  const { logout } = useAuth();
   const currentYear = new Date().getFullYear();
   const [year, setYear] = useState(String(currentYear));
   const [month, setMonth] = useState('');
@@ -254,16 +254,6 @@ export default function DashboardDirecteur() {
   const [store, setStore] = useState({ consultations: [], aoos: [], notifications: [], lines: [], budget: {} });
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [isUserModalOpen, setIsUserModalOpen] = useState(false);
-
-  const userName = currentUser?.name || "Directeur Régional";
-  const userRole = currentUser?.role === 'directeur' ? 'Directeur Régional' : (currentUser?.role ? (currentUser.role.charAt(0).toUpperCase() + currentUser.role.slice(1)) : 'Accès décisionnel');
-  const userInitials = userName
-    .split(' ')
-    .filter(Boolean)
-    .map((w) => w[0])
-    .slice(0, 2)
-    .join('')
-    .toUpperCase() || 'DR';
 
   const getNotifDomaine = (notif) => {
     if (notif.domaine) return notif.domaine;
@@ -891,6 +881,11 @@ export default function DashboardDirecteur() {
               >
                 <Handshake size={18} /> Conventions
               </button>
+            </div>
+            <div className="mt-2 border-t border-slate-100 pt-3">
+              <div className="rounded-2xl bg-[#101B2D] p-2">
+                <UserMenu profileContext="directeur" />
+              </div>
             </div>
             <button onClick={logout} className="mt-2 flex w-full items-center gap-3 rounded-xl border-t border-slate-100 px-3 py-3 text-left text-sm font-semibold text-rose-600">
               <LogOut size={18} /> Se déconnecter

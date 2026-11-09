@@ -141,10 +141,13 @@ const DetailsConsultation = () => {
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [saveError, setSaveError] = useState(null);
+  const [estimationRowErrors, setEstimationRowErrors] = useState({});
   const [programmationForm, setProgrammationForm] = useState({
     objet_consultation: '',
     objet_consultation_ar: '',
     mode_engagement: '',
+    intitule: '',
+    type_prestation: '',
     date_consultation: '',
     lieu_consultation: '',
     budget_previsionnel: '',
@@ -155,6 +158,7 @@ const DetailsConsultation = () => {
   const [savingProgrammation, setSavingProgrammation] = useState(false);
   const [programmationSuccess, setProgrammationSuccess] = useState(false);
   const [programmationError, setProgrammationError] = useState(null);
+  const [programmationErrors, setProgrammationErrors] = useState({});
 
   // -- Module 04: Fournisseurs State
   const [offres, setOffres] = useState([]);
@@ -165,6 +169,7 @@ const DetailsConsultation = () => {
   const [isDevisModalOpen, setIsDevisModalOpen] = useState(false);
   const [currentOffre, setCurrentOffre] = useState(null);
   const [devisForm, setDevisForm] = useState({ montant_propose: '', statut_reponse: 'En attente' });
+  const [devisError, setDevisError] = useState(null);
 
   // -- Module 05: Commission & Attribution State
   const [commissionForm, setCommissionForm] = useState({
@@ -173,10 +178,13 @@ const DetailsConsultation = () => {
   });
   const [savingCommission, setSavingCommission] = useState(false);
   const [commissionSuccess, setCommissionSuccess] = useState(false);
+  const [commissionError, setCommissionError] = useState(null);
+  const [commissionErrors, setCommissionErrors] = useState({});
 
   const [ouverturePlisForm, setOuverturePlisForm] = useState([]);
   const [savingOuverture, setSavingOuverture] = useState(false);
   const [ouvertureSuccess, setOuvertureSuccess] = useState(false);
+  const [ouvertureError, setOuvertureError] = useState(null);
 
   // -- Module 06: Engagement State
   const [engagementData, setEngagementData] = useState(null);
@@ -186,6 +194,7 @@ const DetailsConsultation = () => {
   const [savingEngagement, setSavingEngagement] = useState(false);
   const [engagementSuccess, setEngagementSuccess] = useState(false);
   const [engagementError, setEngagementError] = useState(null);
+  const [engagementErrors, setEngagementErrors] = useState({});
 
   // -- Module 07: Suivi d'exécution State
   const [suiviData, setSuiviData] = useState(null);
@@ -195,12 +204,14 @@ const DetailsConsultation = () => {
   });
   const [savingSuivi, setSavingSuivi] = useState(false);
   const [suiviSuccess, setSuiviSuccess] = useState(false);
+  const [suiviError, setSuiviError] = useState(null);
 
   const [evenementForm, setEvenementForm] = useState({
     type_evenement: 'Note', date_evenement: new Date().toISOString().split('T')[0], description: ''
   });
   const [savingEvenement, setSavingEvenement] = useState(false);
   const [evenementSuccess, setEvenementSuccess] = useState(false);
+  const [evenementError, setEvenementError] = useState(null);
 
   // -- Module 08: Reception State
   const [receptions, setReceptions] = useState([]);
@@ -213,6 +224,8 @@ const DetailsConsultation = () => {
   });
   const [savingReception, setSavingReception] = useState(false);
   const [receptionSuccess, setReceptionSuccess] = useState(false);
+  const [receptionError, setReceptionError] = useState(null);
+  const [receptionErrors, setReceptionErrors] = useState({});
 
   // -- Module 09: Liquidation Financière State
   const [liquidationData, setLiquidationData] = useState(null);
@@ -223,6 +236,7 @@ const DetailsConsultation = () => {
   const [savingLiquidation, setSavingLiquidation] = useState(false);
   const [liquidationSuccess, setLiquidationSuccess] = useState(false);
   const [liquidationError, setLiquidationError] = useState(null);
+  const [liquidationErrors, setLiquidationErrors] = useState({});
 
   // --- NOUVEAU : WORKFLOW ENGINE STATE ---
   const [workflowTimeline, setWorkflowTimeline] = useState([]);
@@ -424,7 +438,13 @@ const DetailsConsultation = () => {
 
   const handleAddLine = () => setPrestations([...prestations, { tempId: Date.now(), designation: '', unite: 'Forfait', quantite: 1, prix_unitaire_ht: 0, tva: 20 }]);
   const handleRemoveLine = (tempId) => setPrestations(prestations.filter(p => p.tempId !== tempId));
-  const handleChangeLine = (tempId, field, value) => setPrestations(prestations.map(p => p.tempId === tempId ? { ...p, [field]: value } : p));
+  const handleChangeLine = (tempId, field, value) => {
+    setPrestations(prestations.map(p => p.tempId === tempId ? { ...p, [field]: value } : p));
+    setEstimationRowErrors(prev => {
+      if (!prev[tempId]?.[field]) return prev;
+      return { ...prev, [tempId]: { ...prev[tempId], [field]: undefined } };
+    });
+  };
 
   const calculateLineHT = (p) => (parseFloat(p.quantite) || 0) * (parseFloat(p.prix_unitaire_ht) || 0);
   const calculateLineTTC = (p) => calculateLineHT(p) * (1 + (parseFloat(p.tva) || 0) / 100);
@@ -434,18 +454,54 @@ const DetailsConsultation = () => {
   const totalTTC = totalHT + totalTVA;
 
   const handleSaveEstimation = async () => {
-    setSaving(true); setSaveError(null); setSaveSuccess(false);
+    setSaveError(null); setSaveSuccess(false);
+    const rowErrs = {};
+    if (!Array.isArray(prestations) || prestations.length === 0) {
+      setSaveError('Au moins une ligne de prestation est obligatoire.');
+      return false;
+    }
+
+    prestations.forEach((p) => {
+      const errs = {};
+      if (!p.designation || !String(p.designation).trim()) {
+        errs.designation = 'La désignation est obligatoire.';
+      }
+      if (!p.unite || !String(p.unite).trim()) {
+        errs.unite = "L'unité est obligatoire.";
+      }
+      const qte = Number(p.quantite);
+      if (p.quantite === '' || p.quantite === null || p.quantite === undefined || !Number.isFinite(qte) || qte <= 0) {
+        errs.quantite = 'La quantité doit être supérieure à 0.';
+      }
+      const pu = Number(p.prix_unitaire_ht);
+      if (p.prix_unitaire_ht === '' || p.prix_unitaire_ht === null || p.prix_unitaire_ht === undefined || !Number.isFinite(pu) || pu < 0) {
+        errs.prix_unitaire_ht = 'Le prix unitaire HT doit être un nombre >= 0.';
+      }
+      if (Object.keys(errs).length > 0) {
+        rowErrs[p.tempId] = errs;
+      }
+    });
+
+    setEstimationRowErrors(rowErrs);
+    if (Object.keys(rowErrs).length > 0) {
+      setSaveError('Veuillez compléter tous les champs obligatoires des prestations avant d\'enregistrer.');
+      return false;
+    }
+
+    setSaving(true);
     try {
       const payload = {
         prestations: prestations.map(p => ({
-          designation: p.designation, unite: p.unite,
-          quantite: parseFloat(p.quantite) || 0,
-          prix_unitaire_ht: parseFloat(p.prix_unitaire_ht) || 0,
+          designation: String(p.designation).trim(),
+          unite: String(p.unite).trim(),
+          quantite: parseFloat(p.quantite),
+          prix_unitaire_ht: parseFloat(p.prix_unitaire_ht),
           tva: parseFloat(p.tva) || 0,
         }))
       };
       await api.post(`/consultations/${id}/prestations`, payload);
       setSaveSuccess(true);
+      setEstimationRowErrors({});
       setConsultation(prev => ({ ...prev, prestations: payload.prestations }));
       setTimeout(() => setSaveSuccess(false), 5000);
       return true;
@@ -459,17 +515,58 @@ const DetailsConsultation = () => {
 
   const saveProgrammation = async (e) => {
     if (e && e.preventDefault) e.preventDefault();
-    setSavingProgrammation(true); setProgrammationSuccess(false); setProgrammationError(null);
+    setProgrammationSuccess(false); setProgrammationError(null);
+    const errs = {};
+    const mode = String(programmationForm.mode_engagement || '').trim();
+    const isAo = ['AO', 'AOO', "APPEL D'OFFRES", "APPEL D'OFFRE"].includes(mode.toUpperCase());
+
+    if (!mode) {
+      errs.mode_engagement = "Le mode d'engagement est obligatoire.";
+    }
+    if (!programmationForm.objet_consultation || !String(programmationForm.objet_consultation).trim()) {
+      errs.objet_consultation = "L'objet de la consultation est obligatoire.";
+    }
+    if (!isAo) {
+      const intituleVal = programmationForm.intitule || programmationForm.type_prestation || '';
+      if (!String(intituleVal).trim()) {
+        errs.intitule = "L'intitulé (nature de la prestation) est obligatoire.";
+      }
+    }
+    if (!programmationForm.date_consultation || !String(programmationForm.date_consultation).trim()) {
+      errs.date_consultation = 'La date de consultation est obligatoire.';
+    } else if (!isAo && String(programmationForm.date_consultation).slice(0, 10) < '2026-01-01') {
+      errs.date_consultation = 'La date de consultation doit être supérieure ou égale au 01/01/2026.';
+    }
+
+    setProgrammationErrors(errs);
+    if (Object.keys(errs).length > 0) {
+      setProgrammationError('Veuillez remplir tous les champs obligatoires de la programmation.');
+      return false;
+    }
+
+    setSavingProgrammation(true);
     try {
       const payload = {
-        ...programmationForm
+        ...programmationForm,
+        objet_consultation: String(programmationForm.objet_consultation).trim(),
+        intitule: String(programmationForm.intitule || programmationForm.type_prestation || '').trim() || null,
+        type_prestation: String(programmationForm.type_prestation || programmationForm.intitule || programmationForm.objet_consultation || '').trim(),
       };
       await api.put(`/consultations/${id}`, payload);
       setProgrammationSuccess(true);
+      setProgrammationErrors({});
       setConsultation(prev => ({ ...prev, ...payload }));
       setTimeout(() => setProgrammationSuccess(false), 5000);
       return true;
     } catch (err) {
+      const serverErrors = err.response?.data?.errors;
+      if (serverErrors && typeof serverErrors === 'object') {
+        const mapped = {};
+        Object.entries(serverErrors).forEach(([k, v]) => {
+          mapped[k] = Array.isArray(v) ? v[0] : String(v);
+        });
+        setProgrammationErrors(mapped);
+      }
       setProgrammationError(err.response?.data?.message || 'Erreur lors de la sauvegarde de la programmation.');
       return false;
     } finally {
@@ -558,6 +655,7 @@ const DetailsConsultation = () => {
   };
 
   const openDevisModal = (offre) => {
+    setDevisError(null);
     setCurrentOffre(offre);
     setDevisForm({ montant_propose: offre.montant_propose || '', statut_reponse: offre.statut_reponse || 'Reçu' });
     setIsDevisModalOpen(true);
@@ -565,15 +663,20 @@ const DetailsConsultation = () => {
 
   const submitDevis = async (e) => {
     e.preventDefault();
+    setDevisError(null);
+    if (devisForm.statut_reponse === 'Reçu' && (devisForm.montant_propose === '' || Number(devisForm.montant_propose) <= 0 || Number.isNaN(Number(devisForm.montant_propose)))) {
+      setDevisError('Le montant proposé est obligatoire et doit être supérieur à 0 pour un devis reçu.');
+      return;
+    }
     try {
       await api.put(`/consultations/${id}/fournisseurs/${currentOffre.fournisseur_id}/devis`, {
-        montant_propose: devisForm.montant_propose ? parseFloat(devisForm.montant_propose) : null,
+        montant_propose: devisForm.montant_propose !== '' ? parseFloat(devisForm.montant_propose) : null,
         statut_reponse: devisForm.statut_reponse
       });
       setIsDevisModalOpen(false);
       await fetchConsultationAndOffres();
     } catch (err) {
-      alert("Erreur: " + (err.response?.data?.message || err.message));
+      setDevisError(err.response?.data?.message || err.message);
     }
   };
 
@@ -581,15 +684,63 @@ const DetailsConsultation = () => {
 
   const saveCommission = async (e) => {
     if (e && e.preventDefault) e.preventDefault();
-    setSavingCommission(true); setCommissionSuccess(false);
+    setCommissionSuccess(false); setCommissionError(null);
+    const errs = {};
+    const parsedMembers = String(commissionForm.membres_commission || '')
+      .split(',')
+      .map(m => m.trim())
+      .filter(Boolean);
+    const president = String(commissionForm.president_commission || '').trim();
+    const heureClean = String(commissionForm.heure_reunion || '').trim().substring(0, 5);
+
+    if (!commissionForm.date_reunion || !String(commissionForm.date_reunion).trim()) {
+      errs.date_reunion = 'La date de réunion est obligatoire.';
+    }
+    if (!heureClean || !/^\d{2}:\d{2}$/.test(heureClean)) {
+      errs.heure_reunion = "L'heure de réunion est obligatoire (format HH:MM).";
+    }
+    if (!commissionForm.lieu_reunion || !String(commissionForm.lieu_reunion).trim()) {
+      errs.lieu_reunion = 'Le lieu de réunion est obligatoire.';
+    }
+    if (!president) {
+      errs.president_commission = 'Le président de la commission est obligatoire.';
+    }
+    const lowerMembers = parsedMembers.map(m => m.toLowerCase());
+    const totalCount = parsedMembers.length + (president && !lowerMembers.includes(president.toLowerCase()) ? 1 : 0);
+    if (parsedMembers.length === 0 || totalCount < 3) {
+      errs.membres_commission = 'Au moins 3 membres au total sont obligatoires pour la commission.';
+    }
+
+    setCommissionErrors(errs);
+    if (Object.keys(errs).length > 0) {
+      setCommissionError('Veuillez remplir tous les champs obligatoires de la commission.');
+      return false;
+    }
+
+    setSavingCommission(true);
     try {
-      const payload = { ...commissionForm, membres_commission: commissionForm.membres_commission ? commissionForm.membres_commission.split(',').map(m => m.trim()) : [] };
+      const payload = {
+        ...commissionForm,
+        heure_reunion: heureClean,
+        lieu_reunion: String(commissionForm.lieu_reunion).trim(),
+        president_commission: president,
+        membres_commission: parsedMembers,
+      };
       await api.post(`/consultations/${id}/commission`, payload);
       setCommissionSuccess(true);
+      setCommissionErrors({});
       setTimeout(() => setCommissionSuccess(false), 4000);
       return true;
     } catch (err) {
-      alert("Erreur: " + (err.response?.data?.message || err.message));
+      const serverErrors = err.response?.data?.errors;
+      if (serverErrors && typeof serverErrors === 'object') {
+        const mapped = {};
+        Object.entries(serverErrors).forEach(([k, v]) => {
+          mapped[k] = Array.isArray(v) ? v[0] : String(v);
+        });
+        setCommissionErrors(mapped);
+      }
+      setCommissionError(err.response?.data?.message || err.message);
       return false;
     } finally {
       setSavingCommission(false);
@@ -597,6 +748,7 @@ const DetailsConsultation = () => {
   };
 
   const handleChangeOuverture = (offreId, field, value) => {
+    setOuvertureError(null);
     setOuverturePlisForm(prev => prev.map(o => o.id === offreId ? { ...o, [field]: value } : o));
     if (field === 'retenu' && value === true) {
       setOuverturePlisForm(prev => prev.map(o => o.id === offreId ? { ...o, retenu: true } : { ...o, retenu: false }));
@@ -604,15 +756,42 @@ const DetailsConsultation = () => {
   };
 
   const saveOuverturePlis = async () => {
-    setSavingOuverture(true); setOuvertureSuccess(false);
+    setOuvertureSuccess(false); setOuvertureError(null);
+    const retenues = ouverturePlisForm.filter(o => o.retenu);
+    if (retenues.length !== 1) {
+      setOuvertureError('Veuillez retenir exactement une offre avant de valider l’attribution.');
+      return false;
+    }
+    const retenue = retenues[0];
+    if (
+      retenue.montant_apres_verification === '' ||
+      retenue.montant_apres_verification === null ||
+      retenue.montant_apres_verification === undefined ||
+      Number.isNaN(Number(retenue.montant_apres_verification)) ||
+      Number(retenue.montant_apres_verification) < 0
+    ) {
+      setOuvertureError("Le montant final de l'offre retenue est obligatoire et doit être >= 0.");
+      return false;
+    }
+
+    setSavingOuverture(true);
     try {
-      const payload = { offres: ouverturePlisForm.map(o => ({ id: o.id, montant_apres_verification: o.montant_apres_verification ? parseFloat(o.montant_apres_verification) : null, retenu: o.retenu, observations_offre: o.observations_offre })) };
+      const payload = {
+        offres: ouverturePlisForm.map(o => ({
+          id: o.id,
+          montant_apres_verification: o.montant_apres_verification !== '' && o.montant_apres_verification !== null ? parseFloat(o.montant_apres_verification) : null,
+          retenu: o.retenu,
+          observations_offre: o.observations_offre
+        }))
+      };
       await api.post(`/consultations/${id}/ouverture-plis`, payload);
       setOuvertureSuccess(true);
       await fetchConsultationAndOffres();
       setTimeout(() => setOuvertureSuccess(false), 4000);
+      return true;
     } catch (err) {
-      alert("Erreur: " + (err.response?.data?.message || err.message));
+      setOuvertureError(err.response?.data?.message || err.message);
+      return false;
     } finally {
       setSavingOuverture(false);
     }
@@ -622,15 +801,45 @@ const DetailsConsultation = () => {
 
   const saveEngagement = async (e) => {
     if (e && e.preventDefault) e.preventDefault();
-    setSavingEngagement(true); setEngagementSuccess(false); setEngagementError(null);
+    setEngagementSuccess(false); setEngagementError(null);
+    const errs = {};
+    if (!engagementForm.date_engagement || !String(engagementForm.date_engagement).trim()) {
+      errs.date_engagement = "La date d'engagement est obligatoire.";
+    }
+    const delai = Number(engagementForm.delai_execution);
+    if (engagementForm.delai_execution === '' || !Number.isInteger(delai) || delai < 1) {
+      errs.delai_execution = "Le délai d'exécution doit être un entier supérieur ou égal à 1.";
+    }
+    setEngagementErrors(errs);
+    if (Object.keys(errs).length > 0) {
+      setEngagementError("Veuillez remplir tous les champs obligatoires de l'engagement.");
+      return false;
+    }
+
+    setSavingEngagement(true);
     try {
-      const payload = { fournisseur_id: engagementData.fournisseur.id, montant_engagement: engagementData.montant_valide, type_engagement: engagementData.type_engagement, ...engagementForm };
+      const payload = {
+        fournisseur_id: engagementData.fournisseur.id,
+        montant_engagement: engagementData.montant_valide,
+        type_engagement: engagementData.type_engagement,
+        ...engagementForm,
+        delai_execution: delai,
+      };
       await api.post(`/consultations/${id}/engagement`, payload);
       setEngagementSuccess(true);
+      setEngagementErrors({});
       setConsultation(prev => ({ ...prev, statut_dossier: 'ENGAGÉ' }));
       setTimeout(() => setEngagementSuccess(false), 5000);
       return true;
     } catch (err) {
+      const serverErrors = err.response?.data?.errors;
+      if (serverErrors && typeof serverErrors === 'object') {
+        const mapped = {};
+        Object.entries(serverErrors).forEach(([k, v]) => {
+          mapped[k] = Array.isArray(v) ? v[0] : String(v);
+        });
+        setEngagementErrors(mapped);
+      }
       setEngagementError(err.response?.data?.message || "Erreur inattendue.");
       return false;
     } finally {
@@ -642,7 +851,7 @@ const DetailsConsultation = () => {
 
   const saveSuivi = async (e) => {
     if (e && e.preventDefault) e.preventDefault();
-    setSavingSuivi(true); setSuiviSuccess(false);
+    setSavingSuivi(true); setSuiviSuccess(false); setSuiviError(null);
     try {
       await api.put(`/consultations/${id}/suivi`, suiviForm);
       setSuiviSuccess(true);
@@ -650,7 +859,7 @@ const DetailsConsultation = () => {
       setTimeout(() => setSuiviSuccess(false), 4000);
       return true;
     } catch (err) {
-      alert("Erreur: " + (err.response?.data?.message || err.message));
+      setSuiviError(err.response?.data?.message || err.message);
       return false;
     } finally {
       setSavingSuivi(false);
@@ -659,7 +868,12 @@ const DetailsConsultation = () => {
 
   const submitEvenement = async (e) => {
     e.preventDefault();
-    setSavingEvenement(true); setEvenementSuccess(false);
+    setEvenementSuccess(false); setEvenementError(null);
+    if (!evenementForm.date_evenement || !evenementForm.description || !String(evenementForm.description).trim()) {
+      setEvenementError("La date et la description de l'événement sont obligatoires.");
+      return;
+    }
+    setSavingEvenement(true);
     try {
       await api.post(`/consultations/${id}/suivi/evenements`, evenementForm);
       setEvenementSuccess(true);
@@ -667,7 +881,7 @@ const DetailsConsultation = () => {
       await fetchSuiviData();
       setTimeout(() => setEvenementSuccess(false), 4000);
     } catch (err) {
-      alert("Erreur: " + (err.response?.data?.message || err.message));
+      setEvenementError(err.response?.data?.message || err.message);
     } finally {
       setSavingEvenement(false);
     }
@@ -676,21 +890,49 @@ const DetailsConsultation = () => {
   // --- LOGIQUE RÉCEPTION ---
   const saveReception = async (e) => {
     if (e && e.preventDefault) e.preventDefault();
-    setSavingReception(true); setReceptionSuccess(false);
+    setReceptionSuccess(false); setReceptionError(null);
+    const errs = {};
+    if (!receptionForm.type_reception) {
+      errs.type_reception = 'Le type de réception est obligatoire.';
+    }
+    if (!receptionForm.date_reunion || !String(receptionForm.date_reunion).trim()) {
+      errs.date_reunion = 'La date de réunion est obligatoire.';
+    }
+    if (!receptionForm.conformite) {
+      errs.conformite = 'La conformité est obligatoire.';
+    }
+    setReceptionErrors(errs);
+    if (Object.keys(errs).length > 0) {
+      setReceptionError('Veuillez remplir tous les champs obligatoires de la réception.');
+      return false;
+    }
+
+    setSavingReception(true);
     try {
       const payload = { 
         ...receptionForm, 
-        commission_reception: receptionForm.commission_reception ? receptionForm.commission_reception.split(',').map(m => m.trim()) : [] 
+        commission_reception: receptionForm.commission_reception
+          ? receptionForm.commission_reception.split(',').map(m => m.trim()).filter(Boolean)
+          : [] 
       };
       const res = await api.post(`/consultations/${id}/receptions`, payload);
       setReceptionSuccess(true);
+      setReceptionErrors({});
       if (res.data.statut_dossier) setConsultation(prev => ({...prev, statut_dossier: res.data.statut_dossier}));
       await fetchReceptions();
       setTimeout(() => setReceptionSuccess(false), 4000);
       setReceptionForm({ type_reception: 'Provisoire', date_reunion: '', commission_reception: '', conformite: 'Oui', reserves_observations: '' });
       return true;
     } catch (err) {
-      alert("Erreur: " + (err.response?.data?.message || err.message));
+      const serverErrors = err.response?.data?.errors;
+      if (serverErrors && typeof serverErrors === 'object') {
+        const mapped = {};
+        Object.entries(serverErrors).forEach(([k, v]) => {
+          mapped[k] = Array.isArray(v) ? v[0] : String(v);
+        });
+        setReceptionErrors(mapped);
+      }
+      setReceptionError(err.response?.data?.message || err.message);
       return false;
     } finally {
       setSavingReception(false);
@@ -700,15 +942,38 @@ const DetailsConsultation = () => {
   // --- LOGIQUE LIQUIDATION FINANCIÈRE ---
   const saveLiquidation = async (e) => {
     if (e && e.preventDefault) e.preventDefault();
-    setSavingLiquidation(true); setLiquidationSuccess(false); setLiquidationError(null);
+    setLiquidationSuccess(false); setLiquidationError(null);
+    const errs = {};
+    const montantVal = Number(liquidationForm.montant_a_payer);
+    if (liquidationForm.montant_a_payer === '' || Number.isNaN(montantVal) || montantVal < 0) {
+      errs.montant_a_payer = 'Le montant à payer est obligatoire et doit être >= 0.';
+    } else if (engagementData?.montant_valide !== undefined && montantVal > Number(engagementData.montant_valide)) {
+      errs.montant_a_payer = 'Le montant à payer ne peut pas dépasser le montant engagé.';
+    }
+    setLiquidationErrors(errs);
+    if (Object.keys(errs).length > 0) {
+      setLiquidationError('Veuillez corriger les champs obligatoires de la liquidation.');
+      return false;
+    }
+
+    setSavingLiquidation(true);
     try {
       const res = await api.post(`/consultations/${id}/liquidation`, liquidationForm);
       setLiquidationSuccess(true);
+      setLiquidationErrors({});
       if (res.data.statut_dossier) setConsultation(prev => ({...prev, statut_dossier: res.data.statut_dossier}));
       await fetchLiquidationData();
       setTimeout(() => setLiquidationSuccess(false), 5000);
       return true;
     } catch (err) {
+      const serverErrors = err.response?.data?.errors;
+      if (serverErrors && typeof serverErrors === 'object') {
+        const mapped = {};
+        Object.entries(serverErrors).forEach(([k, v]) => {
+          mapped[k] = Array.isArray(v) ? v[0] : String(v);
+        });
+        setLiquidationErrors(mapped);
+      }
       setLiquidationError(err.response?.data?.message || err.message);
       return false;
     } finally {
@@ -730,8 +995,11 @@ const DetailsConsultation = () => {
       const link = document.createElement('a');
       link.href = url;
       link.setAttribute('download', `${doc.id}_${consultation.numero_consultation}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
     } catch (err) {
-      alert("Erreur lors de la génération de l'archive ZIP.");
+      alert("Erreur lors du téléchargement du document.");
     } finally {
       setDownloadingZip(false);
     }
@@ -825,7 +1093,7 @@ const DetailsConsultation = () => {
                     </div>
                     <p className="mt-2 text-sm text-slate-600 line-clamp-2">{item.objet_consultation || 'Sans objet'}</p>
                                 <div className="mt-3 flex flex-wrap gap-2">
-                        <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-600">{item.mode_engagement || 'Mode inconnu'}</span>
+                        <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-600">{item.mode_engagement === 'Contrat' || (item.mode_engagement === 'Convention' && String(item.type_budget || '').toLowerCase() === 'fonctionnement') ? 'Contrat' : (item.mode_engagement || 'Mode inconnu')}</span>
                         <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-600">{item.annee || 'N/A'}</span>
                       </div>
                       <div className="mt-3">
@@ -911,7 +1179,10 @@ const DetailsConsultation = () => {
                   <p className="text-sm text-gray-500">Remplissez les informations générales avant de lancer le cycle.</p>
                 </div>
               </div>
-              <form onSubmit={saveProgrammation} className="p-6 space-y-6">
+              <form onSubmit={saveProgrammation} className="p-6 space-y-6" noValidate>
+                <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-600 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-xl w-fit">
+                  <span className="text-red-600 font-extrabold text-sm">*</span> : Les champs obligatoires
+                </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-1">Réf. Consultation</label>
@@ -925,23 +1196,58 @@ const DetailsConsultation = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-1">Objet de la consultation</label>
-                    <input type="text" value={programmationForm.objet_consultation} onChange={e => setProgrammationForm({...programmationForm, objet_consultation: e.target.value})} className="w-full p-3 border border-gray-200 rounded-xl" placeholder="Objet de la consultation" />
+                    <label className="block text-sm font-semibold text-gray-700 mb-1">
+                      Objet de la consultation <span className="text-red-600 font-bold ml-0.5">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={programmationForm.objet_consultation}
+                      onChange={e => {
+                        setProgrammationForm({ ...programmationForm, objet_consultation: e.target.value });
+                        if (programmationErrors.objet_consultation) setProgrammationErrors(prev => ({ ...prev, objet_consultation: undefined }));
+                      }}
+                      className={`w-full p-3 border rounded-xl ${programmationErrors.objet_consultation ? 'border-red-500 bg-red-50/20' : 'border-gray-200'}`}
+                      placeholder="Objet de la consultation"
+                    />
+                    {programmationErrors.objet_consultation && <span role="alert" className="mt-1 block text-xs font-medium text-red-600">{programmationErrors.objet_consultation}</span>}
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-1">Mode d'engagement</label>
-                    <select value={programmationForm.mode_engagement} onChange={e => setProgrammationForm({...programmationForm, mode_engagement: e.target.value})} className="w-full p-3 border border-gray-200 rounded-xl bg-white font-semibold">
+                    <label className="block text-sm font-semibold text-gray-700 mb-1">
+                      Mode d'engagement <span className="text-red-600 font-bold ml-0.5">*</span>
+                    </label>
+                    <select
+                      value={programmationForm.mode_engagement}
+                      onChange={e => {
+                        setProgrammationForm({ ...programmationForm, mode_engagement: e.target.value });
+                        if (programmationErrors.mode_engagement) setProgrammationErrors(prev => ({ ...prev, mode_engagement: undefined }));
+                      }}
+                      className={`w-full p-3 border rounded-xl bg-white font-semibold ${programmationErrors.mode_engagement ? 'border-red-500 bg-red-50/20' : 'border-gray-200'}`}
+                    >
                       <option value="BC">Bon de commande (BC)</option>
-                      <option value="AO">Appel d'offres (AO)</option>
                       <option value="Convention">Convention</option>
+                      <option value="Contrat">Contrat</option>
+                      <option value="AO">Appel d'offres (AO)</option>
                     </select>
+                    {programmationErrors.mode_engagement && <span role="alert" className="mt-1 block text-xs font-medium text-red-600">{programmationErrors.mode_engagement}</span>}
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-1">Intitulé (Nature de la prestation)</label>
-                    <input type="text" value={programmationForm.intitule || programmationForm.type_prestation || ''} onChange={e => setProgrammationForm({...programmationForm, intitule: e.target.value, type_prestation: e.target.value})} className="w-full p-3 border border-gray-200 rounded-xl" placeholder="Ex: Prestation de même nature / Achat de matériel..." />
+                    <label className="block text-sm font-semibold text-gray-700 mb-1">
+                      Intitulé (Nature de la prestation) {!['AO', "Appel d'offres", "Appel d'offre"].includes(programmationForm.mode_engagement) && <span className="text-red-600 font-bold ml-0.5">*</span>}
+                    </label>
+                    <input
+                      type="text"
+                      value={programmationForm.intitule || programmationForm.type_prestation || ''}
+                      onChange={e => {
+                        setProgrammationForm({ ...programmationForm, intitule: e.target.value, type_prestation: e.target.value });
+                        if (programmationErrors.intitule) setProgrammationErrors(prev => ({ ...prev, intitule: undefined }));
+                      }}
+                      className={`w-full p-3 border rounded-xl ${programmationErrors.intitule ? 'border-red-500 bg-red-50/20' : 'border-gray-200'}`}
+                      placeholder="Ex: Prestation de même nature / Achat de matériel..."
+                    />
+                    {programmationErrors.intitule && <span role="alert" className="mt-1 block text-xs font-medium text-red-600">{programmationErrors.intitule}</span>}
                   </div>
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-1">Objet de la consultation (Arabe)</label>
@@ -951,8 +1257,19 @@ const DetailsConsultation = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-1">Date de consultation</label>
-                    <input type="date" value={programmationForm.date_consultation} onChange={e => setProgrammationForm({...programmationForm, date_consultation: e.target.value})} className="w-full p-3 border border-gray-200 rounded-xl" />
+                    <label className="block text-sm font-semibold text-gray-700 mb-1">
+                      Date de consultation <span className="text-red-600 font-bold ml-0.5">*</span>
+                    </label>
+                    <input
+                      type="date"
+                      value={programmationForm.date_consultation}
+                      onChange={e => {
+                        setProgrammationForm({ ...programmationForm, date_consultation: e.target.value });
+                        if (programmationErrors.date_consultation) setProgrammationErrors(prev => ({ ...prev, date_consultation: undefined }));
+                      }}
+                      className={`w-full p-3 border rounded-xl ${programmationErrors.date_consultation ? 'border-red-500 bg-red-50/20' : 'border-gray-200'}`}
+                    />
+                    {programmationErrors.date_consultation && <span role="alert" className="mt-1 block text-xs font-medium text-red-600">{programmationErrors.date_consultation}</span>}
                   </div>
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-1">Budget prévisionnel (TTC)</label>
@@ -1032,19 +1349,34 @@ const DetailsConsultation = () => {
                   </div>
                   <div className="overflow-x-auto flex-1">
                     <table className="w-full min-w-[700px] text-left border-collapse">
-                      <thead><tr className="bg-gray-50 border-b border-gray-100"><th className="px-4 py-3 text-xs font-bold text-gray-500 uppercase">Désignation</th><th className="px-4 py-3 text-xs font-bold text-gray-500 uppercase">Unité</th><th className="px-4 py-3 text-xs font-bold text-gray-500 uppercase">Qté</th><th className="px-4 py-3 text-xs font-bold text-gray-500 uppercase">Prix U. (HT)</th><th className="px-4 py-3 text-xs font-bold text-gray-500 uppercase">TVA</th><th className="px-4 py-3 text-xs font-bold text-gray-500 uppercase">TTC</th><th className="px-4 py-3 text-center"></th></tr></thead>
+                      <thead><tr className="bg-gray-50 border-b border-gray-100"><th className="px-4 py-3 text-xs font-bold text-gray-500 uppercase">Désignation <span className="text-red-600">*</span></th><th className="px-4 py-3 text-xs font-bold text-gray-500 uppercase">Unité <span className="text-red-600">*</span></th><th className="px-4 py-3 text-xs font-bold text-gray-500 uppercase">Qté <span className="text-red-600">*</span></th><th className="px-4 py-3 text-xs font-bold text-gray-500 uppercase">Prix U. (HT) <span className="text-red-600">*</span></th><th className="px-4 py-3 text-xs font-bold text-gray-500 uppercase">TVA</th><th className="px-4 py-3 text-xs font-bold text-gray-500 uppercase">TTC</th><th className="px-4 py-3 text-center"></th></tr></thead>
                       <tbody className="divide-y divide-gray-100">
-                        {prestations.map(p => (
-                          <tr key={p.tempId} className="hover:bg-gray-50/50">
-                            <td className="p-2"><input type="text" value={p.designation} onChange={(e) => handleChangeLine(p.tempId, 'designation', e.target.value)} className="w-full p-2 text-sm border border-gray-200 rounded" required /></td>
-                            <td className="p-2 w-20"><input type="text" value={p.unite} onChange={(e) => handleChangeLine(p.tempId, 'unite', e.target.value)} className="w-full p-2 text-sm border border-gray-200 rounded" /></td>
-                            <td className="p-2 w-20"><input type="number" min="0.01" step="0.01" value={p.quantite} onChange={(e) => handleChangeLine(p.tempId, 'quantite', e.target.value)} className="w-full p-2 text-sm border border-gray-200 rounded" required /></td>
-                            <td className="p-2 w-28"><input type="number" min="0" step="0.01" value={p.prix_unitaire_ht} onChange={(e) => handleChangeLine(p.tempId, 'prix_unitaire_ht', e.target.value)} className="w-full p-2 text-sm border border-gray-200 rounded font-mono text-right" required /></td>
+                        {prestations.map(p => {
+                          const rErr = estimationRowErrors[p.tempId] || {};
+                          return (
+                          <tr key={p.tempId} className="hover:bg-gray-50/50 align-top">
+                            <td className="p-2">
+                              <input type="text" value={p.designation} onChange={(e) => handleChangeLine(p.tempId, 'designation', e.target.value)} className={`w-full p-2 text-sm border rounded ${rErr.designation ? 'border-red-500 bg-red-50/20' : 'border-gray-200'}`} />
+                              {rErr.designation && <span role="alert" className="mt-1 block text-[11px] font-medium text-red-600">{rErr.designation}</span>}
+                            </td>
+                            <td className="p-2 w-24">
+                              <input type="text" value={p.unite} onChange={(e) => handleChangeLine(p.tempId, 'unite', e.target.value)} className={`w-full p-2 text-sm border rounded ${rErr.unite ? 'border-red-500 bg-red-50/20' : 'border-gray-200'}`} />
+                              {rErr.unite && <span role="alert" className="mt-1 block text-[11px] font-medium text-red-600">{rErr.unite}</span>}
+                            </td>
+                            <td className="p-2 w-24">
+                              <input type="number" min="0.01" step="0.01" value={p.quantite} onChange={(e) => handleChangeLine(p.tempId, 'quantite', e.target.value)} className={`w-full p-2 text-sm border rounded ${rErr.quantite ? 'border-red-500 bg-red-50/20' : 'border-gray-200'}`} />
+                              {rErr.quantite && <span role="alert" className="mt-1 block text-[11px] font-medium text-red-600">{rErr.quantite}</span>}
+                            </td>
+                            <td className="p-2 w-32">
+                              <input type="number" min="0" step="0.01" value={p.prix_unitaire_ht} onChange={(e) => handleChangeLine(p.tempId, 'prix_unitaire_ht', e.target.value)} className={`w-full p-2 text-sm border rounded font-mono text-right ${rErr.prix_unitaire_ht ? 'border-red-500 bg-red-50/20' : 'border-gray-200'}`} />
+                              {rErr.prix_unitaire_ht && <span role="alert" className="mt-1 block text-[11px] font-medium text-red-600">{rErr.prix_unitaire_ht}</span>}
+                            </td>
                             <td className="p-2 w-20"><select value={p.tva} onChange={(e) => handleChangeLine(p.tempId, 'tva', e.target.value)} className="w-full p-2 text-sm border border-gray-200 rounded"><option value="20">20%</option><option value="14">14%</option><option value="10">10%</option><option value="7">7%</option><option value="0">0%</option></select></td>
                             <td className="p-2 whitespace-nowrap text-right"><span className="font-mono font-medium text-gray-800">{formatCurrency(calculateLineTTC(p))}</span></td>
                             <td className="p-2 text-center"><button type="button" onClick={() => handleRemoveLine(p.tempId)} className="p-1.5 text-gray-400 hover:text-red-600"><Trash2 size={16} /></button></td>
                           </tr>
-                        ))}
+                          );
+                        })}
                       </tbody>
                     </table>
                   </div>
@@ -1147,17 +1479,44 @@ const DetailsConsultation = () => {
         {activeTab === 'commission' && (
           <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
             {commissionSuccess && <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center gap-3 text-emerald-600"><CheckCircle2 size={20} /><p className="font-medium">Infos enregistrées.</p></div>}
+            {commissionError && <div className="p-4 bg-red-50 border border-red-200 rounded-xl flex items-center gap-3 text-red-600"><AlertCircle size={20} /><p className="font-medium">{commissionError}</p></div>}
             {ouvertureSuccess && <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center gap-3 text-emerald-600"><CheckCircle2 size={20} /><p className="font-medium">Attribution validée.</p></div>}
-            {/* Formulaires simplifiés pour l'exemple de tab switcher */}
+            {ouvertureError && <div className="p-4 bg-red-50 border border-red-200 rounded-xl flex items-center gap-3 text-red-600"><AlertCircle size={20} /><p className="font-medium">{ouvertureError}</p></div>}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               <section className="bg-white dark:bg-gray-800 rounded-3xl shadow-lg border border-gray-100 overflow-hidden">
                 <div className="p-6 border-b border-gray-100 flex items-center gap-3 bg-gray-50"><div className="p-2 bg-blue-100 text-blue-600 rounded-lg"><Calendar size={20} /></div><h2 className="text-xl font-bold">Commission d'Évaluation</h2></div>
-                <form onSubmit={saveCommission} className="p-6 space-y-5">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div><label className="block text-sm font-semibold text-gray-700 mb-1">Date</label><input type="date" value={commissionForm.date_reunion} onChange={e => setCommissionForm({...commissionForm, date_reunion: e.target.value})} className="w-full p-2 border rounded-lg" /></div>
-                    <div><label className="block text-sm font-semibold text-gray-700 mb-1">Heure</label><input type="time" value={commissionForm.heure_reunion} onChange={e => setCommissionForm({...commissionForm, heure_reunion: e.target.value})} className="w-full p-2 border rounded-lg" /></div>
+                <form onSubmit={saveCommission} className="p-6 space-y-5" noValidate>
+                  <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-600 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-xl w-fit">
+                    <span className="text-red-600 font-extrabold text-sm">*</span> : Les champs obligatoires
                   </div>
-                  <div><label className="block text-sm font-semibold text-gray-700 mb-1">Président</label><input type="text" value={commissionForm.president_commission} onChange={e => setCommissionForm({...commissionForm, president_commission: e.target.value})} className="w-full p-2 border rounded-lg" /></div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-1">Date <span className="text-red-600 font-bold">*</span></label>
+                      <input type="date" value={commissionForm.date_reunion} onChange={e => { setCommissionForm({...commissionForm, date_reunion: e.target.value}); if (commissionErrors.date_reunion) setCommissionErrors(p => ({...p, date_reunion: undefined})); }} className={`w-full p-2 border rounded-lg ${commissionErrors.date_reunion ? 'border-red-500 bg-red-50/20' : ''}`} />
+                      {commissionErrors.date_reunion && <span role="alert" className="mt-1 block text-xs font-medium text-red-600">{commissionErrors.date_reunion}</span>}
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-1">Heure <span className="text-red-600 font-bold">*</span></label>
+                      <input type="time" value={commissionForm.heure_reunion} onChange={e => { setCommissionForm({...commissionForm, heure_reunion: e.target.value}); if (commissionErrors.heure_reunion) setCommissionErrors(p => ({...p, heure_reunion: undefined})); }} className={`w-full p-2 border rounded-lg ${commissionErrors.heure_reunion ? 'border-red-500 bg-red-50/20' : ''}`} />
+                      {commissionErrors.heure_reunion && <span role="alert" className="mt-1 block text-xs font-medium text-red-600">{commissionErrors.heure_reunion}</span>}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1">Lieu de réunion <span className="text-red-600 font-bold">*</span></label>
+                    <input type="text" value={commissionForm.lieu_reunion} onChange={e => { setCommissionForm({...commissionForm, lieu_reunion: e.target.value}); if (commissionErrors.lieu_reunion) setCommissionErrors(p => ({...p, lieu_reunion: undefined})); }} className={`w-full p-2 border rounded-lg ${commissionErrors.lieu_reunion ? 'border-red-500 bg-red-50/20' : ''}`} placeholder="Ex: Siège de la DRCA-RSK..." />
+                    {commissionErrors.lieu_reunion && <span role="alert" className="mt-1 block text-xs font-medium text-red-600">{commissionErrors.lieu_reunion}</span>}
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1">Président <span className="text-red-600 font-bold">*</span></label>
+                    <input type="text" value={commissionForm.president_commission} onChange={e => { setCommissionForm({...commissionForm, president_commission: e.target.value}); if (commissionErrors.president_commission) setCommissionErrors(p => ({...p, president_commission: undefined})); }} className={`w-full p-2 border rounded-lg ${commissionErrors.president_commission ? 'border-red-500 bg-red-50/20' : ''}`} />
+                    {commissionErrors.president_commission && <span role="alert" className="mt-1 block text-xs font-medium text-red-600">{commissionErrors.president_commission}</span>}
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1">Membres de la commission <span className="text-red-600 font-bold">*</span></label>
+                    <input type="text" value={commissionForm.membres_commission} onChange={e => { setCommissionForm({...commissionForm, membres_commission: e.target.value}); if (commissionErrors.membres_commission) setCommissionErrors(p => ({...p, membres_commission: undefined})); }} className={`w-full p-2 border rounded-lg ${commissionErrors.membres_commission ? 'border-red-500 bg-red-50/20' : ''}`} placeholder="Ex: Ali, Fatima, Youssef (séparés par des virgules)" />
+                    <p className="mt-1 text-[11px] text-slate-500">Séparez les noms par des virgules (au moins 3 membres au total).</p>
+                    {commissionErrors.membres_commission && <span role="alert" className="mt-1 block text-xs font-medium text-red-600">{commissionErrors.membres_commission}</span>}
+                  </div>
                   <div className="flex justify-end pt-2"><button type="submit" disabled={savingCommission} className="px-6 py-2.5 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700">{savingCommission ? 'En cours...' : 'Enregistrer'}</button></div>
                 </form>
               </section>
@@ -1197,15 +1556,29 @@ const DetailsConsultation = () => {
                 </div>
                 <section className="bg-white dark:bg-gray-800 rounded-3xl shadow-lg border border-gray-100 overflow-hidden">
                   <div className="p-6 border-b border-gray-100 bg-gray-50"><h2 className="text-xl font-bold text-gray-800 flex items-center gap-3"><PenTool size={20} className="text-blue-600" /> Formalisation de l'Engagement</h2></div>
-                  <form onSubmit={saveEngagement} className="p-6 space-y-6">
+                  <form onSubmit={saveEngagement} className="p-6 space-y-6" noValidate>
+                    <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-600 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-xl w-fit">
+                      <span className="text-red-600 font-extrabold text-sm">*</span> : Les champs obligatoires
+                    </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div><label className="block text-sm font-semibold text-gray-700 mb-1">Numéro d'Engagement</label><input type="text" value="Généré automatiquement (Ex: ENG-2026-...)" disabled className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-500 font-mono italic" /></div>
-                      <div><label className="block text-sm font-semibold text-gray-700 mb-1">Date d'engagement</label><input type="date" required value={engagementForm.date_engagement} onChange={e => setEngagementForm({...engagementForm, date_engagement: e.target.value})} className="w-full p-3 border rounded-xl" /></div>
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-1">Date d'engagement <span className="text-red-600 font-bold">*</span></label>
+                        <input type="date" value={engagementForm.date_engagement} onChange={e => { setEngagementForm({...engagementForm, date_engagement: e.target.value}); if (engagementErrors.date_engagement) setEngagementErrors(p => ({...p, date_engagement: undefined})); }} className={`w-full p-3 border rounded-xl ${engagementErrors.date_engagement ? 'border-red-500 bg-red-50/20' : ''}`} />
+                        {engagementErrors.date_engagement && <span role="alert" className="mt-1 block text-xs font-medium text-red-600">{engagementErrors.date_engagement}</span>}
+                      </div>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                       <div><label className="block text-sm font-semibold text-gray-700 mb-1">Date notification</label><input type="date" value={engagementForm.date_notification} onChange={e => setEngagementForm({...engagementForm, date_notification: e.target.value})} className="w-full p-3 border rounded-xl" /></div>
                       <div><label className="block text-sm font-semibold text-gray-700 mb-1">Date commencement</label><input type="date" value={engagementForm.date_commencement} onChange={e => setEngagementForm({...engagementForm, date_commencement: e.target.value})} className="w-full p-3 border rounded-xl" /></div>
-                      <div><label className="block text-sm font-semibold text-gray-700 mb-1">Délai d'exécution</label><div className="relative"><input type="number" min="1" required value={engagementForm.delai_execution} onChange={e => setEngagementForm({...engagementForm, delai_execution: e.target.value})} className="w-full p-3 pr-16 border rounded-xl font-mono" /><span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium">jours</span></div></div>
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-1">Délai d'exécution <span className="text-red-600 font-bold">*</span></label>
+                        <div className="relative">
+                          <input type="number" min="1" value={engagementForm.delai_execution} onChange={e => { setEngagementForm({...engagementForm, delai_execution: e.target.value}); if (engagementErrors.delai_execution) setEngagementErrors(p => ({...p, delai_execution: undefined})); }} className={`w-full p-3 pr-16 border rounded-xl font-mono ${engagementErrors.delai_execution ? 'border-red-500 bg-red-50/20' : ''}`} />
+                          <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium">jours</span>
+                        </div>
+                        {engagementErrors.delai_execution && <span role="alert" className="mt-1 block text-xs font-medium text-red-600">{engagementErrors.delai_execution}</span>}
+                      </div>
                     </div>
                     <div className="pt-6 border-t border-gray-100 flex justify-end"><button type="submit" disabled={savingEngagement || consultation.statut_dossier === 'ENGAGÉ'} className="px-8 py-3 bg-blue-600 text-white font-bold rounded-xl shadow-lg hover:bg-blue-700 flex items-center gap-3 disabled:opacity-50">{savingEngagement ? <Loader2 size={20} className="animate-spin"/> : <PenTool size={20}/>} {consultation.statut_dossier === 'ENGAGÉ' ? "Déjà engagé" : "Valider l'Engagement"}</button></div>
                   </form>
@@ -1220,7 +1593,9 @@ const DetailsConsultation = () => {
         {activeTab === 'suivi' && (
           <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
             {suiviSuccess && <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center gap-3 text-emerald-600"><CheckCircle2 size={20} /><p className="font-medium">Mise à jour du suivi effectuée avec succès !</p></div>}
+            {suiviError && <div className="p-4 bg-red-50 border border-red-200 rounded-xl flex items-center gap-3 text-red-600"><AlertCircle size={20} /><p className="font-medium">{suiviError}</p></div>}
             {evenementSuccess && <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center gap-3 text-emerald-600"><CheckCircle2 size={20} /><p className="font-medium">Événement ajouté à l'historique !</p></div>}
+            {evenementError && <div className="p-4 bg-red-50 border border-red-200 rounded-xl flex items-center gap-3 text-red-600"><AlertCircle size={20} /><p className="font-medium">{evenementError}</p></div>}
             
             {suiviData && (
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -1386,30 +1761,36 @@ const DetailsConsultation = () => {
         {activeTab === 'reception' && (
           <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
             {receptionSuccess && <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center gap-3 text-emerald-600"><CheckCircle2 size={20} /><p className="font-medium">Réception enregistrée avec succès !</p></div>}
+            {receptionError && <div className="p-4 bg-red-50 border border-red-200 rounded-xl flex items-center gap-3 text-red-600"><AlertCircle size={20} /><p className="font-medium">{receptionError}</p></div>}
             
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               
               {/* Formulaire Réception */}
               <section className="bg-white dark:bg-gray-800 rounded-3xl shadow-lg border border-gray-100 overflow-hidden">
                 <div className="p-6 border-b border-gray-100 flex items-center gap-3 bg-gray-50"><div className="p-2 bg-teal-100 text-teal-600 rounded-lg"><PackageCheck size={20} /></div><h2 className="text-xl font-bold">Déclarer une Réception</h2></div>
-                <form onSubmit={saveReception} className="p-6 space-y-6">
+                <form onSubmit={saveReception} className="p-6 space-y-6" noValidate>
+                  <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-600 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-xl w-fit">
+                    <span className="text-red-600 font-extrabold text-sm">*</span> : Les champs obligatoires
+                  </div>
                   
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">Type de réception</label>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">Type de réception <span className="text-red-600 font-bold">*</span></label>
                       <div className="flex bg-gray-100 p-1 rounded-xl">
                         <button type="button" onClick={() => setReceptionForm({...receptionForm, type_reception: 'Provisoire'})} className={`flex-1 py-2 text-sm font-bold rounded-lg transition-colors ${receptionForm.type_reception === 'Provisoire' ? 'bg-white text-teal-700 shadow' : 'text-gray-500 hover:text-gray-700'}`}>Provisoire</button>
                         <button type="button" onClick={() => setReceptionForm({...receptionForm, type_reception: 'Définitive'})} className={`flex-1 py-2 text-sm font-bold rounded-lg transition-colors ${receptionForm.type_reception === 'Définitive' ? 'bg-white text-teal-700 shadow' : 'text-gray-500 hover:text-gray-700'}`}>Définitive</button>
                       </div>
+                      {receptionErrors.type_reception && <span role="alert" className="mt-1 block text-xs font-medium text-red-600">{receptionErrors.type_reception}</span>}
                     </div>
                     <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">Date de réunion</label>
-                      <input type="date" required value={receptionForm.date_reunion} onChange={e => setReceptionForm({...receptionForm, date_reunion: e.target.value})} className="w-full p-2.5 border rounded-xl" />
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">Date de réunion <span className="text-red-600 font-bold">*</span></label>
+                      <input type="date" value={receptionForm.date_reunion} onChange={e => { setReceptionForm({...receptionForm, date_reunion: e.target.value}); if (receptionErrors.date_reunion) setReceptionErrors(p => ({...p, date_reunion: undefined})); }} className={`w-full p-2.5 border rounded-xl ${receptionErrors.date_reunion ? 'border-red-500 bg-red-50/20' : ''}`} />
+                      {receptionErrors.date_reunion && <span role="alert" className="mt-1 block text-xs font-medium text-red-600">{receptionErrors.date_reunion}</span>}
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Conformité des prestations</label>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Conformité des prestations <span className="text-red-600 font-bold">*</span></label>
                     <div className="flex gap-3">
                       <label className={`flex-1 flex justify-center items-center gap-2 p-3 border-2 rounded-xl cursor-pointer transition-all ${receptionForm.conformite === 'Oui' ? 'border-emerald-500 bg-emerald-50 text-emerald-700 font-bold' : 'border-gray-200 text-gray-500 hover:bg-gray-50'}`}>
                         <input type="radio" name="conformite" value="Oui" checked={receptionForm.conformite === 'Oui'} onChange={e => setReceptionForm({...receptionForm, conformite: e.target.value})} className="hidden" />
@@ -1521,11 +1902,15 @@ const DetailsConsultation = () => {
                   <h2 className="text-xl font-bold text-gray-800 flex items-center gap-3"><Banknote size={20} className="text-indigo-600" /> Saisie de la Liquidation</h2>
                   {liquidationData && <span className="px-3 py-1 bg-emerald-100 text-emerald-700 font-bold rounded-full text-xs">Déjà liquidé</span>}
                 </div>
-                <form onSubmit={saveLiquidation} className="p-6 space-y-6">
+                <form onSubmit={saveLiquidation} className="p-6 space-y-6" noValidate>
+                  <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-600 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-xl w-fit">
+                    <span className="text-red-600 font-extrabold text-sm">*</span> : Les champs obligatoires
+                  </div>
                   
                   <div className="bg-indigo-50/50 p-4 rounded-xl border border-indigo-100/50">
-                    <label className="block text-sm font-semibold text-indigo-900 mb-2">Montant final à payer (dh)</label>
-                    <input type="number" step="0.01" min="0" required value={liquidationForm.montant_a_payer} onChange={e => setLiquidationForm({...liquidationForm, montant_a_payer: e.target.value})} className="w-full p-4 border border-indigo-200 rounded-xl font-mono text-xl font-bold text-indigo-700 bg-white shadow-inner focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="0.00" />
+                    <label className="block text-sm font-semibold text-indigo-900 mb-2">Montant final à payer (dh) <span className="text-red-600 font-bold">*</span></label>
+                    <input type="number" step="0.01" min="0" value={liquidationForm.montant_a_payer} onChange={e => { setLiquidationForm({...liquidationForm, montant_a_payer: e.target.value}); if (liquidationErrors.montant_a_payer) setLiquidationErrors(p => ({...p, montant_a_payer: undefined})); }} className={`w-full p-4 border rounded-xl font-mono text-xl font-bold text-indigo-700 bg-white shadow-inner focus:ring-2 focus:ring-indigo-500 outline-none ${liquidationErrors.montant_a_payer ? 'border-red-500 bg-red-50/20' : 'border-indigo-200'}`} placeholder="0.00" />
+                    {liquidationErrors.montant_a_payer && <span role="alert" className="mt-1.5 block text-xs font-medium text-red-600">{liquidationErrors.montant_a_payer}</span>}
                     <p className="text-xs text-indigo-500 mt-2 flex items-center gap-1"><AlertCircle size={12}/> Ce montant ne doit pas dépasser le montant engagé.</p>
                   </div>
 
@@ -1642,12 +2027,13 @@ const DetailsConsultation = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm">
           <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md">
             <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50 rounded-t-3xl"><h2 className="text-lg font-bold">Saisie du Devis</h2><button onClick={() => setIsDevisModalOpen(false)}><X size={24} /></button></div>
-            <form onSubmit={submitDevis} className="p-6 space-y-4">
+            <form onSubmit={submitDevis} className="p-6 space-y-4" noValidate>
+              {devisError && <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs font-semibold text-red-600">{devisError}</div>}
               <div><label className="block text-sm font-semibold mb-1">Statut de la réponse</label>
-                <select value={devisForm.statut_reponse} onChange={e => setDevisForm({...devisForm, statut_reponse: e.target.value})} className="w-full p-2.5 border rounded-xl"><option value="En attente">En attente</option><option value="Reçu">Reçu</option><option value="Hors délai">Hors délai</option><option value="Refusé">Refusé</option></select>
+                <select value={devisForm.statut_reponse} onChange={e => { setDevisForm({...devisForm, statut_reponse: e.target.value}); setDevisError(null); }} className="w-full p-2.5 border rounded-xl"><option value="En attente">En attente</option><option value="Reçu">Reçu</option><option value="Hors délai">Hors délai</option><option value="Refusé">Refusé</option></select>
               </div>
-              <div><label className="block text-sm font-semibold mb-1">Montant Proposé (dh TTC)</label>
-                <input type="number" step="0.01" value={devisForm.montant_propose} onChange={e => setDevisForm({...devisForm, montant_propose: e.target.value})} className="w-full p-2.5 border rounded-xl font-mono" />
+              <div><label className="block text-sm font-semibold mb-1">Montant Proposé (dh TTC) {devisForm.statut_reponse === 'Reçu' && <span className="text-red-600 font-bold">*</span>}</label>
+                <input type="number" step="0.01" value={devisForm.montant_propose} onChange={e => { setDevisForm({...devisForm, montant_propose: e.target.value}); setDevisError(null); }} className="w-full p-2.5 border rounded-xl font-mono" />
               </div>
               <div className="pt-4 flex justify-end gap-3"><button type="button" onClick={() => setIsDevisModalOpen(false)} className="px-4 py-2 border rounded-lg">Annuler</button><button type="submit" className="px-4 py-2 bg-primary text-white rounded-lg">Enregistrer</button></div>
             </form>

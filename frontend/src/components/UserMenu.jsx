@@ -188,7 +188,7 @@ export default function UserMenu({ className = '', profileContext = null }) {
   const userName = isDirectorSpace ? 'Directeur Régional' : 'Chef de SAF';
   const userEmail = currentUser?.email || (isDirectorSpace ? 'directeur@onca.ma' : 'saf@onca.ma');
   const userRole = isDirectorSpace
-    ? 'Directeur Régional'
+    ? 'Direction Régionale · DRCA-RSK'
     : 'Service administratif et financier';
   const userInitials = useMemo(() => getInitials(userName), [userName]);
   const avatarGradient = useMemo(() => getAvatarGradient(userName), [userName]);
@@ -204,12 +204,12 @@ export default function UserMenu({ className = '', profileContext = null }) {
           aria-expanded={isOpen}
           aria-haspopup="true"
           aria-label="Menu de profil utilisateur"
-          className={`group flex w-full items-center justify-between gap-3 rounded-2xl border p-2.5 sm:p-3 text-left transition-all duration-300 cursor-pointer select-none ${isOpen
+          className={`group flex w-full items-center justify-between gap-2.5 rounded-2xl border p-2.5 sm:p-3 text-left transition-all duration-300 cursor-pointer select-none ${isOpen
               ? 'border-[#087F5B] bg-[#172B46] shadow-lg shadow-[#101B2D]/40 ring-2 ring-[#087F5B]/30'
               : 'border-[#172B46] bg-[#172B46]/60 hover:border-[#087F5B]/50 hover:bg-[#172B46] shadow-xs'
             }`}
         >
-          <div className="flex items-center gap-3 min-w-0 flex-1">
+          <div className="flex items-center gap-2.5 min-w-0 flex-1">
             {/* Avatar */}
             <div className="relative shrink-0">
               <div
@@ -223,14 +223,14 @@ export default function UserMenu({ className = '', profileContext = null }) {
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-1.5">
                 <p
-                  className="truncate text-sm font-bold text-white transition-colors group-hover:text-emerald-300"
+                  className="text-[13px] font-bold leading-tight text-white break-words transition-colors group-hover:text-emerald-300"
                   title={userName}
                 >
                   {userName}
                 </p>
               </div>
               <p
-                className="truncate text-xs font-medium text-slate-400"
+                className="mt-0.5 text-[11px] font-medium leading-snug text-slate-400 break-words"
                 title={userRole}
               >
                 {userRole}
@@ -239,7 +239,7 @@ export default function UserMenu({ className = '', profileContext = null }) {
           </div>
 
           {/* Badge de notifications + Chevron interactif */}
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-1.5 shrink-0">
             {unreadCount > 0 && (
               <span
                 title={`${unreadCount} notifications en attente`}
@@ -274,15 +274,15 @@ export default function UserMenu({ className = '', profileContext = null }) {
                   {userInitials}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-bold text-white" title={userName}>
+                  <p className="text-sm font-bold leading-tight text-white break-words" title={userName}>
                     {userName}
                   </p>
                   {userRole !== userName && (
-                    <p className="truncate text-[11px] font-medium text-emerald-400" title={userRole}>
+                    <p className="mt-0.5 text-[11px] font-medium leading-snug text-emerald-400 break-words" title={userRole}>
                       {userRole}
                     </p>
                   )}
-                  <p className="truncate text-xs text-slate-400" title={userEmail}>
+                  <p className="mt-0.5 truncate text-xs text-slate-400" title={userEmail}>
                     {userEmail}
                   </p>
                 </div>

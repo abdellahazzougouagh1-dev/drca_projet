@@ -99,9 +99,16 @@ const ListeConsultations = () => {
             String(c.type_procedure || '').toLowerCase().includes('march');
 
           const isConv = (c.mode_engagement === 'Convention') ||
+            (c.mode_engagement === 'Contrat') ||
             String(c.numero_consultation || '').toUpperCase().startsWith('CONV') ||
             String(c.numero_bc || '').toUpperCase().startsWith('CONV') ||
-            String(c.type_procedure || '').toLowerCase().includes('convention');
+            String(c.type_procedure || '').toLowerCase().includes('convention') ||
+            String(c.type_procedure || '').toLowerCase().includes('contrat');
+
+          const isContrat = isConv && (
+            c.mode_engagement === 'Contrat' ||
+            String(c.type_budget || '').toLowerCase() === 'fonctionnement'
+          );
 
           const isBc = !isAo && !isConv;
 
@@ -117,6 +124,7 @@ const ListeConsultations = () => {
 
           let displayedType = "Bon de commande";
           if (isAo) displayedType = "Appel d'offres";
+          else if (isContrat) displayedType = "Contrat";
           else if (isConv) displayedType = "Convention";
 
           return {
@@ -129,6 +137,7 @@ const ListeConsultations = () => {
             global_statut: c.statut_dossier,
             is_ao: isAo,
             is_conv: isConv,
+            is_contrat: isContrat,
             is_bc: isBc,
             matching_aoo_id: matchingAoo?.id,
             route: targetRoute
@@ -291,7 +300,7 @@ const ListeConsultations = () => {
                 exportRegistreConsultationsExcel({
                   procedure: activeFilter,
                   exercice: '2026',
-                  rows: filteredConsultations.map(c => ({
+                  rows: displayedConsultations.map(c => ({
                     numero_consultation: c.numero_consultation || '-',
                     date_consultation: c.date_consultation,
                     mode_engagement: c.mode_engagement || '-',
@@ -472,8 +481,12 @@ const ListeConsultations = () => {
                             Appel d'offres
                           </span>
                         ) : consultation.is_conv ? (
-                          <span className="inline-block rounded-full bg-amber-50 border border-amber-200 px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-amber-800">
-                            Convention
+                          <span className={`inline-block rounded-full border px-3 py-1 text-[11px] font-bold uppercase tracking-wide ${
+                            consultation.is_contrat
+                              ? 'bg-sky-50 border-sky-200 text-sky-800'
+                              : 'bg-amber-50 border-amber-200 text-amber-800'
+                          }`}>
+                            {consultation.is_contrat ? 'Contrat' : 'Convention'}
                           </span>
                         ) : (
                           <span className="inline-block rounded-full bg-[#E7F5EF] border border-[#087F5B]/25 px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-[#087F5B]">
@@ -517,6 +530,10 @@ const ListeConsultations = () => {
                                     autoSelectId: consultation.id,
                                     consultation_id: consultation.id,
                                   },
+                                });
+                              } else if (consultation.is_conv) {
+                                navigate(`/convention?consultation_id=${consultation.id}&edit=1`, {
+                                  state: { autoSelectId: consultation.id, autoEditId: consultation.id },
                                 });
                               } else {
                                 navigate(`/bons-commande?consultation_id=${consultation.id}&edit=1`, {

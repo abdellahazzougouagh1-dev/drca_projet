@@ -190,10 +190,11 @@ const documentFieldGroups = {
     { name: 'date_document', label: 'Date de la décision', type: 'date', required: true },
   ],
   pv_ouverture_attribution: [
-    { name: 'numero_consultation', label: "Numéro d'avis d'achat", placeholder: '04/2024/DRCA-RSK', required: true, fromDb: true },
+    { name: 'numero_consultation', label: "Numéro d'avis d'achat", placeholder: '04/2026/DRCA-RSK', required: true, fromDb: true },
     { name: 'date_reunion', label: "Date d'ouverture des devis", type: 'date', required: true },
     { name: 'heure_reunion', label: "Heure d'ouverture", type: 'time', required: true },
-    { name: 'objet', label: 'Objet de la prestation', placeholder: 'Prestations topographiques...', required: true, fromDb: true },
+    { name: 'lieu_reunion', label: 'Lieu de séance', placeholder: 'Siège DRCA Rabat-Salé-Kénitra', required: true },
+    { name: 'objet', label: 'Objet de la prestation', placeholder: 'Prestations...', required: true, fromDb: true },
     { name: 'concurrents', label: 'Synthése des devis reçus', type: 'concurrents_table', required: true },
     { name: 'societes_refusees', label: "Sociétés écartées", type: 'societes_refusees_input', required: false },
     { name: 'attributaire', label: 'Société retenue ', type: 'attributaire_selector', required: true },
@@ -203,13 +204,14 @@ const documentFieldGroups = {
     { name: 'membres_commission', label: 'Membres de la commission', type: 'commission_selector', required: true },
   ],
   pv_ouverture_convention: [
-    { name: 'numero_consultation', label: 'Numéro de consultation', placeholder: '7/2023/DRCA-RSK', required: true, fromDb: true },
+    { name: 'numero_consultation', label: 'Numéro de consultation', placeholder: '07/2026/DRCA-RSK', required: true, fromDb: true },
     { name: 'date_reunion', label: "Date de séance d'ouverture", type: 'date', required: true },
     { name: 'heure_reunion', label: "Heure d'ouverture", type: 'time', required: true },
-    { name: 'numero_decision', label: 'N° décision de commission', placeholder: '65/2023/DRCA-RSK', required: true, fromDb: true },
+    { name: 'lieu_reunion', label: 'Lieu de séance', placeholder: 'Siège DRCA Rabat-Salé-Kénitra', required: true },
+    { name: 'numero_decision', label: 'N° décision de commission', placeholder: '65/2026/DRCA-RSK', required: true, fromDb: true },
     { name: 'date_decision', label: 'Date de décision', type: 'date', required: true },
     { name: 'membres_commission', label: 'Composition de la commission (Président & Membres)', type: 'commission_selector', required: true },
-    { name: 'objet', label: 'Prestation / Objet de la consultation', placeholder: 'Organisation de voyages d\'agriculteurs et de techniciens', required: true, fromDb: true },
+    { name: 'objet', label: 'Prestation / Objet de la consultation', placeholder: 'Prestation objet de la consultation', required: true, fromDb: true },
     { name: 'lettres_consultation_refs', label: 'Numéros des lettres de consultation', placeholder: '15,16,17/2026/DRCA-RSK', required: false, readOnly: true, fromDb: true },
     { name: 'fournisseurs_consultes', label: 'Fournisseurs consultés (Participants, Adresses, Ville)', type: 'fournisseurs_consultes_table', required: true },
     { name: 'concurrents', label: 'Résultats des concurrents (Offres avant & après vérification)', type: 'concurrents_convention_table', required: true },
@@ -237,20 +239,45 @@ const documentFieldGroups = {
   ],
 
   fiche_engagement: [
-    { name: 'numero_engagement', label: "N° Fiche d'Engagement", placeholder: '02/2024/FE/DRCA-RSK', required: true },
+    { name: 'numero_engagement', label: "N° Fiche d'Engagement", placeholder: '02/2026/FE/DRCA-RSK', required: true },
     { name: 'forme_engagement', label: "Forme de l'engagement", placeholder: 'Convention / Contrat', required: false, readOnly: true },
-    { name: 'societe', label: 'Bénéficiaire (Entreprise retenue)', placeholder: 'GENERATION MULISERVICES', required: true, fromDb: true },
-    { name: 'credit_ouvert_cp', label: 'Crédit ouvert CP', type: 'number', required: false },
-    { name: 'credit_ouvert_ce', label: 'Crédit ouvert CE', type: 'number', required: false },
-    { name: 'depenses_anterieures_ce', label: 'Dépenses engagées antérieurement CE', type: 'number', required: false },
-    { name: 'depenses_anterieures_cp', label: 'Dépenses engagées antérieurement CP', type: 'number', required: false },
+    { name: 'societe', label: 'Bénéficiaire (Entreprise retenue)', placeholder: 'Raison sociale de l’entreprise', required: true, fromDb: true },
+    { name: 'credit_ouvert_cp', label: 'Crédit ouvert CP', type: 'number', required: true },
+    {
+      name: 'credit_ouvert_ce',
+      label: 'Crédit ouvert CE',
+      type: 'number',
+      required: true,
+      condition: (_form, _isConv, sc) => String(sc?.type_budget || _form?.type_budget || '').toLowerCase() !== 'fonctionnement',
+    },
+    {
+      name: 'depenses_anterieures_ce',
+      label: 'Dépenses engagées antérieurement CE',
+      type: 'number',
+      required: true,
+      condition: (_form, _isConv, sc) => String(sc?.type_budget || _form?.type_budget || '').toLowerCase() !== 'fonctionnement',
+    },
+    { name: 'depenses_anterieures_cp', label: 'Dépenses engagées antérieurement CP', type: 'number', required: true },
     { name: 'disponible_cp', label: 'Disponible CP (DH)', type: 'number', required: false, readOnly: true },
-    { name: 'disponible_ce', label: 'Disponible CE (DH)', type: 'number', required: false, readOnly: true },
-    { name: 'depenses_credits_engagement', label: "Dépenses sur crédits d'engagements", type: 'number', required: false },
-    { name: 'montant_depense_neuf', label: 'Montant de la dépense neuf', type: 'number', required: false },
+    {
+      name: 'disponible_ce',
+      label: 'Disponible CE (DH)',
+      type: 'number',
+      required: false,
+      readOnly: true,
+      condition: (_form, _isConv, sc) => String(sc?.type_budget || _form?.type_budget || '').toLowerCase() !== 'fonctionnement',
+    },
+    {
+      name: 'depenses_credits_engagement',
+      label: "Dépenses sur crédits d'engagements",
+      type: 'number',
+      required: true,
+      condition: (_form, _isConv, sc) => String(sc?.type_budget || _form?.type_budget || '').toLowerCase() !== 'fonctionnement',
+    },
+    { name: 'montant_depense_neuf', label: 'Montant de la dépense neuf', type: 'number', required: true },
     { name: 'interets_moratoires', label: 'Intérêts moratoires 1 %', type: 'number', required: false, readOnly: true },
     { name: 'montant_engager_neuf', label: 'Montant à engager neuf', type: 'number', required: false, readOnly: true },
-    { name: 'pieces_jointes', label: 'Pièces jointes', placeholder: 'Convention / Contrat N° ...', required: false },
+    { name: 'pieces_jointes', label: 'Pièces jointes', placeholder: 'Convention / Contrat N° ...', required: true },
   ],
   ordre_commande: [
     {
@@ -268,19 +295,19 @@ const documentFieldGroups = {
     { 
       name: 'motif_ajournement', 
       label: "Motif de l'ajournement (si ajournement)", 
-      placeholder: 'Planification et disponibilité des agriculteurs', 
+      placeholder: 'Motif de l’ajournement', 
       required: true, 
       condition: (form) => form?.nature_os === "Ajournement de l'exécution" 
     },
-    { name: 'numero_lettre', label: "Numéro d'ordre de service (N°)", placeholder: '01 /2024/DRC-RSK/OS', required: true },
+    { name: 'numero_lettre', label: "Numéro d'ordre de service (N°)", placeholder: '01/2026/DRC-RSK/OS', required: true },
     { name: 'date_document', label: 'Date du document', type: 'date', required: true },
-    { name: 'numero_consultation', label: 'Convention / Consultation N°', placeholder: '05/2023/DRCA-RSK', required: true, fromDb: true },
-    { name: 'numero_bc', label: 'Bon de commande N°', placeholder: '04/2024/DRCA-RSK', required: false, condition: (form, isConv) => !isConv, fromDb: true },
-    { name: 'destinataire_nom', label: 'Destinataire (Civilité / Titre)', placeholder: 'Monsieur le gérant de la société', required: false },
-    { name: 'societe', label: 'Entreprise choisie (Société retenue au PV)', placeholder: 'GENERATION MULISERVICES', required: true, type: 'os_company_selector' },
-    { name: 'adresse_societe', label: 'Adresse de Société', placeholder: 'AV MOUKAOUAMA DALIA B2/2APPT NO 7 MARRAKECH.', required: true, fromDb: true },
-    { name: 'ville_societe', label: 'Ville', placeholder: 'Marrakech', required: true, fromDb: true },
-    { name: 'objet', label: 'Objet de la prestation', placeholder: 'Organisation de voyages d\'agriculteurs et de techniciens', required: true, fromDb: true },
+    { name: 'numero_consultation', label: 'Convention / Consultation N°', placeholder: '05/2026/DRCA-RSK', required: true, fromDb: true },
+    { name: 'numero_bc', label: 'Bon de commande N°', placeholder: '04/2026/DRCA-RSK', required: true, condition: (_form, isConv) => !isConv, fromDb: true },
+    { name: 'destinataire_nom', label: 'Destinataire (Civilité / Titre)', placeholder: 'Monsieur le gérant de la société', required: true },
+    { name: 'societe', label: 'Entreprise choisie (Société retenue au PV)', placeholder: 'Raison sociale de l’entreprise', required: true, type: 'os_company_selector' },
+    { name: 'adresse_societe', label: 'Adresse de Société', placeholder: 'Adresse du siège social', required: true, fromDb: true },
+    { name: 'ville_societe', label: 'Ville', placeholder: 'Ville', required: true, fromDb: true },
+    { name: 'objet', label: 'Objet de la prestation', placeholder: 'Objet de la prestation', required: true, fromDb: true },
   ],
   accuse_reception: [
     { 
@@ -298,19 +325,19 @@ const documentFieldGroups = {
     { 
       name: 'motif_ajournement', 
       label: "Motif de l'ajournement (si ajournement)", 
-      placeholder: 'Planification et disponibilité des agriculteurs', 
+      placeholder: 'Motif de l’ajournement', 
       required: true, 
       condition: (form) => form?.nature_os === "Ajournement de l'exécution" 
     },
-    { name: 'numero_lettre', label: "Numéro d'ordre de service ", placeholder: '01 /2024/DRC-RSK/OS', required: true },
+    { name: 'numero_lettre', label: "Numéro d'ordre de service ", placeholder: '01/2026/DRC-RSK/OS', required: true },
     { name: 'date_document', label: 'Date du document ', type: 'date', required: true },
-    { name: 'numero_consultation', label: 'Convention / Consultation N°', placeholder: '05/2023/DRCA-RSK', required: true, fromDb: true },
-    { name: 'numero_bc', label: 'Bon de commande N°', placeholder: '04/2024/DRCA-RSK', required: false, condition: (form, isConv) => !isConv, fromDb: true },
-    { name: 'destinataire_nom', label: 'Destinataire (Civilité / Titre)', placeholder: 'Monsieur le gérant de la société', required: false },
-    { name: 'societe', label: 'Entreprise choisie (Société retenue au PV)', placeholder: 'GENERATION MULISERVICES', required: true, type: 'os_company_selector' },
-    { name: 'adresse_societe', label: 'Adresse / Domicile de la société', placeholder: 'AV MOUKAOUAMA DALIA B2/2APPT NO 7 MARRAKECH.', required: true, fromDb: true },
-    { name: 'ville_societe', label: 'Ville', placeholder: 'Marrakech', required: true, fromDb: true },
-    { name: 'objet', label: 'Objet de la prestation', placeholder: 'Organisation de voyages d\'agriculteurs et de techniciens', required: true, fromDb: true },
+    { name: 'numero_consultation', label: 'Convention / Consultation N°', placeholder: '05/2026/DRCA-RSK', required: true, fromDb: true },
+    { name: 'numero_bc', label: 'Bon de commande N°', placeholder: '04/2026/DRCA-RSK', required: true, condition: (_form, isConv) => !isConv, fromDb: true },
+    { name: 'destinataire_nom', label: 'Destinataire (Civilité / Titre)', placeholder: 'Monsieur le gérant de la société', required: true },
+    { name: 'societe', label: 'Entreprise choisie (Société retenue au PV)', placeholder: 'Raison sociale de l’entreprise', required: true, type: 'os_company_selector' },
+    { name: 'adresse_societe', label: 'Adresse / Domicile de la société', placeholder: 'Adresse du siège social', required: true, fromDb: true },
+    { name: 'ville_societe', label: 'Ville', placeholder: 'Ville', required: true, fromDb: true },
+    { name: 'objet', label: 'Objet de la prestation', placeholder: 'Objet de la prestation', required: true, fromDb: true },
   ],
   decision_commission_reception: [
     { name: 'numero_decision', label: 'Numéro de décision', placeholder: 'Ex: 05/DR/2024', required: true },
@@ -463,7 +490,7 @@ function PiecesJointesManager({
   };
 
   return (
-    <div className="col-span-full bg-slate-50/70 border border-slate-200/90 rounded-2xl p-5 shadow-xs transition-all">
+    <div className={`col-span-full border rounded-2xl p-5 shadow-xs transition-all ${hasError ? 'border-red-500 bg-red-50/20' : 'border-slate-200/90 bg-slate-50/70'}`}>
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-200/60">
         <div className="flex items-center gap-2.5">
           <div className="flex items-center justify-center w-8 h-8 rounded-xl bg-emerald-50 text-[#087F5B] border border-emerald-200/60 shadow-xs">
@@ -497,7 +524,7 @@ function PiecesJointesManager({
             value={value || ''}
             onChange={(e) => onChange(e.target.value)}
             placeholder="Une pièce jointe par ligne..."
-            className="w-full px-3.5 py-2.5 text-xs font-mono bg-white border border-slate-200 rounded-xl focus:border-[#087F5B] focus:ring-2 focus:ring-emerald-50 outline-none resize-y"
+            className={`w-full px-3.5 py-2.5 text-xs font-mono bg-white border rounded-xl outline-none resize-y ${hasError ? 'border-red-400 focus:border-red-500 focus:ring-2 focus:ring-red-100' : 'border-slate-200 focus:border-[#087F5B] focus:ring-2 focus:ring-emerald-50'}`}
           />
           <p className="mt-1.5 text-[11px] text-slate-400">
             Astuce : saisissez une pièce par ligne. Vous pouvez repasser en vue par liste à tout moment.
@@ -534,7 +561,7 @@ function PiecesJointesManager({
               ))}
             </div>
           ) : (
-            <div className="py-4 px-3 text-center rounded-xl border border-dashed border-slate-300 bg-white/70">
+            <div className={`py-4 px-3 text-center rounded-xl border border-dashed bg-white/70 ${hasError ? 'border-red-300' : 'border-slate-300'}`}>
               <p className="text-xs text-slate-500 font-medium">
                 Aucune pièce jointe renseignée.
               </p>
@@ -551,7 +578,7 @@ function PiecesJointesManager({
               onChange={(e) => setNewPiece(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Intitulé de la pièce jointe (ex: Bordereau des prix, CPS...)"
-              className="flex-1 px-3.5 py-2.5 text-xs bg-white border border-slate-200 rounded-xl focus:border-[#087F5B] focus:ring-2 focus:ring-emerald-50 outline-none transition-all placeholder:text-slate-400"
+              className={`flex-1 px-3.5 py-2.5 text-xs bg-white border rounded-xl outline-none transition-all placeholder:text-slate-400 ${hasError ? 'border-red-400 focus:border-red-500 focus:ring-2 focus:ring-red-100' : 'border-slate-200 focus:border-[#087F5B] focus:ring-2 focus:ring-emerald-50'}`}
             />
             <button
               type="button"
@@ -577,13 +604,13 @@ function PiecesJointesManager({
 
 export function cleanNumeroLettreConsultation(rawNum, fallbackYear = new Date().getFullYear()) {
   if (!rawNum || typeof rawNum !== 'string') {
-    return `15/${fallbackYear}/DRCA-RSK`;
+    return '';
   }
   let str = rawNum.trim();
   // Strip any CONV prefix (CONV-, CONV_, CONV , etc.)
-  str = str.replace(/^CONV\s*[-_]?\s*/i, '');
+  str = str.replace(/^CONV\s*[-_]?\s*/i, '').trim();
   if (!str) {
-    return `15/${fallbackYear}/DRCA-RSK`;
+    return '';
   }
   if (/^\d+$/.test(str)) {
     return `${str.padStart(2, '0')}/${fallbackYear}/DRCA-RSK`;
@@ -597,6 +624,7 @@ export function cleanNumeroLettreConsultation(rawNum, fallbackYear = new Date().
 export function incrementNumeroLettre(baseNumero, increment = 1) {
   if (!baseNumero || typeof baseNumero !== 'string') return '';
   const cleanBase = cleanNumeroLettreConsultation(baseNumero);
+  if (!cleanBase) return '';
   if (increment === 0) return cleanBase;
   const match = cleanBase.match(/^(\D*)(\d+)(.*)$/);
   if (!match) return cleanBase;
@@ -614,12 +642,17 @@ export function incrementNumeroLettre(baseNumero, increment = 1) {
 
 export function formatLettresRefs(lettres, defaultYear = new Date().getFullYear()) {
   if (!Array.isArray(lettres) || lettres.length === 0) {
-    return defaultYear ? `${defaultYear}/DRCA-RSK` : '';
+    return '';
   }
-  const cleanLettres = lettres.map((l) => ({
-    ...l,
-    numero_lettre: cleanNumeroLettreConsultation(l?.numero_lettre, defaultYear),
-  }));
+  const cleanLettres = lettres
+    .map((l) => ({
+      ...l,
+      numero_lettre: cleanNumeroLettreConsultation(l?.numero_lettre, defaultYear),
+    }))
+    .filter((l) => l.numero_lettre);
+  if (cleanLettres.length === 0) {
+    return '';
+  }
   if (cleanLettres.length === 1) {
     return cleanLettres[0]?.numero_lettre || '';
   }
@@ -644,17 +677,22 @@ export function formatLettresRefs(lettres, defaultYear = new Date().getFullYear(
     const joinedNums = nums.slice(0, -1).join(', ') + ' et ' + nums[nums.length - 1];
     return `${commonPrefix}${joinedNums} ${commonSuffix}`.trim();
   }
-  return lettres[0]?.numero_lettre || '';
+  return cleanLettres[0]?.numero_lettre || '';
 }
 
 export function formatLettresRefsCompact(lettres, defaultYear = new Date().getFullYear()) {
   if (!Array.isArray(lettres) || lettres.length === 0) {
-    return `15,16,17/${defaultYear}/DRCA-RSK`;
+    return '';
   }
-  const cleanLettres = lettres.map((l) => ({
-    ...l,
-    numero_lettre: cleanNumeroLettreConsultation(l?.numero_lettre, defaultYear),
-  }));
+  const cleanLettres = lettres
+    .map((l) => ({
+      ...l,
+      numero_lettre: cleanNumeroLettreConsultation(l?.numero_lettre, defaultYear),
+    }))
+    .filter((l) => l.numero_lettre);
+  if (cleanLettres.length === 0) {
+    return '';
+  }
   if (cleanLettres.length === 1) {
     return cleanLettres[0]?.numero_lettre || '';
   }
@@ -676,7 +714,7 @@ export function formatLettresRefsCompact(lettres, defaultYear = new Date().getFu
   });
 
   if (nums.length > 0) {
-    return `${nums.join(',')}${commonSuffix || `/${defaultYear}/DRCA-RSK`}`;
+    return `${nums.join(',')}${commonSuffix || ''}`;
   }
   return cleanLettres[0]?.numero_lettre || '';
 }
@@ -685,7 +723,7 @@ export function getAutoLettresRefsCompact(forms, savedConsultation, currentYear 
   const lettresList = forms?.lettre_consultation?.lettres_consultation
     || forms?.avis_achat?.lettres_consultation;
 
-  if (Array.isArray(lettresList) && lettresList.length > 0) {
+  if (Array.isArray(lettresList) && lettresList.some((l) => String(l?.numero_lettre || '').trim() !== '')) {
     return formatLettresRefsCompact(lettresList, savedConsultation?.annee || currentYear);
   }
 
@@ -698,20 +736,20 @@ export function getAutoLettresRefsCompact(forms, savedConsultation, currentYear 
 
   const offres = savedConsultation?.offres;
   if (Array.isArray(offres) && offres.length > 1 && baseNum) {
-    const dummyLettres = offres.map((_, idx) => ({
+    const derivedLettres = offres.map((_, idx) => ({
       numero_lettre: incrementNumeroLettre(baseNum, idx),
     }));
-    return formatLettresRefsCompact(dummyLettres, savedConsultation?.annee || currentYear);
+    return formatLettresRefsCompact(derivedLettres, savedConsultation?.annee || currentYear);
   }
 
-  return baseNum || `15,16,17/${savedConsultation?.annee || currentYear}/DRCA-RSK`;
+  return baseNum || '';
 }
 
 export function getAutoLettresRefs(forms, savedConsultation, currentYear = new Date().getFullYear()) {
   const lettresList = forms?.lettre_consultation?.lettres_consultation
     || forms?.avis_achat?.lettres_consultation;
 
-  if (Array.isArray(lettresList) && lettresList.length > 0) {
+  if (Array.isArray(lettresList) && lettresList.some((l) => String(l?.numero_lettre || '').trim() !== '')) {
     return formatLettresRefs(lettresList, savedConsultation?.annee || currentYear);
   }
 
@@ -724,19 +762,20 @@ export function getAutoLettresRefs(forms, savedConsultation, currentYear = new D
 
   const offres = savedConsultation?.offres;
   if (Array.isArray(offres) && offres.length > 1 && baseNum) {
-    const dummyLettres = offres.map((_, idx) => ({
+    const derivedLettres = offres.map((_, idx) => ({
       numero_lettre: incrementNumeroLettre(baseNum, idx),
     }));
-    return formatLettresRefs(dummyLettres, savedConsultation?.annee || currentYear);
+    return formatLettresRefs(derivedLettres, savedConsultation?.annee || currentYear);
   }
 
-  return baseNum || (savedConsultation?.annee ? `${savedConsultation.annee}/DRCA-RSK` : `${currentYear}/DRCA-RSK`);
+  return baseNum || '';
 }
 
 function LettresConsultationManager({
   field,
   letters = [],
   baseNumero = '',
+  fallbackYear = new Date().getFullYear(),
   onChange,
   hasError,
   errorMessage,
@@ -746,26 +785,31 @@ function LettresConsultationManager({
     onChange(updatedList);
   };
 
-  const updateLetter = (idx, key, val) => {
+  const updateLetter = (idx, key, val, formatOnBlur = false) => {
     let cleanVal = val;
     if (key === 'numero_lettre' && typeof val === 'string') {
-      cleanVal = cleanNumeroLettreConsultation(val);
+      cleanVal = formatOnBlur
+        ? cleanNumeroLettreConsultation(val, fallbackYear)
+        : val.replace(/^CONV\s*[-_]?\s*/i, '');
     }
     let updated = letters.map((l, i) => (i === idx ? { ...l, [key]: cleanVal } : l));
-    if (idx === 0 && key === 'numero_lettre' && cleanVal && cleanVal.trim()) {
-      updated = updated.map((l, i) => (i === 0 ? l : { ...l, numero_lettre: incrementNumeroLettre(cleanVal, i) }));
+    if (idx === 0 && key === 'numero_lettre' && typeof cleanVal === 'string' && cleanVal.trim()) {
+      const baseFormatted = cleanNumeroLettreConsultation(cleanVal, fallbackYear);
+      updated = updated.map((l, i) => (
+        i === 0 ? l : { ...l, numero_lettre: incrementNumeroLettre(baseFormatted, i) }
+      ));
     }
     syncLetters(updated);
   };
 
   const addLetter = () => {
     const lastLetter = letters[letters.length - 1];
-    const prevNum = lastLetter?.numero_lettre || baseNumero;
-    const nextNum = incrementNumeroLettre(prevNum, 1);
+    const prevNum = lastLetter?.numero_lettre || baseNumero || '';
+    const nextNum = prevNum ? incrementNumeroLettre(prevNum, 1) : '';
     const newLetter = {
       numero_lettre: nextNum,
       societe: '',
-      destinataire_nom: letters[0]?.destinataire_nom || 'Mr Le Gérant de la Société',
+      destinataire_nom: letters[0]?.destinataire_nom || '',
       destinataire_adresse: '',
       ville: '',
     };
@@ -794,8 +838,10 @@ function LettresConsultationManager({
     syncLetters(updated);
   };
 
+  const isBlankRowField = (letter, key) => Boolean(hasError && (!letter?.[key] || !String(letter[key]).trim()));
+
   return (
-    <div className="col-span-full bg-slate-50/70 border border-slate-200/90 rounded-2xl p-5 shadow-xs space-y-4">
+    <div className={`col-span-full border rounded-2xl p-5 shadow-xs space-y-4 ${hasError ? 'border-red-500 bg-red-50/20' : 'border-slate-200/90 bg-slate-50/70'}`}>
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200/70">
         <div className="flex items-center gap-3">
           <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-blue-50 text-blue-700 border border-blue-200/60 shadow-xs">
@@ -804,7 +850,7 @@ function LettresConsultationManager({
           <div>
             <div className="flex items-center gap-2">
               <span className="block text-xs font-bold uppercase tracking-wider text-slate-800">
-                {field.label || 'Lettres de consultation & Entreprises'}
+                {field.label || 'Lettres de consultation & Entreprises'} {field.required && <span className="text-red-600 font-bold ml-0.5">*</span>}
               </span>
               <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 font-bold text-[11px]">
                 {letters.length} lettre{letters.length > 1 ? 's' : ''}
@@ -889,8 +935,9 @@ function LettresConsultationManager({
                   type="text"
                   value={letter.numero_lettre || ''}
                   onChange={(e) => updateLetter(idx, 'numero_lettre', e.target.value)}
+                  onBlur={(e) => updateLetter(idx, 'numero_lettre', e.target.value, true)}
                   placeholder="Ex: 15/2026/DRCA-RSK"
-                  className="w-full px-3 py-2 text-xs font-semibold text-slate-800 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 outline-none"
+                  className={`w-full px-3 py-2 text-xs font-semibold text-slate-800 border rounded-lg outline-none ${isBlankRowField(letter, 'numero_lettre') ? 'border-red-500 bg-red-50/40 focus:border-red-500' : 'bg-slate-50 border-slate-200 focus:bg-white focus:border-blue-500'}`}
                 />
               </div>
 
@@ -902,8 +949,8 @@ function LettresConsultationManager({
                   type="text"
                   value={letter.societe || ''}
                   onChange={(e) => updateLetter(idx, 'societe', e.target.value)}
-                  placeholder="Ex: SOCIETE GENERATION MULTISERVICES"
-                  className="w-full px-3 py-2 text-xs font-bold text-slate-900 bg-white border border-slate-200 rounded-lg focus:border-blue-500 outline-none"
+                  placeholder="Raison sociale de l'entreprise"
+                  className={`w-full px-3 py-2 text-xs font-bold text-slate-900 border rounded-lg outline-none ${isBlankRowField(letter, 'societe') ? 'border-red-500 bg-red-50/40 focus:border-red-500' : 'bg-white border-slate-200 focus:border-blue-500'}`}
                 />
               </div>
 
@@ -913,10 +960,10 @@ function LettresConsultationManager({
                 </label>
                 <input
                   type="text"
-                  value={letter.destinataire_nom || 'Mr Le Gérant de la Société'}
+                  value={letter.destinataire_nom ?? ''}
                   onChange={(e) => updateLetter(idx, 'destinataire_nom', e.target.value)}
-                  placeholder="Ex: Mr Le Gérant de la Société"
-                  className="w-full px-3 py-2 text-xs text-slate-800 bg-white border border-slate-200 rounded-lg focus:border-blue-500 outline-none"
+                  placeholder="Ex: Civilité et qualité du destinataire"
+                  className={`w-full px-3 py-2 text-xs text-slate-800 border rounded-lg outline-none ${isBlankRowField(letter, 'destinataire_nom') ? 'border-red-500 bg-red-50/40 focus:border-red-500' : 'bg-white border-slate-200 focus:border-blue-500'}`}
                 />
               </div>
 
@@ -928,8 +975,8 @@ function LettresConsultationManager({
                   type="text"
                   value={letter.destinataire_adresse || ''}
                   onChange={(e) => updateLetter(idx, 'destinataire_adresse', e.target.value)}
-                  placeholder="Ex: AV MOUKAOUAMA DALIA B2/2"
-                  className="w-full px-3 py-2 text-xs text-slate-800 bg-white border border-slate-200 rounded-lg focus:border-blue-500 outline-none"
+                  placeholder="Adresse complète de l'entreprise"
+                  className={`w-full px-3 py-2 text-xs text-slate-800 border rounded-lg outline-none ${isBlankRowField(letter, 'destinataire_adresse') ? 'border-red-500 bg-red-50/40 focus:border-red-500' : 'bg-white border-slate-200 focus:border-blue-500'}`}
                 />
               </div>
 
@@ -941,7 +988,7 @@ function LettresConsultationManager({
                   type="text"
                   value={letter.ville || ''}
                   onChange={(e) => updateLetter(idx, 'ville', e.target.value)}
-                  placeholder="Ex: Marrakech"
+                  placeholder="Ville"
                   className="w-full px-3 py-2 text-xs text-slate-800 bg-white border border-slate-200 rounded-lg focus:border-blue-500 outline-none"
                 />
               </div>
@@ -1130,12 +1177,14 @@ const BonCommandePlateforme = () => {
   const [quickMembreData, setQuickMembreData] = useState({ nom_prenom: '', fonction: '' });
   const [quickMembreSaving, setQuickMembreSaving] = useState(false);
   const [quickMembreError, setQuickMembreError] = useState(null);
+  const [quickMembreFieldErrors, setQuickMembreFieldErrors] = useState({});
 
   const [isEditConsultationModalOpen, setIsEditConsultationModalOpen] = useState(false);
   const [editingConsultationData, setEditingConsultationData] = useState(null);
   const [editingPrestations, setEditingPrestations] = useState([]);
   const [editingSaving, setEditingSaving] = useState(false);
   const [editingError, setEditingError] = useState('');
+  const [editFormErrors, setEditFormErrors] = useState({});
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isExportingExcel, setIsExportingExcel] = useState(false);
 
@@ -1259,16 +1308,37 @@ const BonCommandePlateforme = () => {
 
   const handleQuickMembreSubmit = async (e) => {
     e.preventDefault();
+    const nom = String(quickMembreData.nom_prenom || '').trim();
+    const fonction = String(quickMembreData.fonction || '').trim();
+    const fieldErrs = {};
+    if (!nom) fieldErrs.nom_prenom = 'Le nom et prénom sont obligatoires.';
+    if (!fonction) fieldErrs.fonction = 'La fonction / qualité est obligatoire.';
+
+    if (Object.keys(fieldErrs).length > 0) {
+      setQuickMembreFieldErrors(fieldErrs);
+      setQuickMembreError('Veuillez remplir tous les champs obligatoires (*).');
+      return;
+    }
+
     setQuickMembreSaving(true);
     setQuickMembreError(null);
+    setQuickMembreFieldErrors({});
     try {
-      const res = await api.post('/commission-membres', quickMembreData);
+      const res = await api.post('/commission-membres', { nom_prenom: nom, fonction });
       await fetchMembresCatalog();
       setNouveauMembreForm((prev) => ({ ...prev, membre_id: String(res.data.id) }));
       setIsQuickMembreModalOpen(false);
       setQuickMembreData({ nom_prenom: '', fonction: '' });
+      setQuickMembreFieldErrors({});
     } catch (err) {
-      setQuickMembreError(err.response?.status === 422 ? 'Veuillez remplir le nom et la fonction.' : 'Erreur lors de la création du membre.');
+      const backendErrors = err.response?.data?.errors;
+      if (backendErrors && typeof backendErrors === 'object') {
+        const mapped = {};
+        if (Array.isArray(backendErrors.nom_prenom) && backendErrors.nom_prenom[0]) mapped.nom_prenom = backendErrors.nom_prenom[0];
+        if (Array.isArray(backendErrors.fonction) && backendErrors.fonction[0]) mapped.fonction = backendErrors.fonction[0];
+        setQuickMembreFieldErrors(mapped);
+      }
+      setQuickMembreError(err.response?.data?.message || (err.response?.status === 422 ? 'Veuillez remplir le nom et la fonction.' : 'Erreur lors de la création du membre.'));
     } finally {
       setQuickMembreSaving(false);
     }
@@ -1281,36 +1351,37 @@ const BonCommandePlateforme = () => {
       objet_consultation: consultation.objet_consultation || '',
       numero_decision: consultation.numero_decision || '',
       numero_bc: consultation.numero_bc || '',
-      date_limite_devis: consultation.date_limite_devis || '',
-      heure_limite_devis: consultation.heure_limite_devis || '10:00',
-      lieu_execution: consultation.lieu_execution || 'REGION DE RABAT SALE KENITRA',
-      annee: consultation.annee || new Date().getFullYear(),
-      date_consultation: consultation.date_consultation || '',
-      categorie: consultation.categorie || 'Services',
+      date_limite_devis: consultation.date_limite_devis ? String(consultation.date_limite_devis).slice(0, 10) : '',
+      heure_limite_devis: consultation.heure_limite_devis ? String(consultation.heure_limite_devis).slice(0, 5) : '',
+      lieu_execution: consultation.lieu_execution || '',
+      annee: consultation.annee ?? '',
+      date_consultation: consultation.date_consultation ? String(consultation.date_consultation).slice(0, 10) : '',
+      categorie: consultation.categorie || '',
       type_prestation: consultation.type_prestation || '',
       intitule: consultation.intitule || consultation.type_prestation || '',
-      mode_engagement: consultation.mode_engagement || 'BC',
+      mode_engagement: consultation.mode_engagement || (isConventionConsultation(consultation) ? (String(consultation.type_budget || '').toLowerCase() === 'fonctionnement' ? 'Contrat' : 'Convention') : 'BC'),
       type_budget: consultation.type_budget || 'Investissement',
-      delai_execution: consultation.delai_execution || 30,
+      delai_execution: consultation.delai_execution ?? '',
       statut_dossier: consultation.statut_dossier || 'Programmation',
-      art: consultation.budget?.art || '415',
-      par: consultation.budget?.par || '30',
-      lig: consultation.budget?.lig || '60',
+      art: consultation.budget?.art ?? '',
+      par: consultation.budget?.par ?? '',
+      lig: consultation.budget?.lig ?? '',
       code_imputation: consultation.budget?.code_imputation || '',
-      exercice_budgetaire: consultation.budget?.exercice_budgetaire || new Date().getFullYear(),
+      exercice_budgetaire: consultation.budget?.exercice_budgetaire ?? '',
     });
     const pres = consultation.prestations && consultation.prestations.length > 0
       ? consultation.prestations.map((p) => ({
         id: p.id,
         designation: p.designation || '',
         unite: p.unite || 'Unite',
-        quantite: p.quantite || 1,
-        prix_unitaire_ht: p.prix_unitaire_ht || 0,
-        tva: p.tva || 20,
+        quantite: p.quantite ?? '',
+        prix_unitaire_ht: p.prix_unitaire_ht ?? '',
+        tva: p.tva ?? 20,
       }))
-      : [emptyLine()];
+      : [];
     setEditingPrestations(pres);
     setEditingError('');
+    setEditFormErrors({});
     setIsEditConsultationModalOpen(true);
   };
 
@@ -1334,47 +1405,121 @@ const BonCommandePlateforme = () => {
     setEditingPrestations((prev) => prev.filter((_, i) => i !== index));
   };
 
+  const validateEditConsultationForm = (data) => {
+    const errors = {};
+    const effectiveMode = isConventionActive
+      ? (String(data?.type_budget || '').toLowerCase() === 'fonctionnement' ? 'Contrat' : 'Convention')
+      : String(data?.mode_engagement || '').trim();
+    const isAo = ['AO', 'AOO', "APPEL D'OFFRES", "APPEL D'OFFRE"].includes(effectiveMode.toUpperCase());
+
+    const isBlank = (v) => v === undefined || v === null || String(v).trim() === '';
+
+    if (isBlank(data?.numero_consultation)) errors.numero_consultation = 'Le numéro de consultation est obligatoire.';
+    if (isBlank(data?.objet_consultation)) errors.objet_consultation = "L'objet de la consultation est obligatoire.";
+    if (isBlank(data?.statut_dossier)) errors.statut_dossier = 'Le statut du dossier est obligatoire.';
+    if (isBlank(data?.categorie)) errors.categorie = 'La catégorie est obligatoire.';
+    if (isBlank(data?.type_budget)) errors.type_budget = 'Le type de budget est obligatoire.';
+    if (isBlank(effectiveMode)) errors.mode_engagement = "Le mode d'engagement est obligatoire.";
+
+    const anneeVal = Number(data?.annee);
+    const minYear = isAo ? 2000 : 2026;
+    if (isBlank(data?.annee) || !Number.isInteger(anneeVal) || anneeVal < minYear || anneeVal > 2099) {
+      errors.annee = `L'année doit être comprise entre ${minYear} et 2099.`;
+    }
+
+    if (isBlank(data?.date_consultation)) {
+      errors.date_consultation = 'La date de consultation est obligatoire.';
+    } else if (!isAo && String(data.date_consultation) < '2026-01-01') {
+      errors.date_consultation = 'La date de consultation doit être postérieure ou égale au 01/01/2026.';
+    }
+
+    const delaiVal = Number(data?.delai_execution);
+    if (isBlank(data?.delai_execution) || !Number.isInteger(delaiVal) || delaiVal < 1) {
+      errors.delai_execution = "Le délai d'exécution doit être un entier positif (≥ 1 jour).";
+    }
+
+    if (!isAo) {
+      if (isBlank(data?.numero_decision)) errors.numero_decision = 'Le numéro de décision est obligatoire.';
+      if (isBlank(data?.numero_bc)) errors.numero_bc = `Le numéro du ${engagementLabelLower} est obligatoire.`;
+      if (isBlank(data?.date_limite_devis)) {
+        errors.date_limite_devis = 'La date limite des devis est obligatoire.';
+      } else {
+        if (String(data.date_limite_devis) < '2026-01-01') {
+          errors.date_limite_devis = 'La date limite doit être postérieure ou égale au 01/01/2026.';
+        } else if (!isBlank(data?.date_consultation) && String(data.date_limite_devis) < String(data.date_consultation)) {
+          errors.date_limite_devis = 'La date limite doit être postérieure ou égale à la date de consultation.';
+        }
+      }
+      if (isBlank(data?.heure_limite_devis)) errors.heure_limite_devis = "L'heure limite est obligatoire.";
+      if (isBlank(data?.lieu_execution)) errors.lieu_execution = "Le lieu d'exécution est obligatoire.";
+      if (isBlank(data?.intitule || data?.type_prestation)) errors.intitule = "L'intitulé (nature de prestation) est obligatoire.";
+      if (isBlank(data?.art)) errors.art = "L'article (ART) est obligatoire.";
+      if (isBlank(data?.par)) errors.par = 'Le paragraphe (PAR) est obligatoire.';
+      if (isBlank(data?.lig)) errors.lig = 'La ligne (LIG) est obligatoire.';
+      const exVal = Number(data?.exercice_budgetaire);
+      if (isBlank(data?.exercice_budgetaire) || !Number.isInteger(exVal) || exVal < 2026 || exVal > 2099) {
+        errors.exercice_budgetaire = "L'exercice budgétaire doit être compris entre 2026 et 2099.";
+      }
+    } else {
+      if (isBlank(data?.intitule || data?.type_prestation)) errors.intitule = 'Le type / intitulé de prestation est obligatoire.';
+    }
+
+    return errors;
+  };
+
   const handleSaveEditedConsultation = async (e) => {
     e.preventDefault();
     if (!editingConsultationData?.id) return;
+
+    const clientErrors = validateEditConsultationForm(editingConsultationData);
+    if (Object.keys(clientErrors).length > 0) {
+      setEditFormErrors(clientErrors);
+      setEditingError('Veuillez corriger ou remplir tous les champs obligatoires (*).');
+      return;
+    }
+
     setEditingSaving(true);
     setEditingError('');
+    setEditFormErrors({});
 
     try {
+      const intituleTrimmed = String(editingConsultationData.intitule || editingConsultationData.type_prestation || '').trim();
+      const effectiveMode = isConventionActive
+        ? (String(editingConsultationData.type_budget).toLowerCase() === 'fonctionnement' ? 'Contrat' : 'Convention')
+        : editingConsultationData.mode_engagement;
+
       const updatePayload = {
-        numero_consultation: editingConsultationData.numero_consultation,
-        objet_consultation: editingConsultationData.objet_consultation,
-        numero_decision: editingConsultationData.numero_decision,
-        numero_bc: editingConsultationData.numero_bc,
-        date_limite_devis: editingConsultationData.date_limite_devis,
-        heure_limite_devis: editingConsultationData.heure_limite_devis,
-        lieu_execution: editingConsultationData.lieu_execution,
-        annee: Number(editingConsultationData.annee) || new Date().getFullYear(),
+        numero_consultation: String(editingConsultationData.numero_consultation || '').trim(),
+        objet_consultation: String(editingConsultationData.objet_consultation || '').trim(),
+        numero_decision: String(editingConsultationData.numero_decision || '').trim(),
+        numero_bc: String(editingConsultationData.numero_bc || '').trim(),
+        date_limite_devis: editingConsultationData.date_limite_devis || null,
+        heure_limite_devis: String(editingConsultationData.heure_limite_devis || '').trim(),
+        lieu_execution: String(editingConsultationData.lieu_execution || '').trim(),
+        annee: Number(editingConsultationData.annee),
         date_consultation: editingConsultationData.date_consultation,
-        categorie: editingConsultationData.categorie,
-        type_prestation: editingConsultationData.intitule || editingConsultationData.type_prestation,
-        intitule: editingConsultationData.intitule || editingConsultationData.type_prestation,
-        mode_engagement: isConventionActive
-          ? (String(editingConsultationData.type_budget).toLowerCase() === 'fonctionnement' ? 'Contrat' : 'Convention')
-          : editingConsultationData.mode_engagement,
-        type_budget: editingConsultationData.type_budget || 'Investissement',
-        delai_execution: Number(editingConsultationData.delai_execution) || 30,
+        categorie: String(editingConsultationData.categorie || '').trim(),
+        type_prestation: intituleTrimmed,
+        intitule: intituleTrimmed,
+        mode_engagement: effectiveMode,
+        type_budget: editingConsultationData.type_budget,
+        delai_execution: Number(editingConsultationData.delai_execution),
         statut_dossier: editingConsultationData.statut_dossier,
-        art: editingConsultationData.art,
-        par: editingConsultationData.par,
-        lig: editingConsultationData.lig,
-        code_imputation: editingConsultationData.code_imputation,
-        exercice_budgetaire: Number(editingConsultationData.exercice_budgetaire) || new Date().getFullYear(),
+        art: String(editingConsultationData.art || '').trim(),
+        par: String(editingConsultationData.par || '').trim(),
+        lig: String(editingConsultationData.lig || '').trim(),
+        code_imputation: editingConsultationData.code_imputation || `${String(editingConsultationData.art || '').trim()}${String(editingConsultationData.par || '').trim()}${String(editingConsultationData.lig || '').trim()}`,
+        exercice_budgetaire: editingConsultationData.exercice_budgetaire !== '' ? Number(editingConsultationData.exercice_budgetaire) : null,
       };
 
       await api.put(`/consultations/${editingConsultationData.id}`, updatePayload);
 
       const cleanPrestations = editingPrestations
-        .filter((line) => line.designation.trim())
+        .filter((line) => String(line.designation || '').trim())
         .map((line) => ({
-          designation: line.designation,
-          unite: line.unite || 'Unite',
-          quantite: Number(line.quantite) || 0,
+          designation: String(line.designation).trim(),
+          unite: String(line.unite || 'Unite').trim(),
+          quantite: Number(line.quantite),
           prix_unitaire_ht: Number(line.prix_unitaire_ht) || 0,
           tva: Number(line.tva) || 0,
         }));
@@ -1395,10 +1540,21 @@ const BonCommandePlateforme = () => {
       }
 
       setIsEditConsultationModalOpen(false);
-      setMessage(`Consultation ${editingConsultationData.numero_consultation} modifiée avec succès.`);
+      setEditFormErrors({});
+      setMessage(`Consultation ${updatePayload.numero_consultation} modifiée avec succès.`);
       setError('');
     } catch (err) {
       console.error('Erreur lors de la modification de la consultation:', err);
+      const backendErrors = err.response?.data?.errors;
+      if (backendErrors && typeof backendErrors === 'object') {
+        const mapped = {};
+        Object.entries(backendErrors).forEach(([k, msgs]) => {
+          if (Array.isArray(msgs) && msgs[0]) {
+            mapped[k === 'type_prestation' ? 'intitule' : k] = msgs[0];
+          }
+        });
+        setEditFormErrors(mapped);
+      }
       setEditingError(err.response?.data?.message || err.response?.data?.error || 'Erreur lors de la modification.');
     } finally {
       setEditingSaving(false);
@@ -1429,7 +1585,9 @@ const BonCommandePlateforme = () => {
   };
 
   const addMembreToDocumentCommission = (documentId, fieldName) => {
-    if (documentId === 'pv_ouverture_attribution') documentId = 'decision_commission_ouverture';
+    if (documentId === 'pv_ouverture_attribution' || documentId === 'pv_ouverture_convention') {
+      documentId = 'decision_commission_ouverture';
+    }
     if (!nouveauMembreForm.membre_id) return;
     const selectedMembreObj = membresCatalog.find((m) => String(m.id) === String(nouveauMembreForm.membre_id));
     if (!selectedMembreObj) return;
@@ -1455,7 +1613,9 @@ const BonCommandePlateforme = () => {
   };
 
   const removeMembreFromDocumentCommission = (documentId, fieldName, indexToRemove) => {
-    if (documentId === 'pv_ouverture_attribution' || documentId === 'pv_ouverture_convention') documentId = 'decision_commission_ouverture';
+    if (documentId === 'pv_ouverture_attribution' || documentId === 'pv_ouverture_convention') {
+      documentId = 'decision_commission_ouverture';
+    }
     const currentList = Array.isArray(documentForms[documentId]?.[fieldName])
       ? [...documentForms[documentId][fieldName]]
       : [];
@@ -1497,11 +1657,47 @@ const BonCommandePlateforme = () => {
           [field]: cleanVal,
         },
       };
-      if (documentId === 'decision_commission_ouverture' && field === 'membres_commission') {
-        updated.pv_ouverture_attribution = {
-          ...(prev.pv_ouverture_attribution || {}),
-          membres_commission: value,
+      if (documentId === 'decision_commission_ouverture') {
+        const openingSyncMap = {
+          membres_commission: 'membres_commission',
+          date_reunion: 'date_reunion',
+          heure_reunion: 'heure_reunion',
+          lieu_reunion: 'lieu_reunion',
+          numero_decision: 'numero_decision',
+          date_document: 'date_decision',
         };
+        if (openingSyncMap[field]) {
+          const targetKey = openingSyncMap[field];
+          updated.pv_ouverture_attribution = {
+            ...(prev.pv_ouverture_attribution || {}),
+            [targetKey]: cleanVal,
+          };
+          updated.pv_ouverture_convention = {
+            ...(prev.pv_ouverture_convention || {}),
+            [targetKey]: cleanVal,
+          };
+        }
+      }
+      if (documentId === 'pv_ouverture_attribution' || documentId === 'pv_ouverture_convention') {
+        const siblingId = documentId === 'pv_ouverture_attribution' ? 'pv_ouverture_convention' : 'pv_ouverture_attribution';
+        const reverseSyncMap = {
+          membres_commission: 'membres_commission',
+          date_reunion: 'date_reunion',
+          heure_reunion: 'heure_reunion',
+          lieu_reunion: 'lieu_reunion',
+          numero_decision: 'numero_decision',
+          date_decision: 'date_document',
+        };
+        if (reverseSyncMap[field]) {
+          updated.decision_commission_ouverture = {
+            ...(prev.decision_commission_ouverture || {}),
+            [reverseSyncMap[field]]: cleanVal,
+          };
+          updated[siblingId] = {
+            ...(prev[siblingId] || {}),
+            [field]: cleanVal,
+          };
+        }
       }
       if (field === 'numero_consultation' && typeof cleanVal === 'string' && (isConventionActive || ['lettre_consultation', 'decision_commission_ouverture', 'pv_ouverture_convention', 'pv_ouverture_attribution'].includes(documentId))) {
         const cleanedNum = cleanVal.replace(/\bCONV\s*[-_]?\s*/i, '').trim().replace(/^[-_\s]+|[-_\s]+$/, '');
@@ -1512,19 +1708,25 @@ const BonCommandePlateforme = () => {
       }
       const isConsultationLettersDoc = documentId === 'lettre_consultation' || (isConventionActive && documentId === 'avis_achat');
       if (isConsultationLettersDoc && field === 'numero_lettre' && typeof cleanVal === 'string') {
-        const cleaned = cleanNumeroLettreConsultation(cleanVal, savedConsultation?.annee || currentYear);
+        const cleaned = cleanVal.replace(/^CONV\s*[-_]?\s*/i, '');
         const currentLettres = updated[documentId]?.lettres_consultation
           || updated.lettre_consultation?.lettres_consultation
           || updated.avis_achat?.lettres_consultation;
-        const patched = (Array.isArray(currentLettres) && currentLettres.length > 0)
-          ? {
-              numero_lettre: cleaned,
-              lettres_consultation: currentLettres.map((l, i) => ({
-                ...l,
-                numero_lettre: i === 0 ? cleaned : incrementNumeroLettre(cleaned, i),
-              })),
-            }
-          : { numero_lettre: cleaned };
+        let patched;
+        if (Array.isArray(currentLettres) && currentLettres.length > 0) {
+          const baseForIncrement = cleaned.trim()
+            ? cleanNumeroLettreConsultation(cleaned, savedConsultation?.annee || currentYear)
+            : '';
+          patched = {
+            numero_lettre: cleaned,
+            lettres_consultation: currentLettres.map((l, i) => ({
+              ...l,
+              numero_lettre: i === 0 ? cleaned : (baseForIncrement ? incrementNumeroLettre(baseForIncrement, i) : (l.numero_lettre || '')),
+            })),
+          };
+        } else {
+          patched = { numero_lettre: cleaned };
+        }
 
         updated.lettre_consultation = { ...(updated.lettre_consultation || {}), ...patched };
         updated.avis_achat = { ...(updated.avis_achat || {}), ...patched };
@@ -1661,32 +1863,39 @@ const BonCommandePlateforme = () => {
 
       if (documentId === 'fiche_engagement') {
         if (field === 'montant_depense_neuf') {
-          const m = Number(value) || 0;
-          const im = Number((m * 0.01).toFixed(2));
-          const total = Number((m + im).toFixed(2));
-          updated.fiche_engagement = {
-            ...(updated.fiche_engagement || {}),
-            montant_depense_neuf: value,
-            interets_moratoires: im,
-            montant_engager_neuf: total,
-          };
+          if (value === '' || value === null || value === undefined || isNaN(Number(value))) {
+            updated.fiche_engagement = {
+              ...(updated.fiche_engagement || {}),
+              montant_depense_neuf: value,
+              interets_moratoires: '',
+              montant_engager_neuf: '',
+            };
+          } else {
+            const m = Number(value);
+            const im = Number((m * 0.01).toFixed(2));
+            const total = Number((m + im).toFixed(2));
+            updated.fiche_engagement = {
+              ...(updated.fiche_engagement || {}),
+              montant_depense_neuf: value,
+              interets_moratoires: im,
+              montant_engager_neuf: total,
+            };
+          }
         }
         if (field === 'credit_ouvert_cp' || field === 'depenses_anterieures_cp') {
-          const c = field === 'credit_ouvert_cp' ? Number(value) || 0 : Number(updated.fiche_engagement?.credit_ouvert_cp) || 0;
-          const d = field === 'depenses_anterieures_cp' ? Number(value) || 0 : Number(updated.fiche_engagement?.depenses_anterieures_cp) || 0;
+          const c = updated.fiche_engagement?.credit_ouvert_cp;
+          const d = updated.fiche_engagement?.depenses_anterieures_cp;
           updated.fiche_engagement = {
             ...(updated.fiche_engagement || {}),
-            [field]: value,
-            disponible_cp: (c - d).toFixed(2),
+            disponible_cp: creditDisponible(c, d),
           };
         }
         if (field === 'credit_ouvert_ce' || field === 'depenses_anterieures_ce') {
-          const c = field === 'credit_ouvert_ce' ? Number(value) || 0 : Number(updated.fiche_engagement?.credit_ouvert_ce) || 0;
-          const d = field === 'depenses_anterieures_ce' ? Number(value) || 0 : Number(updated.fiche_engagement?.depenses_anterieures_ce) || 0;
+          const c = updated.fiche_engagement?.credit_ouvert_ce;
+          const d = updated.fiche_engagement?.depenses_anterieures_ce;
           updated.fiche_engagement = {
             ...(updated.fiche_engagement || {}),
-            [field]: value,
-            disponible_ce: (c - d).toFixed(2),
+            disponible_ce: creditDisponible(c, d),
           };
         }
       }
@@ -1705,42 +1914,228 @@ const BonCommandePlateforme = () => {
     }
   };
 
-  const autoFillDocument = (documentId) => {
+  const getSourcePrestations = () => (
+    savedConsultation?.prestations?.length > 0
+      ? savedConsultation.prestations
+      : prestations.filter((p) => p.designation?.trim())
+  );
+
+  const resolveConsistanceLignes = (documentId, forms = documentForms) => {
+    const rawLignes = forms[documentId]?.consistance_lignes
+      ?? forms.avis_achat?.consistance_lignes
+      ?? forms.bon_commande?.consistance_lignes;
+    if (Array.isArray(rawLignes) && rawLignes.length > 0) {
+      return rawLignes;
+    }
+    const srcPrestations = getSourcePrestations();
+    if (srcPrestations.length > 0) {
+      return srcPrestations.map((p, i) => ({
+        numero_prix: p.numero_prix || String(i + 1),
+        designation: p.designation || '',
+        specification: p.specification || p.designation || '',
+        unite_mesure: p.unite || p.unite_mesure || 'Unite',
+        quantite: p.quantite !== undefined && p.quantite !== null ? String(p.quantite) : '',
+        prix_unitaire_ht: p.prix_unitaire_ht !== undefined && p.prix_unitaire_ht !== null ? String(p.prix_unitaire_ht) : '',
+        tva: p.tva !== undefined && p.tva !== null ? String(p.tva) : '20',
+        garantie_exigee: p.garantie_exigee || '',
+      }));
+    }
+    return Array.isArray(rawLignes)
+      ? rawLignes
+      : [{ numero_prix: '1', designation: '', specification: '', unite_mesure: 'Unite', quantite: '', prix_unitaire_ht: '', tva: '20', garantie_exigee: '' }];
+  };
+
+  const resolveFournisseursConsultes = (documentId, forms = documentForms) => {
+    const rawList = forms[documentId]?.fournisseurs_consultes
+      ?? forms.pv_ouverture_convention?.fournisseurs_consultes
+      ?? forms.pv_ouverture_attribution?.fournisseurs_consultes;
+    if (Array.isArray(rawList)) {
+      return rawList;
+    }
+
+    const lettres = forms.lettre_consultation?.lettres_consultation
+      || forms.avis_achat?.lettres_consultation;
+    if (Array.isArray(lettres) && lettres.some((l) => l && (l.societe || l.destinataire_adresse || l.numero_lettre))) {
+      return lettres
+        .filter((l) => l && (l.societe || l.destinataire_adresse || l.numero_lettre))
+        .map((l, idx) => {
+          const defaultAmt = idx === 0 && totalTTC > 0
+            ? totalTTC.toFixed(2)
+            : (idx === 0 && savedConsultation?.budget?.montant_ttc ? String(savedConsultation.budget.montant_ttc) : '');
+          return {
+            nom: l.societe || '',
+            adresse: l.destinataire_adresse || '',
+            ville: l.ville || '',
+            montant: defaultAmt,
+            montant_avant: defaultAmt,
+            montant_apres: defaultAmt,
+          };
+        });
+    }
+
+    if (Array.isArray(savedConsultation?.offres) && savedConsultation.offres.length > 0) {
+      return savedConsultation.offres.map((o) => {
+        const amt = o.montant_apres_verification ?? o.montant_propose ?? '';
+        return {
+          nom: o.fournisseur?.raison_sociale || '',
+          adresse: o.fournisseur?.adresse || '',
+          ville: o.fournisseur?.ville || '',
+          montant: amt !== '' ? String(amt) : '',
+          montant_avant: o.montant_propose !== undefined && o.montant_propose !== null ? String(o.montant_propose) : (amt !== '' ? String(amt) : ''),
+          montant_apres: amt !== '' ? String(amt) : '',
+        };
+      });
+    }
+
+    if (savedConsultation?.fournisseur?.raison_sociale) {
+      const defaultAmt = totalTTC > 0
+        ? totalTTC.toFixed(2)
+        : (savedConsultation?.budget?.montant_ttc ? String(savedConsultation.budget.montant_ttc) : '');
+      return [{
+        nom: savedConsultation.fournisseur.raison_sociale,
+        adresse: savedConsultation.fournisseur.adresse || '',
+        ville: savedConsultation.fournisseur.ville || '',
+        montant: defaultAmt,
+        montant_avant: defaultAmt,
+        montant_apres: defaultAmt,
+      }];
+    }
+
+    return [];
+  };
+
+  const resolveConcurrentsList = (documentId, forms = documentForms) => {
+    const rawList = forms[documentId]?.concurrents
+      ?? (documentId === 'pv_ouverture_convention' || isConventionActive
+        ? (forms.pv_ouverture_convention?.concurrents ?? forms.pv_ouverture_attribution?.concurrents)
+        : undefined);
+    if (Array.isArray(rawList)) {
+      return rawList;
+    }
+
+    if (isConventionActive || documentId === 'pv_ouverture_convention') {
+      const participants = resolveFournisseursConsultes(documentId, forms);
+      return participants.map((p) => ({
+        nom: p.nom || '',
+        montant_avant: p.montant_avant || p.montant || '',
+        montant_apres: p.montant_apres || p.montant || '',
+        montant: p.montant || p.montant_apres || '',
+      }));
+    }
+
+    if (Array.isArray(savedConsultation?.offres) && savedConsultation.offres.length > 0) {
+      return savedConsultation.offres.map((o) => ({
+        nom: o.fournisseur?.raison_sociale || '',
+        montant: o.montant_apres_verification ?? o.montant_propose ?? '',
+        montant_avant: o.montant_propose ?? '',
+        montant_apres: o.montant_apres_verification ?? o.montant_propose ?? '',
+      }));
+    }
+
+    return [];
+  };
+
+  const resolvePrestationsReceptionnees = (documentId, forms = documentForms) => {
+    const savedList = forms[documentId]?.prestations_receptionnees
+      ?? forms.decision_commission_reception?.prestations_receptionnees
+      ?? savedConsultation?.reception_commission?.prestations_receptionnees
+      ?? savedConsultation?.receptionCommission?.prestations_receptionnees;
+    if (Array.isArray(savedList) && savedList.length > 0) {
+      return savedList;
+    }
+    const srcPrestations = getSourcePrestations();
+    return srcPrestations.map((p, idx) => ({
+      id: p.id || idx,
+      receptionne: true,
+      numero_prix: p.numero_prix || String(idx + 1),
+      designation: p.designation || '',
+      unite: p.unite || p.unite_mesure || 'Unité',
+      quantite: Number(p.quantite) || 0,
+      quantite_receptionnee: Number(p.quantite) || 0,
+    }));
+  };
+
+  const resolveCommissionMembres = (documentId, forms = documentForms) => {
+    if (documentId === 'pv_reception') {
+      return forms.pv_reception?.membres_commission
+        ?? forms.decision_commission_reception?.membres_commission
+        ?? savedConsultation?.reception_commission?.membres_commission
+        ?? savedConsultation?.receptionCommission?.membres_commission
+        ?? [];
+    }
+    if (documentId === 'decision_commission_reception') {
+      return forms.decision_commission_reception?.membres_commission
+        ?? savedConsultation?.reception_commission?.membres_commission
+        ?? savedConsultation?.receptionCommission?.membres_commission
+        ?? [];
+    }
+    if (documentId === 'pv_ouverture_attribution' || documentId === 'pv_ouverture_convention') {
+      return forms[documentId]?.membres_commission
+        ?? forms.decision_commission_ouverture?.membres_commission
+        ?? savedConsultation?.membres_commission
+        ?? [];
+    }
+    return forms[documentId]?.membres_commission
+      ?? savedConsultation?.membres_commission
+      ?? [];
+  };
+
+  const computeAutoFillDefaults = (documentId, baseForms = {}) => {
     const fields = documentFieldGroups[documentFieldsId(documentId)] || [];
     const defaults = {};
+    const isConsultationLettersDoc = documentId === 'lettre_consultation' || (isConventionActive && documentId === 'avis_achat');
 
     fields.forEach((field) => {
       if (field.name === 'numero_lettre') {
-        const rawNum = savedConsultation?.numero_avis || savedConsultation?.numero_consultation;
-        defaults.numero_lettre = cleanNumeroLettreConsultation(rawNum, savedConsultation?.annee || currentYear);
+        if (isConsultationLettersDoc) {
+          const rawNum = baseForms[documentId]?.numero_lettre || savedConsultation?.numero_avis || savedConsultation?.numero_consultation || '';
+          defaults.numero_lettre = cleanNumeroLettreConsultation(rawNum, savedConsultation?.annee || currentYear);
+        } else {
+          defaults.numero_lettre = baseForms[documentId]?.numero_lettre || '';
+        }
       }
-      else if (field.name === 'destinataire_nom') defaults.destinataire_nom = 'Mr Le Gérant de la Société';
-      else if (field.name === 'societe') defaults.societe = documentForms[documentId]?.societe || '';
-      else if (field.name === 'destinataire_adresse') defaults.destinataire_adresse = savedConsultation?.fournisseur?.adresse || savedConsultation?.offres?.find((offre) => offre.retenu)?.fournisseur?.adresse || '';
+      else if (field.name === 'destinataire_nom') defaults.destinataire_nom = baseForms[documentId]?.destinataire_nom || '';
+      else if (field.name === 'societe' || field.name === 'participant_1' || field.name === 'titulaire_nom') {
+        const pvWinner = baseForms.pv_ouverture_convention?.attributaire
+          || baseForms.pv_ouverture_attribution?.attributaire
+          || '';
+        defaults[field.name] = pvWinner
+          || baseForms.bon_commande?.titulaire_nom
+          || savedConsultation?.fournisseur?.raison_sociale
+          || savedConsultation?.engagement?.fournisseur?.raison_sociale
+          || baseForms[documentId]?.[field.name]
+          || '';
+      }
+      else if (field.name === 'destinataire_adresse') {
+        defaults.destinataire_adresse = savedConsultation?.fournisseur?.adresse
+          || savedConsultation?.offres?.find((offre) => offre.retenu)?.fournisseur?.adresse
+          || baseForms[documentId]?.destinataire_adresse
+          || '';
+      }
       else if (field.name === 'lettres_consultation') {
-        const rawNum = savedConsultation?.numero_avis || savedConsultation?.numero_consultation;
+        const rawNum = savedConsultation?.numero_avis || savedConsultation?.numero_consultation || '';
         const baseNum = cleanNumeroLettreConsultation(rawNum, savedConsultation?.annee || currentYear);
-        const existingLettres = documentForms[documentId]?.lettres_consultation;
+        const existingLettres = baseForms[documentId]?.lettres_consultation;
         if (Array.isArray(existingLettres) && existingLettres.length > 0) {
           defaults.lettres_consultation = existingLettres.map((l, idx) => ({
             ...l,
-            numero_lettre: cleanNumeroLettreConsultation(l.numero_lettre || incrementNumeroLettre(baseNum, idx), savedConsultation?.annee || currentYear),
+            numero_lettre: l.numero_lettre ? cleanNumeroLettreConsultation(l.numero_lettre, savedConsultation?.annee || currentYear) : (idx === 0 ? baseNum : ''),
           }));
         } else if (savedConsultation?.offres && savedConsultation.offres.length > 0) {
           defaults.lettres_consultation = savedConsultation.offres.map((o, idx) => ({
-            numero_lettre: incrementNumeroLettre(baseNum, idx),
+            numero_lettre: baseNum ? incrementNumeroLettre(baseNum, idx) : '',
             societe: o.fournisseur?.raison_sociale || '',
-            destinataire_nom: 'Mr Le Gérant de la Société',
+            destinataire_nom: '',
             destinataire_adresse: o.fournisseur?.adresse || '',
             ville: o.fournisseur?.ville || '',
           }));
         } else {
           defaults.lettres_consultation = [
             {
-              numero_lettre: baseNum,
-              societe: savedConsultation?.fournisseur?.raison_sociale || documentForms[documentId]?.societe || '',
-              destinataire_nom: documentForms[documentId]?.destinataire_nom || 'Mr Le Gérant de la Société',
-              destinataire_adresse: savedConsultation?.fournisseur?.adresse || documentForms[documentId]?.destinataire_adresse || '',
+              numero_lettre: baseNum || '',
+              societe: savedConsultation?.fournisseur?.raison_sociale || '',
+              destinataire_nom: '',
+              destinataire_adresse: savedConsultation?.fournisseur?.adresse || '',
               ville: savedConsultation?.fournisseur?.ville || '',
             },
           ];
@@ -1750,16 +2145,16 @@ const BonCommandePlateforme = () => {
         if (documentId === 'fiche_engagement') {
           if (isConventionActive) {
             const cleanNum = String(savedConsultation?.numero_consultation || '').replace(/\bCONV\s*[-_]?\s*/i, '').trim().replace(/^[-_\s]+|[-_\s]+$/, '');
-            defaults.pieces_jointes = `${isContrat ? 'Contrat' : 'Convention'} N° ${cleanNum}`;
+            defaults.pieces_jointes = cleanNum ? `${isContrat ? 'Contrat' : 'Convention'} N° ${cleanNum}` : '';
           } else {
             defaults.pieces_jointes = savedConsultation?.numero_bc ? `${engagementLabel} N° ${savedConsultation.numero_bc}` : '';
           }
         } else {
-          defaults.pieces_jointes = '';
+          defaults.pieces_jointes = baseForms[documentId]?.pieces_jointes || '';
         }
       }
       else if (field.name === 'numero_consultation') {
-        let numCons = savedConsultation?.numero_consultation || formData.numero_consultation || '04/2024/DRCA-RSK';
+        let numCons = savedConsultation?.numero_consultation || formData.numero_consultation || '';
         if (isConventionActive || ['lettre_consultation', 'decision_commission_ouverture', 'pv_ouverture_convention', 'pv_ouverture_attribution'].includes(documentId)) {
           numCons = String(numCons).replace(/\bCONV\s*[-_]?\s*/i, '').trim().replace(/^[-_\s]+|[-_\s]+$/, '');
         }
@@ -1768,71 +2163,84 @@ const BonCommandePlateforme = () => {
       else if (field.name === 'numero_bc') {
         let rawBc;
         if (documentId === 'decision_commission_reception' || documentId === 'pv_reception') {
-          rawBc = savedConsultation?.reception_commission?.numero_bc || savedConsultation?.receptionCommission?.numero_bc || documentForms.decision_commission_reception?.numero_bc || '';
+          rawBc = savedConsultation?.reception_commission?.numero_bc
+            || savedConsultation?.receptionCommission?.numero_bc
+            || baseForms.decision_commission_reception?.numero_bc
+            || savedConsultation?.numero_bc
+            || '';
         } else {
-          rawBc = savedConsultation?.numero_bc || formData.numero_bc || savedConsultation?.numero_consultation || '05/2024/DRCA-RSK';
+          rawBc = savedConsultation?.numero_bc || formData.numero_bc || '';
         }
         defaults.numero_bc = rawBc ? String(rawBc).replace(/^BC\s+/i, '') : '';
       }
-      else if (field.name === 'objet') defaults.objet = savedConsultation?.objet_consultation || formData.objet_consultation || 'Achat de matériel de valorisation des produits agricoles';
-      else if (field.name === 'numero_avis') defaults.numero_avis = savedConsultation?.numero_consultation || formData.numero_consultation || '04/2024/DRCA-RSK';
+      else if (field.name === 'objet') defaults.objet = savedConsultation?.objet_consultation || formData.objet_consultation || '';
+      else if (field.name === 'numero_avis') defaults.numero_avis = savedConsultation?.numero_avis || savedConsultation?.numero_consultation || formData.numero_consultation || '';
       else if (field.name === 'numero_decision') {
         if (documentId === 'decision_commission_reception' || documentId === 'pv_reception') {
-          defaults.numero_decision = savedConsultation?.reception_commission?.numero_decision || savedConsultation?.receptionCommission?.numero_decision || documentForms.decision_commission_reception?.numero_decision || '';
+          defaults.numero_decision = savedConsultation?.reception_commission?.numero_decision
+            || savedConsultation?.receptionCommission?.numero_decision
+            || baseForms.decision_commission_reception?.numero_decision
+            || '';
         } else {
-          defaults.numero_decision = savedConsultation?.numero_decision || formData.numero_decision || `06/${savedConsultation?.annee || new Date().getFullYear()}/DRCA-RSK`;
+          defaults.numero_decision = savedConsultation?.numero_decision || formData.numero_decision || '';
         }
       }
       else if (field.name === 'type_reception') {
-        defaults.type_reception = savedConsultation?.reception_commission?.type_reception || savedConsultation?.receptionCommission?.type_reception || documentForms.decision_commission_reception?.type_reception || 'définitive';
+        defaults.type_reception = savedConsultation?.reception_commission?.type_reception
+          || savedConsultation?.receptionCommission?.type_reception
+          || baseForms.decision_commission_reception?.type_reception
+          || '';
       }
       else if (field.name === 'date_reception_definitive') {
-        defaults.date_reception_definitive = savedConsultation?.reception_commission?.date_reception_definitive || savedConsultation?.receptionCommission?.date_reception_definitive || documentForms.decision_commission_reception?.date_reception_definitive || '';
+        defaults.date_reception_definitive = savedConsultation?.reception_commission?.date_reception_definitive
+          || savedConsultation?.receptionCommission?.date_reception_definitive
+          || baseForms.decision_commission_reception?.date_reception_definitive
+          || '';
       }
       else if (field.name === 'periode_du') {
-        defaults.periode_du = savedConsultation?.reception_commission?.periode_du || savedConsultation?.receptionCommission?.periode_du || documentForms.decision_commission_reception?.periode_du || '';
+        defaults.periode_du = savedConsultation?.reception_commission?.periode_du
+          || savedConsultation?.receptionCommission?.periode_du
+          || baseForms.decision_commission_reception?.periode_du
+          || '';
       }
       else if (field.name === 'periode_au') {
-        defaults.periode_au = savedConsultation?.reception_commission?.periode_au || savedConsultation?.receptionCommission?.periode_au || documentForms.decision_commission_reception?.periode_au || '';
+        defaults.periode_au = savedConsultation?.reception_commission?.periode_au
+          || savedConsultation?.receptionCommission?.periode_au
+          || baseForms.decision_commission_reception?.periode_au
+          || '';
       }
       else if (field.name === 'prestations_receptionnees') {
-        const savedList = savedConsultation?.reception_commission?.prestations_receptionnees || savedConsultation?.receptionCommission?.prestations_receptionnees || documentForms.decision_commission_reception?.prestations_receptionnees;
-        const srcPrestations = (savedConsultation?.prestations && savedConsultation.prestations.length > 0)
-          ? savedConsultation.prestations
-          : (prestations && prestations.filter((p) => p.designation?.trim()).length > 0 ? prestations.filter((p) => p.designation?.trim()) : []);
-
+        const savedList = savedConsultation?.reception_commission?.prestations_receptionnees
+          || savedConsultation?.receptionCommission?.prestations_receptionnees
+          || baseForms.decision_commission_reception?.prestations_receptionnees;
         if (Array.isArray(savedList) && savedList.length > 0) {
           defaults.prestations_receptionnees = savedList;
         } else {
-          const list = srcPrestations.map((p, idx) => ({
+          const srcPrestations = getSourcePrestations();
+          defaults.prestations_receptionnees = srcPrestations.map((p, idx) => ({
             id: p.id || idx,
             receptionne: true,
-            numero_prix: p.numero_prix || (idx + 1),
-            designation: p.designation || 'Prestation',
+            numero_prix: p.numero_prix || String(idx + 1),
+            designation: p.designation || '',
             unite: p.unite || p.unite_mesure || 'Unité',
-            quantite: Number(p.quantite) || 1,
-            quantite_receptionnee: Number(p.quantite) || 1,
+            quantite: Number(p.quantite) || 0,
+            quantite_receptionnee: Number(p.quantite) || 0,
           }));
-          defaults.prestations_receptionnees = list;
         }
       }
       else if (field.name === 'numero_engagement') {
-        if (documentId === 'fiche_engagement') {
-          defaults.numero_engagement = savedConsultation?.numero_engagement || savedConsultation?.numero_bc
-            ? `${savedConsultation.numero_engagement || savedConsultation.numero_bc}`
-            : `${savedConsultation?.annee || new Date().getFullYear()}/FE/DRCA-RSK`;
-        } else {
-          defaults.numero_engagement = `05/DR/${savedConsultation?.annee || new Date().getFullYear()}`;
-        }
+        defaults.numero_engagement = documentId === 'fiche_engagement'
+          ? (savedConsultation?.numero_engagement || '')
+          : '';
       }
       else if (field.name === 'date_document' && documentId === 'fiche_engagement') defaults.date_document = savedConsultation?.date_consultation || '';
       else if (field.name === 'reference_2') defaults.reference_2 = savedConsultation?.reference_2 || '';
-      else if (field.name === 'mode_engagement') defaults.mode_engagement = savedConsultation?.mode_engagement || 'BC';
+      else if (field.name === 'mode_engagement') defaults.mode_engagement = savedConsultation?.mode_engagement || '';
       else if (field.name === 'budget') defaults.budget = savedConsultation?.budget?.intitule_ligne || `${savedConsultation?.type_budget || ''} ${savedConsultation?.budget?.exercice_budgetaire || savedConsultation?.annee || ''}`.trim();
       else if (field.name === 'code_imputation') defaults.code_imputation = savedConsultation?.budget?.code_imputation || '';
       else if (field.name === 's_lig') defaults.s_lig = savedConsultation?.s_lig || '';
       else if (field.name === 'montant_ttc') {
-        const srcPrestations = savedConsultation?.prestations?.length > 0 ? savedConsultation.prestations : prestations.filter(p => p.designation?.trim());
+        const srcPrestations = getSourcePrestations();
         const ttc = srcPrestations.reduce((sum, p) => {
           const ht = (Number(p.quantite) || 0) * (Number(p.prix_unitaire_ht) || 0);
           return sum + ht * (1 + ((Number(p.tva) || 20) / 100));
@@ -1844,14 +2252,14 @@ const BonCommandePlateforme = () => {
         const cpValue = ligneBudget
           ? Number(ligneBudget.credits_neufs || 0) - Number(ligneBudget.diminution_credit_neuf || 0)
           : (savedConsultation?.credit_ouvert_cp ?? '');
-        defaults.credit_ouvert_cp = cpValue === '' ? '' : Number(Math.max(0, Number(cpValue))).toFixed(2);
+        defaults.credit_ouvert_cp = cpValue === '' || cpValue === null || cpValue === undefined ? '' : Number(Math.max(0, Number(cpValue))).toFixed(2);
       }
       else if (field.name === 'credit_ouvert_ce') {
         const ligneBudget = savedConsultation?.notification_ligne || savedConsultation?.notificationLigne;
         const ceValue = ligneBudget
           ? Number(ligneBudget.credits_engagements || 0) - Number(ligneBudget.diminution_credit_engagement || 0)
           : (savedConsultation?.credit_ouvert_ce ?? '');
-        defaults.credit_ouvert_ce = ceValue === '' ? '' : Number(Math.max(0, Number(ceValue))).toFixed(2);
+        defaults.credit_ouvert_ce = ceValue === '' || ceValue === null || ceValue === undefined ? '' : Number(Math.max(0, Number(ceValue))).toFixed(2);
       }
       else if (field.name === 'depenses_anterieures_ce') defaults.depenses_anterieures_ce = savedConsultation?.depenses_anterieures_ce ?? '';
       else if (field.name === 'depenses_anterieures_cp') defaults.depenses_anterieures_cp = savedConsultation?.depenses_anterieures_cp ?? '';
@@ -1859,32 +2267,34 @@ const BonCommandePlateforme = () => {
       else if (field.name === 'depenses_credits_consolides') defaults.depenses_credits_consolides = savedConsultation?.depenses_credits_consolides ?? '';
       else if (field.name === 'depenses_rap') defaults.depenses_rap = savedConsultation?.depenses_rap ?? '';
       else if (field.name === 'montant_depense_neuf') {
-        const srcPrestations = savedConsultation?.prestations?.length > 0 ? savedConsultation.prestations : prestations.filter(p => p.designation?.trim());
+        const srcPrestations = getSourcePrestations();
         const ttc = srcPrestations.reduce((sum, p) => {
           const ht = (Number(p.quantite) || 0) * (Number(p.prix_unitaire_ht) || 0);
           return sum + ht * (1 + ((Number(p.tva) || 20) / 100));
         }, 0);
-        const pvMontant = Number(documentForms.pv_ouverture_convention?.montant_apres_verification || documentForms.pv_ouverture_attribution?.montant_apres_verification) || 0;
+        const pvMontant = Number(baseForms.pv_ouverture_convention?.montant_apres_verification || baseForms.pv_ouverture_attribution?.montant_apres_verification) || 0;
         const val = savedConsultation?.montant_depense_neuf ?? (pvMontant > 0 ? pvMontant : (ttc > 0 ? ttc : ''));
-        defaults.montant_depense_neuf = val !== '' ? Number(val).toFixed(2) : '';
+        defaults.montant_depense_neuf = val !== '' && val !== null && val !== undefined ? Number(val).toFixed(2) : '';
       }
       else if (field.name === 'interets_moratoires') {
-        const m = Number(defaults.montant_depense_neuf || savedConsultation?.montant_depense_neuf || 0);
-        defaults.interets_moratoires = m > 0 ? (m * 0.01).toFixed(2) : '';
+        const m = Number(defaults.montant_depense_neuf ?? savedConsultation?.montant_depense_neuf);
+        defaults.interets_moratoires = (defaults.montant_depense_neuf !== '' && !isNaN(m) && m > 0) ? (m * 0.01).toFixed(2) : '';
       }
       else if (field.name === 'montant_engager_neuf') {
-        const m = Number(defaults.montant_depense_neuf || savedConsultation?.montant_depense_neuf || 0);
-        defaults.montant_engager_neuf = m > 0 ? (m * 1.01).toFixed(2) : '';
+        const m = Number(defaults.montant_depense_neuf ?? savedConsultation?.montant_depense_neuf);
+        defaults.montant_engager_neuf = (defaults.montant_depense_neuf !== '' && !isNaN(m) && m > 0) ? (m * 1.01).toFixed(2) : '';
       }
       else if (field.name === 'disponible_cp') {
-        const c = Number(defaults.credit_ouvert_cp || savedConsultation?.credit_ouvert_cp || 0);
-        const d = Number(defaults.depenses_anterieures_cp || savedConsultation?.depenses_anterieures_cp || 0);
-        defaults.disponible_cp = (c - d).toFixed(2);
+        defaults.disponible_cp = creditDisponible(
+          defaults.credit_ouvert_cp ?? savedConsultation?.credit_ouvert_cp,
+          defaults.depenses_anterieures_cp ?? savedConsultation?.depenses_anterieures_cp
+        );
       }
       else if (field.name === 'disponible_ce') {
-        const c = Number(defaults.credit_ouvert_ce || savedConsultation?.credit_ouvert_ce || 0);
-        const d = Number(defaults.depenses_anterieures_ce || savedConsultation?.depenses_anterieures_ce || 0);
-        defaults.disponible_ce = (c - d).toFixed(2);
+        defaults.disponible_ce = creditDisponible(
+          defaults.credit_ouvert_ce ?? savedConsultation?.credit_ouvert_ce,
+          defaults.depenses_anterieures_ce ?? savedConsultation?.depenses_anterieures_ce
+        );
       }
       else if (field.name === 'forme_engagement') {
         defaults.forme_engagement = isConventionActive ? (isContrat ? 'Contrat' : 'Convention') : engagementLabel;
@@ -1892,136 +2302,127 @@ const BonCommandePlateforme = () => {
       else if (field.name === 'credit_budget_cp') defaults.credit_budget_cp = '';
       else if (field.name === 'depenses_engagees_cp') defaults.depenses_engagees_cp = '';
       else if (field.name === 'engagement_propose_cp') {
-        const srcPrestations = savedConsultation?.prestations?.length > 0 ? savedConsultation.prestations : prestations.filter(p => p.designation?.trim());
+        const srcPrestations = getSourcePrestations();
         const ttc = srcPrestations.reduce((sum, p) => {
           const ht = (Number(p.quantite) || 0) * (Number(p.prix_unitaire_ht) || 0);
           return sum + ht * (1 + ((Number(p.tva) || 20) / 100));
         }, 0);
         defaults.engagement_propose_cp = ttc > 0 ? (ttc * 1.01).toFixed(2) : '';
       }
-      else if (field.name === 'numero_lettre') {
-        const year = savedConsultation?.annee || currentYear;
-        if (isConventionActive && (documentId === 'ordre_commande' || documentId === 'accuse_reception')) {
-          defaults.numero_lettre = `01 /${year}/DRC-RSK/OS`;
-        } else {
-          defaults.numero_lettre = `${new Date().getFullYear()}/DRCA-RSK/SOS`;
-        }
-      }
-      else if (field.name === 'nature_os') defaults.nature_os = "Notification de l'approbation";
-      else if (field.name === 'destinataire_nom') defaults.destinataire_nom = "Monsieur le gérant de la société";
-      else if (field.name === 'societe' || field.name === 'participant_1' || field.name === 'titulaire_nom') {
-        const pvWinner = documentForms.pv_ouverture_convention?.attributaire
-          || documentForms.pv_ouverture_attribution?.attributaire
-          || '';
-        const pvSuppliers = documentForms.pv_ouverture_convention?.fournisseurs_consultes
-          || documentForms.pv_ouverture_attribution?.fournisseurs_consultes
-          || [];
-        const found = pvSuppliers.find((s) => s.nom === pvWinner) || pvSuppliers[0];
-
-        defaults[field.name] = pvWinner
-          || documentForms.bon_commande?.titulaire_nom
-          || found?.nom
-          || savedConsultation?.fournisseur?.raison_sociale
-          || savedConsultation?.engagement?.fournisseur?.raison_sociale
-          || '';
-
-        if (found) {
-          if (!defaults.adresse_societe && found.adresse) defaults.adresse_societe = found.adresse;
-          if (!defaults.ville_societe && found.ville) defaults.ville_societe = found.ville;
-        }
-      }
+      else if (field.name === 'nature_os') defaults.nature_os = baseForms[documentId]?.nature_os || '';
       else if (field.name === 'art') defaults.art = savedConsultation?.budget?.art || formData.art || '';
       else if (field.name === 'par') defaults.par = savedConsultation?.budget?.par || formData.par || '';
       else if (field.name === 'lig') defaults.lig = savedConsultation?.budget?.lig || formData.lig || '';
       else if (field.name === 'intitule') defaults.intitule = savedConsultation?.intitule || savedConsultation?.type_prestation || savedConsultation?.objet_consultation || '';
-      else if (field.name === 'patente') defaults.patente = '';
-      else if (field.name === 'cnss') defaults.cnss = '';
-      else if (field.name === 'ice') defaults.ice = '';
-      else if (field.name === 'if' || field.name === 'identifiant_fiscal') defaults[field.name] = '';
-      else if (field.name === 'representant') defaults.representant = '';
+      else if (field.name === 'patente') defaults.patente = savedConsultation?.fournisseur?.patente || baseForms[documentId]?.patente || '';
+      else if (field.name === 'cnss') defaults.cnss = savedConsultation?.fournisseur?.cnss || baseForms[documentId]?.cnss || '';
+      else if (field.name === 'ice') defaults.ice = savedConsultation?.fournisseur?.ice || baseForms[documentId]?.ice || '';
+      else if (field.name === 'if' || field.name === 'identifiant_fiscal') defaults[field.name] = savedConsultation?.fournisseur?.if || baseForms[documentId]?.[field.name] || '';
+      else if (field.name === 'representant') defaults.representant = savedConsultation?.fournisseur?.representant || baseForms[documentId]?.representant || '';
       else if (field.name === 'adresse_1' || field.name === 'adresse_societe') {
-        const pvWinner = documentForms.pv_ouverture_convention?.attributaire || documentForms.pv_ouverture_attribution?.attributaire;
-        const pvSuppliers = documentForms.pv_ouverture_convention?.fournisseurs_consultes || documentForms.pv_ouverture_attribution?.fournisseurs_consultes || [];
-        const found = pvSuppliers.find((s) => s.nom === pvWinner);
-        defaults[field.name] = found?.adresse || documentForms.bon_commande?.adresse_societe || '';
+        const pvWinner = baseForms.pv_ouverture_convention?.attributaire || baseForms.pv_ouverture_attribution?.attributaire;
+        const pvSuppliers = baseForms.pv_ouverture_convention?.fournisseurs_consultes || baseForms.pv_ouverture_attribution?.fournisseurs_consultes || [];
+        const found = pvWinner ? pvSuppliers.find((s) => s.nom === pvWinner) : null;
+        defaults[field.name] = found?.adresse
+          || baseForms.bon_commande?.adresse_societe
+          || savedConsultation?.fournisseur?.adresse
+          || '';
       }
       else if (field.name === 'ville_1' || field.name === 'ville_societe') {
-        const pvWinner = documentForms.pv_ouverture_convention?.attributaire || documentForms.pv_ouverture_attribution?.attributaire;
-        const pvSuppliers = documentForms.pv_ouverture_convention?.fournisseurs_consultes || documentForms.pv_ouverture_attribution?.fournisseurs_consultes || [];
-        const found = pvSuppliers.find((s) => s.nom === pvWinner);
-        defaults[field.name] = found?.ville || documentForms.bon_commande?.ville_societe || '';
+        const pvWinner = baseForms.pv_ouverture_convention?.attributaire || baseForms.pv_ouverture_attribution?.attributaire;
+        const pvSuppliers = baseForms.pv_ouverture_convention?.fournisseurs_consultes || baseForms.pv_ouverture_attribution?.fournisseurs_consultes || [];
+        const found = pvWinner ? pvSuppliers.find((s) => s.nom === pvWinner) : null;
+        defaults[field.name] = found?.ville
+          || baseForms.bon_commande?.ville_societe
+          || savedConsultation?.fournisseur?.ville
+          || '';
       }
       else if (field.name === 'code_societe' || field.name === 'code_ste') defaults[field.name] = '';
       else if (field.name === 'coordonnees_parties') defaults[field.name] = '';
       else if (field.name === 'montant_reserve' || field.name === 'montant_facture' || field.name === 'montant_apres_verification' || field.name === 'montant_avant_verification' || field.name === 'montant_1') {
-        defaults[field.name] = totalTTC || savedConsultation?.montant_estimatif_ht || '';
+        defaults[field.name] = totalTTC > 0 ? totalTTC.toFixed(2) : (savedConsultation?.montant_estimatif_ht ?? '');
       }
-      else if (field.name === 'rib') defaults.rib = '';
-      else if (field.name === 'lieu_execution' || field.name === 'lieu_livraison' || field.name === 'lieu_reunion') {
-        defaults[field.name] = savedConsultation?.lieu_execution || formData.lieu_execution || 'REGION DE RABAT SALE KENITRA';
+      else if (field.name === 'rib') defaults.rib = savedConsultation?.fournisseur?.rib || baseForms[documentId]?.rib || '';
+      else if (field.name === 'lieu_execution' || field.name === 'lieu_livraison') {
+        defaults[field.name] = savedConsultation?.lieu_execution || formData.lieu_execution || '';
+      }
+      else if (field.name === 'lieu_reunion') {
+        if (documentId === 'decision_commission_reception' || documentId === 'pv_reception') {
+          defaults.lieu_reunion = savedConsultation?.reception_commission?.lieu_reunion || baseForms.decision_commission_reception?.lieu_reunion || '';
+        } else {
+          defaults.lieu_reunion = savedConsultation?.lieu_reunion || baseForms.decision_commission_ouverture?.lieu_reunion || '';
+        }
       }
       else if (field.name === 'delai_livraison' || field.name === 'delais_execution') {
-        const val = savedConsultation?.delai_execution ?? formData?.delai_execution ?? 30;
-        defaults[field.name] = field.type === 'number' ? (parseInt(val, 10) || 30) : `${val} jours`;
+        const val = savedConsultation?.delai_execution ?? formData?.delai_execution ?? '';
+        const parsed = parseInt(val, 10);
+        defaults[field.name] = !isNaN(parsed) && parsed > 0 ? (field.type === 'number' ? parsed : `${parsed} jours`) : '';
       }
       else if (field.name === 'date_limite') {
-        let dLimite = savedConsultation?.date_limite_devis || formData?.date_limite_devis;
-        if (!dLimite && (savedConsultation?.date_consultation || formData?.date_consultation)) {
-          const dCons = new Date(savedConsultation?.date_consultation || formData?.date_consultation);
-          if (!isNaN(dCons.getTime())) {
-            dCons.setDate(dCons.getDate() + 2);
-            const yyyy = dCons.getFullYear();
-            const mm = String(dCons.getMonth() + 1).padStart(2, '0');
-            const dd = String(dCons.getDate()).padStart(2, '0');
-            dLimite = `${yyyy}-${mm}-${dd}`;
-          }
-        }
-        defaults.date_limite = dLimite || '';
+        const rawLim = savedConsultation?.date_limite_devis || formData?.date_limite_devis || '';
+        defaults.date_limite = rawLim ? String(rawLim).slice(0, 10) : '';
       }
       else if (field.name === 'heure_limite') {
-        defaults.heure_limite = savedConsultation?.heure_limite_devis || formData.heure_limite_devis || '10:00';
+        const rawH = savedConsultation?.heure_limite_devis || formData.heure_limite_devis || '';
+        defaults.heure_limite = rawH ? String(rawH).slice(0, 5) : '';
       }
       else if (field.name === 'date_reunion') {
         if (documentId === 'decision_commission_reception' || documentId === 'pv_reception') {
-          defaults.date_reunion = savedConsultation?.reception_commission?.date_reunion || documentForms.decision_commission_reception?.date_reunion || '';
+          const dRec = savedConsultation?.reception_commission?.date_reunion || baseForms.decision_commission_reception?.date_reunion || '';
+          defaults.date_reunion = dRec ? String(dRec).slice(0, 10) : '';
         } else {
-          defaults.date_reunion = savedConsultation?.date_limite_devis || '';
+          const dOpen = savedConsultation?.date_reunion || baseForms.decision_commission_ouverture?.date_reunion || '';
+          defaults.date_reunion = dOpen ? String(dOpen).slice(0, 10) : '';
         }
       }
       else if ((field.name === 'date_document' || field.name === 'date_decision' || field.name === 'date_os' || field.name === 'date_reception' || field.name === 'date_bon_payer') && documentId !== 'fiche_engagement') {
         if (documentId === 'decision_commission_reception' || documentId === 'pv_reception') {
-          defaults[field.name] = savedConsultation?.reception_commission?.date_decision || documentForms.decision_commission_reception?.date_document || '';
+          const dDec = savedConsultation?.reception_commission?.date_decision || baseForms.decision_commission_reception?.date_document || '';
+          defaults[field.name] = dDec ? String(dDec).slice(0, 10) : '';
+        } else if (field.name === 'date_decision' && (documentId === 'pv_ouverture_attribution' || documentId === 'pv_ouverture_convention')) {
+          defaults.date_decision = baseForms.decision_commission_ouverture?.date_document || '';
         } else if (isConventionActive && documentId === 'avis_achat') {
-          defaults[field.name] = savedConsultation?.date_consultation || formData.date_consultation || '';
+          defaults[field.name] = savedConsultation?.date_consultation ? String(savedConsultation.date_consultation).slice(0, 10) : (formData.date_consultation || '');
         } else {
           defaults[field.name] = '';
         }
       }
-      else if (field.name === 'heure_reunion') defaults.heure_reunion = savedConsultation?.heure_limite_devis || savedConsultation?.heure_reunion || '10:00';
-      else if (field.name === 'heure_fin') defaults.heure_fin = '11:30';
-      else if (field.name === 'type_pv') defaults.type_pv = 'Réception Provisoire';
-      else if (field.name === 'mode_reglement') defaults.mode_reglement = 'Virement bancaire';
+      else if (field.name === 'heure_reunion') {
+        if (documentId === 'decision_commission_reception' || documentId === 'pv_reception') {
+          const hRec = savedConsultation?.reception_commission?.heure_reunion || baseForms.decision_commission_reception?.heure_reunion || '';
+          defaults.heure_reunion = hRec ? String(hRec).slice(0, 5) : '';
+        } else {
+          const hOpen = savedConsultation?.heure_reunion || baseForms.decision_commission_ouverture?.heure_reunion || '';
+          defaults.heure_reunion = hOpen ? String(hOpen).slice(0, 5) : '';
+        }
+      }
+      else if (field.name === 'heure_fin') {
+        const hFin = (documentId === 'pv_reception' ? savedConsultation?.reception_commission?.heure_fin : '') || '';
+        defaults.heure_fin = hFin ? String(hFin).slice(0, 5) : '';
+      }
+      else if (field.name === 'type_pv') defaults.type_pv = '';
+      else if (field.name === 'mode_reglement') defaults.mode_reglement = baseForms[documentId]?.mode_reglement || '';
       else if (field.name === 'imputation' || field.name === 'imputation_budgetaire') {
-        defaults[field.name] = `ART: ${formData.art || '01'} / PAR: ${formData.par || '02'} / LIG: ${formData.lig || '05'}`;
+        const art = savedConsultation?.budget?.art || formData.art || '';
+        const par = savedConsultation?.budget?.par || formData.par || '';
+        const lig = savedConsultation?.budget?.lig || formData.lig || '';
+        defaults[field.name] = (art && par && lig) ? `ART: ${art} / PAR: ${par} / LIG: ${lig}` : '';
       }
       else if (field.name === 'membres_commission' || field.name === 'agents_commission') {
         if (documentId === 'decision_commission_reception' || documentId === 'pv_reception') {
-          if (Array.isArray(savedConsultation?.reception_commission?.membres_commission) && savedConsultation.reception_commission.membres_commission.length > 0) {
-            defaults[field.name] = savedConsultation.reception_commission.membres_commission;
-          } else if (Array.isArray(documentForms.decision_commission_reception?.membres_commission) && documentForms.decision_commission_reception.membres_commission.length > 0) {
-            defaults[field.name] = documentForms.decision_commission_reception.membres_commission;
-          } else {
-            defaults[field.name] = [];
-          }
-        } else if (documentId === 'pv_ouverture_attribution' && Array.isArray(documentForms.decision_commission_ouverture?.membres_commission) && documentForms.decision_commission_ouverture.membres_commission.length > 0) {
-          defaults[field.name] = documentForms.decision_commission_ouverture.membres_commission;
+          const recMem = savedConsultation?.reception_commission?.membres_commission
+            || savedConsultation?.receptionCommission?.membres_commission
+            || baseForms.decision_commission_reception?.membres_commission;
+          defaults[field.name] = Array.isArray(recMem) ? recMem : [];
+        } else if ((documentId === 'pv_ouverture_attribution' || documentId === 'pv_ouverture_convention') && Array.isArray(baseForms.decision_commission_ouverture?.membres_commission) && baseForms.decision_commission_ouverture.membres_commission.length > 0) {
+          defaults[field.name] = baseForms.decision_commission_ouverture.membres_commission;
         } else {
           defaults[field.name] = Array.isArray(savedConsultation?.membres_commission)
             ? savedConsultation.membres_commission
             : [];
         }
       }
-      else if (field.name === 'specification') defaults.specification = prestations[0]?.designation || 'Soudeuse à pédale 30 cm';
+      else if (field.name === 'specification') defaults.specification = prestations[0]?.designation || savedConsultation?.prestations?.[0]?.designation || '';
       else if (field.name === 'conformite') defaults.conformite = 'Conforme sur le plan administratif et technique';
       else if (field.name === 'justification') defaults.justification = 'Offre la moins disante et techniquement conforme';
       else if (field.name === 'visa_controleur') defaults.visa_controleur = 'Visé par le Contrôleur Financier SAF/DRCA';
@@ -2029,97 +2430,93 @@ const BonCommandePlateforme = () => {
       else if (field.name === 'numero_prix') defaults.numero_prix = '1';
       else if (field.name === 'designation') defaults.designation = prestations[0]?.designation || savedConsultation?.prestations?.[0]?.designation || '';
       else if (field.name === 'unite_mesure') defaults.unite_mesure = prestations[0]?.unite || savedConsultation?.prestations?.[0]?.unite || 'Unite';
-      else if (field.name === 'quantite') defaults.quantite = prestations[0]?.quantite || savedConsultation?.prestations?.[0]?.quantite || 1;
-      else if (field.name === 'garantie_exigee') defaults.garantie_exigee = '2 ans';
+      else if (field.name === 'quantite') defaults.quantite = prestations[0]?.quantite ?? savedConsultation?.prestations?.[0]?.quantite ?? '';
+      else if (field.name === 'garantie_exigee') defaults.garantie_exigee = savedConsultation?.prestations?.[0]?.garantie_exigee || '';
       else if (field.name === 'consistance_lignes') {
-        const srcPrestations = savedConsultation?.prestations?.length > 0
-          ? savedConsultation.prestations
-          : prestations.filter(p => p.designation?.trim());
+        const srcPrestations = getSourcePrestations();
         defaults.consistance_lignes = srcPrestations.length > 0
           ? srcPrestations.map((p, i) => ({
             numero_prix: p.numero_prix || String(i + 1),
             designation: p.designation || '',
             specification: p.specification || p.designation || '',
             unite_mesure: p.unite || p.unite_mesure || 'Unite',
-            quantite: String(p.quantite || 1),
-            prix_unitaire_ht: String(p.prix_unitaire_ht || 0),
-            tva: String(p.tva || 20),
-            garantie_exigee: p.garantie_exigee || '2 ans',
+            quantite: p.quantite !== undefined && p.quantite !== null ? String(p.quantite) : '',
+            prix_unitaire_ht: p.prix_unitaire_ht !== undefined && p.prix_unitaire_ht !== null ? String(p.prix_unitaire_ht) : '',
+            tva: p.tva !== undefined && p.tva !== null ? String(p.tva) : '20',
+            garantie_exigee: p.garantie_exigee || '',
           }))
-          : [{ numero_prix: '1', designation: '', specification: '', unite_mesure: 'Unite', quantite: '1', prix_unitaire_ht: '0', tva: '20', garantie_exigee: '' }];
+          : [{ numero_prix: '1', designation: '', specification: '', unite_mesure: 'Unite', quantite: '', prix_unitaire_ht: '', tva: '20', garantie_exigee: '' }];
       }
       else if (field.name === 'fournisseurs_consultes') {
-        const lettres = documentForms.lettre_consultation?.lettres_consultation
-          || documentForms.avis_achat?.lettres_consultation;
-        const defaultSuppliers = (Array.isArray(lettres) && lettres.length > 0 && lettres.some((l) => l.societe))
-          ? lettres
-              .filter((l) => l && (l.societe || l.destinataire_adresse || l.numero_lettre))
-              .map((l, idx) => {
-                const defaultAmt = idx === 0 && totalTTC > 0 ? totalTTC.toFixed(2) : (idx === 0 && savedConsultation?.budget?.montant_ttc ? String(savedConsultation.budget.montant_ttc) : '');
-                return {
-                  nom: l.societe || '',
-                  adresse: l.destinataire_adresse || '',
-                  ville: l.ville || '',
-                  montant: defaultAmt,
-                  montant_avant: defaultAmt,
-                  montant_apres: defaultAmt,
-                };
-              })
-          : ((savedConsultation?.offres && savedConsultation.offres.length > 0)
-            ? savedConsultation.offres.map((o) => {
-                const amt = o.montant_apres_verification || o.montant_propose || '';
-                return {
-                  nom: o.fournisseur?.raison_sociale || '',
-                  adresse: o.fournisseur?.adresse || '',
-                  ville: o.fournisseur?.ville || '',
-                  montant: amt,
-                  montant_avant: amt,
-                  montant_apres: amt,
-                };
-              })
-            : [
-                {
-                  nom: savedConsultation?.fournisseur?.raison_sociale || documentForms.lettre_consultation?.societe || 'GENERATION MULISERVICES',
-                  adresse: savedConsultation?.fournisseur?.adresse || documentForms.lettre_consultation?.destinataire_adresse || 'AV MOUKAOUAMA DALIA B2/2APPT NO 7 MARRAKECH.',
-                  ville: savedConsultation?.fournisseur?.ville || 'Marrakech',
-                  montant: totalTTC > 0 ? totalTTC.toFixed(2) : (savedConsultation?.budget?.montant_ttc ? String(savedConsultation.budget.montant_ttc) : ''),
-                  montant_avant: totalTTC > 0 ? totalTTC.toFixed(2) : '',
-                  montant_apres: totalTTC > 0 ? totalTTC.toFixed(2) : '',
-                },
-              ]);
-        defaults.fournisseurs_consultes = defaultSuppliers;
+        const lettres = baseForms.lettre_consultation?.lettres_consultation
+          || baseForms.avis_achat?.lettres_consultation;
+        if (Array.isArray(lettres) && lettres.some((l) => l.societe)) {
+          defaults.fournisseurs_consultes = lettres
+            .filter((l) => l && (l.societe || l.destinataire_adresse || l.numero_lettre))
+            .map((l, idx) => {
+              const defaultAmt = idx === 0 && totalTTC > 0 ? totalTTC.toFixed(2) : (idx === 0 && savedConsultation?.budget?.montant_ttc ? String(savedConsultation.budget.montant_ttc) : '');
+              return {
+                nom: l.societe || '',
+                adresse: l.destinataire_adresse || '',
+                ville: l.ville || '',
+                montant: defaultAmt,
+                montant_avant: defaultAmt,
+                montant_apres: defaultAmt,
+              };
+            });
+        } else if (savedConsultation?.offres && savedConsultation.offres.length > 0) {
+          defaults.fournisseurs_consultes = savedConsultation.offres.map((o) => {
+            const amt = o.montant_apres_verification ?? o.montant_propose ?? '';
+            return {
+              nom: o.fournisseur?.raison_sociale || '',
+              adresse: o.fournisseur?.adresse || '',
+              ville: o.fournisseur?.ville || '',
+              montant: amt !== '' ? String(amt) : '',
+              montant_avant: amt !== '' ? String(amt) : '',
+              montant_apres: amt !== '' ? String(amt) : '',
+            };
+          });
+        } else if (savedConsultation?.fournisseur?.raison_sociale) {
+          defaults.fournisseurs_consultes = [{
+            nom: savedConsultation.fournisseur.raison_sociale,
+            adresse: savedConsultation.fournisseur.adresse || '',
+            ville: savedConsultation.fournisseur.ville || '',
+            montant: totalTTC > 0 ? totalTTC.toFixed(2) : (savedConsultation?.budget?.montant_ttc ? String(savedConsultation.budget.montant_ttc) : ''),
+            montant_avant: totalTTC > 0 ? totalTTC.toFixed(2) : '',
+            montant_apres: totalTTC > 0 ? totalTTC.toFixed(2) : '',
+          }];
+        } else {
+          defaults.fournisseurs_consultes = [];
+        }
       }
       else if (field.name === 'concurrents') {
-        const lettres = documentForms.lettre_consultation?.lettres_consultation
-          || documentForms.avis_achat?.lettres_consultation;
-        if (isConventionActive && Array.isArray(lettres) && lettres.length > 0 && lettres.some((l) => l.societe)) {
+        const lettres = baseForms.lettre_consultation?.lettres_consultation
+          || baseForms.avis_achat?.lettres_consultation;
+        if (isConventionActive && Array.isArray(lettres) && lettres.some((l) => l.societe)) {
           defaults.concurrents = lettres
             .filter((l) => l && (l.societe || l.destinataire_adresse || l.numero_lettre))
             .map((l, idx) => {
               const defaultAmt = idx === 0 && totalTTC > 0 ? totalTTC.toFixed(2) : (idx === 0 && savedConsultation?.budget?.montant_ttc ? String(savedConsultation.budget.montant_ttc) : '');
               return {
-                nom: l.societe || `Société ${idx + 1}`,
+                nom: l.societe || '',
                 montant_avant: defaultAmt,
                 montant_apres: defaultAmt,
                 montant: defaultAmt,
               };
             });
-        } else if (isConventionActive) {
-          const supplierNom = savedConsultation?.fournisseur?.raison_sociale || documentForms.lettre_consultation?.societe || 'GENERATION MULISERVICES';
-          defaults.concurrents = [
-            {
-              nom: supplierNom,
-              montant_avant: totalTTC > 0 ? totalTTC.toFixed(2) : '',
-              montant_apres: totalTTC > 0 ? totalTTC.toFixed(2) : (savedConsultation?.budget?.montant_ttc ? String(savedConsultation.budget.montant_ttc) : ''),
-              montant: totalTTC > 0 ? totalTTC : (savedConsultation?.budget?.montant_ttc || 0),
-            },
-          ];
+        } else if (isConventionActive && savedConsultation?.fournisseur?.raison_sociale) {
+          defaults.concurrents = [{
+            nom: savedConsultation.fournisseur.raison_sociale,
+            montant_avant: totalTTC > 0 ? totalTTC.toFixed(2) : '',
+            montant_apres: totalTTC > 0 ? totalTTC.toFixed(2) : (savedConsultation?.budget?.montant_ttc ? String(savedConsultation.budget.montant_ttc) : ''),
+            montant: totalTTC > 0 ? totalTTC.toFixed(2) : (savedConsultation?.budget?.montant_ttc ? String(savedConsultation.budget.montant_ttc) : ''),
+          }];
         } else if (savedConsultation?.offres?.length > 0) {
           defaults.concurrents = savedConsultation.offres.map((o) => ({
-            nom: o.fournisseur?.raison_sociale || 'Société',
-            montant: o.montant_apres_verification || o.montant_propose || 0,
-            montant_avant: o.montant_propose || '',
-            montant_apres: o.montant_apres_verification || o.montant_propose || '',
+            nom: o.fournisseur?.raison_sociale || '',
+            montant: o.montant_apres_verification ?? o.montant_propose ?? '',
+            montant_avant: o.montant_propose ?? '',
+            montant_apres: o.montant_apres_verification ?? o.montant_propose ?? '',
           }));
         } else {
           defaults.concurrents = [];
@@ -2127,18 +2524,22 @@ const BonCommandePlateforme = () => {
       }
       else if (field.name === 'lettres_consultation_refs') {
         defaults.lettres_consultation_refs = documentId === 'decision_commission_ouverture'
-          ? getAutoLettresRefsCompact(documentForms, savedConsultation, currentYear)
-          : getAutoLettresRefs(documentForms, savedConsultation, currentYear);
+          ? getAutoLettresRefsCompact(baseForms, savedConsultation, currentYear)
+          : getAutoLettresRefs(baseForms, savedConsultation, currentYear);
       }
       else if (field.name === 'date_decision') {
-        defaults.date_decision = documentForms.decision_commission_ouverture?.date_document || savedConsultation?.date_consultation || '';
+        defaults.date_decision = baseForms.decision_commission_ouverture?.date_document || '';
       }
       else if (field.name === 'attributaire') {
-        const attrNom = savedConsultation?.fournisseur?.raison_sociale || savedConsultation?.engagement?.fournisseur?.raison_sociale || documentForms.lettre_consultation?.societe || (isConventionActive ? 'GENERATION MULISERVICES' : '');
+        const retenueOffre = savedConsultation?.offres?.find((o) => o.retenu);
+        const attrNom = retenueOffre?.fournisseur?.raison_sociale
+          || savedConsultation?.fournisseur?.raison_sociale
+          || savedConsultation?.engagement?.fournisseur?.raison_sociale
+          || '';
         defaults.attributaire = attrNom;
 
         const concs = defaults.concurrents || [];
-        const foundIdx = concs.findIndex((c) => c.nom === attrNom);
+        const foundIdx = attrNom ? concs.findIndex((c) => c.nom === attrNom) : -1;
         if (foundIdx > 0) {
           defaults.societes_refusees = concs.slice(0, foundIdx).map((c) => ({
             nom: c.nom,
@@ -2153,19 +2554,19 @@ const BonCommandePlateforme = () => {
           defaults.societes_refusees = [];
         }
       }
-      else if (field.name === 'annee') defaults.annee = formData.exercice_budgetaire || currentYear;
+      else if (field.name === 'annee') defaults.annee = savedConsultation?.annee || formData.exercice_budgetaire || currentYear;
       else if (field.name === 'observation') defaults.observation = 'Démarrage immédiat des prestations après notification';
       else if (field.name === 'constat_service_fait') defaults.constat_service_fait = `Prestations exécutées conformément aux clauses de la ${engagementLabelLower}`;
       else if (field.name === 'direction') defaults.direction = 'Direction Régionale du Conseil Agricole Rabat-Salé-Kénitra';
       // ── Champs OI / OP / OV ────────────────────────────────────────────────
       else if (field.name === 'numero_oi') defaults.numero_oi = '';
       else if (field.name === 'numero_op') {
-        defaults.numero_op = documentForms.ordre_paiement?.numero_op || '';
+        defaults.numero_op = baseForms.ordre_paiement?.numero_op || '';
       }
       else if (field.name === 'numero_ov') defaults.numero_ov = '';
-      else if (field.name === 'annee_origine') defaults.annee_origine = savedConsultation?.annee || currentYear;
-      else if (field.name === 'exercice_origine') defaults.exercice_origine = (savedConsultation?.annee || currentYear) - 1;
-      else if (field.name === 'credit_type') defaults.credit_type = 'Crédit Consolidés';
+      else if (field.name === 'annee_origine') defaults.annee_origine = savedConsultation?.annee || '';
+      else if (field.name === 'exercice_origine') defaults.exercice_origine = savedConsultation?.annee ? (savedConsultation.annee - 1) : '';
+      else if (field.name === 'credit_type') defaults.credit_type = baseForms[documentId]?.credit_type || '';
       else if (field.name === 'forme_engagement') defaults.forme_engagement = engagementLabel;
       else if (field.name === 'reference_bc') {
         defaults.reference_bc = savedConsultation?.numero_bc
@@ -2173,7 +2574,7 @@ const BonCommandePlateforme = () => {
           : (savedConsultation?.numero_consultation ? `${engagementLabel} N° ${savedConsultation.numero_consultation}` : '');
       }
       else if (field.name === 'montant_oi' || field.name === 'montant_op' || field.name === 'montant_ov') {
-        const srcP = savedConsultation?.prestations?.length > 0 ? savedConsultation.prestations : prestations.filter(p => p.designation?.trim());
+        const srcP = getSourcePrestations();
         const ttc = srcP.reduce((sum, p) => {
           const ht = (Number(p.quantite) || 0) * (Number(p.prix_unitaire_ht) || 0);
           return sum + ht * (1 + ((Number(p.tva) || 20) / 100));
@@ -2182,48 +2583,46 @@ const BonCommandePlateforme = () => {
         defaults[field.name] = val ? Number(val).toFixed(2) : '';
       }
       else if (field.name === 'montant_engagement') {
-        const srcP = savedConsultation?.prestations?.length > 0 ? savedConsultation.prestations : prestations.filter(p => p.designation?.trim());
+        const srcP = getSourcePrestations();
         const ttc = srcP.reduce((sum, p) => {
           const ht = (Number(p.quantite) || 0) * (Number(p.prix_unitaire_ht) || 0);
           return sum + ht * (1 + ((Number(p.tva) || 20) / 100));
         }, 0);
         defaults.montant_engagement = ttc > 0 ? Number(ttc).toFixed(2) : '';
       }
-      else if (field.name === 'compte_debit') defaults.compte_debit = '310330100602470154760181';
-      else if (field.name === 'libelle_debit') defaults.libelle_debit = 'T.P KENITRA';
+      else if (field.name === 'compte_debit') defaults.compte_debit = '';
+      else if (field.name === 'libelle_debit') defaults.libelle_debit = '';
       else if (field.name === 'compte_credit') {
-        defaults.compte_credit = documentForms.bon_commande?.rib || savedConsultation?.fournisseur?.rib || '';
+        defaults.compte_credit = baseForms.bon_commande?.rib || savedConsultation?.fournisseur?.rib || '';
       }
-      else if (field.name === 'compte_courant') defaults.compte_courant = '310330100602470154760181';
-      else if (field.name === 'libelle_compte') defaults.libelle_compte = 'ONCA DR RABAT-SALE-KENITRA INVESTISSEMENT';
+      else if (field.name === 'compte_courant') defaults.compte_courant = '';
+      else if (field.name === 'libelle_compte') defaults.libelle_compte = '';
       else if (field.name === 'banque') {
-        defaults.banque = documentForms.bon_commande?.banque || savedConsultation?.fournisseur?.banque || '';
+        defaults.banque = baseForms.bon_commande?.banque || savedConsultation?.fournisseur?.banque || '';
       }
       else if (field.name === 'intitule_rubrique') {
         defaults.intitule_rubrique = savedConsultation?.intitule || savedConsultation?.type_prestation || savedConsultation?.objet_consultation || '';
       }
-      else if (field.name === 'prestation_meme_nature') defaults.prestation_meme_nature = 'PRESTATION DE MEME NATURE';
-      else if (field.name === 'pieces_jointes_op') {
-        defaults.pieces_jointes_op = `Facture N°\nDécompte provisoire N°\nPV de réception définitif\nOrdre de service d'ajournement\nOrdre de service de reprise`;
-      }
+      else if (field.name === 'prestation_meme_nature') defaults.prestation_meme_nature = '';
+      else if (field.name === 'pieces_jointes_op') defaults.pieces_jointes_op = '';
     });
 
     if ((documentId === 'lettre_consultation' || (isConventionActive && documentId === 'avis_achat')) && defaults.lettres_consultation && defaults.lettres_consultation[0]) {
       defaults.numero_lettre = cleanNumeroLettreConsultation(defaults.lettres_consultation[0].numero_lettre, savedConsultation?.annee || currentYear);
-      defaults.societe = defaults.lettres_consultation[0].societe;
-      defaults.destinataire_nom = defaults.lettres_consultation[0].destinataire_nom;
-      defaults.destinataire_adresse = defaults.lettres_consultation[0].destinataire_adresse;
-      defaults.ville = defaults.lettres_consultation[0].ville;
+      defaults.societe = defaults.lettres_consultation[0].societe || '';
+      defaults.destinataire_nom = defaults.lettres_consultation[0].destinataire_nom || '';
+      defaults.destinataire_adresse = defaults.lettres_consultation[0].destinataire_adresse || '';
+      defaults.ville = defaults.lettres_consultation[0].ville || '';
     }
 
     if (documentId === 'ordre_commande' || documentId === 'accuse_reception') {
-      const pvWinner = documentForms.pv_ouverture_convention?.attributaire
-        || documentForms.pv_ouverture_attribution?.attributaire
+      const pvWinner = baseForms.pv_ouverture_convention?.attributaire
+        || baseForms.pv_ouverture_attribution?.attributaire
         || '';
-      const pvSuppliers = documentForms.pv_ouverture_convention?.fournisseurs_consultes
-        || documentForms.pv_ouverture_attribution?.fournisseurs_consultes
+      const pvSuppliers = baseForms.pv_ouverture_convention?.fournisseurs_consultes
+        || baseForms.pv_ouverture_attribution?.fournisseurs_consultes
         || [];
-      const foundSupplier = pvSuppliers.find((s) => s.nom === pvWinner) || pvSuppliers[0];
+      const foundSupplier = pvWinner ? pvSuppliers.find((s) => s.nom === pvWinner) : null;
 
       if (pvWinner && !defaults.societe) {
         defaults.societe = pvWinner;
@@ -2232,21 +2631,12 @@ const BonCommandePlateforme = () => {
         if (!defaults.adresse_societe && foundSupplier.adresse) defaults.adresse_societe = foundSupplier.adresse;
         if (!defaults.ville_societe && foundSupplier.ville) defaults.ville_societe = foundSupplier.ville;
       }
-      if (!defaults.nature_os) {
-        defaults.nature_os = "Notification de l'approbation";
-      }
-      if (isConventionActive && (!defaults.numero_lettre || defaults.numero_lettre.includes('SOS'))) {
-        defaults.numero_lettre = `01 /${savedConsultation?.annee || currentYear}/DRC-RSK/OS`;
-      }
-      if (!defaults.destinataire_nom) {
-        defaults.destinataire_nom = "Monsieur le gérant de la société";
-      }
     }
 
     if (documentId === 'fiche_engagement') {
-      const pvWinner = documentForms.pv_ouverture_convention?.attributaire
-        || documentForms.pv_ouverture_attribution?.attributaire
-        || documentForms.bon_commande?.titulaire_nom
+      const pvWinner = baseForms.pv_ouverture_convention?.attributaire
+        || baseForms.pv_ouverture_attribution?.attributaire
+        || baseForms.bon_commande?.titulaire_nom
         || '';
       if (pvWinner && !defaults.societe) {
         defaults.societe = pvWinner;
@@ -2255,38 +2645,37 @@ const BonCommandePlateforme = () => {
         defaults.forme_engagement = isContrat ? 'Contrat' : 'Convention';
         const cleanNum = String(savedConsultation?.numero_consultation || '').replace(/\bCONV\s*[-_]?\s*/i, '').trim().replace(/^[-_\s]+|[-_\s]+$/, '');
         if (!defaults.pieces_jointes) {
-          defaults.pieces_jointes = `${isContrat ? 'Contrat' : 'Convention'} N° ${cleanNum}`;
+          defaults.pieces_jointes = cleanNum ? `${isContrat ? 'Contrat' : 'Convention'} N° ${cleanNum}` : '';
         }
       }
     }
 
-    setDocumentForms((prev) => {
-      const next = {
-        ...prev,
-        [documentId]: {
-          ...(prev[documentId] || {}),
-          ...defaults,
-        },
-      };
-      if (isConventionActive && documentId === 'avis_achat') {
-        next.lettre_consultation = { ...(next.lettre_consultation || {}), ...defaults };
-      }
-      if (isConventionActive && (documentId === 'pv_ouverture_attribution' || documentId === 'pv_ouverture_convention')) {
-        next.pv_ouverture_convention = { ...(next.pv_ouverture_convention || {}), ...defaults };
-        next.pv_ouverture_attribution = { ...(next.pv_ouverture_attribution || {}), ...defaults };
-      }
-      return next;
-    });
-
-    setFormErrors((prev) => ({ ...prev, [documentId]: {} }));
-    setMessage('Champs pré-remplis automatiquement avec succès !');
-    setError('');
+    return defaults;
   };
 
   useEffect(() => {
-    if (savedConsultation) {
-      allDocuments.forEach((doc) => autoFillDocument(doc.id));
+    if (!savedConsultation?.id) {
+      setDocumentForms({});
+      setFormErrors({});
+      setSavedDocumentIds(new Set());
+      return;
     }
+
+    const accumulated = {};
+    allDocuments.forEach((doc) => {
+      const defaults = computeAutoFillDefaults(doc.id, accumulated);
+      accumulated[doc.id] = { ...(accumulated[doc.id] || {}), ...defaults };
+      if (isConventionActive && doc.id === 'avis_achat') {
+        accumulated.lettre_consultation = { ...(accumulated.lettre_consultation || {}), ...defaults };
+      }
+      if (isConventionActive && (doc.id === 'pv_ouverture_attribution' || doc.id === 'pv_ouverture_convention')) {
+        accumulated.pv_ouverture_convention = { ...(accumulated.pv_ouverture_convention || {}), ...defaults };
+        accumulated.pv_ouverture_attribution = { ...(accumulated.pv_ouverture_attribution || {}), ...defaults };
+      }
+    });
+    setDocumentForms(accumulated);
+    setFormErrors({});
+    setSavedDocumentIds(new Set());
   }, [savedConsultation?.id]);
 
   const validateDocumentForm = (documentId) => {
@@ -2294,69 +2683,69 @@ const BonCommandePlateforme = () => {
     const values = documentForms[documentId] || {};
     const errors = {};
     const missingLabels = [];
+    const isBlank = (v) => v === undefined || v === null || String(v).trim() === '';
+    const isOpeningDoc = documentId === 'decision_commission_ouverture' || documentId === 'pv_ouverture_attribution' || documentId === 'pv_ouverture_convention';
 
     fields.forEach((field) => {
       const fieldLabelText = adaptEngagementText(field.label);
-      if (field.condition && !field.condition(values, isConventionActive)) {
+      if (field.condition && !field.condition(values, isConventionActive, savedConsultation)) {
         return;
       }
+
       if (field.required) {
         const val = values[field.name];
         if (field.type === 'commission_selector') {
-          const commList = (documentId === 'pv_reception' || documentId === 'pv_ouverture_attribution')
-            ? (values[field.name] || (documentId === 'pv_reception' ? (documentForms.decision_commission_reception?.membres_commission || savedConsultation?.reception_commission?.membres_commission) : (documentForms.decision_commission_ouverture?.membres_commission)))
-            : val;
+          const commList = resolveCommissionMembres(documentId, documentForms);
+          const validMembers = Array.isArray(commList)
+            ? commList.filter((m) => {
+                if (!m) return false;
+                const nom = typeof m === 'string' ? m : (m.nom ?? m.nom_prenom);
+                return !isBlank(nom);
+              })
+            : [];
+          const hasPresident = validMembers.some((m) => typeof m === 'object' && /pr[eé]sident/iu.test(String(m.qualite ?? m.fonction ?? '')));
 
-          if (!Array.isArray(commList) || commList.length < 3) {
-            errors[field.name] = 'La commission doit obligatoirement comporter au moins 3 personnes (1 Président(e) et 2 membres).';
-            missingLabels.push(`${fieldLabelText} (au moins 3 personnes)`);
+          if (!Array.isArray(commList) || validMembers.length < 3) {
+            errors[field.name] = 'La commission doit obligatoirement comporter au moins 3 membres valides.';
+            missingLabels.push(`${fieldLabelText} (au moins 3 membres)`);
+          } else if (isOpeningDoc && !hasPresident) {
+            errors[field.name] = 'La commission doit obligatoirement comprendre un(e) Président(e).';
+            missingLabels.push(`${fieldLabelText} (Président(e) requis(e))`);
           }
         } else if (field.type === 'consistance_table') {
-          const rawLignes = values[field.name] || documentForms['avis_achat']?.[field.name] || documentForms['bon_commande']?.[field.name];
-          const srcPrestations = savedConsultation?.prestations?.length > 0
-            ? savedConsultation.prestations
-            : prestations.filter(p => p.designation?.trim());
-
-          const initialLignes = srcPrestations.length > 0
-            ? srcPrestations.map((p, i) => ({
-              numero_prix: p.numero_prix || String(i + 1),
-              designation: p.designation || '',
-              specification: p.specification || p.designation || '',
-              unite_mesure: p.unite || p.unite_mesure || 'Unite',
-              quantite: String(p.quantite || 1),
-              prix_unitaire_ht: String(p.prix_unitaire_ht || 0),
-              tva: String(p.tva || 20),
-              garantie_exigee: p.garantie_exigee || '',
-            }))
-            : [{ numero_prix: '1', designation: '', specification: '', unite_mesure: 'Unite', quantite: '1', prix_unitaire_ht: '0', tva: '20', garantie_exigee: '' }];
-
-          const lignes = Array.isArray(rawLignes) && rawLignes.length > 0 ? rawLignes : initialLignes;
-
-          let hasEmptyCell = false;
-          let hasInvalidPrice = false;
+          const lignes = resolveConsistanceLignes(documentId, documentForms);
           const checkPrice = documentId !== 'avis_achat';
+          let hasEmptyCell = !Array.isArray(lignes) || lignes.length === 0;
+          let hasInvalidQty = false;
+          let hasInvalidPrice = false;
 
-          lignes.forEach((l) => {
-            if (
-              !l.numero_prix || String(l.numero_prix).trim() === '' ||
-              !l.designation || String(l.designation).trim() === '' ||
-              !l.unite_mesure || String(l.unite_mesure).trim() === '' ||
-              !l.quantite || String(l.quantite).trim() === ''
-            ) {
-              hasEmptyCell = true;
-            }
-
-            if (checkPrice) {
-              const pu = parseFloat(l.prix_unitaire_ht);
-              if (isNaN(pu) || pu <= 0 || String(l.prix_unitaire_ht).trim() === '') {
-                hasInvalidPrice = true;
+          if (Array.isArray(lignes)) {
+            lignes.forEach((l) => {
+              if (
+                isBlank(l?.numero_prix) ||
+                isBlank(l?.designation) ||
+                isBlank(l?.unite_mesure)
+              ) {
+                hasEmptyCell = true;
               }
-            }
-          });
+              const q = Number(l?.quantite);
+              if (isBlank(l?.quantite) || isNaN(q) || q <= 0) {
+                hasInvalidQty = true;
+              }
+              if (checkPrice) {
+                const pu = Number(l?.prix_unitaire_ht);
+                if (isBlank(l?.prix_unitaire_ht) || isNaN(pu) || pu <= 0) {
+                  hasInvalidPrice = true;
+                }
+              }
+            });
+          }
 
-          if (hasEmptyCell || hasInvalidPrice) {
-            errors[field.name] = checkPrice ? `Veuillez remplir tous les champs et P.U HT > 0` : `Veuillez remplir tous les champs`;
-            missingLabels.push(`${fieldLabelText} (Tous les champs et P.U HT > 0)`);
+          if (hasEmptyCell || hasInvalidQty || hasInvalidPrice) {
+            errors[field.name] = checkPrice
+              ? 'Veuillez remplir toutes les lignes (N° prix, Désignation, Unité, Quantité > 0 et P.U HT > 0).'
+              : 'Veuillez remplir toutes les lignes (N° prix, Désignation, Unité et Quantité > 0).';
+            missingLabels.push(`${fieldLabelText} (lignes complètes et montants > 0)`);
           }
         } else if (field.type === 'lettres_consultation_table') {
           const list = Array.isArray(val) ? val : [];
@@ -2364,49 +2753,143 @@ const BonCommandePlateforme = () => {
             errors[field.name] = 'Veuillez ajouter au moins une lettre de consultation.';
             missingLabels.push(`${fieldLabelText} (au moins une lettre)`);
           } else {
-            let hasEmpty = false;
-            list.forEach((l) => {
-              if (!l.societe || !String(l.societe).trim() || !l.destinataire_adresse || !String(l.destinataire_adresse).trim()) {
-                hasEmpty = true;
-              }
-            });
-            if (hasEmpty) {
-              errors[field.name] = 'Veuillez renseigner le nom de la société et l\'adresse pour chaque lettre.';
-              missingLabels.push(`${fieldLabelText} (Société et adresse requises)`);
+            const hasInvalidRow = list.some((l) => (
+              isBlank(l?.numero_lettre) ||
+              isBlank(l?.societe) ||
+              isBlank(l?.destinataire_nom) ||
+              isBlank(l?.destinataire_adresse)
+            ));
+            if (hasInvalidRow) {
+              errors[field.name] = 'Veuillez renseigner le numéro, la société, le destinataire et l’adresse pour chaque lettre.';
+              missingLabels.push(`${fieldLabelText} (champs de chaque lettre obligatoires)`);
             }
           }
-        } else if (val === undefined || val === null || String(val).trim() === '') {
+        } else if (field.type === 'fournisseurs_consultes_table') {
+          const list = resolveFournisseursConsultes(documentId, documentForms);
+          if (!Array.isArray(list) || list.length === 0) {
+            errors[field.name] = 'Veuillez ajouter au moins un participant consulté.';
+            missingLabels.push(`${fieldLabelText} (au moins 1 participant)`);
+          } else {
+            const hasInvalid = list.some((item) => {
+              const rawAmt = item?.montant ?? item?.montant_apres;
+              const amt = Number(rawAmt);
+              return isBlank(item?.nom) || isBlank(item?.adresse) || isBlank(item?.ville) || isBlank(rawAmt) || isNaN(amt) || amt <= 0;
+            });
+            if (hasInvalid) {
+              errors[field.name] = 'Veuillez renseigner la raison sociale, l’adresse, la ville et un montant TTC > 0 pour chaque participant.';
+              missingLabels.push(`${fieldLabelText} (données participants complètes)`);
+            }
+          }
+        } else if (field.type === 'concurrents_table') {
+          const list = resolveConcurrentsList(documentId, documentForms);
+          if (!Array.isArray(list) || list.length === 0) {
+            errors[field.name] = 'Veuillez ajouter au moins un concurrent.';
+            missingLabels.push(`${fieldLabelText} (au moins 1 concurrent)`);
+          } else {
+            const hasInvalid = list.some((c) => {
+              const amt = Number(c?.montant);
+              return isBlank(c?.nom) || isBlank(c?.montant) || isNaN(amt) || amt <= 0;
+            });
+            if (hasInvalid) {
+              errors[field.name] = 'Chaque concurrent doit comporter un nom et un montant TTC > 0.';
+              missingLabels.push(`${fieldLabelText} (nom et montant > 0)`);
+            }
+          }
+        } else if (field.type === 'concurrents_convention_table') {
+          const list = resolveConcurrentsList(documentId, documentForms);
+          if (!Array.isArray(list) || list.length === 0) {
+            errors[field.name] = 'Veuillez ajouter au moins un concurrent.';
+            missingLabels.push(`${fieldLabelText} (au moins 1 concurrent)`);
+          } else {
+            const hasInvalid = list.some((c) => {
+              const rawAfter = c?.montant_apres ?? c?.montant;
+              const amtAfter = Number(rawAfter);
+              return isBlank(c?.nom) || isBlank(rawAfter) || isNaN(amtAfter) || amtAfter <= 0;
+            });
+            if (hasInvalid) {
+              errors[field.name] = 'Chaque concurrent doit comporter un nom et un montant après vérification > 0.';
+              missingLabels.push(`${fieldLabelText} (nom et montant après vérification > 0)`);
+            }
+          }
+        } else if (field.type === 'prestations_partielles_table') {
+          const list = resolvePrestationsReceptionnees(documentId, documentForms);
+          if (!Array.isArray(list) || list.length === 0) {
+            errors[field.name] = "Aucune prestation à réceptionner n'est disponible.";
+            missingLabels.push(fieldLabelText);
+          } else {
+            const checkedItems = list.filter((item) => !!item?.receptionne);
+            if (checkedItems.length === 0) {
+              errors[field.name] = 'Veuillez cocher au moins une prestation réceptionnée.';
+              missingLabels.push(`${fieldLabelText} (au moins une prestation cochée)`);
+            } else {
+              const hasInvalid = checkedItems.some((item) => {
+                const qteCmd = Number(item.quantite);
+                const qteRec = Number(item.quantite_receptionnee);
+                return isBlank(item.numero_prix) || isBlank(item.quantite_receptionnee) || isNaN(qteRec) || qteRec < 0 || (!isNaN(qteCmd) && qteRec > qteCmd);
+              });
+              if (hasInvalid) {
+                errors[field.name] = 'Chaque prestation cochée doit avoir un N° de prix et une quantité réceptionnée valide (0 ≤ qte ≤ commandée).';
+                missingLabels.push(`${fieldLabelText} (quantités réceptionnées valides)`);
+              }
+            }
+          }
+        } else if (isBlank(val)) {
           errors[field.name] = `Le champ « ${fieldLabelText} » est obligatoire.`;
           missingLabels.push(fieldLabelText);
         }
       }
 
       const fieldValue = values[field.name];
-      if (fieldValue && typeof fieldValue === 'string' && fieldValue.trim() !== '') {
-        const cleanVal = fieldValue.replace(/\s/g, '');
+      if (!errors[field.name] && fieldValue !== undefined && fieldValue !== null && String(fieldValue).trim() !== '') {
+        const cleanVal = typeof fieldValue === 'string' ? fieldValue.replace(/\s/g, '') : String(fieldValue);
 
-        if (field.name === 'rib') {
-          if (!/^\d{24}$/.test(cleanVal)) {
-            errors[field.name] = `Le RIB doit comporter exactement 24 chiffres (actuellement: ${cleanVal.length}).`;
-            if (!missingLabels.includes(fieldLabelText)) missingLabels.push(`${fieldLabelText} (24 chiffres obligatoires)`);
+        if (field.name === 'rib' && !/^\d{24}$/.test(cleanVal)) {
+          errors[field.name] = `Le RIB doit comporter exactement 24 chiffres (actuellement: ${cleanVal.length}).`;
+          if (!missingLabels.includes(fieldLabelText)) missingLabels.push(`${fieldLabelText} (24 chiffres obligatoires)`);
+        }
+
+        if (field.name === 'ice' && !/^\d{15}$/.test(cleanVal)) {
+          errors[field.name] = `L'ICE doit comporter exactement 15 chiffres (actuellement: ${cleanVal.length}).`;
+          if (!missingLabels.includes(fieldLabelText)) missingLabels.push(`${fieldLabelText} (15 chiffres obligatoires)`);
+        }
+
+        if ((field.name === 'if' || field.name === 'identifiant_fiscal') && !/^\d{5}$|^\d{8}$/.test(cleanVal)) {
+          errors[field.name] = `L'Identifiant Fiscal (IF) doit comporter 5 ou 8 chiffres (actuellement: ${cleanVal.length}).`;
+          if (!missingLabels.includes(fieldLabelText)) missingLabels.push(`${fieldLabelText} (5 ou 8 chiffres)`);
+        }
+
+        if (field.name === 'delai_livraison') {
+          const d = Number(fieldValue);
+          if (!Number.isInteger(d) || d < 1) {
+            errors[field.name] = `Le champ « ${fieldLabelText} » doit être un entier positif (≥ 1 jour).`;
+            if (!missingLabels.includes(fieldLabelText)) missingLabels.push(fieldLabelText);
           }
         }
 
-        if (field.name === 'ice') {
-          if (!/^\d{15}$/.test(cleanVal)) {
-            errors[field.name] = `L'ICE doit comporter exactement 15 chiffres (actuellement: ${cleanVal.length}).`;
-            if (!missingLabels.includes(fieldLabelText)) missingLabels.push(`${fieldLabelText} (15 chiffres obligatoires)`);
+        if (['credit_ouvert_cp', 'depenses_anterieures_cp', 'credit_ouvert_ce', 'depenses_anterieures_ce', 'depenses_credits_engagement'].includes(field.name)) {
+          const n = Number(fieldValue);
+          if (isNaN(n) || n < 0) {
+            errors[field.name] = `Le champ « ${fieldLabelText} » doit être un montant numérique supérieur ou égal à 0.`;
+            if (!missingLabels.includes(fieldLabelText)) missingLabels.push(fieldLabelText);
           }
         }
 
-        if (field.name === 'if' || field.name === 'identifiant_fiscal') {
-          if (!/^\d{5}$|^\d{8}$/.test(cleanVal)) {
-            errors[field.name] = `L'Identifiant Fiscal (IF) doit comporter 5 ou 8 chiffres (actuellement: ${cleanVal.length}).`;
-            if (!missingLabels.includes(fieldLabelText)) missingLabels.push(`${fieldLabelText} (5 ou 8 chiffres)`);
+        if (['montant_depense_neuf', 'montant_apres_verification', 'montant_oi', 'montant_op', 'montant_ov', 'montant_engagement'].includes(field.name)) {
+          const n = Number(fieldValue);
+          if (isNaN(n) || n <= 0) {
+            errors[field.name] = `Le champ « ${fieldLabelText} » doit être un montant strictement supérieur à 0.`;
+            if (!missingLabels.includes(fieldLabelText)) missingLabels.push(fieldLabelText);
           }
         }
       }
     });
+
+    if (documentId === 'pv_reception' && ['provisoire', 'partielle'].includes(String(values.type_reception || '').toLowerCase())) {
+      if (values.periode_du && values.periode_au && String(values.periode_au) < String(values.periode_du)) {
+        errors.periode_au = 'La date de fin de période doit être postérieure ou égale à la date de début.';
+        missingLabels.push('Période de réception - Au');
+      }
+    }
 
     setFormErrors((prev) => ({ ...prev, [documentId]: errors }));
     return {
@@ -2420,6 +2903,11 @@ const BonCommandePlateforme = () => {
     const montantDepenseNeuf = Number(values.montant_depense_neuf) || 0;
     const interetsMoratoires = Number((montantDepenseNeuf * 0.01).toFixed(2));
     const montantEngagerNeuf = Number((montantDepenseNeuf + interetsMoratoires).toFixed(2));
+    const cleanConvNum = String(values.numero_consultation || savedConsultation?.numero_consultation || '')
+      .replace(/\bCONV\s*[-_]?\s*/i, '')
+      .trim()
+      .replace(/^[-_\s]+|[-_\s]+$/, '');
+
     const data = {
       ...values,
       ...(documentId === 'fiche_engagement' ? {
@@ -2430,19 +2918,19 @@ const BonCommandePlateforme = () => {
         credit_budget_ce: values.credit_ouvert_ce,
         depenses_engagees_cp: values.depenses_anterieures_cp,
         depenses_engagees_ce: values.depenses_anterieures_ce,
-        disponible_cp: (Number(values.credit_ouvert_cp) || 0) - (Number(values.depenses_anterieures_cp) || 0),
-        disponible_ce: (Number(values.credit_ouvert_ce) || 0) - (Number(values.depenses_anterieures_ce) || 0),
+        disponible_cp: creditDisponible(values.credit_ouvert_cp, values.depenses_anterieures_cp),
+        disponible_ce: creditDisponible(values.credit_ouvert_ce, values.depenses_anterieures_ce),
         forme_engagement: isConventionActive ? (isContrat ? 'Contrat' : 'Convention') : (values.forme_engagement || engagementLabel),
         type_budget: values.type_budget || savedConsultation?.type_budget || (isConventionActive ? (isContrat ? 'Fonctionnement' : 'Investissement') : 'Investissement'),
         societe: values.societe || documentForms.pv_ouverture_convention?.attributaire || documentForms.bon_commande?.titulaire_nom || '',
-        pieces_jointes: values.pieces_jointes || (isConventionActive ? `${isContrat ? 'Contrat' : 'Convention'} N° ${String(values.numero_consultation || savedConsultation?.numero_consultation || '').replace(/\bCONV\s*[-_]?\s*/i, '').trim().replace(/^[-_\s]+|[-_\s]+$/, '')}` : (savedConsultation?.numero_bc ? `${engagementLabel} N° ${savedConsultation.numero_bc}` : '')),
+        pieces_jointes: values.pieces_jointes || (isConventionActive ? (cleanConvNum ? `${isContrat ? 'Contrat' : 'Convention'} N° ${cleanConvNum}` : '') : (savedConsultation?.numero_bc ? `${engagementLabel} N° ${savedConsultation.numero_bc}` : '')),
       } : {}),
-      objet: values.objet || formData.objet_consultation,
+      objet: values.objet || formData.objet_consultation || '',
       numero_consultation: (isConventionActive || ['decision_commission_ouverture', 'pv_ouverture_convention', 'pv_ouverture_attribution', 'lettre_consultation'].includes(documentId))
-        ? String(values.numero_consultation || savedConsultation?.numero_consultation || '').replace(/\bCONV\s*[-_]?\s*/i, '').trim().replace(/^[-_\s]+|[-_\s]+$/, '')
-        : (values.numero_consultation || savedConsultation?.numero_consultation),
-      adresse_societe: values.adresse_societe || values.adresse_1 || documentForms['bon_commande']?.adresse_societe || savedConsultation?.fournisseur?.adresse || savedConsultation?.engagement?.fournisseur?.adresse || 'APP N 6 Immeuble 01 KHENIFRA',
-      ville_societe: values.ville_societe || values.ville_1 || documentForms['bon_commande']?.ville_societe || savedConsultation?.fournisseur?.ville || savedConsultation?.engagement?.fournisseur?.ville || 'Rabat',
+        ? cleanConvNum
+        : (values.numero_consultation || savedConsultation?.numero_consultation || ''),
+      adresse_societe: values.adresse_societe || values.adresse_1 || documentForms['bon_commande']?.adresse_societe || savedConsultation?.fournisseur?.adresse || savedConsultation?.engagement?.fournisseur?.adresse || '',
+      ville_societe: values.ville_societe || values.ville_1 || documentForms['bon_commande']?.ville_societe || savedConsultation?.fournisseur?.ville || savedConsultation?.engagement?.fournisseur?.ville || '',
     };
 
     if ((documentId === 'decision_commission_ouverture' || documentId === 'pv_ouverture_convention' || documentId === 'pv_ouverture_attribution') && isConventionActive) {
@@ -2454,14 +2942,20 @@ const BonCommandePlateforme = () => {
       data.lettres_consultation = Array.isArray(lettresList) ? lettresList : [];
     }
 
-    if ((documentId === 'pv_ouverture_attribution' || documentId === 'pv_ouverture_convention') && Array.isArray(documentForms.decision_commission_ouverture?.membres_commission) && documentForms.decision_commission_ouverture.membres_commission.length > 0) {
-      data.membres_commission = documentForms.decision_commission_ouverture.membres_commission;
-    }
-    if ((documentId === 'pv_ouverture_attribution' || documentId === 'pv_ouverture_convention') && documentForms.decision_commission_ouverture?.numero_decision) {
-      data.numero_decision = data.numero_decision || documentForms.decision_commission_ouverture.numero_decision;
-    }
-    if ((documentId === 'pv_ouverture_attribution' || documentId === 'pv_ouverture_convention') && documentForms.decision_commission_ouverture?.date_document) {
-      data.date_decision = data.date_decision || documentForms.decision_commission_ouverture.date_document;
+    if (documentId === 'pv_ouverture_attribution' || documentId === 'pv_ouverture_convention') {
+      const comm = resolveCommissionMembres(documentId, documentForms);
+      if (Array.isArray(comm) && comm.length > 0) {
+        data.membres_commission = comm;
+      }
+      if (documentForms.decision_commission_ouverture?.numero_decision) {
+        data.numero_decision = data.numero_decision || documentForms.decision_commission_ouverture.numero_decision;
+      }
+      if (documentForms.decision_commission_ouverture?.date_document) {
+        data.date_decision = data.date_decision || documentForms.decision_commission_ouverture.date_document;
+      }
+      if (!data.lieu_reunion) {
+        data.lieu_reunion = documentForms.decision_commission_ouverture?.lieu_reunion || savedConsultation?.lieu_reunion || '';
+      }
     }
 
     if (documentId === 'pv_reception') {
@@ -2483,11 +2977,12 @@ const BonCommandePlateforme = () => {
       if (documentForms.decision_commission_reception?.date_document) {
         data.date_decision = documentForms.decision_commission_reception.date_document;
       }
-      if (Array.isArray(documentForms.decision_commission_reception?.membres_commission) && documentForms.decision_commission_reception.membres_commission.length > 0) {
-        data.membres_commission = documentForms.decision_commission_reception.membres_commission;
+      const recComm = resolveCommissionMembres('pv_reception', documentForms);
+      if (Array.isArray(recComm) && recComm.length > 0) {
+        data.membres_commission = recComm;
       }
       if (documentForms.decision_commission_reception?.date_reunion) {
-        data.date_reunion = documentForms.decision_commission_reception.date_reunion;
+        data.date_reunion = data.date_reunion || documentForms.decision_commission_reception.date_reunion;
       }
     }
 
@@ -2515,16 +3010,12 @@ const BonCommandePlateforme = () => {
     }
 
     if (documentId === 'pv_ouverture_attribution' || documentId === 'pv_ouverture_convention') {
-      const fConsultes = values.fournisseurs_consultes
-        || documentForms.pv_ouverture_convention?.fournisseurs_consultes
-        || documentForms.pv_ouverture_attribution?.fournisseurs_consultes;
+      const fConsultes = resolveFournisseursConsultes(documentId, documentForms);
       if (Array.isArray(fConsultes) && fConsultes.length > 0) {
         data.fournisseurs_consultes = fConsultes;
       }
 
-      const cList = values.concurrents
-        || documentForms.pv_ouverture_convention?.concurrents
-        || documentForms.pv_ouverture_attribution?.concurrents;
+      const cList = resolveConcurrentsList(documentId, documentForms);
       if (Array.isArray(cList) && cList.length > 0) {
         data.concurrents = cList;
       }
@@ -2539,7 +3030,7 @@ const BonCommandePlateforme = () => {
 
     if (values.participant_1 || values.adresse_1 || values.ville_1 || values.montant_1 || values.montant_apres_verification) {
       data.fournisseurs = [{
-        nom: values.participant_1 || values.societe || values.attributaire || 'BUREAU ALAOUI TOPO',
+        nom: values.participant_1 || values.societe || values.attributaire || '',
         adresse: values.adresse_1 || values.adresse_societe || '',
         ville: values.ville_1 || values.ville_societe || '',
         montant: Number(values.montant_apres_verification || values.montant_1) || totalTTC,
@@ -2548,11 +3039,11 @@ const BonCommandePlateforme = () => {
     }
 
     if (documentId === 'ordre_commande' || documentId === 'accuse_reception') {
-      data.numero_os = values.numero_lettre || values.numero_os || data.numero_os || '01 /2024/DRC-RSK/OS';
-      data.numero_convention = data.numero_consultation || values.numero_consultation || values.numero_bc;
-      data.nature_os = values.nature_os || "Notification de l'approbation";
+      data.numero_os = values.numero_lettre || values.numero_os || data.numero_os || '';
+      data.numero_convention = data.numero_consultation || values.numero_consultation || values.numero_bc || '';
+      data.nature_os = values.nature_os || '';
       data.motif_ajournement = values.motif_ajournement || '';
-      data.destinataire_nom = values.destinataire_nom || 'Monsieur le gérant de la société';
+      data.destinataire_nom = values.destinataire_nom || '';
       data.societe = values.societe || documentForms.bon_commande?.titulaire_nom || documentForms.pv_ouverture_convention?.attributaire || '';
       data.adresse_societe = values.adresse_societe || documentForms.bon_commande?.adresse_societe || '';
       data.ville_societe = values.ville_societe || documentForms.bon_commande?.ville_societe || '';
@@ -2676,101 +3167,206 @@ const BonCommandePlateforme = () => {
   };
 
   const saveDocumentDataToDatabase = async (documentId, isExplicitSave = false) => {
-    if (!savedConsultation?.id) return;
+    if (!savedConsultation?.id) return false;
 
-    if (isExplicitSave) {
-      const validation = validateDocumentForm(documentId);
-      if (!validation.isValid) {
-        const missingText = validation.missingLabels?.length > 0
-          ? `Veuillez remplir le(s) champ(s) obligatoire(s) suivant(s) : ${validation.missingLabels.join(', ')}.`
-          : "Veuillez remplir tous les champs obligatoires du formulaire avant de procéder à l'enregistrement.";
-        setError(missingText);
-        setMessage('');
-        return;
-      }
+    const validation = validateDocumentForm(documentId);
+    if (!validation.isValid) {
+      const missingText = validation.missingLabels?.length > 0
+        ? `Veuillez remplir le(s) champ(s) obligatoire(s) suivant(s) : ${validation.missingLabels.join(', ')}.`
+        : "Veuillez remplir tous les champs obligatoires (*) du formulaire avant de continuer.";
+      setError(missingText);
+      setMessage('');
+      return false;
     }
 
     const values = documentForms[documentId] || {};
+    const fieldsDef = documentFieldGroups[documentFieldsId(documentId)] || [];
+    const activeFieldNames = new Set(
+      fieldsDef
+        .filter((field) => !field.condition || field.condition(values, isConventionActive, savedConsultation))
+        .map((field) => field.name)
+    );
+    const activeDocKey = documentFieldsId(documentId);
 
     const updatePayload = {};
     if (documentId !== 'decision_commission_reception' && documentId !== 'pv_reception') {
-      if (values.numero_bc !== undefined && values.numero_bc !== null) updatePayload.numero_bc = values.numero_bc;
-      if (values.numero_decision !== undefined && values.numero_decision !== null) updatePayload.numero_decision = values.numero_decision;
+      if (activeFieldNames.has('numero_bc') && values.numero_bc !== undefined && values.numero_bc !== null) {
+        updatePayload.numero_bc = String(values.numero_bc).trim();
+      }
+      if (activeFieldNames.has('numero_decision') && values.numero_decision !== undefined && values.numero_decision !== null) {
+        updatePayload.numero_decision = String(values.numero_decision).trim();
+      }
     }
-    if (values.date_limite !== undefined && values.date_limite !== null) updatePayload.date_limite_devis = values.date_limite;
-    if (values.heure_limite !== undefined && values.heure_limite !== null) updatePayload.heure_limite_devis = values.heure_limite;
-    if (values.lieu_execution !== undefined && values.lieu_execution !== null) updatePayload.lieu_execution = values.lieu_execution;
-    if (values.objet !== undefined && values.objet !== null) updatePayload.objet_consultation = values.objet;
-    if (values.delai_livraison !== undefined && values.delai_livraison !== null) {
+    if (activeDocKey !== 'lettre_consultation' && activeFieldNames.has('date_limite') && values.date_limite) {
+      updatePayload.date_limite_devis = values.date_limite;
+    }
+    if (activeDocKey !== 'lettre_consultation' && activeFieldNames.has('heure_limite') && values.heure_limite) {
+      updatePayload.heure_limite_devis = String(values.heure_limite).trim().slice(0, 5);
+    }
+    if (activeFieldNames.has('lieu_execution') && values.lieu_execution !== undefined && values.lieu_execution !== null) {
+      updatePayload.lieu_execution = String(values.lieu_execution).trim();
+    }
+    if (activeFieldNames.has('objet') && values.objet !== undefined && values.objet !== null) {
+      updatePayload.objet_consultation = String(values.objet).trim();
+    }
+    if (activeFieldNames.has('delai_livraison') && values.delai_livraison !== undefined && values.delai_livraison !== null && String(values.delai_livraison).trim() !== '') {
       const parsedDelai = parseInt(values.delai_livraison, 10);
-      if (!isNaN(parsedDelai) && parsedDelai > 0) updatePayload.delai_execution = parsedDelai;
+      if (!isNaN(parsedDelai) && parsedDelai > 0) {
+        updatePayload.delai_execution = parsedDelai;
+      }
+    }
+    if (activeFieldNames.has('art') && values.art !== undefined && values.art !== null) {
+      updatePayload.art = String(values.art).trim();
+    }
+    if (activeFieldNames.has('par') && values.par !== undefined && values.par !== null) {
+      updatePayload.par = String(values.par).trim();
+    }
+    if (activeFieldNames.has('lig') && values.lig !== undefined && values.lig !== null) {
+      updatePayload.lig = String(values.lig).trim();
+    }
+    if (updatePayload.art !== undefined || updatePayload.par !== undefined || updatePayload.lig !== undefined) {
+      const artVal = updatePayload.art ?? savedConsultation?.budget?.art ?? '';
+      const parVal = updatePayload.par ?? savedConsultation?.budget?.par ?? '';
+      const ligVal = updatePayload.lig ?? savedConsultation?.budget?.lig ?? '';
+      updatePayload.code_imputation = `${artVal}${parVal}${ligVal}`;
+    }
+    if (activeFieldNames.has('intitule') && values.intitule !== undefined && values.intitule !== null) {
+      const trimmedIntitule = String(values.intitule).trim();
+      updatePayload.intitule = trimmedIntitule;
+      updatePayload.type_prestation = trimmedIntitule;
     }
 
     if (documentId === 'fiche_engagement') {
-      const montantDepenseNeuf = Number(values.montant_depense_neuf) || 0;
+      const effectiveType = String(values.type_budget || savedConsultation?.type_budget || (isContrat ? 'Fonctionnement' : 'Investissement'));
+      const curIsFonctionnement = effectiveType.toLowerCase() === 'fonctionnement';
+      const montantDepenseNeuf = Number(values.montant_depense_neuf);
       const interetsMoratoires = Number((montantDepenseNeuf * 0.01).toFixed(2));
       const montantEngagerNeuf = Number((montantDepenseNeuf + interetsMoratoires).toFixed(2));
+
       const financialFields = [
-        'numero_engagement', 'reference_2', 's_lig', 'credit_ouvert_cp', 'credit_ouvert_ce',
-        'depenses_anterieures_ce', 'depenses_anterieures_cp', 'depenses_credits_engagement',
-        'depenses_credits_consolides', 'depenses_rap', 'montant_depense_neuf',
-        'interets_moratoires', 'montant_engager_neuf',
+        'numero_engagement',
+        'reference_2',
+        's_lig',
+        'credit_ouvert_cp',
+        'depenses_anterieures_cp',
+        'depenses_credits_consolides',
+        'depenses_rap',
+        'montant_depense_neuf',
+        ...(curIsFonctionnement ? [] : ['credit_ouvert_ce', 'depenses_anterieures_ce', 'depenses_credits_engagement']),
       ];
       financialFields.forEach((field) => {
-        if (values[field] !== undefined) updatePayload[field] = values[field] === '' ? null : values[field];
+        if (values[field] !== undefined) {
+          updatePayload[field] = values[field] === '' ? null : values[field];
+        }
       });
+      if (curIsFonctionnement) {
+        updatePayload.credit_ouvert_ce = null;
+        updatePayload.depenses_anterieures_ce = null;
+        updatePayload.depenses_credits_engagement = null;
+      }
       updatePayload.interets_moratoires = interetsMoratoires;
       updatePayload.montant_engager_neuf = montantEngagerNeuf;
-      if (values.s_lig !== undefined) updatePayload.s_lig = values.s_lig;
       if (isConventionActive) {
-        const curType = String(values.type_budget || savedConsultation?.type_budget || (isContrat ? 'Fonctionnement' : 'Investissement'));
-        const curIsContrat = curType.toLowerCase() === 'fonctionnement';
-        updatePayload.type_budget = curIsContrat ? 'Fonctionnement' : 'Investissement';
-        updatePayload.mode_engagement = curIsContrat ? 'Contrat' : 'Convention';
+        updatePayload.type_budget = curIsFonctionnement ? 'Fonctionnement' : 'Investissement';
+        updatePayload.mode_engagement = curIsFonctionnement ? 'Contrat' : 'Convention';
       }
     }
 
-    const chosenAttributaire = values.attributaire 
-      || values.titulaire_nom 
-      || values.societe 
-      || documentForms['pv_ouverture_convention']?.attributaire 
-      || documentForms['pv_ouverture_attribution']?.attributaire 
-      || documentForms['bon_commande']?.titulaire_nom;
-    if (chosenAttributaire && typeof chosenAttributaire === 'string' && chosenAttributaire.trim() !== '') {
-      try {
-        const nomTrimmed = chosenAttributaire.trim();
-        const fRes = await api.get(`/fournisseurs?raison_sociale=${encodeURIComponent(nomTrimmed)}`);
-        let fournisseurId = Array.isArray(fRes.data) && fRes.data.length > 0 ? fRes.data[0]?.id : null;
+    const chosenAttributaire = values.attributaire
+      || values.titulaire_nom
+      || values.societe
+      || documentForms.pv_ouverture_convention?.attributaire
+      || documentForms.pv_ouverture_attribution?.attributaire
+      || documentForms.bon_commande?.titulaire_nom
+      || '';
+    const nomTrimmed = typeof chosenAttributaire === 'string' ? chosenAttributaire.trim() : '';
 
-        if (!fournisseurId) {
-          const newFournisseur = await api.post('/fournisseurs', {
-            raison_sociale: nomTrimmed,
-            ice: '00' + Math.floor(1000000000000 + Math.random() * 9000000000000),
-            if: '00000000',
-            adresse: 'Siège social',
-            ville: 'Rabat',
-            telephone: '0500000000',
-            email: `contact@${nomTrimmed.toLowerCase().replace(/[^a-z0-9]/g, '') || 'fournisseur'}.ma`,
-            domaine_activite: 'Prestations',
-          });
-          fournisseurId = newFournisseur.data?.id;
+    if (nomTrimmed !== '') {
+      updatePayload.societe = nomTrimmed;
+      updatePayload.titulaire_nom = nomTrimmed;
+      updatePayload.beneficiaire = nomTrimmed;
+
+      try {
+        const normTarget = nomTrimmed.toLowerCase();
+        let matchedFournisseur = availableFournisseurs.find(
+          (f) => String(f?.raison_sociale || '').trim().toLowerCase() === normTarget
+        ) || null;
+
+        if (!matchedFournisseur && String(savedConsultation?.fournisseur?.raison_sociale || '').trim().toLowerCase() === normTarget) {
+          matchedFournisseur = savedConsultation.fournisseur;
         }
 
-        if (fournisseurId) {
-          updatePayload.fournisseur_id = fournisseurId;
+        if (!matchedFournisseur) {
+          const fRes = await api.get(`/fournisseurs?raison_sociale=${encodeURIComponent(nomTrimmed)}`);
+          const results = Array.isArray(fRes.data) ? fRes.data : [];
+          matchedFournisseur = results.find(
+            (f) => String(f?.raison_sociale || '').trim().toLowerCase() === normTarget
+          ) || null;
+        }
 
-          const addressToSave = values.adresse_societe || values.adresse_1 || documentForms['bon_commande']?.adresse_societe;
-          const villeToSave = values.ville_societe || values.ville_1 || documentForms['bon_commande']?.ville_societe;
-          if (addressToSave || villeToSave) {
+        const nextAdresse = String(values.adresse_societe || values.adresse_1 || documentForms.bon_commande?.adresse_societe || '').trim();
+        const nextVille = String(values.ville_societe || values.ville_1 || documentForms.bon_commande?.ville_societe || '').trim();
+        const nextIce = String(values.ice || documentForms.bon_commande?.ice || '').trim();
+        const nextIf = String(values.if || values.identifiant_fiscal || documentForms.bon_commande?.if || '').trim();
+        const nextPatente = String(values.patente || documentForms.bon_commande?.patente || '').trim();
+        const nextCnss = String(values.cnss || documentForms.bon_commande?.cnss || '').trim();
+        const nextRib = String(values.rib || documentForms.bon_commande?.rib || '').trim();
+        const nextTel = String(values.telephone || '').trim();
+
+        if (matchedFournisseur?.id) {
+          updatePayload.fournisseur_id = matchedFournisseur.id;
+
+          const resolvedAdresse = nextAdresse || matchedFournisseur.adresse || '';
+          const resolvedVille = nextVille || matchedFournisseur.ville || '';
+          const resolvedIce = nextIce || matchedFournisseur.ice || '';
+          const resolvedIf = nextIf || matchedFournisseur.if || '';
+          const resolvedTel = nextTel || matchedFournisseur.telephone || '';
+
+          const hasSupplierChanges = (
+            (nextAdresse && nextAdresse !== (matchedFournisseur.adresse || '')) ||
+            (nextVille && nextVille !== (matchedFournisseur.ville || '')) ||
+            (nextIce && nextIce !== (matchedFournisseur.ice || '')) ||
+            (nextIf && nextIf !== (matchedFournisseur.if || '')) ||
+            (nextPatente && nextPatente !== (matchedFournisseur.patente || '')) ||
+            (nextCnss && nextCnss !== (matchedFournisseur.cnss || '')) ||
+            (nextRib && nextRib !== (matchedFournisseur.rib || ''))
+          );
+
+          if (hasSupplierChanges && resolvedIce && resolvedIf && resolvedAdresse && resolvedVille && resolvedTel) {
             try {
-              await api.put(`/fournisseurs/${fournisseurId}`, {
+              const updatedFRes = await api.put(`/fournisseurs/${matchedFournisseur.id}`, {
                 raison_sociale: nomTrimmed,
-                ...(addressToSave ? { adresse: addressToSave } : {}),
-                ...(villeToSave ? { ville: villeToSave } : {}),
+                ice: resolvedIce,
+                if: resolvedIf,
+                adresse: resolvedAdresse,
+                ville: resolvedVille,
+                telephone: resolvedTel,
+                ...(nextPatente || matchedFournisseur.patente ? { patente: nextPatente || matchedFournisseur.patente } : {}),
+                ...(nextCnss || matchedFournisseur.cnss ? { cnss: nextCnss || matchedFournisseur.cnss } : {}),
+                ...(nextRib || matchedFournisseur.rib ? { rib: nextRib || matchedFournisseur.rib } : {}),
               });
+              if (updatedFRes.data?.id) {
+                setAvailableFournisseurs((prev) => prev.map((f) => (f.id === updatedFRes.data.id ? updatedFRes.data : f)));
+              }
             } catch (err) {
-              console.warn('Erreur mise à jour adresse du fournisseur:', err);
+              console.warn('Erreur mise à jour informations fournisseur:', err);
             }
+          }
+        } else if (nextIce && nextIf && nextAdresse && nextVille && nextTel) {
+          const newFournisseur = await api.post('/fournisseurs', {
+            raison_sociale: nomTrimmed,
+            ice: nextIce,
+            if: nextIf,
+            adresse: nextAdresse,
+            ville: nextVille,
+            telephone: nextTel,
+            ...(nextPatente ? { patente: nextPatente } : {}),
+            ...(nextCnss ? { cnss: nextCnss } : {}),
+            ...(nextRib ? { rib: nextRib } : {}),
+          });
+          if (newFournisseur.data?.id) {
+            updatePayload.fournisseur_id = newFournisseur.data.id;
+            setAvailableFournisseurs((prev) => [newFournisseur.data, ...prev.filter((f) => f.id !== newFournisseur.data.id)]);
           }
         }
       } catch (e) {
@@ -2781,65 +3377,124 @@ const BonCommandePlateforme = () => {
     try {
       if (Object.keys(updatePayload).length > 0) {
         const response = await api.put(`/consultations/${savedConsultation.id}`, updatePayload);
-        if (response.data?.consultation) {
-          setSavedConsultation(response.data.consultation);
+        const updatedConsult = response.data?.consultation || (response.data?.id ? response.data : null);
+        if (updatedConsult) {
+          setSavedConsultation(updatedConsult);
+          setConsultationsList((prev) => prev.map((c) => (c.id === updatedConsult.id ? updatedConsult : c)));
+        }
+      }
+
+      if (documentId === 'decision_commission_ouverture' || documentId === 'pv_ouverture_attribution' || documentId === 'pv_ouverture_convention') {
+        const openMembres = resolveCommissionMembres(documentId, documentForms);
+        const openDate = values.date_reunion || documentForms.decision_commission_ouverture?.date_reunion || '';
+        const openHeure = String(values.heure_reunion || documentForms.decision_commission_ouverture?.heure_reunion || '').slice(0, 5);
+        const openLieu = String(values.lieu_reunion || documentForms.decision_commission_ouverture?.lieu_reunion || '').trim();
+        const presMember = Array.isArray(openMembres)
+          ? openMembres.find((m) => m && /pr[eé]sident/iu.test(String(m.qualite ?? m.fonction ?? '')))
+          : null;
+        const presidentName = presMember ? String(presMember.nom || presMember.nom_prenom || '').trim() : '';
+
+        const commRes = await api.post(`/consultations/${savedConsultation.id}/commission`, {
+          date_reunion: openDate,
+          heure_reunion: openHeure,
+          lieu_reunion: openLieu,
+          ...(presidentName ? { president_commission: presidentName } : {}),
+          membres_commission: openMembres,
+        });
+        if (commRes.data?.consultation) {
+          setSavedConsultation((prev) => ({ ...(prev || {}), ...commRes.data.consultation }));
+          setConsultationsList((prev) => prev.map((c) => (c.id === commRes.data.consultation.id ? { ...c, ...commRes.data.consultation } : c)));
         }
       }
 
       if (documentId === 'decision_commission_reception' || documentId === 'pv_reception') {
+        const isPvReception = documentId === 'pv_reception';
+        const decRec = documentForms.decision_commission_reception || {};
+        const recMembres = resolveCommissionMembres(documentId, documentForms);
         const recData = {
-          numero_bc: values.numero_bc !== undefined ? values.numero_bc : (documentForms.decision_commission_reception?.numero_bc || ''),
-          numero_decision: values.numero_decision !== undefined ? values.numero_decision : (documentForms.decision_commission_reception?.numero_decision || ''),
-          type_reception: values.type_reception || documentForms.decision_commission_reception?.type_reception || 'définitive',
-          date_reception_definitive: values.date_reception_definitive || documentForms.decision_commission_reception?.date_reception_definitive || null,
-          periode_du: values.periode_du || documentForms.decision_commission_reception?.periode_du || null,
-          periode_au: values.periode_au || documentForms.decision_commission_reception?.periode_au || null,
-          prestations_receptionnees: values.prestations_receptionnees || documentForms.decision_commission_reception?.prestations_receptionnees || null,
-          date_decision: values.date_decision || values.date_document || documentForms.decision_commission_reception?.date_document,
-          date_reunion: values.date_reunion || documentForms.decision_commission_reception?.date_reunion,
-          heure_reunion: values.heure_reunion || documentForms.decision_commission_reception?.heure_reunion,
-          heure_fin: values.heure_fin || documentForms.decision_commission_reception?.heure_fin,
-          lieu_reunion: values.lieu_reunion || documentForms.decision_commission_reception?.lieu_reunion,
-          membres_commission: values.membres_commission || documentForms.decision_commission_reception?.membres_commission,
+          is_pv_reception: isPvReception,
+          numero_bc: values.numero_bc !== undefined ? values.numero_bc : (decRec.numero_bc || ''),
+          numero_decision: values.numero_decision !== undefined ? values.numero_decision : (decRec.numero_decision || ''),
+          type_reception: values.type_reception || decRec.type_reception || '',
+          date_reception_definitive: values.date_reception_definitive || decRec.date_reception_definitive || null,
+          date_decision: values.date_decision || values.date_document || decRec.date_document || '',
+          date_reunion: values.date_reunion || decRec.date_reunion || '',
+          heure_reunion: String(values.heure_reunion || decRec.heure_reunion || '').slice(0, 5),
+          membres_commission: recMembres,
+          ...(values.lieu_reunion ? { lieu_reunion: values.lieu_reunion } : {}),
+          ...(isPvReception ? {
+            heure_fin: String(values.heure_fin || '').slice(0, 5),
+            periode_du: values.periode_du || null,
+            periode_au: values.periode_au || null,
+            prestations_receptionnees: values.prestations_receptionnees || null,
+          } : {}),
         };
-        try {
-          const recRes = await api.post(`/consultations/${savedConsultation.id}/reception-commission`, recData);
-          if (recRes.data?.consultation) {
-            setSavedConsultation(recRes.data.consultation);
-          }
-        } catch (recErr) {
-          console.warn('Erreur lors de la sauvegarde de la commission de réception:', recErr);
+        const recRes = await api.post(`/consultations/${savedConsultation.id}/reception-commission`, recData);
+        if (recRes.data?.consultation) {
+          setSavedConsultation(recRes.data.consultation);
+          setConsultationsList((prev) => prev.map((c) => (c.id === recRes.data.consultation.id ? recRes.data.consultation : c)));
         }
       }
 
-      if (Array.isArray(values.consistance_lignes) && values.consistance_lignes.length > 0) {
+      if (activeFieldNames.has('consistance_lignes') && Array.isArray(values.consistance_lignes) && values.consistance_lignes.length > 0) {
+        const allowZeroPu = documentId === 'avis_achat';
         const prestationsPayload = values.consistance_lignes.map((l) => ({
-          numero_prix: l.numero_prix || '1',
-          designation: l.designation || 'Prestation',
-          specification: l.specification || '',
-          unite: l.unite_mesure || 'Unite',
-          quantite: Number(l.quantite) || 1,
-          prix_unitaire_ht: Number(l.prix_unitaire_ht) || 0,
-          tva: Number(l.tva) || 20,
-          garantie_exigee: l.garantie_exigee || '',
+          numero_prix: l.numero_prix !== undefined && l.numero_prix !== null ? String(l.numero_prix).trim() : '',
+          designation: String(l.designation || '').trim(),
+          specification: String(l.specification || '').trim(),
+          unite: String(l.unite_mesure || '').trim(),
+          quantite: Number(l.quantite),
+          prix_unitaire_ht: (allowZeroPu && (l.prix_unitaire_ht === '' || l.prix_unitaire_ht === undefined || l.prix_unitaire_ht === null))
+            ? 0
+            : Number(l.prix_unitaire_ht),
+          tva: l.tva !== '' && l.tva !== undefined && l.tva !== null ? Number(l.tva) : 20,
+          garantie_exigee: String(l.garantie_exigee || '').trim(),
         }));
 
         const presRes = await api.post(`/consultations/${savedConsultation.id}/prestations`, { prestations: prestationsPayload });
         if (presRes.data?.consultation) {
-          setSavedConsultation(presRes.data.consultation);
+          setSavedConsultation((prev) => ({ ...(prev || {}), ...presRes.data.consultation }));
         }
       }
 
       if (isExplicitSave) {
         setSavedDocumentIds((prev) => new Set([...prev, documentId]));
         setMessage('Toutes les informations ont été enregistrées avec succès !');
-        setError('');
       }
+      setError('');
+      return true;
     } catch (err) {
       console.error('Erreur lors de la sauvegarde des champs en BD:', err);
-      if (isExplicitSave) {
-        setError(err.response?.data?.message || 'Erreur lors de l\'enregistrement en base de données.');
+      const backendErrors = err.response?.data?.errors;
+      if (backendErrors && typeof backendErrors === 'object') {
+        const mappedErrors = {};
+        const keyMap = {
+          objet_consultation: 'objet',
+          date_limite_devis: 'date_limite',
+          heure_limite_devis: 'heure_limite',
+          delai_execution: 'delai_livraison',
+          president_commission: 'membres_commission',
+          membres_commission: 'membres_commission',
+          prestations: 'consistance_lignes',
+          type_prestation: 'intitule',
+        };
+        Object.entries(backendErrors).forEach(([k, msgs]) => {
+          const baseKey = k.split('.')[0];
+          const targetKey = keyMap[baseKey] || baseKey;
+          if (!mappedErrors[targetKey] && Array.isArray(msgs) && msgs[0]) {
+            mappedErrors[targetKey] = msgs[0];
+          }
+        });
+        if (Object.keys(mappedErrors).length > 0) {
+          setFormErrors((prev) => ({
+            ...prev,
+            [documentId]: { ...(prev[documentId] || {}), ...mappedErrors },
+          }));
+        }
       }
+      setError(err.response?.data?.message || "Erreur lors de l'enregistrement en base de données.");
+      setMessage('');
+      return false;
     }
   };
 
@@ -2861,7 +3516,10 @@ const BonCommandePlateforme = () => {
     try {
       setDownloading(document.id);
       setError('');
-      await saveDocumentDataToDatabase(document.id, false);
+      const savedOk = await saveDocumentDataToDatabase(document.id, false);
+      if (!savedOk) {
+        return;
+      }
       const payload = { document_data: buildDocumentData(document.id) };
       const documentType = isConventionActive && document.id === 'avis_achat'
         ? 'lettre_consultation'
@@ -2987,7 +3645,7 @@ const BonCommandePlateforme = () => {
   ].map((section) => ({
     ...section,
     fields: selectedFields.filter((field) => {
-      if (field.condition && !field.condition(documentForms[selectedDocument.id], isConventionActive)) return false;
+      if (field.condition && !field.condition(documentForms[selectedDocument.id], isConventionActive, savedConsultation)) return false;
       if (selectedDocument.id === 'fiche_engagement' && String(savedConsultation?.type_budget || '').toLowerCase() === 'fonctionnement'
         && ['credit_ouvert_ce', 'depenses_anterieures_ce', 'depenses_credits_engagement', 'disponible_ce'].includes(field.name)) return false;
       const group = ['lettres_consultation'].includes(field.name) ? 'supplier'
@@ -3016,7 +3674,7 @@ const BonCommandePlateforme = () => {
         />
       )}
       {/* Sidebar */}
-      <aside className={`fixed inset-y-0 left-0 z-50 flex h-dvh w-72 shrink-0 flex-col bg-[#101B2D] border-r border-[#172B46] text-white transition-transform duration-300 lg:sticky lg:top-0 lg:h-screen lg:w-64 lg:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+      <aside className={`fixed inset-y-0 left-0 z-50 flex h-dvh w-72 shrink-0 flex-col bg-[#101B2D] border-r border-[#172B46] text-white transition-transform duration-300 lg:sticky lg:top-0 lg:h-screen lg:w-64 xl:w-72 lg:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="px-5 py-5 border-b border-white/10">
           <Link to={isConventionRoute ? '/convention' : '/bons-commande'} className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#087F5B] to-[#06694A] flex items-center justify-center font-black text-white text-xs shadow-md shadow-[#087F5B]/30 tracking-wider">ON</div>
@@ -3054,7 +3712,7 @@ const BonCommandePlateforme = () => {
         </nav>
 
         <div className="px-5 py-4 border-t border-white/10">
-          <UserMenu variant="dark" profileContext="saf" />
+          <UserMenu profileContext="saf" />
         </div>
       </aside>
 
@@ -3427,10 +4085,16 @@ const BonCommandePlateforme = () => {
                                   </p>
                                 </td>
                                 <td className="px-4 py-4 whitespace-nowrap">
-                                  {consultation.mode_engagement === 'Convention' || String(consultation.numero_consultation || '').toUpperCase().startsWith('CONV') ? (
-                                    <span className="inline-block rounded-full bg-[#E7F5EF] text-[#087F5B] border border-[#087F5B]/30 px-3 py-1 text-[11px] font-bold uppercase tracking-wide">
-                                      Convention
-                                    </span>
+                                  {isConventionConsultation(consultation) ? (
+                                    String(consultation.type_budget || '').trim().toLowerCase() === 'fonctionnement' || consultation.mode_engagement === 'Contrat' ? (
+                                      <span className="inline-block rounded-full bg-teal-50 text-teal-800 border border-teal-200 px-3 py-1 text-[11px] font-bold uppercase tracking-wide">
+                                        Contrat
+                                      </span>
+                                    ) : (
+                                      <span className="inline-block rounded-full bg-[#E7F5EF] text-[#087F5B] border border-[#087F5B]/30 px-3 py-1 text-[11px] font-bold uppercase tracking-wide">
+                                        Convention
+                                      </span>
+                                    )
                                   ) : consultation.mode_engagement === 'AO' || consultation.mode_engagement === "Appel d'offres" || consultation.mode_engagement === "Appel d'offre" ? (
                                     <span className="inline-block rounded-full bg-violet-50 text-violet-700 border border-violet-200 px-3 py-1 text-[11px] font-bold uppercase tracking-wide">
                                       Appel d'offres
@@ -3670,7 +4334,7 @@ const BonCommandePlateforme = () => {
                     </div>
                     <div className="bc-fields grid grid-cols-1 md:grid-cols-2 gap-5">
                       {section.fields.map((field) => {
-                        if (field.condition && !field.condition(documentForms[selectedDocument.id], isConventionActive)) {
+                        if (field.condition && !field.condition(documentForms[selectedDocument.id], isConventionActive, savedConsultation)) {
                           return null;
                         }
 
@@ -3684,21 +4348,7 @@ const BonCommandePlateforme = () => {
                         const hasError = !!formErrors[selectedDocument.id]?.[field.name];
 
                         if (field.type === 'prestations_partielles_table') {
-                          const srcPrestations = (savedConsultation?.prestations && savedConsultation.prestations.length > 0)
-                            ? savedConsultation.prestations
-                            : (prestations && prestations.filter((p) => p.designation?.trim()).length > 0 ? prestations.filter((p) => p.designation?.trim()) : []);
-
-                          const currentList = Array.isArray(documentForms[selectedDocument.id]?.prestations_receptionnees) && documentForms[selectedDocument.id].prestations_receptionnees.length > 0
-                            ? documentForms[selectedDocument.id].prestations_receptionnees
-                            : srcPrestations.map((p, idx) => ({
-                              id: p.id || idx,
-                              receptionne: true,
-                              numero_prix: p.numero_prix || (idx + 1),
-                              designation: p.designation || 'Prestation',
-                              unite: p.unite || p.unite_mesure || 'Unité',
-                              quantite: Number(p.quantite) || 1,
-                              quantite_receptionnee: Number(p.quantite) || 1,
-                            }));
+                          const currentList = resolvePrestationsReceptionnees(selectedDocument.id, documentForms);
 
                           const updateItem = (idx, key, val) => {
                             const updated = currentList.map((item, i) => (i === idx ? { ...item, [key]: val } : item));
@@ -3706,11 +4356,11 @@ const BonCommandePlateforme = () => {
                           };
 
                           return (
-                            <div key={`${selectedDocument.id}-${field.name}`} className="col-span-full bg-slate-50 border border-slate-200 rounded-2xl p-5 shadow-sm">
+                            <div key={`${selectedDocument.id}-${field.name}`} className={`col-span-full border rounded-2xl p-5 shadow-sm ${hasError ? 'bg-red-50/20 border-red-500' : 'bg-slate-50 border-slate-200'}`}>
                               <div className="flex items-center justify-between mb-3">
                                 <div>
                                   <label className="block text-xs font-semibold text-slate-800 uppercase tracking-wider flex items-center gap-2">
-                                    📦 {adaptEngagementText(field.label)} {field.required && !field.fromDb && <span className="text-red-600 font-bold ml-0.5">*</span>}
+                                    📦 {adaptEngagementText(field.label)} {field.required && !field.readOnly && <span className="text-red-600 font-bold ml-0.5">*</span>}
                                   </label>
                                   <p className="text-xs text-slate-500 mt-0.5">
                                     Cochez les désignations réceptionnées et ajustez la quantité réceptionnée (≤ quantité commandée).
@@ -3731,77 +4381,81 @@ const BonCommandePlateforme = () => {
                                     </tr>
                                   </thead>
                                   <tbody>
-                                    {currentList.map((item, idx) => (
-                                      <tr key={idx} className={`border-b border-slate-100 transition-all ${item.receptionne ? 'hover:bg-slate-50' : 'bg-slate-50/70 opacity-60'}`}>
-                                        <td className="py-2 px-3 text-center">
-                                          <input
-                                            type="checkbox"
-                                            checked={!!item.receptionne}
-                                            onChange={(e) => updateItem(idx, 'receptionne', e.target.checked)}
-                                            className="w-4 h-4 text-blue-600 rounded focus:ring-emerald-500 cursor-pointer"
-                                          />
-                                        </td>
-                                        <td className="py-2 px-3 text-center font-bold text-slate-700">
-                                          <input
-                                            type="text"
-                                            value={item.numero_prix !== undefined ? item.numero_prix : (idx + 1)}
-                                            disabled={!item.receptionne}
-                                            onChange={(e) => updateItem(idx, 'numero_prix', e.target.value)}
-                                            className="w-full px-2 py-1.5 rounded border border-slate-200 text-center text-xs font-bold text-slate-800 outline-none focus:border-blue-500 bg-white"
-                                          />
-                                        </td>
-                                        <td className="py-2 px-3 font-semibold text-slate-800">
-                                          {item.designation}
-                                        </td>
-                                        <td className="py-2 px-3 text-center font-medium text-slate-600">
-                                          {item.unite || 'Unité'}
-                                        </td>
-                                        <td className="py-2 px-3 text-center font-bold text-slate-700">
-                                          {item.quantite}
-                                        </td>
-                                        <td className="py-2 px-3 text-center">
-                                          <input
-                                            type="number"
-                                            min="0"
-                                            max={item.quantite}
-                                            disabled={!item.receptionne}
-                                            value={item.quantite_receptionnee !== undefined ? item.quantite_receptionnee : item.quantite}
-                                            onChange={(e) => {
-                                              const val = Math.min(Number(item.quantite) || 0, Math.max(0, Number(e.target.value) || 0));
-                                              updateItem(idx, 'quantite_receptionnee', val);
-                                            }}
-                                            className="w-20 px-2 py-1.5 rounded border border-slate-200 text-center text-xs font-bold text-blue-700 outline-none focus:border-blue-500 bg-white"
-                                          />
+                                    {currentList.length === 0 ? (
+                                      <tr>
+                                        <td colSpan="6" className="py-6 px-4 text-center text-xs text-slate-500">
+                                          Aucune prestation disponible dans ce dossier.
                                         </td>
                                       </tr>
-                                    ))}
+                                    ) : currentList.map((item, idx) => {
+                                      const badNum = hasError && item.receptionne && !String(item.numero_prix ?? '').trim();
+                                      const qteCmd = Number(item.quantite);
+                                      const qteRec = Number(item.quantite_receptionnee);
+                                      const badQte = hasError && item.receptionne && (item.quantite_receptionnee === '' || item.quantite_receptionnee === undefined || isNaN(qteRec) || qteRec < 0 || (!isNaN(qteCmd) && qteRec > qteCmd));
+                                      return (
+                                        <tr key={idx} className={`border-b border-slate-100 transition-all ${item.receptionne ? 'hover:bg-slate-50' : 'bg-slate-50/70 opacity-60'}`}>
+                                          <td className="py-2 px-3 text-center">
+                                            <input
+                                              type="checkbox"
+                                              checked={!!item.receptionne}
+                                              onChange={(e) => updateItem(idx, 'receptionne', e.target.checked)}
+                                              className="w-4 h-4 text-blue-600 rounded focus:ring-emerald-500 cursor-pointer"
+                                            />
+                                          </td>
+                                          <td className="py-2 px-3 text-center font-bold text-slate-700">
+                                            <input
+                                              type="text"
+                                              value={item.numero_prix !== undefined ? item.numero_prix : (idx + 1)}
+                                              disabled={!item.receptionne}
+                                              onChange={(e) => updateItem(idx, 'numero_prix', e.target.value)}
+                                              className={`w-full px-2 py-1.5 rounded border text-center text-xs font-bold text-slate-800 outline-none bg-white ${badNum ? 'border-red-500 bg-red-50/40' : 'border-slate-200 focus:border-blue-500'}`}
+                                            />
+                                          </td>
+                                          <td className="py-2 px-3 font-semibold text-slate-800">
+                                            {item.designation}
+                                          </td>
+                                          <td className="py-2 px-3 text-center font-medium text-slate-600">
+                                            {item.unite || 'Unité'}
+                                          </td>
+                                          <td className="py-2 px-3 text-center font-bold text-slate-700">
+                                            {item.quantite}
+                                          </td>
+                                          <td className="py-2 px-3 text-center">
+                                            <input
+                                              type="number"
+                                              min="0"
+                                              max={item.quantite}
+                                              disabled={!item.receptionne}
+                                              value={item.quantite_receptionnee !== undefined ? item.quantite_receptionnee : item.quantite}
+                                              onChange={(e) => {
+                                                const rawVal = e.target.value;
+                                                if (rawVal === '') {
+                                                  updateItem(idx, 'quantite_receptionnee', '');
+                                                  return;
+                                                }
+                                                const val = Math.min(Number(item.quantite) || 0, Math.max(0, Number(rawVal) || 0));
+                                                updateItem(idx, 'quantite_receptionnee', val);
+                                              }}
+                                              className={`w-20 px-2 py-1.5 rounded border text-center text-xs font-bold text-blue-700 outline-none bg-white ${badQte ? 'border-red-500 bg-red-50/40' : 'border-slate-200 focus:border-blue-500'}`}
+                                            />
+                                          </td>
+                                        </tr>
+                                      );
+                                    })}
                                   </tbody>
                                 </table>
                               </div>
+                              {hasError && (
+                                <span role="alert" className="mt-2 block text-xs font-medium text-red-600">
+                                  {formErrors[selectedDocument.id][field.name]}
+                                </span>
+                              )}
                             </div>
                           );
                         }
 
                         if (field.type === 'consistance_table') {
-                          const rawLignes = documentForms[selectedDocument.id]?.[field.name] || documentForms['avis_achat']?.[field.name] || documentForms['bon_commande']?.[field.name];
-                          const srcPrestations = savedConsultation?.prestations?.length > 0
-                            ? savedConsultation.prestations
-                            : prestations.filter(p => p.designation?.trim());
-
-                          const initialLignes = srcPrestations.length > 0
-                            ? srcPrestations.map((p, i) => ({
-                              numero_prix: p.numero_prix || String(i + 1),
-                              designation: p.designation || '',
-                              specification: p.specification || p.designation || '',
-                              unite_mesure: p.unite || p.unite_mesure || 'Unite',
-                              quantite: String(p.quantite || 1),
-                              prix_unitaire_ht: String(p.prix_unitaire_ht || 0),
-                              tva: String(p.tva || 20),
-                              garantie_exigee: p.garantie_exigee || '',
-                            }))
-                            : [{ numero_prix: '1', designation: '', specification: '', unite_mesure: 'Unite', quantite: '1', prix_unitaire_ht: '0', tva: '20', garantie_exigee: '' }];
-
-                          const lignes = Array.isArray(rawLignes) && rawLignes.length > 0 ? rawLignes : initialLignes;
+                          const lignes = resolveConsistanceLignes(selectedDocument.id, documentForms);
 
                           const updateLigne = (idx, key, val) => {
                             const updated = lignes.map((l, i) => {
@@ -3818,7 +4472,7 @@ const BonCommandePlateforme = () => {
                             const firstTva = lignes[0]?.tva ?? '20';
                             const updated = [
                               ...lignes,
-                              { numero_prix: String(lignes.length + 1), designation: '', specification: '', unite_mesure: 'Unite', quantite: '1', prix_unitaire_ht: '0', tva: String(firstTva), garantie_exigee: '' },
+                              { numero_prix: String(lignes.length + 1), designation: '', specification: '', unite_mesure: 'Unite', quantite: '', prix_unitaire_ht: '', tva: String(firstTva), garantie_exigee: '' },
                             ];
                             handleDocumentFieldChange(selectedDocument.id, field.name, updated);
                             if (selectedDocument.id !== 'avis_achat') handleDocumentFieldChange('avis_achat', field.name, updated);
@@ -3841,16 +4495,24 @@ const BonCommandePlateforme = () => {
                             : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-9';
 
                           const isCellBlank = (v) => v === undefined || v === null || String(v).trim() === '';
-                          const getCellInputCls = (v) => `w-full px-2 py-2 rounded-lg border ${hasError && isCellBlank(v)
-                            ? 'border-red-500 bg-red-50/40 text-red-900 focus:ring-1 focus:ring-red-300'
-                            : 'border-slate-200 bg-white text-slate-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-100'
+                          const isPositiveCellInvalid = (v) => isCellBlank(v) || isNaN(Number(v)) || Number(v) <= 0;
+                          const getCellInputCls = (v, mode = 'required') => {
+                            const invalid = hasError && (
+                              mode === 'positive' ? isPositiveCellInvalid(v)
+                                : mode === 'optional' ? false
+                                  : isCellBlank(v)
+                            );
+                            return `w-full px-2 py-2 rounded-lg border ${invalid
+                              ? 'border-red-500 bg-red-50/40 text-red-900 focus:ring-1 focus:ring-red-300'
+                              : 'border-slate-200 bg-white text-slate-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-100'
                             } text-xs font-semibold outline-none transition-all`;
+                          };
 
                           return (
-                            <div key={`${selectedDocument.id}-${field.name}`} className="col-span-full">
+                            <div key={`${selectedDocument.id}-${field.name}`} className={`col-span-full rounded-2xl p-4 border ${hasError ? 'border-red-500 bg-red-50/20' : 'border-transparent'}`}>
                               <div className="flex items-center justify-between mb-3">
                                 <span className="text-xs font-semibold text-slate-800 uppercase tracking-wider flex items-center gap-2">
-                                  📋 {adaptEngagementText(field.label)} {field.required && !field.fromDb && <span className="text-red-600 font-bold ml-0.5">*</span>}
+                                  📋 {adaptEngagementText(field.label)} {field.required && !field.readOnly && <span className="text-red-600 font-bold ml-0.5">*</span>}
                                 </span>
                                 <button
                                   type="button"
@@ -3880,19 +4542,19 @@ const BonCommandePlateforme = () => {
                                     <div className={`grid ${gridCols} gap-3 pr-8`}>
                                       <div>
                                         <span style={colStyle}>N° Prix</span>
-                                        <input type="text" value={ligne.numero_prix} onChange={e => updateLigne(idx, 'numero_prix', e.target.value)} className={getCellInputCls(ligne.numero_prix)} placeholder="1" />
+                                        <input type="text" value={ligne.numero_prix ?? ''} onChange={e => updateLigne(idx, 'numero_prix', e.target.value)} className={getCellInputCls(ligne.numero_prix)} placeholder="1" />
                                       </div>
                                       <div className="col-span-2">
                                         <span style={colStyle}>Désignation</span>
-                                        <input type="text" value={ligne.designation} onChange={e => updateLigne(idx, 'designation', e.target.value)} className={getCellInputCls(ligne.designation)} placeholder="Soudeuse à pédale" />
+                                        <input type="text" value={ligne.designation ?? ''} onChange={e => updateLigne(idx, 'designation', e.target.value)} className={getCellInputCls(ligne.designation)} placeholder="Désignation de la prestation" />
                                       </div>
                                       <div>
                                         <span style={colStyle}>Unité</span>
-                                        <input type="text" value={ligne.unite_mesure} onChange={e => updateLigne(idx, 'unite_mesure', e.target.value)} className={getCellInputCls(ligne.unite_mesure)} placeholder="Unite, Forfait" />
+                                        <input type="text" value={ligne.unite_mesure ?? ''} onChange={e => updateLigne(idx, 'unite_mesure', e.target.value)} className={getCellInputCls(ligne.unite_mesure)} placeholder="Unite, Forfait" />
                                       </div>
                                       <div>
                                         <span style={colStyle}>Quantité</span>
-                                        <input type="number" value={ligne.quantite} onChange={e => updateLigne(idx, 'quantite', e.target.value)} className={getCellInputCls(ligne.quantite)} placeholder="1" min="1" />
+                                        <input type="number" value={ligne.quantite ?? ''} onChange={e => updateLigne(idx, 'quantite', e.target.value)} className={getCellInputCls(ligne.quantite, 'positive')} placeholder="1" min="1" />
                                       </div>
                                       {isAvisAchat && (
                                         <div>
@@ -3914,7 +4576,7 @@ const BonCommandePlateforme = () => {
                                         <>
                                           <div>
                                             <span style={colStyle}>P.U HT (DH)</span>
-                                            <input type="number" value={ligne.prix_unitaire_ht || ''} onChange={e => updateLigne(idx, 'prix_unitaire_ht', e.target.value)} className={getCellInputCls(ligne.prix_unitaire_ht)} placeholder="0.00" step="0.01" />
+                                            <input type="number" value={ligne.prix_unitaire_ht ?? ''} onChange={e => updateLigne(idx, 'prix_unitaire_ht', e.target.value)} className={getCellInputCls(ligne.prix_unitaire_ht, 'positive')} placeholder="0.00" step="0.01" />
                                           </div>
                                           <div>
                                             <span style={colStyle}>Montant HT</span>
@@ -3924,20 +4586,23 @@ const BonCommandePlateforme = () => {
                                       )}
                                       <div className="col-span-2">
                                         <span style={colStyle}>Garantie Exigée</span>
-                                        <input type="text" value={ligne.garantie_exigee || ''} onChange={e => updateLigne(idx, 'garantie_exigee', e.target.value)} className={getCellInputCls(ligne.garantie_exigee)} placeholder="Facultative (ex: 12 mois...)" />
+                                        <input type="text" value={ligne.garantie_exigee || ''} onChange={e => updateLigne(idx, 'garantie_exigee', e.target.value)} className={getCellInputCls(ligne.garantie_exigee, 'optional')} placeholder="Facultative (ex: 12 mois...)" />
                                       </div>
                                     </div>
                                   </div>
                                 ))}
                               </div>
+                              {hasError && (
+                                <span role="alert" className="mt-2 block text-xs font-medium text-red-600">
+                                  {formErrors[selectedDocument.id][field.name]}
+                                </span>
+                              )}
                             </div>
                           );
                         }
 
                         if (field.type === 'concurrents_table') {
-                          const list = Array.isArray(documentForms[selectedDocument.id]?.[field.name])
-                            ? documentForms[selectedDocument.id][field.name]
-                            : [];
+                          const list = resolveConcurrentsList(selectedDocument.id, documentForms);
 
                           const currentAttr = documentForms[selectedDocument.id]?.attributaire || '';
                           const syncRefusedWithAttr = (updatedList) => {
@@ -4166,10 +4831,10 @@ const BonCommandePlateforme = () => {
                           };
 
                           return (
-                            <div key={`${selectedDocument.id}-${field.name}`} className="col-span-full bg-slate-50 border border-slate-200 rounded-2xl p-5 shadow-sm">
+                            <div key={`${selectedDocument.id}-${field.name}`} className={`col-span-full border rounded-2xl p-5 shadow-sm ${hasError ? 'bg-red-50/20 border-red-500' : 'bg-slate-50 border-slate-200'}`}>
                               <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
                                 <label className="block text-xs font-semibold text-slate-800 uppercase tracking-wider flex items-center gap-2">
-                                  🏢 {adaptEngagementText(field.label)} {field.required && !field.fromDb && <span className="text-red-600 font-bold ml-0.5">*</span>}
+                                  🏢 {adaptEngagementText(field.label)} {field.required && !field.readOnly && <span className="text-red-600 font-bold ml-0.5">*</span>}
                                 </label>
 
                                 <div className="flex flex-wrap items-center gap-2">
@@ -4204,9 +4869,18 @@ const BonCommandePlateforme = () => {
                                     </tr>
                                   </thead>
                                   <tbody>
-                                    {list.map((c, idx) => {
+                                    {list.length === 0 ? (
+                                      <tr>
+                                        <td colSpan="4" className="py-6 px-4 text-center text-xs text-slate-500">
+                                          Aucun concurrent enregistré. Importez un fichier Excel / CSV ou cliquez sur « Ajouter un concurrent ».
+                                        </td>
+                                      </tr>
+                                    ) : list.map((c, idx) => {
                                       const rank = c.classement || idx + 1;
                                       const isWinner = rank === 1;
+                                      const badNom = hasError && !String(c?.nom ?? '').trim();
+                                      const amtVal = Number(c?.montant);
+                                      const badMontant = hasError && (c?.montant === '' || c?.montant === undefined || c?.montant === null || isNaN(amtVal) || amtVal <= 0);
                                       return (
                                         <tr key={idx} className={`border-b border-slate-100 hover:bg-slate-50 transition-all ${isWinner ? 'bg-blue-50/50' : ''}`}>
                                           <td className="py-2 px-3 text-center font-bold">
@@ -4220,19 +4894,20 @@ const BonCommandePlateforme = () => {
                                           <td className="py-2 px-3">
                                             <input
                                               type="text"
-                                              value={c.nom}
+                                              value={c.nom ?? ''}
                                               onChange={(e) => updateConcurrent(idx, 'nom', e.target.value)}
-                                              placeholder="Ex: CATALYSSIA BUSINESS COMPANY SARL"
-                                              className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white font-semibold text-slate-800 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-100"
+                                              placeholder="Raison sociale du concurrent"
+                                              className={`w-full px-2.5 py-1.5 rounded-lg border font-semibold outline-none ${badNom ? 'border-red-500 bg-red-50/40 text-red-900 focus:border-red-500 focus:ring-1 focus:ring-red-200' : 'border-slate-200 bg-white text-slate-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-100'}`}
                                             />
                                           </td>
                                           <td className="py-2 px-3">
                                             <input
                                               type="number"
-                                              value={c.montant}
+                                              step="0.01"
+                                              value={c.montant ?? ''}
                                               onChange={(e) => updateConcurrent(idx, 'montant', e.target.value)}
-                                              placeholder="45313.4"
-                                              className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white font-semibold text-slate-800 text-right outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-100"
+                                              placeholder="0.00"
+                                              className={`w-full px-2.5 py-1.5 rounded-lg border font-semibold text-right outline-none ${badMontant ? 'border-red-500 bg-red-50/40 text-red-900 focus:border-red-500 focus:ring-1 focus:ring-red-200' : 'border-slate-200 bg-white text-slate-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-100'}`}
                                             />
                                           </td>
                                           <td className="py-2 px-3 text-center">
@@ -4253,6 +4928,11 @@ const BonCommandePlateforme = () => {
                                   </tbody>
                                 </table>
                               </div>
+                              {hasError && (
+                                <span role="alert" className="mt-2 block text-xs font-medium text-red-600">
+                                  {formErrors[selectedDocument.id][field.name]}
+                                </span>
+                              )}
                             </div>
                           );
                         }
@@ -4265,9 +4945,7 @@ const BonCommandePlateforme = () => {
                               ? rawVal.split(',').map((s) => ({ nom: s.trim(), motif: "Refus d'invitation du maître d'ouvrage" }))
                               : [];
 
-                          const concurrentsList = Array.isArray(documentForms[selectedDocument.id]?.concurrents)
-                            ? documentForms[selectedDocument.id].concurrents
-                            : [];
+                          const concurrentsList = resolveConcurrentsList(selectedDocument.id, documentForms);
 
                           const standardMotifs = [
                             "Refus d'invitation du maître d'ouvrage",
@@ -4332,10 +5010,10 @@ const BonCommandePlateforme = () => {
                           };
 
                           return (
-                            <div key={`${selectedDocument.id}-${field.name}`} className="col-span-full bg-slate-50 border border-slate-200 rounded-2xl p-5 shadow-sm">
+                            <div key={`${selectedDocument.id}-${field.name}`} className={`col-span-full border rounded-2xl p-5 shadow-sm ${hasError ? 'bg-red-50/20 border-red-500' : 'bg-slate-50 border-slate-200'}`}>
                               <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
                                 <label className="block text-xs font-semibold text-slate-800 uppercase tracking-wider flex items-center gap-2">
-                                  ❌ {adaptEngagementText(field.label)} {field.required && !field.fromDb && <span className="text-red-600 font-bold ml-0.5">*</span>}
+                                  ❌ {adaptEngagementText(field.label)} {field.required && !field.readOnly && <span className="text-red-600 font-bold ml-0.5">*</span>}
                                 </label>
 
                                 <div className="flex flex-wrap items-center gap-2">
@@ -4386,7 +5064,7 @@ const BonCommandePlateforme = () => {
                                             type="text"
                                             value={item.nom}
                                             onChange={(e) => updateRefused(idx, 'nom', e.target.value)}
-                                            placeholder="Ex: TOPOGRAPHY CONSULTING"
+                                            placeholder="Raison sociale"
                                             className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold text-slate-800 outline-none focus:border-red-500"
                                           />
                                         )}
@@ -4429,21 +5107,22 @@ const BonCommandePlateforme = () => {
                                   </div>
                                 )}
                               </div>
+                              {hasError && (
+                                <span role="alert" className="mt-2 block text-xs font-medium text-red-600">
+                                  {formErrors[selectedDocument.id][field.name]}
+                                </span>
+                              )}
                             </div>
                           );
                         }
 
                         if (field.type === 'attributaire_selector') {
                           const docId = selectedDocument.id;
-                          const concurrentsList = (Array.isArray(documentForms[docId]?.concurrents) && documentForms[docId].concurrents.length > 0)
-                            ? documentForms[docId].concurrents
-                            : ((Array.isArray(documentForms[docId]?.fournisseurs_consultes) && documentForms[docId].fournisseurs_consultes.length > 0)
-                                ? documentForms[docId].fournisseurs_consultes
-                                : (Array.isArray(documentForms.pv_ouverture_convention?.fournisseurs_consultes)
-                                    ? documentForms.pv_ouverture_convention.fournisseurs_consultes
-                                    : (Array.isArray(documentForms.pv_ouverture_convention?.concurrents)
-                                        ? documentForms.pv_ouverture_convention.concurrents
-                                        : [])));
+                          const resolvedConcurrents = resolveConcurrentsList(docId, documentForms);
+                          const concurrentsList = (resolvedConcurrents.length > 0
+                            ? resolvedConcurrents
+                            : resolveFournisseursConsultes(docId, documentForms)
+                          ).filter((c) => String(c?.nom || '').trim() !== '');
                           const selectedAttr = documentForms[docId]?.[field.name] || documentForms.pv_ouverture_convention?.[field.name] || '';
                           const motifAttr = documentForms[docId]?.motif_attribution || documentForms.pv_ouverture_convention?.motif_attribution || '';
 
@@ -4501,10 +5180,10 @@ const BonCommandePlateforme = () => {
                           };
 
                           return (
-                            <div key={`${selectedDocument.id}-${field.name}`} className="col-span-full bg-slate-50 border border-slate-200 rounded-2xl p-5 shadow-sm space-y-3">
+                            <div key={`${selectedDocument.id}-${field.name}`} className={`col-span-full border rounded-2xl p-5 shadow-sm space-y-3 ${hasError ? 'bg-red-50/20 border-red-500' : 'bg-slate-50 border-slate-200'}`}>
                               <div className="flex items-center justify-between">
                                 <label className="block text-xs font-semibold text-slate-800 uppercase tracking-wider flex items-center gap-2">
-                                  🏆 {adaptEngagementText(field.label)} {field.required && !field.fromDb && <span className="text-red-600 font-bold ml-0.5">*</span>}
+                                  🏆 {adaptEngagementText(field.label)} {field.required && !field.readOnly && <span className="text-red-600 font-bold ml-0.5">*</span>}
                                 </label>
                                 {selectedAttr && (
                                   <span className="px-2.5 py-1 bg-blue-100 text-blue-800 border border-blue-300 rounded-full text-[11px] font-semibold">
@@ -4515,13 +5194,14 @@ const BonCommandePlateforme = () => {
 
                               <select
                                 value={selectedAttr}
+                                aria-invalid={hasError || undefined}
                                 onChange={handleSelectAttr}
-                                className="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-800 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                                className={`w-full px-3 py-2.5 border rounded-xl text-xs font-bold text-slate-800 outline-none focus:ring-2 ${hasError ? 'border-red-500 bg-red-50/40 focus:border-red-500 focus:ring-red-100' : 'bg-white border-slate-300 focus:border-blue-500 focus:ring-blue-100'}`}
                               >
                                 <option value="">-- Sélectionner la société retenue parmi les concurrents --</option>
                                 {concurrentsList.map((c, i) => (
                                   <option key={i} value={c.nom}>
-                                    {c.classement || i + 1}. {c.nom} {c.montant ? `(${Number(c.montant).toLocaleString('fr-FR')} DH TTC)` : ''}
+                                    {c.classement || i + 1}. {c.nom} {(c.montant || c.montant_apres) ? `(${Number(c.montant || c.montant_apres).toLocaleString('fr-FR')} DH TTC)` : ''}
                                   </option>
                                 ))}
                               </select>
@@ -4539,6 +5219,11 @@ const BonCommandePlateforme = () => {
                                 />
                               </div>
 
+                              {hasError && (
+                                <span role="alert" className="mt-2 block text-xs font-medium text-red-600">
+                                  {formErrors[selectedDocument.id][field.name]}
+                                </span>
+                              )}
                             </div>
                           );
                         }
@@ -4593,6 +5278,7 @@ const BonCommandePlateforme = () => {
                           });
 
                           const uniqueCandidates = Array.from(supplierMap.values());
+                          const isBlankOsVal = hasError && !String(currentVal).trim();
 
                           const handleSelectCompany = (chosenNom) => {
                             handleDocumentFieldChange(docId, field.name, chosenNom);
@@ -4608,10 +5294,10 @@ const BonCommandePlateforme = () => {
                           };
 
                           return (
-                            <div key={`${selectedDocument.id}-${field.name}`} className="col-span-full space-y-2 bg-slate-50/70 p-4 rounded-xl border border-slate-200">
+                            <div key={`${selectedDocument.id}-${field.name}`} className={`col-span-full space-y-2 p-4 rounded-xl border ${hasError ? 'bg-red-50/20 border-red-500' : 'bg-slate-50/70 border-slate-200'}`}>
                               <div className="flex items-center justify-between">
                                 <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
-                                  🏢 {adaptEngagementText(field.label)} {field.required && !field.fromDb && <span className="text-red-500 ml-0.5">*</span>}
+                                  🏢 {adaptEngagementText(field.label)} {field.required && !field.readOnly && <span className="text-red-500 ml-0.5">*</span>}
                                 </label>
                                 {pvAttributaire && (
                                   <span className="text-[11px] font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full flex items-center gap-1">
@@ -4627,8 +5313,9 @@ const BonCommandePlateforme = () => {
                                   </label>
                                   <select
                                     value={currentVal}
+                                    aria-invalid={isBlankOsVal || undefined}
                                     onChange={(e) => handleSelectCompany(e.target.value)}
-                                    className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-800 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                                    className={`w-full px-3 py-2 border rounded-lg text-xs font-bold text-slate-800 outline-none focus:ring-2 ${isBlankOsVal ? 'border-red-500 bg-red-50/40 focus:border-red-500 focus:ring-red-100' : 'bg-white border-slate-300 focus:border-blue-500 focus:ring-blue-100'}`}
                                   >
                                     <option value="">-- Choisir une entreprise --</option>
                                     {uniqueCandidates.map((c, i) => (
@@ -4646,12 +5333,18 @@ const BonCommandePlateforme = () => {
                                   <input
                                     type="text"
                                     value={currentVal}
+                                    aria-invalid={isBlankOsVal || undefined}
                                     onChange={(e) => handleSelectCompany(e.target.value)}
                                     placeholder={field.placeholder || "Nom de l'entreprise"}
-                                    className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs font-semibold text-slate-800 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                                    className={`w-full px-3 py-2 border rounded-lg text-xs font-semibold text-slate-800 outline-none focus:ring-2 ${isBlankOsVal ? 'border-red-500 bg-red-50/40 focus:border-red-500 focus:ring-red-100' : 'bg-white border-slate-300 focus:border-blue-500 focus:ring-blue-100'}`}
                                   />
                                 </div>
                               </div>
+                              {hasError && (
+                                <span role="alert" className="mt-2 block text-xs font-medium text-red-600">
+                                  {formErrors[selectedDocument.id][field.name]}
+                                </span>
+                              )}
                             </div>
                           );
                         }
@@ -4664,32 +5357,29 @@ const BonCommandePlateforme = () => {
 
                           const rawLetters = documentForms[selectedDocument.id]?.[field.name];
                           const currentLetters = (Array.isArray(rawLetters) && rawLetters.length > 0)
-                            ? rawLetters.map((l, i) => ({
-                                ...l,
-                                numero_lettre: cleanNumeroLettreConsultation(l.numero_lettre || incrementNumeroLettre(baseNum, i), savedConsultation?.annee || currentYear),
-                              }))
+                            ? rawLetters
                             : [
                                 {
                                   numero_lettre: baseNum,
                                   societe: documentForms[selectedDocument.id]?.societe || savedConsultation?.fournisseur?.raison_sociale || '',
-                                  destinataire_nom: documentForms[selectedDocument.id]?.destinataire_nom || 'Mr Le Gérant de la Société',
+                                  destinataire_nom: documentForms[selectedDocument.id]?.destinataire_nom ?? '',
                                   destinataire_adresse: documentForms[selectedDocument.id]?.destinataire_adresse || savedConsultation?.fournisseur?.adresse || '',
                                   ville: documentForms[selectedDocument.id]?.ville || savedConsultation?.fournisseur?.ville || '',
                                 }
                               ];
 
                           const handleLettersChange = (updatedList) => {
-                            const cleanedList = updatedList.map((l, i) => ({
-                              ...l,
-                              numero_lettre: cleanNumeroLettreConsultation(l.numero_lettre || incrementNumeroLettre(baseNum, i), savedConsultation?.annee || currentYear),
-                            }));
-                            handleDocumentFieldChange(selectedDocument.id, field.name, cleanedList);
-                            if (cleanedList[0]) {
-                              handleDocumentFieldChange(selectedDocument.id, 'numero_lettre', cleanedList[0].numero_lettre || '');
-                              handleDocumentFieldChange(selectedDocument.id, 'societe', cleanedList[0].societe || '');
-                              handleDocumentFieldChange(selectedDocument.id, 'destinataire_nom', cleanedList[0].destinataire_nom || 'Mr Le Gérant de la Société');
-                              handleDocumentFieldChange(selectedDocument.id, 'destinataire_adresse', cleanedList[0].destinataire_adresse || '');
-                              handleDocumentFieldChange(selectedDocument.id, 'ville', cleanedList[0].ville || '');
+                            handleDocumentFieldChange(selectedDocument.id, field.name, updatedList);
+                            if (updatedList[0]) {
+                              const prevFirstNum = documentForms[selectedDocument.id]?.numero_lettre ?? '';
+                              const nextFirstNum = updatedList[0].numero_lettre ?? '';
+                              if (nextFirstNum !== prevFirstNum) {
+                                handleDocumentFieldChange(selectedDocument.id, 'numero_lettre', nextFirstNum);
+                              }
+                              handleDocumentFieldChange(selectedDocument.id, 'societe', updatedList[0].societe ?? '');
+                              handleDocumentFieldChange(selectedDocument.id, 'destinataire_nom', updatedList[0].destinataire_nom ?? '');
+                              handleDocumentFieldChange(selectedDocument.id, 'destinataire_adresse', updatedList[0].destinataire_adresse ?? '');
+                              handleDocumentFieldChange(selectedDocument.id, 'ville', updatedList[0].ville ?? '');
                             }
                           };
 
@@ -4699,6 +5389,7 @@ const BonCommandePlateforme = () => {
                               field={field}
                               letters={currentLetters}
                               baseNumero={baseNum}
+                              fallbackYear={savedConsultation?.annee || currentYear}
                               onChange={handleLettersChange}
                               hasError={hasError}
                               errorMessage={formErrors[selectedDocument.id]?.[field.name]}
@@ -4712,38 +5403,7 @@ const BonCommandePlateforme = () => {
                           const lettres = documentForms.lettre_consultation?.lettres_consultation
                             || documentForms.avis_achat?.lettres_consultation;
                           const hasLettres = Array.isArray(lettres) && lettres.length > 0 && lettres.some((l) => l.societe || l.destinataire_adresse);
-
-                          const rawList = documentForms[docId]?.[field.name]
-                            || documentForms.pv_ouverture_convention?.[field.name]
-                            || documentForms.pv_ouverture_attribution?.[field.name];
-
-                          const currentList = (Array.isArray(rawList) && rawList.length > 0)
-                            ? rawList
-                            : (hasLettres
-                                ? lettres
-                                    .filter((l) => l && (l.societe || l.destinataire_adresse || l.numero_lettre))
-                                    .map((l, i) => {
-                                      const defaultAmt = i === 0 && totalTTC > 0 ? totalTTC.toFixed(2) : (i === 0 && savedConsultation?.budget?.montant_ttc ? String(savedConsultation.budget.montant_ttc) : '');
-                                      return {
-                                        nom: l.societe || '',
-                                        adresse: l.destinataire_adresse || '',
-                                        ville: l.ville || '',
-                                        montant: defaultAmt,
-                                        montant_avant: defaultAmt,
-                                        montant_apres: defaultAmt,
-                                      };
-                                    })
-                                : [
-                                    {
-                                      nom: savedConsultation?.fournisseur?.raison_sociale || documentForms.lettre_consultation?.societe || 'GENERATION MULISERVICES',
-                                      adresse: savedConsultation?.fournisseur?.adresse || documentForms.lettre_consultation?.destinataire_adresse || 'AV MOUKAOUAMA DALIA B2/2APPT NO 7 MARRAKECH.',
-                                      ville: savedConsultation?.fournisseur?.ville || 'Marrakech',
-                                      montant: totalTTC > 0 ? totalTTC.toFixed(2) : '',
-                                      montant_avant: totalTTC > 0 ? totalTTC.toFixed(2) : '',
-                                      montant_apres: totalTTC > 0 ? totalTTC.toFixed(2) : '',
-                                    }
-                                  ]
-                              );
+                          const currentList = resolveFournisseursConsultes(docId, documentForms);
 
                           const syncFromLettres = () => {
                             if (!hasLettres) return;
@@ -4800,18 +5460,14 @@ const BonCommandePlateforme = () => {
                               handleDocumentFieldChange('pv_ouverture_attribution', field.name, updated);
                             }
 
-                            // Synchroniser immédiatement avec le Tableau 2 (concurrents)
-                            const existingConcs = Array.isArray(documentForms[docId]?.concurrents)
-                              ? [...documentForms[docId].concurrents]
-                              : [];
-
+                            const existingConcs = resolveConcurrentsList(docId, documentForms);
                             const updatedConcs = updated.map((p, i) => {
                               const prevC = existingConcs[i] || {};
                               return {
-                                nom: p.nom || prevC.nom || '',
-                                montant: p.montant || prevC.montant || '',
-                                montant_avant: p.montant_avant || prevC.montant_avant || p.montant || '',
-                                montant_apres: p.montant_apres || prevC.montant_apres || p.montant || '',
+                                nom: p.nom ?? prevC.nom ?? '',
+                                montant: key === 'montant' ? val : (p.montant ?? prevC.montant ?? ''),
+                                montant_avant: prevC.montant_avant ?? p.montant_avant ?? p.montant ?? '',
+                                montant_apres: key === 'montant' ? val : (p.montant_apres ?? prevC.montant_apres ?? p.montant ?? ''),
                               };
                             });
 
@@ -4823,7 +5479,6 @@ const BonCommandePlateforme = () => {
                               handleDocumentFieldChange('pv_ouverture_attribution', 'concurrents', updatedConcs);
                             }
 
-                            // Si le participant modifié est l'attributaire retenu
                             const selectedAttr = documentForms[docId]?.attributaire || documentForms.pv_ouverture_convention?.attributaire;
                             if ((key === 'montant' || key === 'montant_apres') && selectedAttr && (updated[idx]?.nom === selectedAttr || (!selectedAttr && idx === 0))) {
                               handleDocumentFieldChange(docId, 'montant_apres_verification', val);
@@ -4877,11 +5532,11 @@ const BonCommandePlateforme = () => {
                           };
 
                           return (
-                            <div key={`${selectedDocument.id}-${field.name}`} className="col-span-full bg-slate-50 border border-slate-200 rounded-2xl p-5 shadow-sm space-y-3">
+                            <div key={`${selectedDocument.id}-${field.name}`} className={`col-span-full border rounded-2xl p-5 shadow-sm space-y-3 ${hasError ? 'bg-red-50/20 border-red-500' : 'bg-slate-50 border-slate-200'}`}>
                               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                                 <div>
                                   <label className="block text-xs font-semibold text-slate-800 uppercase tracking-wider flex items-center gap-2">
-                                    🏢 {adaptEngagementText(field.label)} {field.required && <span className="text-red-600 font-bold ml-0.5">*</span>}
+                                    🏢 {adaptEngagementText(field.label)} {field.required && !field.readOnly && <span className="text-red-600 font-bold ml-0.5">*</span>}
                                   </label>
                                   <p className="text-xs text-slate-500 mt-0.5">
                                     Liste des fournisseurs consultés dans l'ordre exact des lettres (Tableau 1 et montants Tableau 2).
@@ -4921,99 +5576,89 @@ const BonCommandePlateforme = () => {
                                     </tr>
                                   </thead>
                                   <tbody className="divide-y divide-slate-100">
-                                    {currentList.map((item, idx) => (
-                                      <tr key={idx} className="hover:bg-slate-50/80 transition-colors">
-                                        <td className="py-2 px-3 text-center font-bold text-slate-500">
-                                          {idx + 1}
-                                        </td>
-                                        <td className="py-2 px-3">
-                                          <input
-                                            type="text"
-                                            value={item.nom || ''}
-                                            onChange={(e) => updateParticipant(idx, 'nom', e.target.value)}
-                                            placeholder="Ex: GENERATION MULISERVICES"
-                                            className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 font-semibold text-slate-800 text-xs outline-none focus:border-blue-500 bg-white"
-                                          />
-                                        </td>
-                                        <td className="py-2 px-3">
-                                          <input
-                                            type="text"
-                                            value={item.adresse || ''}
-                                            onChange={(e) => updateParticipant(idx, 'adresse', e.target.value)}
-                                            placeholder="Ex: AV MOUKAOUAMA DALIA B2/2APPT NO 7"
-                                            className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 text-slate-700 text-xs outline-none focus:border-blue-500 bg-white"
-                                          />
-                                        </td>
-                                        <td className="py-2 px-3">
-                                          <input
-                                            type="text"
-                                            value={item.ville || ''}
-                                            onChange={(e) => updateParticipant(idx, 'ville', e.target.value)}
-                                            placeholder="Ex: Marrakech"
-                                            className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 text-slate-700 text-xs outline-none focus:border-blue-500 bg-white"
-                                          />
-                                        </td>
-                                        <td className="py-2 px-3">
-                                          <input
-                                            type="text"
-                                            value={item.montant || item.montant_apres || ''}
-                                            onChange={(e) => updateParticipant(idx, 'montant', e.target.value)}
-                                            placeholder="0.00"
-                                            className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 text-slate-800 font-bold text-xs text-right outline-none focus:border-blue-500 bg-white"
-                                          />
-                                        </td>
-                                        <td className="py-2 px-3 text-center">
-                                          <button
-                                            type="button"
-                                            onClick={() => removeParticipant(idx)}
-                                            className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                            title="Supprimer ce participant"
-                                          >
-                                            <Trash2 size={14} />
-                                          </button>
+                                    {currentList.length === 0 ? (
+                                      <tr>
+                                        <td colSpan="6" className="py-6 px-4 text-center text-xs text-slate-500">
+                                          Aucun participant enregistré. Synchronisez depuis les lettres de consultation ou cliquez sur « Ajouter un participant ».
                                         </td>
                                       </tr>
-                                    ))}
+                                    ) : currentList.map((item, idx) => {
+                                      const badNom = hasError && !String(item?.nom ?? '').trim();
+                                      const badAdresse = hasError && !String(item?.adresse ?? '').trim();
+                                      const badVille = hasError && !String(item?.ville ?? '').trim();
+                                      const rawAmt = item?.montant ?? item?.montant_apres;
+                                      const amt = Number(rawAmt);
+                                      const badAmt = hasError && (rawAmt === '' || rawAmt === undefined || rawAmt === null || isNaN(amt) || amt <= 0);
+                                      return (
+                                        <tr key={idx} className="hover:bg-slate-50/80 transition-colors">
+                                          <td className="py-2 px-3 text-center font-bold text-slate-500">
+                                            {idx + 1}
+                                          </td>
+                                          <td className="py-2 px-3">
+                                            <input
+                                              type="text"
+                                              value={item.nom ?? ''}
+                                              onChange={(e) => updateParticipant(idx, 'nom', e.target.value)}
+                                              placeholder="Raison sociale de l'entreprise"
+                                              className={`w-full px-2.5 py-1.5 rounded-lg border font-semibold text-xs outline-none ${badNom ? 'border-red-500 bg-red-50/40 text-red-900 focus:border-red-500' : 'border-slate-200 text-slate-800 focus:border-blue-500 bg-white'}`}
+                                            />
+                                          </td>
+                                          <td className="py-2 px-3">
+                                            <input
+                                              type="text"
+                                              value={item.adresse ?? ''}
+                                              onChange={(e) => updateParticipant(idx, 'adresse', e.target.value)}
+                                              placeholder="Adresse complète"
+                                              className={`w-full px-2.5 py-1.5 rounded-lg border text-xs outline-none ${badAdresse ? 'border-red-500 bg-red-50/40 text-red-900 focus:border-red-500' : 'border-slate-200 text-slate-700 focus:border-blue-500 bg-white'}`}
+                                            />
+                                          </td>
+                                          <td className="py-2 px-3">
+                                            <input
+                                              type="text"
+                                              value={item.ville ?? ''}
+                                              onChange={(e) => updateParticipant(idx, 'ville', e.target.value)}
+                                              placeholder="Ville"
+                                              className={`w-full px-2.5 py-1.5 rounded-lg border text-xs outline-none ${badVille ? 'border-red-500 bg-red-50/40 text-red-900 focus:border-red-500' : 'border-slate-200 text-slate-700 focus:border-blue-500 bg-white'}`}
+                                            />
+                                          </td>
+                                          <td className="py-2 px-3">
+                                            <input
+                                              type="number"
+                                              step="0.01"
+                                              value={item.montant ?? item.montant_apres ?? ''}
+                                              onChange={(e) => updateParticipant(idx, 'montant', e.target.value)}
+                                              placeholder="0.00"
+                                              className={`w-full px-2.5 py-1.5 rounded-lg border font-bold text-xs text-right outline-none ${badAmt ? 'border-red-500 bg-red-50/40 text-red-900 focus:border-red-500' : 'border-slate-200 text-slate-800 focus:border-blue-500 bg-white'}`}
+                                            />
+                                          </td>
+                                          <td className="py-2 px-3 text-center">
+                                            <button
+                                              type="button"
+                                              onClick={() => removeParticipant(idx)}
+                                              className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                              title="Supprimer ce participant"
+                                            >
+                                              <Trash2 size={14} />
+                                            </button>
+                                          </td>
+                                        </tr>
+                                      );
+                                    })}
                                   </tbody>
                                 </table>
                               </div>
+                              {hasError && (
+                                <span role="alert" className="mt-2 block text-xs font-medium text-red-600">
+                                  {formErrors[selectedDocument.id][field.name]}
+                                </span>
+                              )}
                             </div>
                           );
                         }
 
                         if (field.type === 'concurrents_convention_table') {
                           const docId = selectedDocument.id;
-                          const rawList = documentForms[docId]?.[field.name]
-                            || documentForms.pv_ouverture_convention?.[field.name]
-                            || documentForms.pv_ouverture_attribution?.[field.name];
-
-                          const participants = Array.isArray(documentForms[docId]?.fournisseurs_consultes)
-                            ? documentForms[docId].fournisseurs_consultes
-                            : (Array.isArray(documentForms.pv_ouverture_convention?.fournisseurs_consultes)
-                                ? documentForms.pv_ouverture_convention.fournisseurs_consultes
-                                : (Array.isArray(documentForms.pv_ouverture_attribution?.fournisseurs_consultes)
-                                    ? documentForms.pv_ouverture_attribution.fournisseurs_consultes
-                                    : []));
-
-                          const initialList = participants.length > 0
-                            ? participants.map((p) => ({
-                                nom: p.nom || '',
-                                montant_avant: p.montant_avant || p.montant || '',
-                                montant_apres: p.montant_apres || p.montant || '',
-                                montant: p.montant || p.montant_apres || '',
-                              }))
-                            : [
-                                {
-                                  nom: savedConsultation?.fournisseur?.raison_sociale || 'GENERATION MULISERVICES',
-                                  montant_avant: totalTTC > 0 ? totalTTC.toFixed(2) : '',
-                                  montant_apres: totalTTC > 0 ? totalTTC.toFixed(2) : '',
-                                  montant: totalTTC > 0 ? totalTTC.toFixed(2) : '',
-                                }
-                              ];
-
-                          const currentList = Array.isArray(rawList) && rawList.length > 0
-                            ? rawList
-                            : initialList;
+                          const currentList = resolveConcurrentsList(docId, documentForms);
 
                           const updateConcurrent = (idx, key, val) => {
                             const updated = currentList.map((c, i) => {
@@ -5036,17 +5681,14 @@ const BonCommandePlateforme = () => {
                               handleDocumentFieldChange('pv_ouverture_attribution', field.name, updated);
                             }
 
-                            // Rétro-synchroniser vers fournisseurs_consultes
-                            const existingParts = Array.isArray(documentForms[docId]?.fournisseurs_consultes)
-                              ? [...documentForms[docId].fournisseurs_consultes]
-                              : [];
+                            const existingParts = [...resolveFournisseursConsultes(docId, documentForms)];
                             if (existingParts[idx]) {
                               existingParts[idx] = {
                                 ...existingParts[idx],
-                                nom: updated[idx]?.nom || existingParts[idx].nom,
-                                montant: key === 'montant_apres' || key === 'montant' ? val : (existingParts[idx].montant || ''),
-                                montant_apres: key === 'montant_apres' ? val : (existingParts[idx].montant_apres || ''),
-                                montant_avant: key === 'montant_avant' ? val : (existingParts[idx].montant_avant || ''),
+                                nom: key === 'nom' ? val : (existingParts[idx].nom ?? ''),
+                                montant: key === 'montant_apres' || key === 'montant' ? val : (existingParts[idx].montant ?? ''),
+                                montant_apres: key === 'montant_apres' ? val : (existingParts[idx].montant_apres ?? ''),
+                                montant_avant: key === 'montant_avant' ? val : (existingParts[idx].montant_avant ?? ''),
                               };
                               handleDocumentFieldChange(docId, 'fournisseurs_consultes', existingParts);
                               if (docId !== 'pv_ouverture_convention') {
@@ -5084,11 +5726,11 @@ const BonCommandePlateforme = () => {
                           };
 
                           return (
-                            <div key={`${selectedDocument.id}-${field.name}`} className="col-span-full bg-slate-50 border border-slate-200 rounded-2xl p-5 shadow-sm space-y-3">
+                            <div key={`${selectedDocument.id}-${field.name}`} className={`col-span-full border rounded-2xl p-5 shadow-sm space-y-3 ${hasError ? 'bg-red-50/20 border-red-500' : 'bg-slate-50 border-slate-200'}`}>
                               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                                 <div>
                                   <label className="block text-xs font-semibold text-slate-800 uppercase tracking-wider flex items-center gap-2">
-                                    💰 {adaptEngagementText(field.label)} {field.required && <span className="text-red-600 font-bold ml-0.5">*</span>}
+                                    💰 {adaptEngagementText(field.label)} {field.required && !field.readOnly && <span className="text-red-600 font-bold ml-0.5">*</span>}
                                   </label>
                                   <p className="text-xs text-slate-500 mt-0.5">
                                     Propositions des concurrents : Montant avant et après vérification (Tableau 2 du PV).
@@ -5118,76 +5760,86 @@ const BonCommandePlateforme = () => {
                                     </tr>
                                   </thead>
                                   <tbody className="divide-y divide-slate-100">
-                                    {currentList.map((item, idx) => (
-                                      <tr key={idx} className="hover:bg-slate-50/80 transition-colors">
-                                        <td className="py-2 px-3 text-center font-bold text-slate-500 border-r border-slate-100">
-                                          {idx + 1}
-                                        </td>
-                                        <td className="py-2 px-3 border-r border-slate-100">
-                                          <input
-                                            type="text"
-                                            value={item.nom || ''}
-                                            onChange={(e) => updateConcurrent(idx, 'nom', e.target.value)}
-                                            placeholder="Ex: GENERATION MULISERVICES"
-                                            className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 font-semibold text-slate-800 text-xs outline-none focus:border-blue-500 bg-white"
-                                          />
-                                        </td>
-                                        <td className="py-2 px-3 border-r border-slate-100">
-                                          <input
-                                            type="number"
-                                            step="0.01"
-                                            value={item.montant_avant !== undefined && item.montant_avant !== null ? item.montant_avant : ''}
-                                            onChange={(e) => updateConcurrent(idx, 'montant_avant', e.target.value)}
-                                            placeholder="Optionnel ou - "
-                                            className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 text-slate-800 text-xs outline-none focus:border-blue-500 bg-white text-right"
-                                          />
-                                        </td>
-                                        <td className="py-2 px-3">
-                                          <input
-                                            type="number"
-                                            step="0.01"
-                                            value={item.montant_apres !== undefined && item.montant_apres !== null ? item.montant_apres : (item.montant || '')}
-                                            onChange={(e) => updateConcurrent(idx, 'montant_apres', e.target.value)}
-                                            placeholder="0.00"
-                                            className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 text-slate-800 text-xs outline-none focus:border-blue-500 bg-white text-right font-bold"
-                                          />
-                                        </td>
-                                        <td className="py-2 px-3 text-center">
-                                          <button
-                                            type="button"
-                                            onClick={() => removeConcurrent(idx)}
-                                            className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                            title="Supprimer ce concurrent"
-                                          >
-                                            <Trash2 size={14} />
-                                          </button>
+                                    {currentList.length === 0 ? (
+                                      <tr>
+                                        <td colSpan="5" className="py-6 px-4 text-center text-xs text-slate-500">
+                                          Aucun concurrent enregistré. Ajoutez un concurrent ou renseignez d'abord les participants consultés.
                                         </td>
                                       </tr>
-                                    ))}
+                                    ) : currentList.map((item, idx) => {
+                                      const badNom = hasError && !String(item?.nom ?? '').trim();
+                                      const rawAfter = item?.montant_apres ?? item?.montant;
+                                      const amtAfter = Number(rawAfter);
+                                      const badAfter = hasError && (rawAfter === '' || rawAfter === undefined || rawAfter === null || isNaN(amtAfter) || amtAfter <= 0);
+                                      return (
+                                        <tr key={idx} className="hover:bg-slate-50/80 transition-colors">
+                                          <td className="py-2 px-3 text-center font-bold text-slate-500 border-r border-slate-100">
+                                            {idx + 1}
+                                          </td>
+                                          <td className="py-2 px-3 border-r border-slate-100">
+                                            <input
+                                              type="text"
+                                              value={item.nom ?? ''}
+                                              onChange={(e) => updateConcurrent(idx, 'nom', e.target.value)}
+                                              placeholder="Raison sociale du concurrent"
+                                              className={`w-full px-2.5 py-1.5 rounded-lg border font-semibold text-xs outline-none ${badNom ? 'border-red-500 bg-red-50/40 text-red-900 focus:border-red-500' : 'border-slate-200 text-slate-800 focus:border-blue-500 bg-white'}`}
+                                            />
+                                          </td>
+                                          <td className="py-2 px-3 border-r border-slate-100">
+                                            <input
+                                              type="number"
+                                              step="0.01"
+                                              value={item.montant_avant !== undefined && item.montant_avant !== null ? item.montant_avant : ''}
+                                              onChange={(e) => updateConcurrent(idx, 'montant_avant', e.target.value)}
+                                              placeholder="Optionnel"
+                                              className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 text-slate-800 text-xs outline-none focus:border-blue-500 bg-white text-right"
+                                            />
+                                          </td>
+                                          <td className="py-2 px-3">
+                                            <input
+                                              type="number"
+                                              step="0.01"
+                                              value={item.montant_apres !== undefined && item.montant_apres !== null ? item.montant_apres : (item.montant ?? '')}
+                                              onChange={(e) => updateConcurrent(idx, 'montant_apres', e.target.value)}
+                                              placeholder="0.00"
+                                              className={`w-full px-2.5 py-1.5 rounded-lg border text-xs outline-none text-right font-bold ${badAfter ? 'border-red-500 bg-red-50/40 text-red-900 focus:border-red-500' : 'border-slate-200 text-slate-800 focus:border-blue-500 bg-white'}`}
+                                            />
+                                          </td>
+                                          <td className="py-2 px-3 text-center">
+                                            <button
+                                              type="button"
+                                              onClick={() => removeConcurrent(idx)}
+                                              className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                              title="Supprimer ce concurrent"
+                                            >
+                                              <Trash2 size={14} />
+                                            </button>
+                                          </td>
+                                        </tr>
+                                      );
+                                    })}
                                   </tbody>
                                 </table>
                               </div>
+                              {hasError && (
+                                <span role="alert" className="mt-2 block text-xs font-medium text-red-600">
+                                  {formErrors[selectedDocument.id][field.name]}
+                                </span>
+                              )}
                             </div>
                           );
                         }
 
                         if (field.type === 'commission_selector') {
                           const isPV = selectedDocument.id === 'pv_ouverture_attribution' || selectedDocument.id === 'pv_ouverture_convention' || selectedDocument.id === 'pv_reception';
-                          const decMembres = selectedDocument.id === 'pv_reception'
-                            ? (documentForms.decision_commission_reception?.membres_commission || savedConsultation?.reception_commission?.membres_commission || savedConsultation?.receptionCommission?.membres_commission)
-                            : documentForms.decision_commission_ouverture?.membres_commission;
-                          const currentCommissionList = isPV && Array.isArray(decMembres) && decMembres.length > 0
-                            ? decMembres
-                            : (Array.isArray(documentForms[selectedDocument.id]?.[field.name])
-                              ? documentForms[selectedDocument.id][field.name]
-                              : []);
+                          const currentCommissionList = resolveCommissionMembres(selectedDocument.id, documentForms);
 
                           return (
-                            <div key={`${selectedDocument.id}-${field.name}`} className="col-span-full bg-slate-50 border border-slate-200 rounded-2xl p-5 shadow-sm">
+                            <div key={`${selectedDocument.id}-${field.name}`} className={`col-span-full border rounded-2xl p-5 shadow-sm ${hasError ? 'bg-red-50/20 border-red-500' : 'bg-slate-50 border-slate-200'}`}>
                               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-3">
                                 <label className="block text-xs font-semibold text-slate-800 uppercase tracking-wider flex items-center gap-2">
                                   <Users size={16} className="text-blue-700" />
-                                  {adaptEngagementText(field.label)} {field.required && !field.fromDb && <span className="text-red-600 font-bold ml-0.5">*</span>}
+                                  {adaptEngagementText(field.label)} {field.required && !field.readOnly && <span className="text-red-600 font-bold ml-0.5">*</span>}
                                 </label>
                               </div>
 
@@ -5223,8 +5875,8 @@ const BonCommandePlateforme = () => {
                                       className="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-xl text-xs font-semibold text-slate-800 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                                     >
                                       <option value="Président">Président(e)</option>
-                                      <option value="Membre">Membre1</option>
-                                      <option value="Membre">Membre2</option>
+                                      <option value="Membre">Membre</option>
+                                      <option value="Rapporteur">Rapporteur</option>
                                     </select>
                                   </div>
 
@@ -5257,7 +5909,7 @@ const BonCommandePlateforme = () => {
                                           <p className="text-xs font-medium text-slate-500">{m.fonction || 'Membre de commission'}</p>
                                         </div>
                                       </div>
-                                      {(!isPV || selectedDocument.id === 'pv_ouverture_attribution') && (
+                                      {(!isPV || selectedDocument.id === 'pv_ouverture_attribution' || selectedDocument.id === 'pv_ouverture_convention') && (
                                         <button
                                           type="button"
                                           onClick={() => removeMembreFromDocumentCommission(selectedDocument.id, field.name, idx)}
@@ -5271,9 +5923,14 @@ const BonCommandePlateforme = () => {
                                   ))}
                                 </div>
                               ) : (
-                                <div className="p-4 border border-dashed border-slate-300 rounded-xl text-center text-xs font-semibold text-slate-500 bg-white">
+                                <div className={`p-4 border border-dashed rounded-xl text-center text-xs font-semibold bg-white ${hasError ? 'border-red-300 text-red-600' : 'border-slate-300 text-slate-500'}`}>
                                   Aucun membre sélectionné pour cette commission. Choisissez un membre ci-dessus et cliquez sur « Ajouter ».
                                 </div>
+                              )}
+                              {hasError && (
+                                <span role="alert" className="mt-2 block text-xs font-medium text-red-600">
+                                  {formErrors[selectedDocument.id][field.name]}
+                                </span>
                               )}
                             </div>
                           );
@@ -5310,26 +5967,26 @@ const BonCommandePlateforme = () => {
                           documentForms[selectedDocument.id]?.[field.name] !== null)
                           ? documentForms[selectedDocument.id][field.name]
                           : '';
+                        const rawMontantNeuf = documentForms.fiche_engagement?.montant_depense_neuf;
+                        const hasMontantNeuf = rawMontantNeuf !== undefined && rawMontantNeuf !== null && String(rawMontantNeuf).trim() !== '' && !isNaN(Number(rawMontantNeuf));
                         const displayedVal = selectedDocument.id === 'fiche_engagement' && field.name === 'interets_moratoires'
-                          ? ((Number(documentForms.fiche_engagement?.montant_depense_neuf) || 0) * 0.01).toFixed(2)
+                          ? (hasMontantNeuf ? (Number(rawMontantNeuf) * 0.01).toFixed(2) : '')
                           : selectedDocument.id === 'fiche_engagement' && field.name === 'montant_engager_neuf'
-                            ? ((Number(documentForms.fiche_engagement?.montant_depense_neuf) || 0) * 1.01).toFixed(2)
+                            ? (hasMontantNeuf ? (Number(rawMontantNeuf) * 1.01).toFixed(2) : '')
                             : selectedDocument.id === 'fiche_engagement' && field.name.startsWith('disponible_')
                               ? creditDisponible(documentForms.fiche_engagement?.[`credit_ouvert_${field.name.slice(-2)}`], documentForms.fiche_engagement?.[`depenses_anterieures_${field.name.slice(-2)}`])
-                              : (selectedDocument.id === 'lettre_consultation' || (isConventionActive && selectedDocument.id === 'avis_achat')) && field.name === 'numero_lettre'
-                                ? cleanNumeroLettreConsultation(currentVal, savedConsultation?.annee || currentYear)
-                                : ((selectedDocument.id === 'decision_commission_ouverture' || selectedDocument.id === 'pv_ouverture_convention') && field.name === 'lettres_consultation_refs')
-                                  ? getAutoLettresRefsCompact(documentForms, savedConsultation, currentYear)
-                                  : (field.name === 'numero_consultation' && (isConventionActive || ['decision_commission_ouverture', 'pv_ouverture_convention', 'pv_ouverture_attribution', 'lettre_consultation'].includes(selectedDocument.id)))
-                                    ? String(currentVal || '').replace(/\bCONV\s*[-_]?\s*/i, '').trim().replace(/^[-_\s]+|[-_\s]+$/, '')
-                                    : currentVal;
+                              : ((selectedDocument.id === 'decision_commission_ouverture' || selectedDocument.id === 'pv_ouverture_convention') && field.name === 'lettres_consultation_refs')
+                                ? getAutoLettresRefsCompact(documentForms, savedConsultation, currentYear)
+                                : (field.name === 'numero_consultation' && (isConventionActive || ['decision_commission_ouverture', 'pv_ouverture_convention', 'pv_ouverture_attribution', 'lettre_consultation'].includes(selectedDocument.id)))
+                                  ? String(currentVal || '').replace(/\bCONV\s*[-_]?\s*/i, '').trim().replace(/^[-_\s]+|[-_\s]+$/, '')
+                                  : currentVal;
                         const currentLen = String(displayedVal || '').length;
 
                         return (
                           <label key={`${selectedDocument.id}-${field.name}`} className={`bc-field block ${['objet', 'intitule', 'adresse_societe', 'motif_ajournement'].includes(field.name) ? 'md:col-span-2' : ''}`}>
                             <span className="block text-xs font-bold text-slate-700 mb-1.5 flex items-center justify-between">
                               <span>
-                                {adaptEngagementText(field.label)} {field.required && !field.fromDb && <span className="text-red-600 font-bold ml-0.5">*</span>}
+                                {adaptEngagementText(field.label)} {field.required && !field.readOnly && <span className="text-red-600 font-bold ml-0.5">*</span>}
                               </span>
                               {maxLen && (
                                 <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full font-bold transition-all ${currentLen === maxLen
@@ -5345,13 +6002,13 @@ const BonCommandePlateforme = () => {
                             {field.type === 'select' ? (
                               <select
                                 value={documentForms[selectedDocument.id]?.[field.name]
-                                  || (field.name === 'forme_engagement' && isConventionActive ? engagementLabel : field.options?.[0])
-                                  || ''}
+                                  ?? (field.name === 'forme_engagement' && isConventionActive ? engagementLabel : '')}
                                 onChange={(event) => handleDocumentFieldChange(selectedDocument.id, field.name, event.target.value)}
                                 disabled={field.readOnly}
                                 aria-invalid={hasError || undefined}
                                 className={fieldClass}
                               >
+                                <option value="">-- Sélectionner --</option>
                                 {(field.options || []).map((opt) => {
                                   const optionValue = opt === 'Bon de commande' && isConventionActive ? engagementLabel : opt;
                                   return (
@@ -5385,6 +6042,14 @@ const BonCommandePlateforme = () => {
                                     val = val.replace(/\D/g, '').slice(0, maxLen);
                                   }
                                   handleDocumentFieldChange(selectedDocument.id, field.name, val);
+                                }}
+                                onBlur={(event) => {
+                                  if ((selectedDocument.id === 'lettre_consultation' || (isConventionActive && selectedDocument.id === 'avis_achat')) && field.name === 'numero_lettre') {
+                                    const formatted = cleanNumeroLettreConsultation(event.target.value, savedConsultation?.annee || currentYear);
+                                    if (formatted !== event.target.value) {
+                                      handleDocumentFieldChange(selectedDocument.id, field.name, formatted);
+                                    }
+                                  }
                                 }}
                                 placeholder={adaptEngagementText(field.placeholder || '')}
                                 className={`${fieldClass} ${field.readOnly ? 'bg-slate-100 text-slate-600 cursor-not-allowed' : ''}`}
@@ -5462,7 +6127,11 @@ const BonCommandePlateforme = () => {
               </h3>
               <button
                 type="button"
-                onClick={() => setIsQuickMembreModalOpen(false)}
+                onClick={() => {
+                  setIsQuickMembreModalOpen(false);
+                  setQuickMembreError(null);
+                  setQuickMembreFieldErrors({});
+                }}
                 className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-all"
               >
                 <X size={18} />
@@ -5475,32 +6144,53 @@ const BonCommandePlateforme = () => {
               </div>
             )}
 
-            <form onSubmit={handleQuickMembreSubmit} className="space-y-4">
+            <form noValidate onSubmit={handleQuickMembreSubmit} className="space-y-4">
+              <p className="text-[11px] font-semibold text-red-600">* : Les champs obligatoires</p>
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">Nom et prénom <span className="text-red-500">*</span></label>
                 <input
                   type="text"
-                  required
                   value={quickMembreData.nom_prenom}
-                  onChange={(e) => setQuickMembreData({ ...quickMembreData, nom_prenom: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
+                  aria-invalid={!!quickMembreFieldErrors.nom_prenom || undefined}
+                  onChange={(e) => {
+                    setQuickMembreData({ ...quickMembreData, nom_prenom: e.target.value });
+                    if (quickMembreFieldErrors.nom_prenom) {
+                      setQuickMembreFieldErrors((prev) => ({ ...prev, nom_prenom: null }));
+                    }
+                  }}
+                  className={`w-full px-3 py-2 rounded-xl border text-xs font-semibold outline-none focus:ring-2 ${quickMembreFieldErrors.nom_prenom ? 'border-red-400 bg-red-50/30 focus:border-red-500 focus:ring-red-100' : 'border-slate-200 focus:border-blue-600 focus:ring-blue-100'}`}
                 />
+                {quickMembreFieldErrors.nom_prenom && (
+                  <span role="alert" className="mt-1 block text-xs text-red-600">{quickMembreFieldErrors.nom_prenom}</span>
+                )}
               </div>
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">Fonction / Qualité <span className="text-red-500">*</span></label>
                 <input
                   type="text"
-                  required
                   value={quickMembreData.fonction}
-                  onChange={(e) => setQuickMembreData({ ...quickMembreData, fonction: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
+                  aria-invalid={!!quickMembreFieldErrors.fonction || undefined}
+                  onChange={(e) => {
+                    setQuickMembreData({ ...quickMembreData, fonction: e.target.value });
+                    if (quickMembreFieldErrors.fonction) {
+                      setQuickMembreFieldErrors((prev) => ({ ...prev, fonction: null }));
+                    }
+                  }}
+                  className={`w-full px-3 py-2 rounded-xl border text-xs font-semibold outline-none focus:ring-2 ${quickMembreFieldErrors.fonction ? 'border-red-400 bg-red-50/30 focus:border-red-500 focus:ring-red-100' : 'border-slate-200 focus:border-blue-600 focus:ring-blue-100'}`}
                 />
+                {quickMembreFieldErrors.fonction && (
+                  <span role="alert" className="mt-1 block text-xs text-red-600">{quickMembreFieldErrors.fonction}</span>
+                )}
               </div>
 
               <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
                 <button
                   type="button"
-                  onClick={() => setIsQuickMembreModalOpen(false)}
+                  onClick={() => {
+                    setIsQuickMembreModalOpen(false);
+                    setQuickMembreError(null);
+                    setQuickMembreFieldErrors({});
+                  }}
                   className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl"
                 >
                   Annuler
@@ -5520,7 +6210,31 @@ const BonCommandePlateforme = () => {
       )}
 
       {/* Modal de Modification d'une Consultation */}
-      {isEditConsultationModalOpen && editingConsultationData && (
+      {isEditConsultationModalOpen && editingConsultationData && (() => {
+        const editEffectiveMode = isConventionActive
+          ? (String(editingConsultationData.type_budget || '').toLowerCase() === 'fonctionnement' ? 'Contrat' : 'Convention')
+          : String(editingConsultationData.mode_engagement || '').trim();
+        const isEditAo = ['AO', 'AOO', "APPEL D'OFFRES", "APPEL D'OFFRE"].includes(editEffectiveMode.toUpperCase());
+        const clearEditErr = (...keys) => {
+          setEditFormErrors((prev) => {
+            const next = { ...prev };
+            let changed = false;
+            keys.forEach((k) => {
+              if (next[k]) {
+                delete next[k];
+                changed = true;
+              }
+            });
+            return changed ? next : prev;
+          });
+        };
+        const getEditCls = (key, extra = 'px-3 py-2') => `w-full ${extra} rounded-xl border text-xs font-semibold outline-none focus:ring-2 ${editFormErrors[key]
+          ? 'border-red-400 bg-red-50/30 focus:border-red-500 focus:ring-red-100'
+          : 'border-slate-200 focus:border-blue-600 focus:ring-blue-100'
+          }`;
+        const renderEditErr = (key) => (editFormErrors[key] ? <span role="alert" className="mt-1 block text-xs text-red-600">{editFormErrors[key]}</span> : null);
+
+        return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm overflow-y-auto">
           <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full p-6 my-8 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between pb-4 mb-4 border-b border-slate-200">
@@ -5543,179 +6257,252 @@ const BonCommandePlateforme = () => {
               </div>
             )}
 
-            <form onSubmit={handleSaveEditedConsultation} className="space-y-4 max-h-[75vh] overflow-y-auto pr-1">
+            <form noValidate onSubmit={handleSaveEditedConsultation} className="space-y-4 max-h-[75vh] overflow-y-auto pr-1">
+              <p className="text-[11px] font-semibold text-red-600">* : Les champs obligatoires</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">N° Consultation</label>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">N° Consultation <span className="text-red-500">*</span></label>
                   <input
                     type="text"
-                    required
                     value={editingConsultationData.numero_consultation}
-                    onChange={(e) => setEditingConsultationData({ ...editingConsultationData, numero_consultation: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
+                    aria-invalid={!!editFormErrors.numero_consultation || undefined}
+                    onChange={(e) => {
+                      setEditingConsultationData({ ...editingConsultationData, numero_consultation: e.target.value });
+                      clearEditErr('numero_consultation');
+                    }}
+                    className={getEditCls('numero_consultation')}
                   />
+                  {renderEditErr('numero_consultation')}
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Statut du dossier</label>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Statut du dossier <span className="text-red-500">*</span></label>
                   <select
                     value={editingConsultationData.statut_dossier}
-                    onChange={(e) => setEditingConsultationData({ ...editingConsultationData, statut_dossier: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
+                    aria-invalid={!!editFormErrors.statut_dossier || undefined}
+                    onChange={(e) => {
+                      setEditingConsultationData({ ...editingConsultationData, statut_dossier: e.target.value });
+                      clearEditErr('statut_dossier');
+                    }}
+                    className={getEditCls('statut_dossier')}
                   >
+                    <option value="">-- Choisir --</option>
                     <option value="Programmation">Programmation</option>
                     <option value="En cours">En cours</option>
                     <option value="Validé">Validé</option>
                     <option value="Clôturé">Clôturé</option>
                   </select>
+                  {renderEditErr('statut_dossier')}
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Objet de la consultation</label>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Objet de la consultation <span className="text-red-500">*</span></label>
                 <textarea
-                  required
                   rows={2}
                   value={editingConsultationData.objet_consultation}
-                  onChange={(e) => setEditingConsultationData({ ...editingConsultationData, objet_consultation: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
+                  aria-invalid={!!editFormErrors.objet_consultation || undefined}
+                  onChange={(e) => {
+                    setEditingConsultationData({ ...editingConsultationData, objet_consultation: e.target.value });
+                    clearEditErr('objet_consultation');
+                  }}
+                  className={getEditCls('objet_consultation')}
                 />
+                {renderEditErr('objet_consultation')}
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Numéro de décision d'ouverture de commission</label>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Numéro de décision d'ouverture de commission {!isEditAo && <span className="text-red-500">*</span>}</label>
                   <input
                     type="text"
                     value={editingConsultationData.numero_decision}
-                    onChange={(e) => setEditingConsultationData({ ...editingConsultationData, numero_decision: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
+                    aria-invalid={!!editFormErrors.numero_decision || undefined}
+                    onChange={(e) => {
+                      setEditingConsultationData({ ...editingConsultationData, numero_decision: e.target.value });
+                      clearEditErr('numero_decision');
+                    }}
+                    className={getEditCls('numero_decision')}
                   />
+                  {renderEditErr('numero_decision')}
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">N° {engagementLabel}</label>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">N° {engagementLabel} {!isEditAo && <span className="text-red-500">*</span>}</label>
                   <input
                     type="text"
                     value={editingConsultationData.numero_bc}
-                    onChange={(e) => setEditingConsultationData({ ...editingConsultationData, numero_bc: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
+                    aria-invalid={!!editFormErrors.numero_bc || undefined}
+                    onChange={(e) => {
+                      setEditingConsultationData({ ...editingConsultationData, numero_bc: e.target.value });
+                      clearEditErr('numero_bc');
+                    }}
+                    className={getEditCls('numero_bc')}
                   />
+                  {renderEditErr('numero_bc')}
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Date limite devis</label>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Date limite devis {!isEditAo && <span className="text-red-500">*</span>}</label>
                   <input
                     type="date"
-                    min="2020-01-01"
+                    min={isEditAo ? '2000-01-01' : '2026-01-01'}
                     max="2099-12-31"
                     value={editingConsultationData.date_limite_devis}
-                    onChange={(e) => setEditingConsultationData({ ...editingConsultationData, date_limite_devis: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
+                    aria-invalid={!!editFormErrors.date_limite_devis || undefined}
+                    onChange={(e) => {
+                      setEditingConsultationData({ ...editingConsultationData, date_limite_devis: e.target.value });
+                      clearEditErr('date_limite_devis');
+                    }}
+                    className={getEditCls('date_limite_devis')}
                   />
+                  {renderEditErr('date_limite_devis')}
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Heure limite</label>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Heure limite {!isEditAo && <span className="text-red-500">*</span>}</label>
                   <input
                     type="text"
                     placeholder="Ex: 10:00"
                     value={editingConsultationData.heure_limite_devis}
-                    onChange={(e) => setEditingConsultationData({ ...editingConsultationData, heure_limite_devis: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
+                    aria-invalid={!!editFormErrors.heure_limite_devis || undefined}
+                    onChange={(e) => {
+                      setEditingConsultationData({ ...editingConsultationData, heure_limite_devis: e.target.value });
+                      clearEditErr('heure_limite_devis');
+                    }}
+                    className={getEditCls('heure_limite_devis')}
                   />
+                  {renderEditErr('heure_limite_devis')}
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Délai (jours)</label>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Délai (jours) <span className="text-red-500">*</span></label>
                   <input
                     type="number"
+                    min="1"
                     value={editingConsultationData.delai_execution}
-                    onChange={(e) => setEditingConsultationData({ ...editingConsultationData, delai_execution: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
+                    aria-invalid={!!editFormErrors.delai_execution || undefined}
+                    onChange={(e) => {
+                      setEditingConsultationData({ ...editingConsultationData, delai_execution: e.target.value });
+                      clearEditErr('delai_execution');
+                    }}
+                    className={getEditCls('delai_execution')}
                   />
+                  {renderEditErr('delai_execution')}
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Année</label>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Année <span className="text-red-500">*</span></label>
                   <input
                     type="number"
-                    min="2020"
+                    min={isEditAo ? '2000' : '2026'}
                     max="2099"
                     onInput={(e) => { if (e.target.value.length > 4) e.target.value = e.target.value.slice(0, 4); }}
                     value={editingConsultationData.annee}
-                    onChange={(e) => setEditingConsultationData({ ...editingConsultationData, annee: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
+                    aria-invalid={!!editFormErrors.annee || undefined}
+                    onChange={(e) => {
+                      setEditingConsultationData({ ...editingConsultationData, annee: e.target.value });
+                      clearEditErr('annee');
+                    }}
+                    className={getEditCls('annee')}
                   />
+                  {renderEditErr('annee')}
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Date de consultation</label>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Date de consultation <span className="text-red-500">*</span></label>
                   <input
                     type="date"
-                    min="2020-01-01"
+                    min={isEditAo ? '2000-01-01' : '2026-01-01'}
                     max="2099-12-31"
                     value={editingConsultationData.date_consultation}
-                    onChange={(e) => setEditingConsultationData({ ...editingConsultationData, date_consultation: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
+                    aria-invalid={!!editFormErrors.date_consultation || undefined}
+                    onChange={(e) => {
+                      setEditingConsultationData({ ...editingConsultationData, date_consultation: e.target.value });
+                      clearEditErr('date_consultation');
+                    }}
+                    className={getEditCls('date_consultation')}
                   />
+                  {renderEditErr('date_consultation')}
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Lieu d'exécution</label>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Lieu d'exécution {!isEditAo && <span className="text-red-500">*</span>}</label>
                 <input
                   type="text"
                   value={editingConsultationData.lieu_execution}
-                  onChange={(e) => setEditingConsultationData({ ...editingConsultationData, lieu_execution: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
+                  aria-invalid={!!editFormErrors.lieu_execution || undefined}
+                  onChange={(e) => {
+                    setEditingConsultationData({ ...editingConsultationData, lieu_execution: e.target.value });
+                    clearEditErr('lieu_execution');
+                  }}
+                  className={getEditCls('lieu_execution')}
                 />
+                {renderEditErr('lieu_execution')}
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Catégorie</label>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Catégorie <span className="text-red-500">*</span></label>
                   <select
                     value={editingConsultationData.categorie}
-                    onChange={(e) => setEditingConsultationData({ ...editingConsultationData, categorie: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
+                    aria-invalid={!!editFormErrors.categorie || undefined}
+                    onChange={(e) => {
+                      setEditingConsultationData({ ...editingConsultationData, categorie: e.target.value });
+                      clearEditErr('categorie');
+                    }}
+                    className={getEditCls('categorie')}
                   >
+                    <option value="">-- Choisir --</option>
                     <option value="Travaux">Travaux</option>
                     <option value="Fournitures">Fournitures</option>
                     <option value="Services">Services</option>
                   </select>
+                  {renderEditErr('categorie')}
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Intitulé (Nature de la prestation)</label>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Intitulé (Nature de la prestation) <span className="text-red-500">*</span></label>
                   <input
                     type="text"
                     value={editingConsultationData.intitule || editingConsultationData.type_prestation || ''}
-                    onChange={(e) => setEditingConsultationData({ ...editingConsultationData, intitule: e.target.value, type_prestation: e.target.value })}
+                    aria-invalid={!!editFormErrors.intitule || undefined}
+                    onChange={(e) => {
+                      setEditingConsultationData({ ...editingConsultationData, intitule: e.target.value, type_prestation: e.target.value });
+                      clearEditErr('intitule');
+                    }}
                     placeholder="Ex: Prestation de même nature / Achat de matériel..."
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
+                    className={getEditCls('intitule')}
                   />
+                  {renderEditErr('intitule')}
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Mode d'engagement</label>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Mode d'engagement <span className="text-red-500">*</span></label>
                   <select
                     value={isConventionActive ? (editingConsultationData.type_budget === 'Fonctionnement' ? 'Contrat' : 'Convention') : editingConsultationData.mode_engagement}
                     disabled={isConventionActive}
-                    onChange={(e) => setEditingConsultationData({ ...editingConsultationData, mode_engagement: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100 disabled:bg-slate-100"
+                    aria-invalid={!!editFormErrors.mode_engagement || undefined}
+                    onChange={(e) => {
+                      setEditingConsultationData({ ...editingConsultationData, mode_engagement: e.target.value });
+                      clearEditErr('mode_engagement');
+                    }}
+                    className={`${getEditCls('mode_engagement')} disabled:bg-slate-100`}
                   >
                     {!isConventionActive && <option value="BC">BC (Bon de commande)</option>}
                     {!isConventionActive && <option value="AO">AO (Appel d'offres)</option>}
                     {isConventionActive && editingConsultationData.type_budget === 'Fonctionnement' && <option value="Contrat">Contrat</option>}
                     <option value="Convention">Convention</option>
                   </select>
+                  {renderEditErr('mode_engagement')}
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Type de budget</label>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Type de budget <span className="text-red-500">*</span></label>
                   <select
                     value={editingConsultationData.type_budget}
+                    aria-invalid={!!editFormErrors.type_budget || undefined}
                     onChange={(e) => {
                       const newType = e.target.value;
                       setEditingConsultationData({
@@ -5723,12 +6510,15 @@ const BonCommandePlateforme = () => {
                         type_budget: newType,
                         mode_engagement: isConventionActive ? (newType === 'Fonctionnement' ? 'Contrat' : 'Convention') : editingConsultationData.mode_engagement,
                       });
+                      clearEditErr('type_budget', 'mode_engagement');
                     }}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
+                    className={getEditCls('type_budget')}
                   >
+                    <option value="">-- Choisir --</option>
                     <option value="Investissement">Investissement {isConventionActive ? '(Convention)' : ''}</option>
                     <option value="Fonctionnement">Fonctionnement {isConventionActive ? '(Contrat)' : ''}</option>
                   </select>
+                  {renderEditErr('type_budget')}
                 </div>
               </div>
 
@@ -5755,51 +6545,61 @@ const BonCommandePlateforme = () => {
                       code_imputation: code,
                       intitule: ligne.intitule || editingConsultationData.intitule,
                     });
+                    clearEditErr('art', 'par', 'lig', 'intitule', 'type_budget');
                   }}
                 />
 
                 <div className="grid grid-cols-3 gap-3">
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-600 mb-1">ART</label>
+                    <label className="block text-[11px] font-bold text-slate-600 mb-1">ART {!isEditAo && <span className="text-red-500">*</span>}</label>
                     <input
                       type="text"
                       value={editingConsultationData.art}
+                      aria-invalid={!!editFormErrors.art || undefined}
                       onChange={(e) => {
                         const art = e.target.value;
                         const par = editingConsultationData.par || '';
                         const lig = editingConsultationData.lig || '';
                         setEditingConsultationData({ ...editingConsultationData, art, code_imputation: `${art}${par}${lig}` });
+                        clearEditErr('art');
                       }}
-                      className="w-full px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs font-semibold outline-none focus:border-blue-600"
+                      className={getEditCls('art', 'px-2.5 py-1.5')}
                     />
+                    {renderEditErr('art')}
                   </div>
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-600 mb-1">PAR</label>
+                    <label className="block text-[11px] font-bold text-slate-600 mb-1">PAR {!isEditAo && <span className="text-red-500">*</span>}</label>
                     <input
                       type="text"
                       value={editingConsultationData.par}
+                      aria-invalid={!!editFormErrors.par || undefined}
                       onChange={(e) => {
                         const art = editingConsultationData.art || '';
                         const par = e.target.value;
                         const lig = editingConsultationData.lig || '';
                         setEditingConsultationData({ ...editingConsultationData, par, code_imputation: `${art}${par}${lig}` });
+                        clearEditErr('par');
                       }}
-                      className="w-full px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs font-semibold outline-none focus:border-blue-600"
+                      className={getEditCls('par', 'px-2.5 py-1.5')}
                     />
+                    {renderEditErr('par')}
                   </div>
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-600 mb-1">LIG</label>
+                    <label className="block text-[11px] font-bold text-slate-600 mb-1">LIG {!isEditAo && <span className="text-red-500">*</span>}</label>
                     <input
                       type="text"
                       value={editingConsultationData.lig}
+                      aria-invalid={!!editFormErrors.lig || undefined}
                       onChange={(e) => {
                         const art = editingConsultationData.art || '';
                         const par = editingConsultationData.par || '';
                         const lig = e.target.value;
                         setEditingConsultationData({ ...editingConsultationData, lig, code_imputation: `${art}${par}${lig}` });
+                        clearEditErr('lig');
                       }}
-                      className="w-full px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs font-semibold outline-none focus:border-blue-600"
+                      className={getEditCls('lig', 'px-2.5 py-1.5')}
                     />
+                    {renderEditErr('lig')}
                   </div>
                 </div>
 
@@ -5814,16 +6614,21 @@ const BonCommandePlateforme = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-600 mb-1">Exercice budgétaire</label>
+                    <label className="block text-[11px] font-bold text-slate-600 mb-1">Exercice budgétaire {!isEditAo && <span className="text-red-500">*</span>}</label>
                     <input
                       type="number"
-                      min="2020"
+                      min={isEditAo ? '2000' : '2026'}
                       max="2099"
                       onInput={(e) => { if (e.target.value.length > 4) e.target.value = e.target.value.slice(0, 4); }}
                       value={editingConsultationData.exercice_budgetaire}
-                      onChange={(e) => setEditingConsultationData({ ...editingConsultationData, exercice_budgetaire: e.target.value })}
-                      className="w-full px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs font-semibold outline-none focus:border-blue-600"
+                      aria-invalid={!!editFormErrors.exercice_budgetaire || undefined}
+                      onChange={(e) => {
+                        setEditingConsultationData({ ...editingConsultationData, exercice_budgetaire: e.target.value });
+                        clearEditErr('exercice_budgetaire');
+                      }}
+                      className={getEditCls('exercice_budgetaire', 'px-2.5 py-1.5')}
                     />
+                    {renderEditErr('exercice_budgetaire')}
                   </div>
                 </div>
               </div>
@@ -5848,7 +6653,8 @@ const BonCommandePlateforme = () => {
             </form>
           </div>
         </div>
-      )}
+        );
+      })()}
     </div>
   );
 };
