@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import useClickOutside from '../hooks/useClickOutside';
 import {
@@ -49,9 +49,10 @@ const getInitials = (name = '') => {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 };
 
-export default function UserMenu({ className = '' }) {
+export default function UserMenu({ className = '', profileContext = null }) {
   const { currentUser, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   // Menu Open State
   const [isOpen, setIsOpen] = useState(false);
@@ -176,15 +177,19 @@ export default function UserMenu({ className = '' }) {
     }
   };
 
-  // User display infos
-  const userName = currentUser?.name || 'Directeur Régional';
-  const userEmail = currentUser?.email || 'directeur@onca.ma';
-  const userRole =
-    currentUser?.role === 'directeur'
-      ? 'Directeur Régional'
-      : currentUser?.role
-        ? currentUser.role.charAt(0).toUpperCase() + currentUser.role.slice(1)
-        : 'Accès décisionnel';
+  const isDirectorSpace = useMemo(() => {
+    if (profileContext === 'directeur') return true;
+    if (profileContext === 'saf') return false;
+    const path = (location?.pathname || '').toLowerCase();
+    return path === '/directeur' || path.startsWith('/directeur/');
+  }, [profileContext, location?.pathname]);
+
+  // User display infos (Directeur Régional dans /directeur, Chef de SAF dans AOO / Conventions / Bons de commande)
+  const userName = isDirectorSpace ? 'Directeur Régional' : 'Chef de SAF';
+  const userEmail = currentUser?.email || (isDirectorSpace ? 'directeur@onca.ma' : 'saf@onca.ma');
+  const userRole = isDirectorSpace
+    ? 'Directeur Régional'
+    : 'Service administratif et financier';
   const userInitials = useMemo(() => getInitials(userName), [userName]);
   const avatarGradient = useMemo(() => getAvatarGradient(userName), [userName]);
 
@@ -224,7 +229,10 @@ export default function UserMenu({ className = '' }) {
                   {userName}
                 </p>
               </div>
-              <p className="truncate text-xs font-medium text-slate-400 capitalize">
+              <p
+                className="truncate text-xs font-medium text-slate-400"
+                title={userRole}
+              >
                 {userRole}
               </p>
             </div>
@@ -269,6 +277,11 @@ export default function UserMenu({ className = '' }) {
                   <p className="truncate text-sm font-bold text-white" title={userName}>
                     {userName}
                   </p>
+                  {userRole !== userName && (
+                    <p className="truncate text-[11px] font-medium text-emerald-400" title={userRole}>
+                      {userRole}
+                    </p>
+                  )}
                   <p className="truncate text-xs text-slate-400" title={userEmail}>
                     {userEmail}
                   </p>

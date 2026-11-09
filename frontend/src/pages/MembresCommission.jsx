@@ -111,7 +111,7 @@ const MembresCommission = () => {
             <div className="w-10 h-10 bg-white/10 rounded-lg flex items-center justify-center">ON</div>
             <div>
               <p className="text-sm font-semibold">ERP ONCA</p>
-              <p className="text-xs text-white/80">Profil Directeur</p>
+              <p className="text-xs text-white/80">Chef de SAF</p>
             </div>
           </Link>
         </div>
@@ -164,7 +164,7 @@ const MembresCommission = () => {
         </nav>
 
         <div className="mt-auto px-4 py-4 border-t border-blue-800/60">
-          <UserMenu />
+          <UserMenu profileContext="saf" />
         </div>
       </aside>
 

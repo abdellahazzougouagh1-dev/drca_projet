@@ -126,8 +126,8 @@ export default function Dashboard({ mode = 'aoo' }) {
   const [store, setStore] = useState({ consultations: [], aoos: [], notifications: [], lines: [], budget: {} });
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
-  const userName = currentUser?.name || "Directeur Régional";
-  const userRole = currentUser?.role === 'directeur' ? 'Directeur Régional' : (currentUser?.role ? (currentUser.role.charAt(0).toUpperCase() + currentUser.role.slice(1)) : 'Accès décisionnel');
+  const userName = isDirecteur ? "Directeur Régional" : "Chef de SAF";
+  const userRole = isDirecteur ? "Directeur Régional" : "Service administratif et financier";
   const userInitials = userName
     .split(' ')
     .filter(Boolean)
@@ -254,7 +254,7 @@ export default function Dashboard({ mode = 'aoo' }) {
       <Link to={isDirecteur ? '/directeur' : '/dashboard'} className="flex items-center gap-3 border-b border-white/10 pb-6"><span className="grid h-11 w-11 place-items-center rounded-xl bg-gradient-to-br from-[#087F5B] to-[#06694A] text-sm font-black text-white shadow-md shadow-[#087F5B]/30">DR</span><span><b className="block text-sm text-white">DRCA · RSK</b><small className="text-xs text-emerald-400 font-medium">{isDirecteur ? 'Espace de direction' : 'Appels d’offres · ERP ONCA'}</small></span></Link>
       {isDirecteur ? <><p className="mt-7 px-3 text-[10px] font-bold uppercase tracking-[.16em] text-slate-400">Pilotage</p><nav className="mt-3 space-y-1">{navigation.map(({ label, icon: Icon, action, tab: itemTab }) => <button key={label} onClick={action} className={`flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold transition ${tab === itemTab ? 'bg-[#087F5B] text-white shadow-md shadow-[#087F5B]/25' : 'text-slate-300 hover:bg-slate-800/80 hover:text-white'}`}><Icon size={18} />{label}</button>)}</nav></> : <><p className="mt-7 px-3 text-[10px] font-bold uppercase tracking-[.16em] text-slate-400">Cycle d'appel d’offres</p><nav className="mt-3 space-y-1">{moduleNavigation.map(({ label, icon: Icon, route, active: isItemActive }) => isItemActive || !route ? <div key={label} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold bg-[#087F5B] text-white shadow-md shadow-[#087F5B]/25 cursor-default select-none"><Icon size={18} /><span>{label}</span></div> : <Link key={route} to={route} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-slate-300 transition hover:bg-slate-800/80 hover:text-white"><Icon size={18} /><span>{label}</span></Link>)}</nav></>}
       <div className="mt-auto pt-4">
-        <UserMenu />
+        <UserMenu profileContext={isDirecteur ? 'directeur' : 'saf'} />
       </div>
     </aside>
     <div className="lg:pl-64 xl:pl-72">

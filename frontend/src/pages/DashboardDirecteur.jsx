@@ -826,7 +826,7 @@ export default function DashboardDirecteur() {
           </button>
         </nav>
         <div className="mt-auto pt-4">
-          <UserMenu />
+          <UserMenu profileContext="directeur" />
         </div>
       </aside>
 

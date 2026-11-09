@@ -3054,7 +3054,7 @@ const BonCommandePlateforme = () => {
         </nav>
 
         <div className="px-5 py-4 border-t border-white/10">
-          <UserMenu variant="dark" />
+          <UserMenu variant="dark" profileContext="saf" />
         </div>
       </aside>
 
