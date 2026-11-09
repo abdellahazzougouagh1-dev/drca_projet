@@ -21,6 +21,9 @@ return [
 
     'allowed_origins' => [
         'https://drca-projet-zeta.vercel.app',
+        'https://drca-projet-inky.vercel.app',
+        'http://localhost:5173',
+        'http://localhost:3000',
     ],
 
     'allowed_origins_patterns' => [],
