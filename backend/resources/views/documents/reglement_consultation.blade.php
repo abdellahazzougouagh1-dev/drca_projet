@@ -4,15 +4,20 @@
     <meta charset="UTF-8">
     <title>Règlement de la Consultation</title>
     <style>
+        @page {
+            size: A4 portrait;
+            margin: 18px 34px 96px 34px;
+        }
         body {
             font-family: "Times New Roman", Times, serif;
-            font-size: 12px;
-            line-height: 1.5;
+            font-size: 13px;
+            line-height: 1.55;
             color: #000;
-            margin: 20px;
+            margin: 0;
+            padding: 0;
         }
         .header-table {
-            margin-bottom: 5px;
+            margin-bottom: 4px;
             width: 100%;
             border-collapse: collapse;
         }
@@ -21,38 +26,42 @@
         }
         .header-center {
             text-align: center;
-            font-size: 14px;
+            font-size: 13.5px;
             font-weight: bold;
+            line-height: 1.35;
+            padding: 0 8px;
         }
         .blue-line {
             border-bottom: 2px solid #000080;
-            margin-bottom: 20px;
+            margin-bottom: 22px;
         }
         .title-box {
             text-align: center;
-            margin: 40px 0;
+            margin: 18px 0 28px 0;
         }
         .title-box h1 {
-            font-size: 20px;
+            font-size: 18px;
             font-weight: bold;
             margin: 0;
             display: inline-block;
-            border: 2px solid #000;
-            padding: 8px 30px;
+            border: 2.5px solid #000;
+            padding: 9px 28px;
         }
         .ref-box {
             text-align: center;
-            font-size: 16px;
+            font-size: 15px;
             font-weight: bold;
-            margin-top: 15px;
+            margin-top: 14px;
         }
         .content {
-            margin-top: 40px;
-            margin-left: 10px;
+            margin-top: 24px;
+            margin-left: 12px;
+            margin-right: 12px;
         }
         .intro-text {
-            font-size: 15px;
-            margin-bottom: 20px;
+            font-size: 14.5px;
+            margin-bottom: 18px;
+            font-weight: bold;
         }
         ul.list-no-bullet {
             list-style-type: none;
@@ -60,11 +69,12 @@
             margin-top: 0;
         }
         ul.list-no-bullet > li {
-            margin-bottom: 15px;
+            margin-bottom: 18px;
         }
         ul.list-bullets {
             list-style-type: none;
             padding-left: 20px;
+            margin-top: 6px;
         }
         ul.list-bullets > li:before {
             content: "* ";
@@ -72,42 +82,44 @@
             margin-right: 5px;
         }
         ul.list-bullets > li {
-            margin-bottom: 5px;
+            margin-bottom: 6px;
         }
         .checkbox-item {
-            margin-left: 60px;
-            margin-bottom: 6px;
+            margin-left: 56px;
+            margin-bottom: 7px;
         }
         .checkbox-box {
             display: inline-block;
-            width: 14px;
-            height: 14px;
-            border: 1px solid #000;
+            width: 13px;
+            height: 13px;
+            border: 1.2px solid #000;
             margin-right: 10px;
             vertical-align: middle;
         }
         .letter-list {
             list-style-type: lower-alpha;
-            padding-left: 50px;
+            padding-left: 48px;
+            margin-top: 8px;
         }
         .letter-list > li {
-            margin-bottom: 6px;
+            margin-bottom: 8px;
         }
     </style>
     @include('documents.partials.bc_typography')
 </head>
 <body>
+    @include('documents.partials.bc_footer')
 
     <table class="header-table">
         <tr>
-            <td style="width: 25%;">
-                <img src="data:image/png;base64,{{ base64_encode(file_get_contents(public_path('images/logo-onca.png'))) }}" alt="Logo ONCA" style="height: 70px; width: auto;">
+            <td style="width: 24%; text-align: left;">
+                <img src="data:image/png;base64,{{ base64_encode(file_get_contents(public_path('images/logo-onca.png'))) }}" alt="Logo ONCA" style="height: 68px; width: auto;">
             </td>
-            <td class="header-center" style="width: 50%;">
+            <td class="header-center" style="width: 52%;">
                 Direction Régionale du Conseil Agricole Rabat-Salé-Kénitra
             </td>
-            <td style="width: 25%; text-align: right;">
-                <img src="data:image/png;base64,{{ base64_encode(file_get_contents(public_path('images/sceau-maroc.png'))) }}" alt="Sceau Maroc" style="height: 70px; width: auto;">
+            <td style="width: 24%; text-align: right;">
+                <img src="data:image/png;base64,{{ base64_encode(file_get_contents(public_path('images/sceau-maroc.png'))) }}" alt="Sceau Maroc" style="height: 68px; width: auto;">
             </td>
         </tr>
     </table>
@@ -161,8 +173,6 @@
             </li>
         </ul>
     </div>
-
-    @include('documents.partials.bc_footer')
 
 </body>
 </html>

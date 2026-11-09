@@ -5,14 +5,14 @@
     <title>Fiche d'Engagement</title>
     <style>
         @page {
-            margin: 8mm 10mm 8mm 10mm;
             size: A4 portrait;
+            margin: 16px 34px 96px 34px;
         }
         * { box-sizing: border-box; }
         body {
             font-family: "Times New Roman", Times, serif;
-            font-size: 11px;
-            line-height: 1.3;
+            font-size: 11.5px;
+            line-height: 1.38;
             margin: 0;
             padding: 0;
             color: #000;
@@ -23,63 +23,69 @@
 
         /* ── HEADER ── */
         .header-table { width: 100%; border-collapse: collapse; margin-bottom: 4px; }
-        .header-table td { vertical-align: middle; padding: 0; }
+        .header-table td { vertical-align: middle; padding: 0; border: none; }
 
         .header-center {
             text-align: center;
-            font-size: 12.5px;
+            font-size: 13.5px;
             font-weight: bold;
-            text-transform: uppercase;
-            letter-spacing: 0.4px;
-            line-height: 1.4;
+            line-height: 1.35;
         }
-        .header-divider { border-bottom: 1.5px solid #000; margin: 5px 0 8px 0; }
+        .header-divider { border-bottom: 2px solid #000080; margin: 4px 0 12px 0; }
 
         /* ── CADRE BUDGET ── */
         .budget-box {
-            width: 230px;
+            width: 245px;
             border-collapse: collapse;
             margin-left: auto;
-            margin-bottom: 5px;
+            margin-bottom: 8px;
+            border: 1.5px solid #000;
         }
         .budget-box td {
-            border: 1.5px solid #000;
-            padding: 4px 8px;
-            font-size: 10.5px;
+            border: 1px solid #000;
+            padding: 5px 10px;
+            font-size: 11px;
         }
 
         /* ── TITRE ── */
         .num-fe {
-            font-size: 10.5px;
+            font-size: 11.5px;
             font-weight: bold;
             text-align: left;
-            margin-bottom: 2px;
-            padding-left: 40px;
+            margin-bottom: 6px;
+            padding-left: 16px;
         }
         .main-title {
             text-align: center;
             font-size: 15px;
             font-weight: bold;
             letter-spacing: 0.5px;
-            margin-bottom: 10px;
+            margin: 0 auto 14px auto;
+            padding: 7px 14px;
+            background: #e5e0d8;
+            border: 2px solid #000;
+            width: 72%;
+            text-transform: uppercase;
         }
 
         /* ── TABLEAUX PRINCIPAUX ── */
         .data-table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 10px;
+            margin-bottom: 14px;
             border: 1.5px solid #000;
         }
         .data-table th, .data-table td {
             border: 1px solid #000;
-            padding: 5px 7px;
-            font-size: 10px;
+            padding: 8px 10px;
+            font-size: 11px;
+            vertical-align: middle;
         }
         .data-table .label-col {
             font-weight: bold;
             width: 34%;
             text-align: center;
+            background: #f5f5f5;
         }
         .data-table .value-col {
             width: 66%;
@@ -91,40 +97,46 @@
         .rubrique-table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 10px;
+            margin-bottom: 14px;
             border: 1.5px solid #000;
             text-align: center;
         }
         .rubrique-table th, .rubrique-table td {
             border: 1px solid #000;
-            padding: 3.5px 2px;
-            font-size: 9px;
+            padding: 5.5px 4px;
+            font-size: 9.5px;
+            vertical-align: middle;
         }
-        .rubrique-table th { font-weight: bold; }
+        .rubrique-table th {
+            font-weight: bold;
+            background: #e5e0d8;
+        }
 
         /* ── TABLEAU FINANCIER ── */
         .finance-table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 10px;
+            margin-bottom: 14px;
             border: 1.5px solid #000;
         }
         .finance-table td {
             border: 1px solid #000;
-            padding: 5px 7px;
-            font-size: 10px;
+            padding: 7.5px 10px;
+            font-size: 11px;
+            vertical-align: middle;
         }
-        .finance-table .flabel { font-weight: bold; width: 48%; }
-        .finance-table .fval   { text-align: center; font-weight: bold; width: 52%; }
+        .finance-table .flabel { font-weight: bold; width: 46%; background: #f5f5f5; }
+        .finance-table .fval   { text-align: center; font-weight: bold; width: 54%; }
 
         /* ── VISA BOX ── */
         .visa-box {
             width: 100%;
             border-collapse: collapse;
             border: 1.5px solid #000;
-            margin-top: 5px;
+            margin-top: 4px;
+            page-break-inside: avoid;
         }
-        .visa-box td { border: 1px solid #000; padding: 5px 8px; }
+        .visa-box td { border: 1px solid #000; padding: 6px 10px; font-size: 11px; }
     </style>
     @include('documents.partials.bc_typography')
 </head>
@@ -217,12 +229,14 @@
         }
     @endphp
 
+    @include('documents.partials.bc_footer')
+
     <!-- ══════════ HEADER LOGOS ══════════ -->
     <table class="header-table">
         <tr>
-            <td style="width:22%; text-align:left; vertical-align:middle;">
+            <td style="width:24%; text-align:left; vertical-align:middle;">
                 @if($logoOncaSrc)
-                    <img src="{{ $logoOncaSrc }}" style="height:58px; width:auto; max-width:140px;" alt="ONCA">
+                    <img src="{{ $logoOncaSrc }}" style="height:68px; width:auto;" alt="ONCA">
                 @else
                     <div style="font-size:7.5px; font-weight:bold; line-height:1.3;">
                         المكتب الوطني للإستشارة الفلاحية<br>
@@ -230,15 +244,14 @@
                     </div>
                 @endif
             </td>
-            <td style="width:56%; text-align:center; vertical-align:middle; padding:0 5px;">
+            <td style="width:52%; text-align:center; vertical-align:middle; padding:0 8px;">
                 <div class="header-center">
-                    Direction Régionale du Conseil Agricole<br>
-                    <span style="font-size:13px; letter-spacing:0.5px;">RABAT SALE KENITRA</span>
+                    Direction Régionale du Conseil Agricole Rabat-Salé-Kénitra
                 </div>
             </td>
-            <td style="width:22%; text-align:right; vertical-align:middle;">
+            <td style="width:24%; text-align:right; vertical-align:middle;">
                 @if($sceauMarocSrc)
-                    <img src="{{ $sceauMarocSrc }}" style="height:58px; width:auto; max-width:140px;" alt="Royaume du Maroc">
+                    <img src="{{ $sceauMarocSrc }}" style="height:68px; width:auto;" alt="Royaume du Maroc">
                 @else
                     <div style="font-size:7.5px; font-weight:bold; line-height:1.3; text-align:right;">
                         المملكة المغربية<br>
@@ -253,11 +266,11 @@
     <!-- ══════════ CADRE BUDGET / EXERCICE ══════════ -->
     <table class="budget-box">
         <tr>
-            <td style="width:40%; font-weight:bold;">Budget</td>
-            <td style="width:60%; font-weight:bold; text-align:center;">{{ $typeBudget }}</td>
+            <td style="width:42%; font-weight:bold; background:#f2f2f2;">Budget</td>
+            <td style="width:58%; font-weight:bold; text-align:center;">{{ $typeBudget }}</td>
         </tr>
         <tr>
-            <td style="font-weight:bold;">Exercice</td>
+            <td style="font-weight:bold; background:#f2f2f2;">Exercice</td>
             <td style="font-weight:bold; text-align:center;">{{ $exercice }}</td>
         </tr>
     </table>
@@ -414,23 +427,23 @@
     <!-- ══════════ TABLEAU 4 : PIÈCES JOINTES & VISA ══════════ -->
     <table class="visa-box">
         <tr>
-            <td colspan="2" style="background:#fafafa; padding:4px 8px;">
+            <td colspan="2" style="background:#f5f5f5; padding:7px 10px;">
                 <span style="font-weight:bold;">Pièces jointes :</span><br>
                 <span style="margin-left:10px; font-weight:bold;">{{ $piecesJointes }}</span>
             </td>
         </tr>
         <tr>
-            <td colspan="2" style="text-align:center; font-weight:bold; font-size:11.5px; padding:5px; letter-spacing:0.5px;">
+            <td colspan="2" style="background:#e5e0d8; text-align:center; font-weight:bold; font-size:12px; padding:6px; letter-spacing:0.5px;">
                 VISA DU SOUS-ORDONNATEUR
             </td>
         </tr>
         <tr>
-            <td colspan="2" style="height:90px; vertical-align:top; border-bottom:none;">
+            <td colspan="2" style="height:125px; vertical-align:top; border-bottom:none;">
                 <!-- Zone réservée au visa, signature et cachet -->
             </td>
         </tr>
         <tr>
-            <td style="width:45%; font-weight:bold; text-align:center; border-top:1px solid #000;">Date :</td>
+            <td style="width:45%; font-weight:bold; text-align:center; border-top:1px solid #000; background:#f5f5f5;">Date :</td>
             <td style="width:55%; font-weight:bold; text-align:center; border-top:1px solid #000;">{{ $dateEngagement }}</td>
         </tr>
     </table>

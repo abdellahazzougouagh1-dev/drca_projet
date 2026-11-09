@@ -14,15 +14,15 @@
 
 <div id="bc-footer" style="
     position: fixed;
-    bottom: -32px;
+    bottom: -78px;
     left: 0;
     right: 0;
     width: 100%;
-    border-top: 1.5px solid #101011e6;
+    border-top: 1.5px solid #000080;
     padding-top: 4px;
     text-align: center;
 ">
     @if($footerBanner)
-        <img src="{{ $footerBanner }}" style="width: 100%; height: auto; max-height: 52px; display: block;" alt="ONCA DRCA">
+        <img src="{{ $footerBanner }}" style="width: 74%; height: auto; margin: 0 auto; display: block;" alt="ONCA DRCA">
     @endif
 </div>

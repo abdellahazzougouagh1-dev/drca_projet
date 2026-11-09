@@ -4,23 +4,17 @@
     <meta charset="UTF-8">
     <title>{{ $docTitle }}</title>
     <style>
-        @page { margin: 115px 40px 70px 40px; }
+        @page { size: A4 portrait; margin: 102px 36px 96px 36px; }
         body {
             font-family: 'Times New Roman', Times, serif;
-            font-size: 14px;
+            font-size: 12.5px;
             color: #000;
-            line-height: 1.5;
+            line-height: 1.45;
             margin: 0;
-        }
-        .header-logo { height: 45px; width: auto; }
-        .header-line {
-            border-bottom: 2px solid #000080;
-            margin-bottom: 18px;
         }
         table { width: 100%; border-collapse: collapse; }
         td, th { vertical-align: middle; }
         .page { position: relative; }
-        
 
         .right { text-align: right; }
         .center { text-align: center; }
@@ -30,111 +24,113 @@
         .meta-header {
             text-align: right;
             font-weight: bold;
-            font-size: 11px;
+            font-size: 12px;
+            line-height: 1.4;
             margin-top: 2px;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
         }
 
         .title-box {
-            border: 2px solid #000;
+            border: 2.5px solid #000;
             text-align: center;
             font-weight: bold;
-            font-size: 14px;
-            padding: 5px;
-            margin-bottom: 10px;
+            font-size: 15.5px;
+            padding: 6px 14px;
+            margin: 0 auto 10px auto;
+            width: 82%;
             background: #fff;
+            letter-spacing: 0.3px;
         }
 
         .info-table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 12px;
+            border: 1.5px solid #000;
+            margin-bottom: 10px;
         }
         .info-table td {
             border: 1px solid #000;
-            padding: 4px 6px;
-            font-size: 10.5px;
+            padding: 5.5px 8px;
+            font-size: 11.5px;
             vertical-align: middle;
         }
         .info-label {
             font-weight: bold;
-            width: 12%;
-            background: #ffffff;
+            width: 13%;
+            background: #f2f2f2;
         }
         .info-val {
-            width: 48%;
-        }
-        .imputation-cell {
-            width: 40%;
-            padding: 0 !important;
-            vertical-align: top !important;
-        }
-        .imputation-subtable {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        .imputation-subtable td {
-            border: none;
-            border-bottom: 1px solid #000;
-            border-left: 1px solid #000;
-            padding: 3px;
-            text-align: center;
-            font-size: 10.5px;
-        }
-        .imputation-subtable tr:last-child td {
-            border-bottom: none;
-        }
-        .imputation-subtable .sub-label {
-            width: 40%;
-            font-weight: bold;
-            border-left: none;
+            width: 47%;
         }
 
         .section-title-box {
-            border: 1px solid #000;
+            border: 1.5px solid #000;
             border-bottom: none;
-            width: 45%;
+            width: 48%;
             font-weight: bold;
-            font-size: 11px;
-            padding: 3px 6px;
-            background: #fff;
+            font-size: 12px;
+            padding: 5px 10px;
+            background: #f2f2f2;
         }
 
         .data-table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 12px;
+            border: 1.5px solid #000;
+            margin-bottom: 10px;
         }
         .data-table th, .data-table td {
             border: 1px solid #000;
-            padding: 5px 6px;
-            font-size: 10.5px;
+            padding: 6px 7px;
+            font-size: 11.5px;
         }
         .data-table th {
             text-align: center;
             font-weight: bold;
-            background: #ffffff;
+            background: #f2f2f2;
+            text-transform: uppercase;
+            font-size: 11px;
+        }
+        .empty-row td {
+            height: 18px;
+            padding: 4px 7px;
         }
 
         .totals-table {
-            width: 360px;
+            width: 390px;
             margin-left: auto;
-            margin-bottom: 12px;
+            margin-bottom: 10px;
             border-collapse: collapse;
+            border: 2px solid #000;
         }
         .totals-table td {
-            border: 2px solid #000;
-            padding: 5px 8px;
-            font-size: 11px;
+            border: 1.5px solid #000;
+            padding: 6px 10px;
+            font-size: 12px;
             font-weight: bold;
         }
+        .totals-table .tlabel {
+            background: #f2f2f2;
+            width: 60%;
+        }
 
+        .closing-row {
+            width: 100%;
+            margin-top: 14px;
+            border-collapse: collapse;
+            page-break-inside: avoid;
+        }
+        .closing-row td {
+            border: none;
+            vertical-align: top;
+            padding: 0;
+        }
         .date-box {
-            border: 1px solid #000;
-            padding: 4px 8px;
-            width: 230px;
+            border: 1.5px solid #000;
+            padding: 6px 10px;
+            width: 240px;
             font-weight: bold;
-            margin-top: 15px;
+            font-size: 12px;
         }
     </style>
     @include('documents.partials.bc_typography')
@@ -196,7 +192,7 @@
         <tr>
             <td class="info-label">CNSS</td>
             <td>{{ $doc['cnss'] }}</td>
-            <td colspan="3" rowspan="3" class="center" style="padding: 6px; font-size: 10px; line-height: 1.3;">{{ $doc['intitule'] }}</td>
+            <td colspan="3" rowspan="3" class="center" style="padding: 8px; font-size: 11px; line-height: 1.35;">{{ $doc['intitule'] }}</td>
         </tr>
         <tr>
             <td class="info-label">ICE</td>
@@ -224,7 +220,9 @@
             </tr>
         </thead>
         <tbody>
+            @php $articleCount = 0; @endphp
             @forelse($doc['articles'] as $key => $article)
+                @php $articleCount++; @endphp
                 <tr>
                     <td class="center">{{ $key + 1 }}</td>
                     <td style="text-align: left;">{{ $article->designation }}</td>
@@ -234,6 +232,7 @@
                     <td class="right">{{ number_format(($article->quantite ?? 1) * ($article->prix_unitaire_ht ?? 0), 2, ',', ' ') }}</td>
                 </tr>
             @empty
+                @php $articleCount = 1; @endphp
                 <tr>
                     <td class="center">1</td>
                     <td style="text-align: left;">{{ $doc['objet'] }}</td>
@@ -243,20 +242,25 @@
                     <td class="right">{{ number_format($doc['total_ht'], 2, ',', ' ') }}</td>
                 </tr>
             @endforelse
+            @for($i = max(0, 6 - $articleCount); $i > 0; $i--)
+                <tr class="empty-row">
+                    <td></td><td></td><td></td><td></td><td></td><td></td>
+                </tr>
+            @endfor
         </tbody>
     </table>
 
     <table class="totals-table">
         <tr>
-            <td style="width: 60%;">Total Hors Taxes (HT)</td>
-            <td class="right" style="width: 40%;">{{ number_format($doc['total_ht'], 2, ',', ' ') }}</td>
+            <td class="tlabel">Total Hors Taxes (HT)</td>
+            <td class="right">{{ number_format($doc['total_ht'], 2, ',', ' ') }}</td>
         </tr>
         <tr>
-            <td>Montant TVA ({{ number_format($doc['tva_rate'] * 100, 0) }}%)</td>
+            <td class="tlabel">Montant TVA ({{ number_format($doc['tva_rate'] * 100, 0) }}%)</td>
             <td class="right">{{ number_format($doc['tva'], 2, ',', ' ') }}</td>
         </tr>
         <tr>
-            <td>Total TTC</td>
+            <td class="tlabel">Total TTC</td>
             <td class="right">{{ number_format($doc['total_ttc'], 2, ',', ' ') }}</td>
         </tr>
     </table>
@@ -267,27 +271,32 @@
             : 'Le présent bon de commande est arrêté à la somme de :';
     @endphp
 
-    <div style="margin-top: 10px; font-size: 11px;">
+    <div style="margin-top: 8px; font-size: 12.5px;">
         <span class="bold">{{ $arreteTexte }}</span>
-        <span class="bold" style="margin-left: 25px;">{{ number_format($doc['total_ttc'], 2, ',', ' ') }} DH TTC</span>
+        <span class="bold" style="margin-left: 20px;">{{ number_format($doc['total_ttc'], 2, ',', ' ') }} DH TTC</span>
     </div>
-    <div style="margin-top: 4px; font-size: 11px;">
+    <div style="margin-top: 4px; font-size: 12.5px;">
         <span>En lettres :</span>
-        <span class="bold" style="margin-left: 20px;">{{ $doc['montant_en_lettres'] }}</span>
+        <span class="bold" style="margin-left: 16px;">{{ $doc['montant_en_lettres'] }}</span>
     </div>
 
-    <div class="right bold" style="margin-top: 20px; padding-right: 30px; font-size: 11px;">
-        Le Sous-Ordonnateur
-    </div>
-
-    <div class="date-box">
-        <table style="width: 100%; border: none;">
-            <tr>
-                <td style="border: none; font-weight: bold; width: 30%;">Date :</td>
-                <td style="border: none; text-align: center; font-weight: bold;">{{ $doc['date_document'] }}</td>
-            </tr>
-        </table>
-    </div>
+    <table class="closing-row">
+        <tr>
+            <td style="width: 55%; vertical-align: bottom;">
+                <div class="date-box">
+                    <table style="width: 100%; border: none;">
+                        <tr>
+                            <td style="border: none; font-weight: bold; width: 32%; font-size: 12px;">Date :</td>
+                            <td style="border: none; text-align: center; font-weight: bold; font-size: 12px;">{{ $doc['date_document'] }}</td>
+                        </tr>
+                    </table>
+                </div>
+            </td>
+            <td style="width: 45%; text-align: right; font-weight: bold; font-size: 13px; padding-right: 25px; padding-bottom: 18px;">
+                Le Sous-Ordonnateur
+            </td>
+        </tr>
+    </table>
 </div>
 </body>
 </html>

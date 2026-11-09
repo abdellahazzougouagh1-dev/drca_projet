@@ -5,14 +5,14 @@
     <title>Attestation de Référence</title>
     <style>
         @page { 
-            size: A4; 
-            margin: 20mm 15mm; 
+            size: A4 portrait; 
+            margin: 18px 34px 96px 34px; 
         }
         body { 
             font-family: 'Times New Roman', Times, serif; 
             font-size: 13.5px; 
             color: #000; 
-            line-height: 1.5; 
+            line-height: 1.55; 
             margin: 0; 
             padding: 0; 
         }
@@ -21,7 +21,7 @@
             border-collapse: collapse; 
         }
         .header-table {
-            margin-bottom: 5px;
+            margin-bottom: 4px;
             width: 100%;
             border-collapse: collapse;
         }
@@ -30,72 +30,84 @@
         }
         .header-center {
             text-align: center;
-            font-size: 14px;
+            font-size: 13.5px;
             font-weight: bold;
+            line-height: 1.35;
+            padding: 0 8px;
         }
         .blue-line {
             border-bottom: 2px solid #000080;
-            margin-bottom: 20px;
+            margin-bottom: 18px;
         }
         
         .ref-date-table { 
-            margin-bottom: 30px; 
-            margin-top: 10px; 
+            margin-bottom: 24px; 
+            margin-top: 4px; 
             font-family: 'Times New Roman', Times, serif; 
             font-size: 13px; 
         }
         .ref-date-table td { 
-            padding: 5px; 
+            padding: 4px 0; 
         }
         
         .title-container { 
             text-align: center; 
-            margin-bottom: 40px; 
+            margin-bottom: 26px; 
         }
         .title { 
-            font-size: 24px; 
+            font-size: 20px; 
             font-weight: bold; 
             text-transform: uppercase;
-            text-decoration: underline;
+            border: 2.5px solid #000;
+            display: inline-block;
+            padding: 10px 26px;
             margin-bottom: 10px;
+            letter-spacing: 0.6px;
         }
         
-        /* Ornement de séparation vintage (CSS) */
+        /* Ornement de séparation compatible Times New Roman / DomPDF */
         .ornament {
             text-align: center;
-            font-size: 20px;
-            color: #b09e5f; /* Couleur dorée discrète */
-            margin-bottom: 40px;
-            letter-spacing: 5px;
+            font-size: 14px;
+            color: #8a783d;
+            margin-bottom: 24px;
+            letter-spacing: 4px;
+            font-weight: bold;
         }
         
         .content-table { 
             width: 100%; 
-            margin-bottom: 20px; 
+            margin-bottom: 18px; 
             border-collapse: collapse; 
+            border: 1.5px solid #000;
         }
         .content-table td { 
-            padding: 8px 5px; 
-            vertical-align: top; 
+            border: 1px solid #000;
+            padding: 8px 10px; 
+            vertical-align: middle; 
+            font-size: 13px;
         }
         .content-table .label { 
-            width: 250px; 
+            width: 260px; 
+            background: #f2f2f2;
+            font-weight: bold;
         }
         .content-table .value { 
             font-weight: bold; 
         }
         
         .paragraph { 
-            margin: 15px 0; 
-            text-align: left; 
+            margin: 14px 0; 
+            text-align: justify; 
         }
         
         .signature-box { 
-            margin-top: 80px; 
-            margin-left: 55%;
+            margin-top: 48px; 
+            margin-left: 52%;
             text-align: center; 
             font-weight: bold; 
-            line-height: 1.4;
+            line-height: 1.45;
+            font-size: 13.5px;
         }
     </style>
     @include('documents.partials.bc_typography')
@@ -142,16 +154,18 @@
     }
 @endphp
 
+    @include('documents.partials.bc_footer')
+
     <table class="header-table">
         <tr>
-            <td style="width: 25%;">
-                <img src="data:image/png;base64,{{ base64_encode(file_get_contents(public_path('images/logo-onca.png'))) }}" alt="Logo ONCA" style="height: 70px; width: auto;">
+            <td style="width: 24%; text-align: left;">
+                <img src="data:image/png;base64,{{ base64_encode(file_get_contents(public_path('images/logo-onca.png'))) }}" alt="Logo ONCA" style="height: 68px; width: auto;">
             </td>
-            <td class="header-center" style="width: 50%;">
+            <td class="header-center" style="width: 52%;">
                 Direction Régionale du Conseil Agricole Rabat-Salé-Kénitra
             </td>
-            <td style="width: 25%; text-align: right;">
-                <img src="data:image/png;base64,{{ base64_encode(file_get_contents(public_path('images/sceau-maroc.png'))) }}" alt="Sceau Maroc" style="height: 70px; width: auto;">
+            <td style="width: 24%; text-align: right;">
+                <img src="data:image/png;base64,{{ base64_encode(file_get_contents(public_path('images/sceau-maroc.png'))) }}" alt="Sceau Maroc" style="height: 68px; width: auto;">
             </td>
         </tr>
     </table>
@@ -170,7 +184,7 @@
 
     <div class="title-container">
         <div class="title">ATTESTATION DE RÉFÉRENCE</div>
-        <div class="ornament">&#10086; &sim;&sim;&sim; &#10086; &sim;&sim;&sim; &#10086;</div>
+        <div class="ornament">&mdash;&mdash;&nbsp;&nbsp;*&nbsp;&nbsp;*&nbsp;&nbsp;*&nbsp;&nbsp;&mdash;&mdash;</div>
     </div>
 
     <div style="margin-bottom: 20px; text-indent: 40px;">
@@ -225,8 +239,6 @@
         National du Conseil Agricole de<br>
         Rabat-Salé-Kénitra
     </div>
-
-    @include('documents.partials.bc_footer')
 
 </body>
 </html>

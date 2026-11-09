@@ -4,9 +4,20 @@
     <meta charset="UTF-8">
     <title>{{ $docTitle }}</title>
     <style>
-        body { font-family: 'Times New Roman', Times, serif; font-size: 14px; color: #333; line-height: 1.5; margin: 30px; }
+        @page {
+            size: A4 portrait;
+            margin: 18px 34px 96px 34px;
+        }
+        body {
+            font-family: 'Times New Roman', Times, serif;
+            font-size: 12.5px;
+            color: #000;
+            line-height: 1.48;
+            margin: 0;
+            padding: 0;
+        }
         .header-table {
-            margin-bottom: 5px;
+            margin-bottom: 4px;
             width: 100%;
             border-collapse: collapse;
         }
@@ -15,34 +26,73 @@
         }
         .header-center {
             text-align: center;
-            font-size: 12px;
+            font-size: 13.5px;
             font-weight: bold;
+            line-height: 1.35;
+            padding: 0 8px;
         }
         .blue-line {
             border-bottom: 2px solid #000080;
-            margin-bottom: 20px;
+            margin-bottom: 16px;
         }
-        .doc-title { font-size: 14px; font-weight: bold; text-align: center; margin: 30px 0; text-transform: uppercase; color: #222; border: 1px solid #ccc; padding: 15px; background: #f9f9f9;}
-        .section-title { font-size: 12px; font-weight: bold; border-bottom: 1px solid #ddd; padding-bottom: 5px; margin-top: 30px; margin-bottom: 15px; color: #0056b3; }
-        .data-table { w-full: 100%; width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-        .data-table th, .data-table td { padding: 10px; border: 1px solid #eee; text-align: left; }
-        .data-table th { background-color: #f5f7fa; width: 35%; font-weight: bold; color: #444; }
-        .footer { position: fixed; bottom: -10px; left: 0; right: 0; text-align: center; font-size: 10px; color: #999; border-top: 1px solid #eee; padding-top: 10px; }
+        .doc-title {
+            font-size: 15.5px;
+            font-weight: bold;
+            text-align: center;
+            margin: 8px auto 18px auto;
+            text-transform: uppercase;
+            color: #000;
+            border: 2.5px solid #000;
+            padding: 9px 14px;
+            width: 78%;
+            background: #fff;
+        }
+        .section-title {
+            font-size: 12.5px;
+            font-weight: bold;
+            border-bottom: 1.5px solid #000;
+            padding-bottom: 4px;
+            margin-top: 18px;
+            margin-bottom: 10px;
+            color: #000;
+            text-transform: uppercase;
+        }
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 16px;
+            border: 1.5px solid #000;
+        }
+        .data-table th, .data-table td {
+            padding: 8px 10px;
+            border: 1px solid #000;
+            text-align: left;
+            font-size: 12px;
+        }
+        .data-table th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+            color: #000;
+        }
+        .kv-table th {
+            width: 34%;
+        }
     </style>
     @include('documents.partials.bc_typography')
 </head>
 <body>
+    @include('documents.partials.bc_footer')
 
     <table class="header-table">
         <tr>
-            <td style="width: 25%;">
-                <img src="data:image/png;base64,{{ base64_encode(file_get_contents(public_path('images/logo-onca.png'))) }}" alt="Logo ONCA" style="height: 70px; width: auto;">
+            <td style="width: 24%; text-align: left;">
+                <img src="data:image/png;base64,{{ base64_encode(file_get_contents(public_path('images/logo-onca.png'))) }}" alt="Logo ONCA" style="height: 68px; width: auto;">
             </td>
-            <td class="header-center" style="width: 50%;">
+            <td class="header-center" style="width: 52%;">
                 Direction Régionale du Conseil Agricole Rabat-Salé-Kénitra
             </td>
-            <td style="width: 25%; text-align: right;">
-                <img src="data:image/png;base64,{{ base64_encode(file_get_contents(public_path('images/sceau-maroc.png'))) }}" alt="Sceau Maroc" style="height: 70px; width: auto;">
+            <td style="width: 24%; text-align: right;">
+                <img src="data:image/png;base64,{{ base64_encode(file_get_contents(public_path('images/sceau-maroc.png'))) }}" alt="Sceau Maroc" style="height: 68px; width: auto;">
             </td>
         </tr>
     </table>
@@ -53,7 +103,7 @@
     </div>
 
     <div class="section-title">Informations de la Consultation</div>
-    <table class="data-table">
+    <table class="data-table kv-table">
         <tr>
             <th>N° Consultation</th>
             <td>{{ $consultation->numero_consultation }}</td>
@@ -73,7 +123,7 @@
     </table>
 
     <div class="section-title">Informations Financières</div>
-    <table class="data-table">
+    <table class="data-table kv-table">
         <tr>
             <th>Ligne Budgétaire</th>
             <td>
@@ -142,12 +192,10 @@
         @endforeach
     @endif
 
-    <div style="margin-top: 50px;">
-        <p>Document généré électroniquement le {{ date('d/m/Y à H:i') }}.</p>
-        <p>Signature & Cachet :</p>
+    <div style="margin-top: 32px; text-align: right; padding-right: 30px; font-weight: bold;">
+        <p style="font-weight: normal; font-size: 11px; text-align: left;">Document généré électroniquement le {{ date('d/m/Y à H:i') }}.</p>
+        <p style="margin-top: 14px;">Signature &amp; Cachet :</p>
     </div>
-
-    @include('documents.partials.bc_footer')
 
 </body>
 </html>

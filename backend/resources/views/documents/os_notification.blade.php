@@ -5,21 +5,23 @@
     <title>Ordre de Service de Notification</title>
     <style>
         @page { 
-            size: A4; 
-            margin: 15mm 10mm; 
+            size: A4 portrait; 
+            margin: 18px 34px 96px 34px; 
         }
         body { 
             font-family: "Times New Roman", Times, serif; 
-            font-size: 11.5px; 
+            font-size: 12.5px; 
             color: #000; 
-            line-height: 1.45; 
+            line-height: 1.48; 
+            margin: 0;
+            padding: 0;
         }
         table { 
             width: 100%; 
             border-collapse: collapse; 
         }
         .header-table {
-            margin-bottom: 5px;
+            margin-bottom: 4px;
             width: 100%;
             border-collapse: collapse;
         }
@@ -28,83 +30,97 @@
         }
         .header-center {
             text-align: center;
-            font-size: 14px;
+            font-size: 13.5px;
             font-weight: bold;
+            line-height: 1.35;
+            padding: 0 8px;
         }
         .blue-line {
             border-bottom: 2px solid #000080;
-            margin-bottom: 20px;
+            margin-bottom: 16px;
         }
         
         .top-info-table { 
-            margin-bottom: 40px; 
+            margin-bottom: 22px; 
+            font-size: 12.5px;
         }
         .top-info-table td { 
             vertical-align: top; 
         }
         
         .destinataire-box { 
-            margin-left: 50%; 
-            margin-bottom: 50px; 
-            line-height: 1.6; 
+            margin-left: 46%; 
+            margin-bottom: 24px; 
+            line-height: 1.5; 
+            font-size: 12.5px;
         }
         
         .title { 
             text-align: center; 
-            font-size: 18px; 
+            font-size: 16px; 
             font-weight: bold; 
-            text-decoration: underline; 
-            margin-bottom: 40px; 
+            border: 2px solid #000;
+            padding: 8px 14px;
+            margin: 0 auto 22px auto;
+            width: 88%;
         }
         
         .subject-table { 
-            margin-bottom: 30px; 
+            margin-bottom: 20px; 
+            border: 1.5px solid #000;
         }
         .subject-table td { 
             vertical-align: top; 
+            border: 1px solid #000;
+            padding: 7.5px 9px;
+            font-size: 12.5px;
         }
         .subject-label { 
             font-weight: bold; 
-            width: 80px; 
+            width: 110px; 
+            background: #f2f2f2;
         }
         
         .content { 
             text-align: justify; 
-            margin-bottom: 50px; 
-            font-size: 14px; 
-            line-height: 1.6;
+            margin-bottom: 24px; 
+            font-size: 13px; 
+            line-height: 1.55;
         }
         
         .signature { 
             text-align: right; 
             font-weight: bold; 
-            margin-bottom: 60px; 
-            padding-right: 50px; 
+            font-size: 13px;
+            margin-bottom: 36px; 
+            padding-right: 40px; 
         }
         
         .accuse-box { 
-            border: 2px solid #000; 
-            padding: 15px; 
-            margin-top: 30px; 
+            border: 1.5px solid #000; 
+            padding: 14px 16px; 
+            margin-top: 12px; 
             page-break-inside: avoid;
         }
         .accuse-title { 
             text-align: center; 
             font-weight: bold; 
-            font-size: 15px; 
+            font-size: 14px; 
             text-decoration: underline; 
-            margin-bottom: 20px; 
+            margin-bottom: 14px; 
         }
         .accuse-content { 
-            line-height: 1.8; 
-            margin-bottom: 30px; 
+            line-height: 1.65; 
+            margin-bottom: 20px; 
             text-align: justify;
+            font-size: 12.5px;
         }
         .accuse-signature { 
             text-align: right; 
             font-weight: bold; 
-            padding-right: 50px; 
-            height: 80px;
+            padding-right: 36px; 
+            height: 60px;
+            font-size: 12.5px;
         }
     </style>
     @include('documents.partials.bc_typography')
@@ -140,16 +156,18 @@
         : \Carbon\Carbon::parse(now())->format('d/m/Y');
 @endphp
 
+    @include('documents.partials.bc_footer')
+
     <table class="header-table">
         <tr>
-            <td style="width: 25%;">
-                <img src="data:image/png;base64,{{ base64_encode(file_get_contents(public_path('images/logo-onca.png'))) }}" alt="Logo ONCA" style="height: 70px; width: auto;">
+            <td style="width: 24%; text-align: left;">
+                <img src="data:image/png;base64,{{ base64_encode(file_get_contents(public_path('images/logo-onca.png'))) }}" alt="Logo ONCA" style="height: 68px; width: auto;">
             </td>
-            <td class="header-center" style="width: 50%;">
+            <td class="header-center" style="width: 52%;">
                 Direction Régionale du Conseil Agricole Rabat-Salé-Kénitra
             </td>
-            <td style="width: 25%; text-align: right;">
-                <img src="data:image/png;base64,{{ base64_encode(file_get_contents(public_path('images/sceau-maroc.png'))) }}" alt="Sceau Maroc" style="height: 70px; width: auto;">
+            <td style="width: 24%; text-align: right;">
+                <img src="data:image/png;base64,{{ base64_encode(file_get_contents(public_path('images/sceau-maroc.png'))) }}" alt="Sceau Maroc" style="height: 68px; width: auto;">
             </td>
         </tr>
     </table>
@@ -189,7 +207,7 @@
     </table>
 
     <div class="content">
-        J'ai l'honneur de vous faire connaître que {{ $typeEng === 'Bon de commande' ? 'le bon de commande cité en référence' : 'la convention citée en référence' }}, dont le montant s'élève à <strong>{{ number_format($consultation->engagement->montant_engagement ?? 0, 2, ',', ' ') }} MAD TTC</strong>, a été approuvé{{ $typeEng === 'Bon de commande' ? '' : 'e' }} le : <strong>{{ \Carbon\Carbon::parse($consultation->engagement->date_engagement ?? now())->format('d/m/Y') }}</strong>.
+        J'ai l'honneur de vous faire connaître que {{ $typeEng === 'Bon de commande' ? 'le bon de commande cité en référence' : 'la convention citée en référence' }}, dont le montant s'élève à <strong style="padding-left: 3px;">{{ number_format($consultation->engagement->montant_engagement ?? 0, 2, ',', ' ') }} MAD TTC</strong>, a été approuvé{{ $typeEng === 'Bon de commande' ? '' : 'e' }} le : <strong style="padding-left: 2px;">{{ \Carbon\Carbon::parse($consultation->engagement->date_engagement ?? now())->format('d/m/Y') }}</strong>.
         <br><br>
         Je vous invite en conséquence à prendre toutes les dispositions nécessaires pour l'exécution des prestations qui vous sont confiées dans les délais impartis.
     </div>
@@ -212,8 +230,6 @@
             Signature et Cachet du Fournisseur
         </div>
     </div>
-
-    @include('documents.partials.bc_footer')
 
 </body>
 </html>

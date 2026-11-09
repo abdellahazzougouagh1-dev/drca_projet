@@ -4,18 +4,16 @@
     <meta charset="UTF-8">
     <title>{{ $docTitle }}</title>
     <style>
-        @page { margin: 115px 40px 70px 40px; }
+        @page {
+            size: A4 portrait;
+            margin: 102px 36px 96px 36px;
+        }
         body {
             font-family: 'Times New Roman', Times, serif;
-            font-size: 14px;
+            font-size: 12.5px;
             color: #000;
             line-height: 1.5;
             margin: 0;
-        }
-        .header-logo { height: 34px; width: auto; }
-        .header-line {
-            border-bottom: 1.5px solid #000080;
-            margin-bottom: 14px;
         }
         table { width: 100%; border-collapse: collapse; }
         td, th { vertical-align: top; }
@@ -29,55 +27,59 @@
         .ref-table td {
             font-size: 12.5px;
             font-weight: bold;
-            padding-bottom: 12px;
+            padding-bottom: 10px;
         }
 
         .header-title {
             text-align: center;
             font-weight: bold;
-            font-size: 14px;
+            font-size: 13.5px;
             line-height: 1.4;
-            margin-bottom: 16px;
-        }
-
-        .recipient-box {
-            width: 100%;
-            margin-bottom: 16px;
-        }
-        .recipient-content {
-            width: 60%;
-            float: right;
-            font-size: 12.5px;
-            line-height: 1.45;
+            margin-bottom: 12px;
         }
 
         .meta-grid {
             width: 100%;
-            margin-bottom: 16px;
+            margin-bottom: 14px;
             font-size: 12.5px;
+            border: 1.5px solid #000;
+            border-collapse: collapse;
         }
         .meta-grid td {
-            padding: 4px 0;
+            border: 1px solid #000;
+            padding: 7px 9px;
             font-weight: bold;
+            vertical-align: middle;
+        }
+        .meta-grid .meta-lbl {
+            background: #f2f2f2;
         }
 
         .content-block {
             font-size: 12.5px;
             line-height: 1.55;
-            margin-bottom: 16px;
+            margin-bottom: 14px;
         }
 
         .divider {
             border: none;
-            border-top: 1px solid #000;
-            margin: 24px 0 18px 0;
+            border-top: 1.5px solid #000;
+            margin: 18px 0 14px 0;
+        }
+
+        .accuse-box {
+            border: 1.5px solid #000;
+            padding: 14px 16px 26px 16px;
+            margin-top: 12px;
+            page-break-inside: avoid;
         }
 
         .accus-title {
             text-align: center;
             font-weight: bold;
             font-size: 14px;
-            margin-bottom: 14px;
+            text-decoration: underline;
+            margin-bottom: 12px;
             text-transform: uppercase;
         }
     </style>
@@ -119,14 +121,12 @@
     <!-- Objet & Référence -->
     <table class="meta-grid">
         <tr>
-            <td style="width: 12%;">Objet</td>
-            <td style="width: 3%;">:</td>
-            <td style="width: 25%;">Ordre de service de :</td>
-            <td style="width: 60%; font-weight: bold;">{{ $doc['nature_os'] ?? "Notification de l'approbation" }}</td>
+            <td class="meta-lbl" style="width: 15%;">Objet</td>
+            <td style="width: 26%;">Ordre de service de :</td>
+            <td style="width: 59%; font-weight: bold;">{{ $doc['nature_os'] ?? "Notification de l'approbation" }}</td>
         </tr>
         <tr>
-            <td>Référence</td>
-            <td>:</td>
+            <td class="meta-lbl">Référence</td>
             <td>Bon de Commande N° :</td>
             <td style="font-weight: bold;">{{ $doc['numero_bc'] }}</td>
         </tr>
@@ -197,72 +197,81 @@
     <!-- Ligne de séparation -->
     <hr class="divider">
 
-    <!-- Section Accusé de Réception -->
-    <div class="accus-title">
-        Accusé de réception
-    </div>
+    <!-- Section Accusé de Réception encadrée -->
+    <div class="accuse-box">
+        <div class="accus-title">
+            Accusé de réception
+        </div>
 
-    <div class="content-block">
-        <p style="margin: 0 0 6px 0;">Je soussigné, Monsieur</p>
+        <div class="content-block" style="margin-bottom: 0;">
+            <p style="margin: 0 0 8px 0;">Je soussigné, Monsieur</p>
 
-        <table style="width: 100%; margin-bottom: 6px;">
-            <tr>
-                <td style="width: 43%;">Gérant / agissant au nom et pour le compte de la société :</td>
-                <td class="bold">{{ $doc['societe'] }}</td>
-            </tr>
-            <tr>
-                <td>Faisant élection de domicile à :</td>
-                <td class="bold">{{ $doc['adresse_societe'] }}</td>
-            </tr>
-        </table>
+            <table style="width: 100%; margin-bottom: 8px;">
+                <tr>
+                    <td style="width: 45%; padding: 2px 0;">Gérant / agissant au nom et pour le compte de la société :</td>
+                    <td class="bold" style="padding: 2px 0;">{{ $doc['societe'] }}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 2px 0;">Faisant élection de domicile à :</td>
+                    <td class="bold" style="padding: 2px 0;">{{ $doc['adresse_societe'] }}</td>
+                </tr>
+            </table>
 
-        @if($isAjournement)
-            <p style="margin: 0 0 6px 0;">
-                Atteste avoir reçu du Directeur Régional du Conseil Agricole de Rabat-Salé-Kénitra l'ordre d'arrêt de l'exécution
-            </p>
-        @elseif($isReprise)
-            <p style="margin: 0 0 6px 0;">
-                Atteste avoir reçu du Directeur Régional du Conseil Agricole de Rabat-Salé-Kénitra l'ordre de reprise de l'exécution
-            </p>
-        @elseif($isNotification)
-            <p style="margin: 0 0 6px 0;">
-                Atteste avoir reçu du Directeur Régional du Conseil Agricole de Rabat-Salé-Kénitra la notification de l'approbation de :
-            </p>
-        @else
-            <p style="margin: 0 0 6px 0;">
-                Atteste avoir reçu du Directeur Régional du Conseil Agricole de Rabat-Salé-Kénitra l'ordre de commencement de l'exécution
-            </p>
-        @endif
+            @if($isAjournement)
+                <p style="margin: 0 0 8px 0;">
+                    Atteste avoir reçu du Directeur Régional du Conseil Agricole de Rabat-Salé-Kénitra l'ordre d'arrêt de l'exécution
+                </p>
+            @elseif($isReprise)
+                <p style="margin: 0 0 8px 0;">
+                    Atteste avoir reçu du Directeur Régional du Conseil Agricole de Rabat-Salé-Kénitra l'ordre de reprise de l'exécution
+                </p>
+            @elseif($isNotification)
+                <p style="margin: 0 0 8px 0;">
+                    Atteste avoir reçu du Directeur Régional du Conseil Agricole de Rabat-Salé-Kénitra la notification de l'approbation de :
+                </p>
+            @else
+                <p style="margin: 0 0 8px 0;">
+                    Atteste avoir reçu du Directeur Régional du Conseil Agricole de Rabat-Salé-Kénitra l'ordre de commencement de l'exécution
+                </p>
+            @endif
 
-        <table style="width: 100%; margin-bottom: 6px;">
-            <tr>
-                <td style="width: 25%; font-weight: bold;">Bon de Commande :</td>
-                <td class="bold">{{ $doc['numero_bc'] }}</td>
-            </tr>
-        </table>
+            <table style="width: 100%; margin-bottom: 8px;">
+                <tr>
+                    <td style="width: 26%; font-weight: bold;">Bon de Commande :</td>
+                    <td class="bold">{{ $doc['numero_bc'] }}</td>
+                </tr>
+            </table>
 
-        <p style="margin: 0 0 4px 0;">Ayant pour objet :</p>
-        <p class="bold justify" style="margin: 0 0 10px 0;">
-            {{ $doc['objet'] }}
-        </p>
+            <p style="margin: 0 0 4px 0;">Ayant pour objet :</p>
+            <p class="bold justify" style="margin: 0 0 10px 0;">
+                {{ $doc['objet'] }}
+            </p>
 
-        @if($isAjournement)
-            <p style="margin: 6px 0 0 0;">
-                J'accuse par la présente, la réception de l'ordre de service d'arrêt de l'exécution du Bon de commande sus-cité.
-            </p>
-        @elseif($isReprise)
-            <p style="margin: 6px 0 0 0;">
-                J'accuse par la présente, la réception de l'ordre de service de reprise de l'exécution du Bon de commande sus-cité.
-            </p>
-        @elseif($isNotification)
-            <p style="margin: 6px 0 0 0;">
-                J'accuse par la présente, la réception de la notification de l'approbation du bon de commande sus-cité.
-            </p>
-        @else
-            <p style="margin: 6px 0 0 0;">
-                J'accuse par la présente, la réception de l'ordre de service de commencement de l'exécution du Bon de commande sus-cité.
-            </p>
-        @endif
+            @if($isAjournement)
+                <p style="margin: 6px 0 16px 0;">
+                    J'accuse par la présente, la réception de l'ordre de service d'arrêt de l'exécution du Bon de commande sus-cité.
+                </p>
+            @elseif($isReprise)
+                <p style="margin: 6px 0 16px 0;">
+                    J'accuse par la présente, la réception de l'ordre de service de reprise de l'exécution du Bon de commande sus-cité.
+                </p>
+            @elseif($isNotification)
+                <p style="margin: 6px 0 16px 0;">
+                    J'accuse par la présente, la réception de la notification de l'approbation du bon de commande sus-cité.
+                </p>
+            @else
+                <p style="margin: 6px 0 16px 0;">
+                    J'accuse par la présente, la réception de l'ordre de service de commencement de l'exécution du Bon de commande sus-cité.
+                </p>
+            @endif
+
+            <table style="width: 100%; margin-top: 12px;">
+                <tr>
+                    <td style="width: 55%;">Reçu le : ...............................</td>
+                    <td style="width: 45%; text-align: right; font-weight: bold;">Signature et Cachet</td>
+                </tr>
+            </table>
+        </div>
     </div>
 </div>
 </body>

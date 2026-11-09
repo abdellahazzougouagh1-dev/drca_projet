@@ -4,52 +4,58 @@
     <meta charset="UTF-8">
     <title>Ordre de Paiement</title>
     <style>
-        @page { margin: 7mm 10mm 7mm 10mm; size: A4 portrait; }
+        @page { margin: 16px 32px 96px 32px; size: A4 portrait; }
         * { box-sizing: border-box; }
-        body { font-family: "Times New Roman", Times, serif; font-size: 10.5px; line-height: 1.3; margin: 0; padding: 0; color: #000; }
+        body { font-family: "Times New Roman", Times, serif; font-size: 10.5px; line-height: 1.32; margin: 0; padding: 0; color: #000; }
         td, th { font-family: "Times New Roman", Times, serif; }
 
-        .hdr { width: 100%; border-collapse: collapse; margin-bottom: 3px; }
-        .hdr td { vertical-align: middle; padding: 0; }
-        .hdr-center { text-align: center; font-size: 11px; font-weight: bold; line-height: 1.4; }
-        .hdr-divider { border-bottom: 1.5px solid #000; margin: 4px 0 5px 0; }
+        .hdr { width: 100%; border-collapse: collapse; margin-bottom: 4px; }
+        .hdr td { vertical-align: middle; padding: 0; border: none; }
+        .hdr-center { text-align: center; font-size: 13px; font-weight: bold; line-height: 1.3; padding: 0 8px; }
+        .hdr-divider { border-bottom: 2px solid #000080; margin: 4px 0 7px 0; }
 
-        .budget-box { width: 220px; border-collapse: collapse; margin-left: auto; margin-bottom: 5px; border: 1.5px solid #000; }
-        .budget-box td { border: 1px solid #000; padding: 3px 7px; font-size: 9px; font-weight: bold; }
+        .budget-box { width: 235px; border-collapse: collapse; margin-left: auto; margin-bottom: 5px; border: 1.5px solid #000; }
+        .budget-box td { border: 1px solid #000; padding: 3.5px 7px; font-size: 9.5px; font-weight: bold; }
         .budget-box .val { text-align: center; }
 
-        .main-title {
-            text-align: center; font-size: 14px; font-weight: bold;
-            letter-spacing: 0.5px; margin: 5px 0 8px 0;
-            text-transform: uppercase; text-decoration: underline;
+        .title-banner {
+            background-color: #e5e0d8;
+            border: 1.5px solid #000;
+            text-align: center;
+            padding: 5px 0;
+            margin: 4px 0 7px 0;
+            font-size: 13.5px;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
         }
 
-        .num-box { border-collapse: collapse; margin-left: auto; margin-bottom: 8px; }
-        .num-box td { border: 1px solid #000; padding: 4px 8px; font-size: 10px; }
+        .num-box { border-collapse: collapse; margin-left: auto; margin-bottom: 8px; border: 1.5px solid #000; }
+        .num-box td { border: 1px solid #000; padding: 3.5px 8px; font-size: 10px; }
 
         .main-table { width: 100%; border-collapse: collapse; margin-bottom: 8px; border: 1.5px solid #000; }
         .main-table th {
-            background: #d9d9d9; font-weight: bold; text-align: center;
+            background: #e5e0d8; font-weight: bold; text-align: center;
             padding: 5px 6px; border: 1px solid #000; font-size: 10px;
             letter-spacing: 0.3px; text-transform: uppercase;
         }
-        .main-table td { border: 1px solid #000; padding: 4px 6px; font-size: 9.5px; vertical-align: top; }
-        .label-col { font-weight: bold; width: 22%; text-align: center; vertical-align: middle !important; }
+        .main-table td { border: 1px solid #000; padding: 4.5px 7px; font-size: 10px; vertical-align: middle; }
+        .label-col { font-weight: bold; width: 22%; text-align: center; background: #f5f5f5; vertical-align: middle !important; }
         .value-col { }
 
         .pieces-table { width: 100%; border-collapse: collapse; }
-        .pieces-table td { border: 1px solid #000; padding: 3px 5px; font-size: 9px; }
+        .pieces-table td { border: 1px solid #000; padding: 3.5px 6px; font-size: 9.5px; }
         .pieces-table .num { width: 6%; text-align: center; font-weight: bold; }
         .pieces-table .pj { width: 72%; }
         .pieces-table .mode-cell { width: 22%; text-align: center; font-weight: bold; font-size: 11px; vertical-align: middle; }
 
-        .imput-table { width: 100%; border-collapse: collapse; border: 1.5px solid #000; margin-bottom: 6px; }
-        .imput-table th { background: #d9d9d9; font-weight: bold; text-align: center; padding: 4px; border: 1px solid #000; font-size: 9.5px; }
-        .imput-table td { border: 1px solid #000; padding: 4px 6px; text-align: center; font-size: 9.5px; font-weight: bold; }
+        .imput-table { width: 100%; border-collapse: collapse; border: 1.5px solid #000; margin-bottom: 8px; }
+        .imput-table th { background: #e5e0d8; font-weight: bold; text-align: center; padding: 4.5px; border: 1px solid #000; font-size: 9.5px; }
+        .imput-table td { border: 1px solid #000; padding: 4.5px 6px; text-align: center; font-size: 9.5px; font-weight: bold; }
 
-        .visa-row { width: 100%; border-collapse: collapse; border: 1.5px solid #000; }
-        .visa-row th { background: #d9d9d9; font-weight: bold; text-align: center; padding: 5px; border: 1px solid #000; font-size: 10px; letter-spacing: 0.3px; }
-        .visa-row td { height: 55px; border: 1px solid #000; vertical-align: top; }
+        .visa-row { width: 100%; border-collapse: collapse; border: 1.5px solid #000; page-break-inside: avoid; }
+        .visa-row th { background: #e5e0d8; font-weight: bold; text-align: center; padding: 5px; border: 1px solid #000; font-size: 10px; letter-spacing: 0.3px; }
+        .visa-row td { height: 75px; border: 1px solid #000; vertical-align: top; }
     </style>
     @include('documents.partials.bc_typography')
 </head>
@@ -102,18 +108,19 @@
     $prestationNature = data_get($documentData, 'prestation_meme_nature', 'PRESTATION DE MEME NATURE');
 @endphp
 
+@include('documents.partials.bc_footer')
+
 <!-- HEADER -->
 <table class="hdr">
     <tr>
-        <td style="width:22%; text-align:left;">
-            @if($logoOncaSrc)<img src="{{ $logoOncaSrc }}" style="height:52px; width:auto;">@endif
+        <td style="width:24%; text-align:left;">
+            @if($logoOncaSrc)<img src="{{ $logoOncaSrc }}" style="height:64px; width:auto;">@endif
         </td>
-        <td style="width:56%;" class="hdr-center">
-            Direction régionale du Conseil agricole<br>
-            <span style="font-size:12px;">Rabat-Salé-Kénitra</span>
+        <td style="width:52%;" class="hdr-center">
+            Direction Régionale du Conseil Agricole Rabat-Salé-Kénitra
         </td>
-        <td style="width:22%; text-align:right;">
-            @if($sceauMarocSrc)<img src="{{ $sceauMarocSrc }}" style="height:52px; width:auto;">@endif
+        <td style="width:24%; text-align:right;">
+            @if($sceauMarocSrc)<img src="{{ $sceauMarocSrc }}" style="height:64px; width:auto;">@endif
         </td>
     </tr>
 </table>
@@ -121,25 +128,25 @@
 
 <!-- BUDGET BOX -->
 <table class="budget-box">
-    <tr><td>Budget</td><td class="val">{{ $typeBudget }}</td></tr>
-    <tr><td>Crédit</td><td class="val">{{ $creditType }}</td></tr>
-    <tr><td>Exercice</td><td class="val">{{ $exercice }}</td></tr>
-    <tr><td>Exercice origine</td><td class="val">{{ $exerciceOrig }}</td></tr>
+    <tr><td style="background:#f5f5f5;">Budget</td><td class="val">{{ $typeBudget }}</td></tr>
+    <tr><td style="background:#f5f5f5;">Crédit</td><td class="val">{{ $creditType }}</td></tr>
+    <tr><td style="background:#f5f5f5;">Exercice</td><td class="val">{{ $exercice }}</td></tr>
+    <tr><td style="background:#f5f5f5;">Exercice origine</td><td class="val">{{ $exerciceOrig }}</td></tr>
 </table>
 
 <!-- TITRE -->
-<div class="main-title">ORDRE DE PAIEMENT (OP)</div>
+<div class="title-banner">ORDRE DE PAIEMENT (OP)</div>
 
 <!-- N° OP + DATE -->
-<table class="num-box" style="width:60%; margin-left:auto; margin-bottom:8px;">
+<table class="num-box" style="width:56%; margin-left:auto; margin-bottom:8px;">
     <tr>
-        <td style="font-weight:bold; width:22%;">OP N°</td>
-        <td style="font-weight:bold; font-size:13px; text-align:center; width:15%;">{{ $numOP }}</td>
-        <td style="font-weight:bold; width:63%;">{{ $suffixe }}</td>
+        <td style="font-weight:bold; width:24%; background:#f5f5f5;">OP N°</td>
+        <td style="font-weight:bold; font-size:12.5px; text-align:center; width:20%;">{{ $numOP }}</td>
+        <td style="font-weight:bold; width:56%; text-align:center;">{{ $suffixe }}</td>
     </tr>
     <tr>
-        <td style="font-weight:bold;">DATE</td>
-        <td colspan="2" style="text-align:center;">{{ $dateDoc }}</td>
+        <td style="font-weight:bold; background:#f5f5f5;">DATE</td>
+        <td colspan="2" style="text-align:center; font-weight:bold;">{{ $dateDoc }}</td>
     </tr>
 </table>
 
@@ -172,9 +179,9 @@
         <td colspan="2" style="padding:0;">
             <table class="pieces-table">
                 <tr>
-                    <td class="num" style="background:#f0f0f0; font-weight:bold; border-bottom:1px solid #000;"></td>
-                    <td class="pj" style="background:#d9d9d9; font-weight:bold; font-size:10px; padding:4px; border-bottom:1px solid #000;">PIÈCES JOINTES :</td>
-                    <td class="mode-cell" style="background:#d9d9d9; font-weight:bold; font-size:10px; border-bottom:1px solid #000;">MODE DE PAIEMENT</td>
+                    <td class="num" style="background:#e5e0d8; font-weight:bold; border-bottom:1px solid #000;"></td>
+                    <td class="pj" style="background:#e5e0d8; font-weight:bold; font-size:10px; padding:4px; border-bottom:1px solid #000;">PIÈCES JOINTES :</td>
+                    <td class="mode-cell" style="background:#e5e0d8; font-weight:bold; font-size:10px; border-bottom:1px solid #000;">MODE DE PAIEMENT</td>
                 </tr>
                 @foreach($pjLines as $idx => $pj)
                 <tr>
@@ -237,12 +244,10 @@
         <th style="width:50%;">VISA DU FONDÉ DE POUVOIR</th>
     </tr>
     <tr>
-        <td style="height:60px;"></td>
-        <td style="height:60px;"></td>
+        <td style="height:75px;"></td>
+        <td style="height:75px;"></td>
     </tr>
 </table>
-
-@include('documents.partials.bc_footer')
 
 </body>
 </html>

@@ -4,125 +4,52 @@
     <meta charset="UTF-8">
     <title>{{ $docTitle }}</title>
     <style>
-        @page { margin: 105px 38px 62px 38px; }
+        @page { size: A4 portrait; margin: 102px 36px 96px 36px; }
         body {
             font-family: 'Times New Roman', Times, serif;
-            font-size: 16px;
+            font-size: 13px;
             color: #000;
-            line-height: 1.65;
+            line-height: 1.5;
             margin: 0;
         }
         table { width: 100%; border-collapse: collapse; }
         td, th { vertical-align: middle; }
         .page { position: relative; }
-        .header-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 8px;
-            margin-top: 14px;
-        }
-        .header-table td { vertical-align: middle; }
-        .header-center {
-            text-align: center;
+        .meta { width: 100%; margin-bottom: 16px; }
+        .meta td { vertical-align: middle; padding: 5px 4px; font-size: 13px; }
+        .title-banner {
+            border: 2px solid #000;
+            padding: 8px 10px;
+            margin: 6px 0 18px 0;
             font-size: 14px;
             font-weight: bold;
-            padding: 0 8px;
         }
-        .header-logo { height: 45px; width: auto; }
-        .header-line {
-            border-bottom: 2px solid #000080;
-            margin-bottom: 24px;
-        }
-        footer {
-            position: fixed;
-            bottom: -90px;
-            left: 0;
-            right: 0;
-            border-top: 1px solid #999;
-            padding-top: 8px;
-            font-size: 8px;
-            color: #333;
-        }
-        .footer-table { width: 100%; border-collapse: collapse; }
-        .footer-table td { vertical-align: top; border: none; }
-        .footer-left { width: 22%; font-weight: bold; font-size: 9px; line-height: 1.3; }
-        .footer-center { width: 56%; text-align: center; font-size: 8px; line-height: 1.35; }
-        .footer-right { width: 22%; text-align: right; }
-        .footer-logo { height: 48px; width: auto; }
-        .footer-green-logo { height: 28px; width: auto; }
-        .meta { width: 100%; margin-bottom: 15px; }
-        .meta td { vertical-align: top; padding: 3px 4px; }
-        .title {
-            text-align: center;
-            font-weight: bold;
-            font-size: 17px;
-            line-height: 1.55;
-            text-transform: uppercase;
-            margin: 22px auto 30px;
-        }
-        .sub-title {
-            text-align: center;
-            font-weight: bold;
-            font-size: 17px;
-            margin: 22px 0 12px;
-            line-height: 1.6;
-        }
-        .box td, .box th,
-        .details-table td,
-        .info-grid td,
-        .data-table th,
-        .data-table td,
-        .totals-table td {
+        .box { width: 100%; border-collapse: collapse; border: 1.5px solid #000; margin-bottom: 16px; }
+        .box td, .box th {
             border: 1px solid #000;
-            padding: 11px 9px;
-            vertical-align: top;
+            padding: 9px 8px;
+            vertical-align: middle;
+            font-size: 12px;
         }
-        .box th,
-        .data-table th,
-        .details-label {
-            background: #f4f4f4;
+        .box th {
+            background: #f2f2f2;
             font-weight: bold;
+            text-align: center;
+            text-transform: uppercase;
+            font-size: 11.5px;
         }
-        .tight td, .tight th { padding: 9px; }
+        .empty-row td {
+            height: 30px;
+        }
         .center { text-align: center; }
         .right { text-align: right; }
         .bold { font-weight: bold; }
         .underline { text-decoration: underline; }
-        .mt { margin-top: 22px; }
-        .mb { margin-bottom: 22px; }
-        .small { font-size: 12px; }
-        .section { font-weight: bold; text-decoration: underline; margin-top: 12px; }
-        .article-text { text-align: justify; line-height: 1.6; }
-        .signature { margin-top: 28px; page-break-inside: avoid; }
-        .signature td { border: 1px solid #000; height: 110px; text-align: center; }
-        .signature th { border: 1px solid #000; background: #f4f4f4; padding: 9px; }
-        .objet-table { width: 100%; border-collapse: collapse; margin-bottom: 22px; }
-        .objet-table td { padding: 11px 6px; border: none; vertical-align: top; }
-        .objet-label { font-weight: bold; width: 150px; }
-        .details-table { width: 100%; border-collapse: collapse; margin-bottom: 28px; }
-        .details-label { width: 35%; }
-        .info-grid { margin-bottom: 28px; }
-        .info-grid .label { font-weight: bold; width: 15%; background: #f4f4f4; }
-        .imputation-table td {
-            border: none;
-            border-bottom: 1px solid #000;
-            border-left: 1px solid #000;
-            text-align: center;
-            padding: 7px;
-        }
-        .imputation-table tr:last-child td { border-bottom: none; }
-        .data-table { margin-bottom: 26px; }
-        .data-table .col-left { text-align: left; }
-        .totals-table { width: 360px; margin-left: auto; margin-bottom: 14px; border: 2px solid #000; }
-        .date-box { border: 1px solid #000; padding: 8px 12px; width: 250px; font-weight: bold; margin-top: 34px; }
+        .mt { margin-top: 18px; }
+        .mb { margin-bottom: 18px; }
+        .small { font-size: 12px; margin: 14px 0; }
     </style>
     @include('documents.partials.bc_typography')
-    <style>
-        body {
-            font-size: 16px;
-            line-height: 1.65;
-        }
-    </style>
 </head>
 <body>
     @include('documents.partials.bc_header')
@@ -162,8 +89,10 @@
             <th style="width: 10%;">Qt</th>
             <th style="width: 8%;">Garanties<br>exigées</th>
         </tr>
+        @php $renderedRows = 0; @endphp
         @if(!empty($doc['consistance_lignes']) && is_array($doc['consistance_lignes']))
             @foreach($doc['consistance_lignes'] as $index => $ligne)
+                @php $renderedRows++; @endphp
                 <tr>
                     <td class="center bold">{{ data_get($ligne, 'numero_prix', $index + 1) }}</td>
                     <td class="center">{{ data_get($ligne, 'designation') ?: $doc['objet'] }}</td>
@@ -175,6 +104,7 @@
             @endforeach
         @else
             @forelse($doc['articles'] as $index => $article)
+                @php $renderedRows++; @endphp
                 <tr>
                     <td class="center bold">{{ $doc['numero_prix'] ?: ($index + 1) }}</td>
                     <td class="center">{{ $doc['designation'] ?: $article->designation }}</td>
@@ -184,6 +114,7 @@
                     <td class="center">{{ $doc['garantie_exigee'] ?: ($article->garantie_exigee ?? '-') }}</td>
                 </tr>
             @empty
+                @php $renderedRows = 1; @endphp
                 <tr>
                     <td class="center bold">{{ $doc['numero_prix'] ?: 1 }}</td>
                     <td class="center">{{ $doc['designation'] ?: $doc['objet'] }}</td>
@@ -194,17 +125,22 @@
                 </tr>
             @endforelse
         @endif
+        @for($i = max(0, 6 - $renderedRows); $i > 0; $i--)
+            <tr class="empty-row">
+                <td></td><td></td><td></td><td></td><td></td><td></td>
+            </tr>
+        @endfor
     </table>
 
     <table class="meta mt">
-        <tr><td style="width: 28%;">Lieu d'exécution :</td><td class="bold">{{ $doc['lieu_execution'] }}</td></tr>
+        <tr><td style="width: 44%;">Lieu d'exécution :</td><td class="bold">{{ $doc['lieu_execution'] }}</td></tr>
         <tr><td>Délai de livraison :</td><td class="bold">{{ $doc['delai_livraison'] ?? '' }}{{ !empty($doc['delai_livraison_jours']) ? ' (' . $doc['delai_livraison_jours'] . ')' : '' }}</td></tr>
         <tr><td>Date et heure limites de réception des devis :</td><td class="right bold">{{ $doc['date_limite'] }} à {{ $doc['heure_limite'] }}</td></tr>
     </table>
 
     <p class="small">Les plis des concurrents sont déposés par voie électronique sur le portail des marchés publics accessible à l'adresse : www.marchespublics.gov.ma</p>
 
-    <table class="meta mt">
+    <table class="meta" style="margin-top: 28px;">
         <tr>
             <td class="bold">Le Directeur Régional du Conseil Agricole de Rabat-Salé-Kénitra</td>
             <td class="center bold" style="width: 15%;">Date</td>

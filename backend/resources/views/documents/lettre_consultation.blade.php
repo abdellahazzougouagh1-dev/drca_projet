@@ -6,15 +6,15 @@
     <style>
         @page {
             size: A4 portrait;
-            margin: 10mm 15mm 24mm 15mm;
+            margin: 18px 34px 96px 34px;
         }
         body {
             font-family: "Times New Roman", Times, serif;
-            font-size: 12px;
+            font-size: 13px;
             color: #000;
             margin: 0;
             padding: 0;
-            line-height: 1.4;
+            line-height: 1.48;
         }
         .page-break {
             page-break-after: always;
@@ -24,7 +24,7 @@
             border-collapse: collapse;
         }
         .header-table {
-            margin-bottom: 2px;
+            margin-bottom: 5px;
             width: 100%;
             border-collapse: collapse;
         }
@@ -33,112 +33,114 @@
         }
         .header-center {
             text-align: center;
-            font-size: 13px;
+            font-size: 13.5px;
             font-weight: bold;
-            line-height: 1.3;
+            line-height: 1.35;
+            padding: 0 8px;
         }
         .header-line {
-            border-bottom: 1.5px solid #000080;
-            margin-bottom: 10px;
+            border-bottom: 2px solid #000080;
+            margin-bottom: 14px;
         }
         .meta-table {
             width: 100%;
-            margin-bottom: 10px;
+            margin-bottom: 14px;
             border-collapse: collapse;
         }
         .sender-section {
             text-align: center;
-            margin-bottom: 8px;
+            margin-bottom: 12px;
         }
         .sender-title {
-            font-size: 13px;
+            font-size: 14px;
             font-weight: bold;
             text-align: center;
         }
         .sender-city {
-            font-size: 12.5px;
+            font-size: 13px;
             font-weight: bold;
             text-align: right;
             padding-right: 50px;
-            margin-top: 1px;
+            margin-top: 3px;
         }
         .recipient-section {
             text-align: center;
-            margin-bottom: 10px;
-            line-height: 1.35;
+            margin-bottom: 16px;
+            line-height: 1.45;
         }
         .recipient-label {
-            font-size: 13.5px;
+            font-size: 15px;
             font-weight: bold;
-            margin-bottom: 1px;
+            margin-bottom: 3px;
         }
         .recipient-title {
-            font-size: 12.5px;
+            font-size: 13.5px;
             font-weight: bold;
         }
         .recipient-company {
-            font-size: 12.5px;
+            font-size: 13.5px;
             font-weight: bold;
             text-transform: uppercase;
         }
         .recipient-address {
-            font-size: 12px;
+            font-size: 13px;
         }
         .recipient-city {
-            font-size: 12px;
+            font-size: 13px;
             font-weight: bold;
             text-align: right;
             padding-right: 50px;
             text-transform: uppercase;
+            margin-top: 2px;
         }
         .reference-table {
             width: 100%;
-            margin-bottom: 10px;
+            margin-bottom: 14px;
             border-collapse: collapse;
-            font-size: 12.5px;
+            font-size: 13px;
         }
         .reference-table td {
-            padding: 1px 0;
+            padding: 3px 0;
             vertical-align: top;
         }
         .ref-col-label {
-            width: 110px;
+            width: 115px;
         }
         .salutation-text {
-            font-size: 12.5px;
-            margin-bottom: 6px;
+            font-size: 13px;
+            margin-bottom: 10px;
         }
         .body-p {
-            font-size: 12px;
-            line-height: 1.35;
+            font-size: 13px;
+            line-height: 1.48;
             text-align: justify;
-            margin-bottom: 6px;
+            margin-bottom: 10px;
         }
         .objet-box {
             text-align: center;
             font-weight: bold;
-            font-size: 12.5px;
-            margin: 6px 15px;
-            line-height: 1.3;
+            font-size: 13.5px;
+            margin: 12px 15px;
+            line-height: 1.4;
         }
         .framed-instructions {
-            border: 1px solid #000;
-            padding: 6px 8px;
-            font-size: 11.5px;
-            line-height: 1.3;
+            border: 1.5px solid #000;
+            padding: 10px 12px;
+            font-size: 12.5px;
+            line-height: 1.45;
             text-align: justify;
-            margin: 6px 0;
+            margin: 12px 0;
         }
         .mention-box-table {
             width: 100%;
-            border: 1px solid #000;
+            border: 1.5px solid #000;
             border-collapse: collapse;
-            margin: 6px 0;
-            font-size: 12px;
+            margin: 12px 0;
+            font-size: 13px;
         }
         .mention-box-table td {
-            padding: 5px 4px;
-            border-right: 1px solid #777;
+            padding: 9px 6px;
+            border-right: 1px solid #000;
             vertical-align: middle;
         }
         .mention-box-table td:last-child {
@@ -147,33 +149,34 @@
         .deadline-block-table {
             width: 100%;
             border-collapse: collapse;
-            margin: 6px 0 10px 0;
-            font-size: 12px;
+            margin: 12px 0 18px 0;
+            font-size: 13px;
         }
         .deadline-block-table td {
-            padding: 2px 0;
+            padding: 4px 0;
         }
         .closing-formula {
             text-align: center;
-            font-size: 12px;
-            margin: 12px 0 6px 0;
+            font-size: 13px;
+            margin: 20px 0 16px 0;
         }
         .attachments {
-            margin-top: 8px;
-            font-size: 11.5px;
+            margin-top: 16px;
+            font-size: 12.5px;
         }
         .attachments ul {
             list-style-type: none;
-            padding-left: 10px;
-            margin: 2px 0 0 0;
+            padding-left: 18px;
+            margin: 5px 0 0 0;
         }
         .attachments ul li {
-            margin-bottom: 2px;
+            margin-bottom: 5px;
         }
     </style>
     @include('documents.partials.bc_typography')
 </head>
 <body>
+@include('documents.partials.bc_footer')
 
 @php
     $logoOncaPath = public_path('images/logo-onca.png');
@@ -260,17 +263,17 @@
         <!-- En-tête -->
         <table class="header-table">
             <tr>
-                <td style="width: 25%; text-align: left; vertical-align: middle;">
+                <td style="width: 24%; text-align: left; vertical-align: middle; padding: 0;">
                     @if($logoOnca)
-                        <img src="{{ $logoOnca }}" alt="Logo ONCA" style="height: 60px; width: auto;">
+                        <img src="{{ $logoOnca }}" alt="Logo ONCA" style="height: 68px; width: auto;">
                     @endif
                 </td>
-                <td class="header-center" style="width: 50%; text-align: center; vertical-align: middle;">
+                <td class="header-center" style="width: 52%; text-align: center; vertical-align: middle;">
                     Direction Régionale du Conseil Agricole Rabat-Salé-Kénitra
                 </td>
-                <td style="width: 25%; text-align: right; vertical-align: middle;">
+                <td style="width: 24%; text-align: right; vertical-align: middle; padding: 0;">
                     @if($sceauMaroc)
-                        <img src="{{ $sceauMaroc }}" alt="Sceau Maroc" style="height: 60px; width: auto;">
+                        <img src="{{ $sceauMaroc }}" alt="Sceau Maroc" style="height: 68px; width: auto;">
                     @endif
                 </td>
             </tr>
@@ -379,16 +382,14 @@
         @endphp
         @if(!empty($pjItems))
         <div class="attachments">
-            <div style="font-weight: bold; text-decoration: underline; margin-bottom: 3px;">Pièces jointes :</div>
+            <div style="font-weight: bold; text-decoration: underline; margin-bottom: 5px;">Pièces jointes :</div>
             <ul>
                 @foreach($pjItems as $piece)
-                    <li>- {{ trim($piece) }}</li>
+                    <li>- {{ preg_replace('/^\s*[-*•]\s*/u', '', trim($piece)) }}</li>
                 @endforeach
             </ul>
         </div>
         @endif
-        
-        @include('documents.partials.bc_footer')
     </div>
 @endforeach
 

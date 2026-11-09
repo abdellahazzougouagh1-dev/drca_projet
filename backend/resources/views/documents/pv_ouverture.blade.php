@@ -4,19 +4,24 @@
     <meta charset="UTF-8">
     <title>PV d'ouverture des plis</title>
     <style>
+        @page {
+            size: A4 portrait;
+            margin: 16px 34px 96px 34px;
+        }
         body {
             font-family: "Times New Roman", Times, serif;
-            font-size: 11.5px;
+            font-size: 10.5px;
             color: #000;
-            margin: 10px;
-            line-height: 1.4;
+            margin: 0;
+            padding: 0;
+            line-height: 1.32;
         }
         table {
             width: 100%;
             border-collapse: collapse;
         }
         .header-table {
-            margin-bottom: 5px;
+            margin-bottom: 4px;
             width: 100%;
             border-collapse: collapse;
         }
@@ -25,48 +30,50 @@
         }
         .header-center {
             text-align: center;
-            font-size: 14px;
+            font-size: 13px;
             font-weight: bold;
+            line-height: 1.3;
+            padding: 0 8px;
         }
         .blue-line {
             border-bottom: 2px solid #000080;
-            margin-bottom: 20px;
+            margin-bottom: 8px;
         }
         .title-box {
             border: 2px solid #000;
             text-align: center;
             font-weight: bold;
-            font-size: 16px;
-            padding: 5px;
-            width: 60%;
-            margin: 0 auto 15px auto;
+            font-size: 13.5px;
+            padding: 5px 8px;
+            margin: 0 auto 6px auto;
         }
-        .info-grid {
+        .ref-table {
             width: 100%;
-            margin-bottom: 10px;
+            border: 1.5px solid #000;
             border-collapse: collapse;
+            margin-bottom: 6px;
         }
-        .info-grid td {
-            padding: 3px;
-        }
-        .info-grid .border-cell {
-            border: 1px solid #000;
-            text-align: center;
+        .ref-table td {
+            padding: 4px 10px;
+            font-size: 11px;
             font-weight: bold;
+            border: 1px solid #000;
         }
         .data-table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 15px;
+            border: 1.5px solid #000;
+            margin-bottom: 7px;
         }
         .data-table th, .data-table td {
             border: 1px solid #000;
-            padding: 5px;
+            padding: 4.5px 6px;
+            font-size: 10.5px;
         }
         .data-table th {
             font-weight: bold;
             text-align: center;
-            background-color: #e6f2ff; /* Bleu très clair style Excel */
+            background-color: #f2f2f2;
         }
         .data-table td {
             text-align: center;
@@ -75,45 +82,45 @@
             text-align: left;
         }
         .text-block {
-            margin-bottom: 15px;
+            margin-bottom: 5px;
             text-align: justify;
+            font-size: 10.5px;
+            line-height: 1.32;
         }
         .bold-text {
             font-weight: bold;
         }
-        .winner-box {
-            margin-top: 10px;
-            margin-bottom: 20px;
-            padding-left: 20px;
-        }
-        .winner-name {
-            font-weight: bold;
-            font-size: 14px;
-            text-transform: uppercase;
-        }
-        .amount-box {
-            display: inline-block;
-            border: 1px solid #000;
-            padding: 2px 10px;
-            font-weight: bold;
-        }
-        .signature-table {
-            margin-top: 30px;
+        .closing-table {
             width: 100%;
             border-collapse: collapse;
+            margin-top: 6px;
+            margin-bottom: 6px;
+            font-size: 10.5px;
+        }
+        .closing-table td {
+            padding: 2px 0;
+            vertical-align: middle;
+        }
+        .signature-table {
+            margin-top: 4px;
+            width: 100%;
+            border-collapse: collapse;
+            border: 1.5px solid #000;
+            page-break-inside: avoid;
         }
         .signature-table th, .signature-table td {
             border: 1px solid #000;
             text-align: center;
             width: 33.33%;
-            padding: 5px;
+            padding: 4px;
+            font-size: 10.5px;
         }
         .signature-table th {
-            background-color: #e6f2ff;
-            font-weight: normal;
+            background-color: #f2f2f2;
+            font-weight: bold;
         }
         .signature-table .sig-space {
-            height: 100px;
+            height: 44px;
         }
     </style>
     @include('documents.partials.bc_typography')
@@ -150,14 +157,14 @@
 
     <table class="header-table">
         <tr>
-            <td style="width: 25%;">
-                <img src="data:image/png;base64,{{ base64_encode(file_get_contents(public_path('images/logo-onca.png'))) }}" alt="Logo ONCA" style="height: 70px; width: auto;">
+            <td style="width: 24%; text-align: left;">
+                <img src="data:image/png;base64,{{ base64_encode(file_get_contents(public_path('images/logo-onca.png'))) }}" alt="Logo ONCA" style="height: 64px; width: auto;">
             </td>
-            <td class="header-center" style="width: 50%;">
+            <td class="header-center" style="width: 52%;">
                 Direction Régionale du Conseil Agricole Rabat-Salé-Kénitra
             </td>
-            <td style="width: 25%; text-align: right;">
-                <img src="data:image/png;base64,{{ base64_encode(file_get_contents(public_path('images/sceau-maroc.png'))) }}" alt="Sceau Maroc" style="height: 70px; width: auto;">
+            <td style="width: 24%; text-align: right;">
+                <img src="data:image/png;base64,{{ base64_encode(file_get_contents(public_path('images/sceau-maroc.png'))) }}" alt="Sceau Maroc" style="height: 64px; width: auto;">
             </td>
         </tr>
     </table>
@@ -167,29 +174,16 @@
         PROCÈS-VERBAL D'OUVERTURE DES PLIS
     </div>
 
-    <table class="info-grid">
+    <table class="ref-table">
         <tr>
-            <td style="text-align: right; width: 30%;">Consultation</td>
-            <td class="border-cell" style="width: 30%;">{{ $consultation->numero_consultation }}</td>
-            <td style="width: 40%;"></td>
+            <td style="width: 50%; text-align: right; background: #f2f2f2;">Consultation</td>
+            <td style="width: 50%; text-align: left;">{{ $consultation->numero_consultation }}</td>
         </tr>
     </table>
 
-    <table class="info-grid" style="margin-bottom: 20px;">
-        <tr>
-            <td style="text-align: right; width: 15%;">En date du</td>
-            <td class="border-cell" style="width: 15%;">{{ \Carbon\Carbon::parse($consultation->date_reunion ?? now())->format('d/m/Y') }}</td>
-            <td style="text-align: center; width: 5%;">à</td>
-            <td class="border-cell" style="width: 10%;">{{ $consultation->heure_reunion ? \Carbon\Carbon::parse($consultation->heure_reunion)->format('H:i') : '10:00' }}</td>
-            <td style="padding-left: 10px;">la commission d'ouverture des plis instituée par la décision N°</td>
-        </tr>
-        <tr>
-            <td class="border-cell" colspan="2">{{ $consultation->numero_consultation }}</td>
-            <td style="text-align: center;" colspan="2">en date du</td>
-            <td class="border-cell" style="width: 15%;">{{ \Carbon\Carbon::parse($consultation->date_consultation ?? now())->format('d/m/Y') }}</td>
-            <td style="padding-left: 10px;">composée de :</td>
-        </tr>
-    </table>
+    <div class="text-block">
+        En date du <span class="bold-text">{{ \Carbon\Carbon::parse($consultation->date_reunion ?? now())->format('d/m/Y') }}</span> à <span class="bold-text">{{ $consultation->heure_reunion ? \Carbon\Carbon::parse($consultation->heure_reunion)->format('H:i') : '10:00' }}</span>, la commission d'ouverture des plis instituée par la décision N° <span class="bold-text">{{ $consultation->numero_consultation }}</span> en date du <span class="bold-text">{{ \Carbon\Carbon::parse($consultation->date_consultation ?? now())->format('d/m/Y') }}</span>, composée de :
+    </div>
 
     <table class="data-table">
         <thead>
@@ -201,14 +195,14 @@
         </thead>
         <tbody>
             <tr>
-                <td class="col-left">{{ $president }}</td>
+                <td class="col-left bold-text">{{ $president }}</td>
                 <td class="col-left">Administrateur / SAF</td>
                 <td class="col-left">Présidente</td>
             </tr>
             @if(count($membres) > 0)
                 @foreach($membres as $membre)
                 <tr>
-                    <td class="col-left">{{ is_string($membre) ? $membre : ($membre['nom'] ?? '.........................') }}</td>
+                    <td class="col-left bold-text">{{ is_string($membre) ? $membre : ($membre['nom'] ?? '.........................') }}</td>
                     <td class="col-left">{{ is_string($membre) ? 'Technicien / SAF' : ($membre['fonction'] ?? '.........................') }}</td>
                     <td class="col-left">Membre</td>
                 </tr>
@@ -229,10 +223,10 @@
     </table>
 
     <div class="text-block">
-        S'est réunie au siège de la DRCA-RSK en vue de procéder à l'ouverture des plis concernant l'offre de prix N° <span class="border-cell" style="display:inline-block; padding:0 5px;">{{ $consultation->numero_consultation }}</span> relative à la prestation de :
+        S'est réunie au siège de la DRCA-RSK en vue de procéder à l'ouverture des plis concernant l'offre de prix N° <span class="bold-text">{{ $consultation->numero_consultation }}</span> relative à la prestation de :
     </div>
 
-    <div class="text-block bold-text" style="font-size: 14px;">
+    <div class="text-block bold-text" style="font-size: 11px; margin-left: 8px;">
         {{ $consultation->objet_consultation }}
     </div>
 
@@ -247,8 +241,8 @@
     <table class="data-table">
         <thead>
             <tr>
-                <th style="width: 5%;">N°</th>
-                <th style="width: 45%;">Les Participants</th>
+                <th style="width: 6%;">N°</th>
+                <th style="width: 44%;">Les Participants</th>
                 <th style="width: 35%;">Adresses</th>
                 <th style="width: 15%;">Ville</th>
             </tr>
@@ -257,7 +251,7 @@
             @foreach($offres as $key => $offre)
             <tr>
                 <td>{{ $key + 1 }}</td>
-                <td class="col-left">{{ $offre->fournisseur->raison_sociale ?? '.........................' }}</td>
+                <td class="col-left bold-text">{{ $offre->fournisseur->raison_sociale ?? '.........................' }}</td>
                 <td class="col-left">{{ $offre->fournisseur->adresse ?? '.........................' }}</td>
                 <td>{{ $offre->fournisseur->ville ?? '.........................' }}</td>
             </tr>
@@ -272,8 +266,8 @@
     <table class="data-table">
         <thead>
             <tr>
-                <th rowspan="2" style="width: 5%;">N°</th>
-                <th rowspan="2" style="width: 45%;">Nom des concurrents</th>
+                <th rowspan="2" style="width: 6%;">N°</th>
+                <th rowspan="2" style="width: 44%;">Nom des concurrents</th>
                 <th colspan="2" style="width: 50%;">Montant de l'offre (TTC)</th>
             </tr>
             <tr>
@@ -285,7 +279,7 @@
             @foreach($offres as $key => $offre)
             <tr>
                 <td>{{ $key + 1 }}</td>
-                <td class="col-left">{{ $offre->fournisseur->raison_sociale ?? '.........................' }}</td>
+                <td class="col-left bold-text">{{ $offre->fournisseur->raison_sociale ?? '.........................' }}</td>
                 <td style="text-align: right; padding-right: 10px;">{{ number_format($offre->montant_propose ?? 0, 2, ',', ' ') }}</td>
                 <td style="text-align: right; padding-right: 10px;">{{ number_format($offre->montant_apres_verification ?? $offre->montant_propose ?? 0, 2, ',', ' ') }}</td>
             </tr>
@@ -293,30 +287,40 @@
         </tbody>
     </table>
 
-    <div class="winner-box">
-        Enfin, la commission a décidé de proposer à l'autorité compétente de retenir l'offre qu'elle juge la plus avantageuse pour l'administration présentée ici par la société :<br>
-        <div class="winner-name">
-            {{ $gagnant->fournisseur->raison_sociale ?? data_get($doc ?? [], 'attributaire', '......................................................') }}
-        </div>
-        @if(!empty(data_get($doc ?? [], 'motif_attribution')) || !empty(data_get($documentData ?? [], 'motif_attribution')))
-        <div style="margin: 5px 0; font-size: 11px; font-style: italic;">
-            <strong>Motif de retenue :</strong> {{ data_get($doc ?? [], 'motif_attribution', data_get($documentData ?? [], 'motif_attribution', '')) }}
-        </div>
-        @endif
-        Pour un montant global (TTC) de <div class="amount-box">{{ number_format($gagnant->montant_apres_verification ?? data_get($doc ?? [], 'montant_retenu', 0), 2, ',', ' ') }}</div> DH<br>
-        <div style="margin-top: 5px;">
-            En lettres : <span class="border-cell" style="display:inline-block; padding: 2px 10px; min-width: 50%;">{{ \App\Support\MontantEnLettres::convert((float) ($gagnant->montant_apres_verification ?? data_get($doc ?? [], 'montant_retenu', 0))) }}</span>
-        </div>
+    <div class="text-block">
+        Enfin, la commission a décidé de proposer à l'autorité compétente de retenir l'offre qu'elle juge la plus avantageuse pour l'administration, présentée par la société :
     </div>
 
-    <table class="info-grid" style="margin-top: 20px;">
+    <table class="data-table">
         <tr>
-            <td style="width: 30%;">La séance est levée le même jour</td>
-            <td style="width: 5%; text-align: center;">à</td>
-            <td class="border-cell" style="width: 15%;">{{ \Carbon\Carbon::parse($consultation->heure_reunion ?? '10:00')->addMinutes(45)->format('H:i') }}</td>
-            <td style="width: 10%;"></td>
-            <td style="width: 15%; text-align: right;">Fait à Kénitra, le :</td>
-            <td style="width: 25%;">{{ \Carbon\Carbon::parse($consultation->date_reunion ?? now())->format('d/m/Y') }}</td>
+            <td colspan="2" style="text-align: center; font-weight: bold; font-size: 11px; text-transform: uppercase;">
+                {{ $gagnant->fournisseur->raison_sociale ?? data_get($doc ?? [], 'attributaire', '......................................................') }}
+            </td>
+        </tr>
+        @if(!empty(data_get($doc ?? [], 'motif_attribution')) || !empty(data_get($documentData ?? [], 'motif_attribution')))
+        <tr>
+            <td class="col-left" style="width: 35%; font-weight: bold; background: #f2f2f2;">Motif de retenue :</td>
+            <td class="col-left" style="width: 65%; font-style: italic;">{{ data_get($doc ?? [], 'motif_attribution', data_get($documentData ?? [], 'motif_attribution', '')) }}</td>
+        </tr>
+        @endif
+        <tr>
+            <td class="col-left" style="width: 35%; font-weight: bold; background: #f2f2f2;">Montant global (TTC) :</td>
+            <td class="col-left bold-text" style="width: 65%; text-align: center;">{{ number_format($gagnant->montant_apres_verification ?? data_get($doc ?? [], 'montant_retenu', 0), 2, ',', ' ') }} DH TTC</td>
+        </tr>
+        <tr>
+            <td class="col-left" style="font-weight: bold; background: #f2f2f2;">En lettres :</td>
+            <td class="col-left bold-text">{{ \App\Support\MontantEnLettres::convert((float) ($gagnant->montant_apres_verification ?? data_get($doc ?? [], 'montant_retenu', 0))) }}</td>
+        </tr>
+    </table>
+
+    <table class="closing-table">
+        <tr>
+            <td style="width: 55%;">
+                La séance est levée le même jour à <span class="bold-text">{{ \Carbon\Carbon::parse($consultation->heure_reunion ?? '10:00')->addMinutes(45)->format('H:i') }}</span>
+            </td>
+            <td style="width: 45%; text-align: right;">
+                Fait à Kénitra, le : <span class="bold-text">{{ \Carbon\Carbon::parse($consultation->date_reunion ?? now())->format('d/m/Y') }}</span>
+            </td>
         </tr>
     </table>
 
@@ -330,9 +334,9 @@
         </thead>
         <tbody>
             <tr>
-                <td style="border-bottom: none;">{{ $president }}</td>
-                <td style="border-bottom: none;">{{ isset($membres[0]) ? (is_string($membres[0]) ? $membres[0] : ($membres[0]['nom'] ?? '...')) : '.........................' }}</td>
-                <td style="border-bottom: none;">{{ isset($membres[1]) ? (is_string($membres[1]) ? $membres[1] : ($membres[1]['nom'] ?? '...')) : '.........................' }}</td>
+                <td class="bold-text" style="border-bottom: none;">{{ $president }}</td>
+                <td class="bold-text" style="border-bottom: none;">{{ isset($membres[0]) ? (is_string($membres[0]) ? $membres[0] : ($membres[0]['nom'] ?? '...')) : '.........................' }}</td>
+                <td class="bold-text" style="border-bottom: none;">{{ isset($membres[1]) ? (is_string($membres[1]) ? $membres[1] : ($membres[1]['nom'] ?? '...')) : '.........................' }}</td>
             </tr>
             <tr>
                 <td class="sig-space" style="border-top: none;"></td>

@@ -5,14 +5,14 @@
     <title>Ordre de service - {{ $doc['numero_consultation'] ?? 'Convention' }}</title>
     <style>
         @page {
-            margin: 10mm 15mm 15mm 15mm;
+            margin: 18px 34px 96px 34px;
             size: A4 portrait;
         }
         body {
             font-family: "Times New Roman", Times, serif;
-            font-size: 13px;
+            font-size: 12.5px;
             color: #000;
-            line-height: 1.55;
+            line-height: 1.48;
             margin: 0;
             padding: 0;
         }
@@ -31,66 +31,73 @@
             text-transform: uppercase;
         }
         .header-table {
-            margin-bottom: 2px;
+            margin-bottom: 4px;
             width: 100%;
         }
         .header-center {
             text-align: center;
-            font-size: 13px;
+            font-size: 13.5px;
             font-weight: bold;
             line-height: 1.35;
+            padding: 0 8px;
         }
         .header-line {
-            border-bottom: 1.5px solid #000080;
-            margin-bottom: 10px;
+            border-bottom: 2px solid #000080;
+            margin-bottom: 12px;
         }
         .meta-table {
             width: 100%;
-            margin-bottom: 8px;
+            margin-bottom: 10px;
         }
         .sender-title {
             font-size: 13px;
             font-weight: bold;
             text-align: center;
-            margin-bottom: 2px;
+            margin-bottom: 4px;
         }
         .sender-city {
-            font-size: 12px;
+            font-size: 12.5px;
             font-weight: bold;
             text-align: right;
             padding-right: 40px;
-            margin-bottom: 6px;
+            margin-bottom: 8px;
         }
         .recipient-box {
             text-align: center;
-            line-height: 1.35;
-            margin-bottom: 8px;
+            line-height: 1.38;
+            margin-bottom: 12px;
         }
         .grid-bordered {
             width: 100%;
-            border: 1px solid #000;
-            margin-bottom: 8px;
+            border: 1.5px solid #000;
+            margin-bottom: 12px;
         }
         .grid-bordered td {
             border: 1px solid #000;
-            padding: 6px 7px;
-            font-size: 13px;
+            padding: 7.5px 9px;
+            font-size: 12.5px;
         }
         .divider {
             border-top: 1.5px solid #000;
-            margin: 14px 0 10px 0;
+            margin: 14px 0 12px 0;
+        }
+        .accuse-box {
+            border: 1.5px solid #000;
+            padding: 12px 16px 20px 16px;
+            margin-top: 10px;
+            page-break-inside: avoid;
         }
         .accus-title {
             text-align: center;
             font-weight: bold;
             text-decoration: underline;
-            font-size: 15px;
-            margin-bottom: 9px;
+            font-size: 14px;
+            margin-bottom: 10px;
             text-transform: uppercase;
         }
         .accus-table td {
-            padding: 4px 0;
-            font-size: 13px;
+            padding: 3.5px 0;
+            font-size: 12.5px;
             vertical-align: top;
         }
     </style>
@@ -143,20 +150,22 @@
     $termeDocSus = $isContrat ? 'du Contrat sus-cité' : 'de la Convention sus-citée';
 @endphp
 
+    @include('documents.partials.bc_footer')
+
     <!-- 1. En-tête officiel -->
     <table class="header-table">
         <tr>
-            <td style="width: 25%; text-align: left; vertical-align: middle;">
+            <td style="width: 24%; text-align: left; vertical-align: middle;">
                 @if($logoOnca)
-                    <img src="{{ $logoOnca }}" alt="Logo ONCA" style="height: 50px; width: auto;">
+                    <img src="{{ $logoOnca }}" alt="Logo ONCA" style="height: 68px; width: auto;">
                 @endif
             </td>
-            <td class="header-center" style="width: 50%; vertical-align: middle;">
-                Direction Régionale du Conseil Agricole RABAT-SALE-KENITRA
+            <td class="header-center" style="width: 52%; vertical-align: middle;">
+                Direction Régionale du Conseil Agricole Rabat-Salé-Kénitra
             </td>
-            <td style="width: 25%; text-align: right; vertical-align: middle;">
+            <td style="width: 24%; text-align: right; vertical-align: middle;">
                 @if($sceauMaroc)
-                    <img src="{{ $sceauMaroc }}" alt="Sceau Maroc" style="height: 50px; width: auto;">
+                    <img src="{{ $sceauMaroc }}" alt="Sceau Maroc" style="height: 68px; width: auto;">
                 @endif
             </td>
         </tr>
@@ -199,68 +208,68 @@
     <!-- 5. Tableau Objet & Référence -->
     <table class="grid-bordered">
         <tr>
-            <td style="width: 12%; font-weight: bold;">Objet</td>
-            <td style="width: 25%; font-weight: bold;">Ordre de service de :</td>
-            <td style="width: 63%; font-weight: bold;">{{ $natureOs }}</td>
+            <td style="width: 14%; font-weight: bold; background: #f2f2f2;">Objet</td>
+            <td style="width: 26%; font-weight: bold;">Ordre de service de :</td>
+            <td style="width: 60%; font-weight: bold;">{{ $natureOs }}</td>
         </tr>
         <tr>
-            <td style="font-weight: bold;">Référence</td>
+            <td style="font-weight: bold; background: #f2f2f2;">Référence</td>
             <td style="font-weight: bold;">{{ $termeDoc }} numéro :</td>
             <td style="font-weight: bold;">{{ $numeroConvention }}</td>
         </tr>
     </table>
 
     <!-- 6. Corps de l'Ordre de Service -->
-    <div style="margin-bottom: 6px;">
-        <div style="margin-bottom: 5px;">Monsieur,</div>
+    <div style="margin-bottom: 10px;">
+        <div style="margin-bottom: 6px;">Monsieur,</div>
 
         @if($isNotification)
-            <div style="margin-bottom: 4px;">
+            <div style="margin-bottom: 5px;">
                 J'ai l'honneur de vous notifier l'approbation {{ $isContrat ? 'du Contrat' : 'de la Convention' }} N° : <span class="bold">{{ $numeroConvention }}</span> ayant pour objet :
             </div>
-            <div class="bold" style="margin: 4px 0 6px 0; line-height: 1.3;">
+            <div class="bold" style="margin: 5px 0 7px 0; line-height: 1.35;">
                 {{ $objet }}
             </div>
-            <div style="line-height: 1.35; margin-bottom: 4px;">
+            <div style="line-height: 1.4; margin-bottom: 5px;">
                 Je vous informe que {{ $termeDocLedit }} a été approuvé{{ $isContrat ? '' : 'e' }} par l'autorité compétente et je vous invite à signer la présente notification de l'approbation et à enregistrer {{ $termeDocCe }} dans les délais réglementaires.
             </div>
         @elseif($isCommencement)
-            <div style="margin-bottom: 4px;">
+            <div style="margin-bottom: 5px;">
                 J'ai l'honneur de vous prescrire de commencer l'exécution {{ $isContrat ? 'du Contrat' : 'de la Convention' }} N° : <span class="bold">{{ $numeroConvention }}</span> ayant pour objet :
             </div>
-            <div class="bold" style="margin: 4px 0 6px 0; line-height: 1.3;">
+            <div class="bold" style="margin: 5px 0 7px 0; line-height: 1.35;">
                 {{ $objet }}
             </div>
-            <div style="line-height: 1.35; margin-bottom: 4px;">
+            <div style="line-height: 1.4; margin-bottom: 5px;">
                 La prise d'effet du commencement de l'exécution de {{ $termeDocCe }} aura lieu à compter de la date de réception du présent ordre de service.
             </div>
         @elseif($isAjournement)
-            <div style="margin-bottom: 4px;">
+            <div style="margin-bottom: 5px;">
                 J'ai l'honneur de vous prescrire d'arrêter l'exécution {{ $isContrat ? 'du Contrat' : 'de la Convention' }} N° : <span class="bold">{{ $numeroConvention }}</span> ayant pour objet :
             </div>
-            <div class="bold" style="margin: 4px 0 6px 0; line-height: 1.3;">
+            <div class="bold" style="margin: 5px 0 7px 0; line-height: 1.35;">
                 {{ $objet }}
             </div>
-            <div style="line-height: 1.35; margin-bottom: 5px;">
+            <div style="line-height: 1.4; margin-bottom: 5px;">
                 L'arrêt de l'exécution de {{ $termeDocCe }} prendra effet à compter de la date de réception du présent ordre de service.
             </div>
             <div class="bold" style="margin-top: 4px;">Motif de l'ajournement :</div>
             <div class="bold" style="margin-top: 2px;">{{ $motifAjournement }}</div>
         @elseif($isReprise)
-            <div style="margin-bottom: 4px;">
+            <div style="margin-bottom: 5px;">
                 J'ai l'honneur de vous prescrire de reprendre l'exécution {{ $isContrat ? 'du Contrat' : 'de la Convention' }} N° : <span class="bold">{{ $numeroConvention }}</span> ayant pour objet :
             </div>
-            <div class="bold" style="margin: 4px 0 6px 0; line-height: 1.3;">
+            <div class="bold" style="margin: 5px 0 7px 0; line-height: 1.35;">
                 {{ $objet }}
             </div>
-            <div style="line-height: 1.35; margin-bottom: 4px;">
+            <div style="line-height: 1.4; margin-bottom: 5px;">
                 La reprise de l'exécution de {{ $termeDocCe }} prendra effet à compter de la date de réception du présent ordre de service.
             </div>
         @else
-            <div style="margin-bottom: 4px;">
+            <div style="margin-bottom: 5px;">
                 J'ai l'honneur de vous prescrire l'exécution {{ $isContrat ? 'du Contrat' : 'de la Convention' }} N° : <span class="bold">{{ $numeroConvention }}</span> ayant pour objet :
             </div>
-            <div class="bold" style="margin: 4px 0 6px 0;">
+            <div class="bold" style="margin: 5px 0 7px 0;">
                 {{ $objet }}
             </div>
         @endif
@@ -269,67 +278,72 @@
     <!-- 7. Ligne de séparation au milieu de page -->
     <div class="divider"></div>
 
-    <!-- 8. Section Accusé de réception -->
-    <div class="accus-title">
-        Accusé de réception
+    <!-- 8. Section Accusé de réception encadrée -->
+    <div class="accuse-box">
+        <div class="accus-title">
+            Accusé de réception
+        </div>
+
+        <div style="margin-bottom: 5px;">Je soussigné, Monsieur</div>
+
+        <table class="accus-table" style="width: 100%; margin-bottom: 6px;">
+            <tr>
+                <td style="width: 48%;">Gérant / agissant au nom et pour le compte de la société :</td>
+                <td class="bold uppercase" style="width: 52%;">{{ $societe }}</td>
+            </tr>
+            <tr>
+                <td>Faisant élection de domicile à :</td>
+                <td class="bold uppercase">{{ $adresseSociete }}</td>
+            </tr>
+        </table>
+
+        <div style="margin-bottom: 4px;">
+            @if($isNotification)
+                Atteste avoir reçu du Directeur Régional du Conseil Agricole de Rabat-Salé-Kénitra la notification de l'approbation de :
+            @elseif($isCommencement)
+                Atteste avoir reçu du Directeur Régional du Conseil Agricole de Rabat-Salé-Kénitra l'ordre de commencement de l'exécution
+            @elseif($isAjournement)
+                Atteste avoir reçu du Directeur Régional du Conseil Agricole de Rabat-Salé-Kénitra l'ordre d'arrêt de l'exécution
+            @elseif($isReprise)
+                Atteste avoir reçu du Directeur Régional du Conseil Agricole de Rabat-Salé-Kénitra l'ordre de reprise de l'exécution
+            @else
+                Atteste avoir reçu du Directeur Régional du Conseil Agricole de Rabat-Salé-Kénitra l'ordre de service concernant :
+            @endif
+        </div>
+
+        <table style="width: 100%; margin-bottom: 4px;">
+            <tr>
+                <td style="width: 24%; font-weight: bold;">{{ $termeDoc }} numéro :</td>
+                <td class="bold" style="width: 76%;">{{ $numeroConvention }}</td>
+            </tr>
+        </table>
+
+        <div style="margin-bottom: 3px;">Ayant pour objet :</div>
+        <div class="bold" style="margin-bottom: 8px; line-height: 1.35;">
+            {{ $objet }}
+        </div>
+
+        <div style="line-height: 1.4; margin-bottom: 14px;">
+            @if($isNotification)
+                J'accuse par la présente, la réception de la notification de l'approbation {{ $termeDocSus }}.
+            @elseif($isCommencement)
+                J'accuse par la présente, la réception de l'ordre de service de commencement {{ $termeDocSus }}.
+            @elseif($isAjournement)
+                J'accuse par la présente, la réception de l'ordre de service d'arrêt de l'exécution {{ $termeDocSus }}.
+            @elseif($isReprise)
+                J'accuse par la présente, la réception de l'ordre de service de reprise de l'exécution {{ $termeDocSus }}.
+            @else
+                J'accuse par la présente, la réception de l'ordre de service {{ $termeDocSus }}.
+            @endif
+        </div>
+
+        <table style="width: 100%; margin-top: 8px;">
+            <tr>
+                <td style="width: 55%;">Reçu le : ...............................</td>
+                <td style="width: 45%; text-align: right; font-weight: bold;">Signature et Cachet</td>
+            </tr>
+        </table>
     </div>
-
-    <div style="margin-bottom: 4px;">Je soussigné, Monsieur</div>
-
-    <table class="accus-table" style="width: 100%; margin-bottom: 4px;">
-        <tr>
-            <td style="width: 48%;">Gérant / agissant au nom et pour le compte de la société :</td>
-            <td class="bold uppercase" style="width: 52%;">{{ $societe }}</td>
-        </tr>
-        <tr>
-            <td>Faisant élection de domicile à :</td>
-            <td class="bold uppercase">{{ $adresseSociete }}</td>
-        </tr>
-    </table>
-
-    <div style="margin-bottom: 3px;">
-        @if($isNotification)
-            Atteste avoir reçu du Directeur Régional du Conseil Agricole de Rabat-Salé-Kénitra la notification de l'approbation de :
-        @elseif($isCommencement)
-            Atteste avoir reçu du Directeur Régional du Conseil Agricole de Rabat-Salé-Kénitra l'ordre de commencement de l'exécution
-        @elseif($isAjournement)
-            Atteste avoir reçu du Directeur Régional du Conseil Agricole de Rabat-Salé-Kénitra l'ordre d'arrêt de l'exécution
-        @elseif($isReprise)
-            Atteste avoir reçu du Directeur Régional du Conseil Agricole de Rabat-Salé-Kénitra l'ordre de reprise de l'exécution
-        @else
-            Atteste avoir reçu du Directeur Régional du Conseil Agricole de Rabat-Salé-Kénitra l'ordre de service concernant :
-        @endif
-    </div>
-
-    <table style="width: 100%; margin-bottom: 3px;">
-        <tr>
-            <td style="width: 24%; font-weight: bold;">{{ $termeDoc }} numéro :</td>
-            <td class="bold" style="width: 76%;">{{ $numeroConvention }}</td>
-        </tr>
-    </table>
-
-    <div style="margin-bottom: 2px;">Ayant pour objet :</div>
-    <div class="bold" style="margin-bottom: 6px; line-height: 1.3;">
-        {{ $objet }}
-    </div>
-
-    <div style="line-height: 1.35; margin-bottom: 8px;">
-        @if($isNotification)
-            J'accuse par la présente, la réception de la notification de l'approbation {{ $termeDocSus }}.
-        @elseif($isCommencement)
-            J'accuse par la présente, la réception de l'ordre de service de commencement {{ $termeDocSus }}.
-        @elseif($isAjournement)
-            J'accuse par la présente, la réception de l'ordre de service d'arrêt de l'exécution {{ $termeDocSus }}.
-        @elseif($isReprise)
-            J'accuse par la présente, la réception de l'ordre de service de reprise de l'exécution {{ $termeDocSus }}.
-        @else
-            J'accuse par la présente, la réception de l'ordre de service {{ $termeDocSus }}.
-        @endif
-    </div>
-    </div>
-
-    <!-- 9. Pied de page officiel ONCA -->
-    @include('documents.partials.bc_footer')
 
 </body>
 </html>

@@ -4,12 +4,12 @@
     <meta charset="UTF-8">
     <title>{{ $docTitle }}</title>
     <style>
-        @page { margin: 115px 40px 70px 40px; }
+        @page { size: A4 portrait; margin: 102px 36px 96px 36px; }
         body {
             font-family: 'Times New Roman', Times, serif;
-            font-size: 16px;
+            font-size: 11.5px;
             color: #000;
-            line-height: 1.6;
+            line-height: 1.38;
             margin: 0;
         }
         table { width: 100%; border-collapse: collapse; }
@@ -20,51 +20,23 @@
         .right { text-align: right; }
         .uppercase { text-transform: uppercase; }
 
-        /* HEADER LOGOS STYLING */
-        .header-table { width: 100%; border-collapse: collapse; margin-bottom: 5px; margin-top: 0; }
-        .header-center { text-align: center;         font-size: 14px; font-weight: bold; line-height: 1.25; }
-        .header-logo { height: 45px; width: auto; }
-        .header-line {
-            border-bottom: 2px solid #000080;
-            margin-bottom: 18px;
-        }
-        /* FOOTER LOGOS STYLING */
-        footer {
-            position: fixed;
-            bottom: -35px;
-            left: 0;
-            right: 0;
-            border-top: 1px solid #999;
-            padding-top: 4px;
-            font-size: 8px;
-            color: #333;
-        }
-        .footer-table { width: 100%; border-collapse: collapse; }
-        .footer-table td { vertical-align: middle; border: none; }
-        .footer-left { width: 20%; }
-        .footer-center { width: 60%; text-align: center; }
-        .footer-right { width: 20%; text-align: right; }
-        .footer-logo { max-height: 30px; width: auto; }
-        .footer-green-logo { max-height: 25px; width: auto; }
-        .footer-info { max-height: 28px; width: auto; }
-
         .grid-table {
             width: 100%;
             border: 1.5px solid #000;
             border-collapse: collapse;
             margin-bottom: 9px;
-            font-size: 11px;
+            font-size: 11.5px;
         }
         .grid-table th {
             border: 1px solid #000;
-            background-color: #f1f5f9;
-            padding: 6px 7px;
+            background-color: #f2f2f2;
+            padding: 7px 8px;
             font-weight: bold;
             text-align: center;
         }
         .grid-table td {
             border: 1px solid #000;
-            padding: 6px 7px;
+            padding: 7px 8px;
             vertical-align: middle;
         }
     </style>
@@ -252,20 +224,20 @@
     </table>
 
     <!-- SECTION 6: MEMBRES DE LA COMMISSION -->
-    <div style="font-weight: bold; margin-bottom: 5px; font-size: 11px;">
+    <div style="font-weight: bold; margin-bottom: 5px; font-size: 11.5px;">
         Membres de la commission :
     </div>
-    <table style="width: 100%; border: 1.5px solid #000; border-collapse: collapse; margin-bottom: 11px; font-size: 11px;">
-        <tr style="background: #f8fafc;">
+    <table style="width: 100%; border: 1.5px solid #000; border-collapse: collapse; margin-bottom: 6px; font-size: 11.5px;">
+        <tr style="background: #f2f2f2;">
             @foreach($doc['commission'] as $m)
-                <td style="border: 1px solid #000; padding: 4px; text-align: center; font-weight: bold; width: {{ 100 / max(1, count($doc['commission'])) }}%;">
+                <td style="border: 1px solid #000; padding: 6px 5px; text-align: center; font-weight: bold; width: {{ 100 / max(1, count($doc['commission'])) }}%;">
                     {{ data_get($m, 'nom') ?: data_get($m, 'nom_prenom') }}
                 </td>
             @endforeach
         </tr>
         <tr>
             @foreach($doc['commission'] as $m)
-                <td style="border: 1px solid #000; height: 38px;"></td>
+                <td style="border: 1px solid #000; height: 55px;"></td>
             @endforeach
         </tr>
     </table>

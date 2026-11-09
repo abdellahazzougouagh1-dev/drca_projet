@@ -4,12 +4,12 @@
     <meta charset="UTF-8">
     <title>{{ $docTitle }}</title>
     <style>
-        @page { margin: 95px 40px 45px 40px; }
+        @page { size: A4 portrait; margin: 102px 36px 96px 36px; }
         body {
             font-family: 'Times New Roman', Times, serif;
-            font-size: 14px;
+            font-size: 13px;
             color: #000;
-            line-height: 1.5;
+            line-height: 1.44;
             margin: 0;
         }
         table { width: 100%; border-collapse: collapse; }
@@ -18,50 +18,52 @@
         .bold { font-weight: bold; }
         .center { text-align: center; }
         .right { text-align: right; }
-        .meta { width: 100%; margin-bottom: 12px; font-size: 14px; }
+        .meta { width: 100%; margin-bottom: 10px; font-size: 13px; }
         .sub-title {
             text-align: center;
             font-weight: bold;
             font-size: 16px;
-            margin: 10px 0 4px;
+            margin: 8px 0 4px;
             text-transform: uppercase;
             text-decoration: underline;
         }
         .header-desc {
             text-align: center;
             font-weight: bold;
-            font-size: 14px;
-            margin-bottom: 14px;
-            line-height: 1.5;
+            font-size: 13.5px;
+            margin-bottom: 12px;
+            line-height: 1.45;
         }
         .article-text {
             text-align: justify;
-            line-height: 1.5;
-            font-size: 13px;
-            margin: 10px 0 14px 0;
+            line-height: 1.42;
+            font-size: 12px;
+            margin: 8px 0 12px 0;
         }
         .decide-title {
             text-align: center;
             font-weight: bold;
-            font-size: 16px;
-            margin: 14px 0 10px;
+            font-size: 15.5px;
+            margin: 12px 0 8px;
             text-transform: uppercase;
             text-decoration: underline;
+            letter-spacing: 1px;
         }
-        p { margin: 9px 0; font-size: 14px; line-height: 1.5; }
-        .section { font-weight: bold; font-size: 14px; text-decoration: underline; }
+        p { margin: 7px 0; font-size: 13px; line-height: 1.44; }
+        .section { font-weight: bold; font-size: 13.5px; text-decoration: underline; }
+        .box { margin: 8px 0 12px 0; border: 1.5px solid #000; }
         .box td, .box th {
             border: 1px solid #000;
-            padding: 7px 8px;
+            padding: 7px 9px;
             vertical-align: middle;
-            font-size: 13px;
+            font-size: 12.5px;
         }
         .box th {
-            background: #f4f4f4;
+            background: #f2f2f2;
             font-weight: bold;
-            font-size: 13px;
+            text-align: center;
+            font-size: 12.5px;
         }
-        .box { margin: 10px 0 14px 0; }
     </style>
     @include('documents.partials.bc_typography')
 </head>
@@ -118,10 +120,9 @@
     <div class="decide-title">DÉCIDE</div>
 
     <p><span class="section">Article 1 :</span>
-        Une commission est instituée pour la réception des prestations liées {{ $isConvention ? ($isContrat ? 'au Contrat' : 'à la Convention') : 'au Bon de Commande' }}
-        <span class="bold">{{ $refNum }}</span> ayant pour objet :
+        Une commission est instituée pour la réception des prestations liées {{ $isConvention ? ($isContrat ? 'au Contrat' : 'à la Convention') : 'au Bon de Commande' }} <span class="bold" style="padding-left: 3px;">{{ $refNum }}</span> ayant pour objet :
     </p>
-    <p class="bold" style="text-align: justify; font-size: 11px;">{{ $doc['objet'] }}</p>
+    <p class="bold" style="text-align: justify; font-size: 12.5px;">{{ $doc['objet'] }}</p>
 
     <p><span class="section">Article 2 :</span> La commission est composée de :</p>
     <table class="box">

@@ -4,52 +4,54 @@
     <meta charset="UTF-8">
     <title>Ordre de Virement</title>
     <style>
-        @page { margin: 8mm 12mm 8mm 12mm; size: A4 portrait; }
+        @page { margin: 18px 34px 96px 34px; size: A4 portrait; }
         * { box-sizing: border-box; }
-        body { font-family: "Times New Roman", Times, serif; font-size: 11.5px; line-height: 1.4; margin: 0; padding: 0; color: #000; }
+        body { font-family: "Times New Roman", Times, serif; font-size: 12px; line-height: 1.48; margin: 0; padding: 0; color: #000; }
         td, th { font-family: "Times New Roman", Times, serif; }
 
-        .hdr { width: 100%; border-collapse: collapse; margin-bottom: 3px; }
-        .hdr td { vertical-align: middle; padding: 0; }
-        .hdr-center { text-align: center; font-size: 11.5px; font-weight: bold; line-height: 1.4; }
-        .hdr-divider { border-bottom: 1.5px solid #000; margin: 4px 0 10px 0; }
+        .hdr { width: 100%; border-collapse: collapse; margin-bottom: 4px; }
+        .hdr td { vertical-align: middle; padding: 0; border: none; }
+        .hdr-center { text-align: center; font-size: 13.5px; font-weight: bold; line-height: 1.35; padding: 0 8px; }
+        .hdr-divider { border-bottom: 2px solid #000080; margin: 4px 0 16px 0; }
 
-        .ref-line { font-size: 10.5px; margin-bottom: 20px; }
+        .ref-table { width: 100%; border-collapse: collapse; margin-bottom: 22px; font-size: 12px; }
+        .ref-table td { padding: 0; border: none; vertical-align: middle; }
 
         .main-title {
-            text-align: center; font-size: 18px; font-weight: bold;
-            letter-spacing: 1px; margin-bottom: 5px;
+            text-align: center; font-size: 16.5px; font-weight: bold;
+            letter-spacing: 0.6px; margin-bottom: 8px;
+            text-transform: uppercase;
             text-decoration: underline;
         }
         .sub-title {
-            text-align: center; font-size: 13px; font-weight: bold;
-            margin-bottom: 5px; letter-spacing: 0.3px;
+            text-align: center; font-size: 13.5px; font-weight: bold;
+            margin-bottom: 6px;
         }
         .dest-title {
-            text-align: center; font-size: 12.5px; font-weight: bold;
-            letter-spacing: 0.5px; text-transform: uppercase;
-            margin: 0 auto 20px auto;
-        }
-
-        .body-text { font-size: 10.5px; text-align: justify; margin-bottom: 14px; line-height: 1.5; }
-        .field-row { display: table; width: 100%; margin-bottom: 8px; }
-        .info-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-        .info-table td { padding: 5px 0; font-size: 10.5px; vertical-align: top; }
-        .info-table .flabel { width: 30%; font-weight: normal; }
-        .info-table .fsep   { width: 3%; text-align: center; }
-        .info-table .fval   { width: 67%; font-weight: bold; }
-
-        .op-ref { font-size: 10.5px; margin-bottom: 14px; }
-        .closing-text { font-size: 10.5px; text-align: justify; line-height: 1.55; margin-bottom: 20px; }
-
-        .sig-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        .sig-table th {
-            background: #4ca84e; color: #fff; font-weight: bold;
-            text-align: center; padding: 8px 5px; border: 1px solid #000;
-            font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.3px;
+            text-align: center; font-size: 13px; font-weight: bold;
+            letter-spacing: 0.4px; text-transform: uppercase;
             line-height: 1.4;
+            margin: 0 auto 26px auto;
         }
-        .sig-table td { border: 1px solid #000; height: 80px; vertical-align: top; }
+
+        .body-text { font-size: 12px; text-align: justify; margin-bottom: 18px; line-height: 1.55; }
+        .info-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        .info-table td { padding: 7.5px 0; font-size: 12px; vertical-align: top; }
+        .info-table .flabel { width: 29%; font-weight: normal; }
+        .info-table .fsep   { width: 3%; text-align: center; font-weight: bold; }
+        .info-table .fval   { width: 68%; font-weight: bold; }
+
+        .op-ref { font-size: 12px; margin-bottom: 18px; }
+        .closing-text { font-size: 12px; text-align: justify; line-height: 1.55; margin-bottom: 26px; }
+
+        .sig-table { width: 100%; border-collapse: collapse; border: 2px solid #000; page-break-inside: avoid; }
+        .sig-table th {
+            background: #a3e635; color: #000; font-weight: bold;
+            text-align: center; padding: 9px 7px; border: 1.5px solid #000;
+            font-size: 10px; text-transform: uppercase; letter-spacing: 0.3px;
+            line-height: 1.35;
+        }
+        .sig-table td { border: 1.5px solid #000; height: 150px; vertical-align: top; }
     </style>
     @include('documents.partials.bc_typography')
 </head>
@@ -83,31 +85,37 @@
     $reference      = data_get($documentData, 'reference_bc') ?: $defaultRef;
 @endphp
 
+@include('documents.partials.bc_footer')
+
 <!-- HEADER -->
 <table class="hdr">
     <tr>
-        <td style="width:22%; text-align:left;">
-            @if($logoOncaSrc)<img src="{{ $logoOncaSrc }}" style="height:55px; width:auto;">@endif
+        <td style="width:24%; text-align:left;">
+            @if($logoOncaSrc)<img src="{{ $logoOncaSrc }}" style="height:68px; width:auto;">@endif
         </td>
-        <td style="width:56%;" class="hdr-center">
-            Direction régionale du Conseil agricole<br>
-            <span style="font-size:12px;">Rabat-Salé-Kénitra</span>
+        <td style="width:52%;" class="hdr-center">
+            Direction Régionale du Conseil Agricole Rabat-Salé-Kénitra
         </td>
-        <td style="width:22%; text-align:right;">
-            @if($sceauMarocSrc)<img src="{{ $sceauMarocSrc }}" style="height:55px; width:auto;">@endif
+        <td style="width:24%; text-align:right;">
+            @if($sceauMarocSrc)<img src="{{ $sceauMarocSrc }}" style="height:68px; width:auto;">@endif
         </td>
     </tr>
 </table>
 <div class="hdr-divider"></div>
 
 <!-- RÉFÉRENCE OV -->
-<div class="ref-line">
-    Référence : OV N° &nbsp;&nbsp;
-    <strong style="font-size:13px;">{{ $numOV }}</strong>
-    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {{ $suffixe }}
-    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-    Date : &nbsp;&nbsp; {{ $dateDoc }}
-</div>
+<table class="ref-table">
+    <tr>
+        <td style="width:65%;">
+            Référence : OV N° &nbsp;&nbsp;
+            <strong style="font-size:13.5px;">{{ $numOV }}</strong>
+            &nbsp;&nbsp; {{ $suffixe }}
+        </td>
+        <td style="width:35%; text-align:right;">
+            Date : &nbsp;&nbsp; <strong>{{ $dateDoc }}</strong>
+        </td>
+    </tr>
+</table>
 
 <!-- TITRE PRINCIPAL -->
 <div class="main-title">ORDRE DE VIREMENT</div>
@@ -130,10 +138,10 @@
     <tr>
         <td class="flabel">La somme de</td>
         <td class="fsep">:</td>
-        <td class="fval" style="font-size:12px;">{{ number_format($montantOv, 2, ',', ' ') }} DH</td>
+        <td class="fval" style="font-size:13px;">{{ number_format($montantOv, 2, ',', ' ') }} DH</td>
     </tr>
     <tr>
-        <td class="flabel">En lettres :</td>
+        <td class="flabel">En lettres</td>
         <td class="fsep">:</td>
         <td class="fval" style="font-style:italic; font-weight:normal;">{{ $montantLettres }}</td>
     </tr>
@@ -145,11 +153,11 @@
     <tr>
         <td class="flabel">Titulaire du compte</td>
         <td class="fsep">:</td>
-        <td class="fval" style="font-family:monospace; font-size:10px;">{{ $rib }}</td>
+        <td class="fval col-num" style="font-size:11.5px;">{{ $rib }}</td>
     </tr>
     <tr>
-        <td class="flabel">Pour fin de règlement de :</td>
-        <td class="fsep"></td>
+        <td class="flabel">Pour fin de règlement de</td>
+        <td class="fsep">:</td>
         <td class="fval">{{ $reference }}</td>
     </tr>
 </table>
@@ -179,12 +187,10 @@
         </th>
     </tr>
     <tr>
-        <td style="height:90px;"></td>
-        <td style="height:90px;"></td>
+        <td style="height:150px;"></td>
+        <td style="height:150px;"></td>
     </tr>
 </table>
-
-@include('documents.partials.bc_footer')
 
 </body>
 </html>

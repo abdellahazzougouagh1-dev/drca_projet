@@ -4,12 +4,15 @@
     <meta charset="UTF-8">
     <title>{{ $docTitle }}</title>
     <style>
-        @page { margin: 115px 40px 70px 40px; }
+        @page {
+            size: A4 portrait;
+            margin: 102px 36px 96px 36px;
+        }
         body {
             font-family: 'Times New Roman', Times, serif;
-            font-size: 14px;
+            font-size: 12.5px;
             color: #000;
-            line-height: 1.5;
+            line-height: 1.38;
             margin: 0;
         }
         table { width: 100%; border-collapse: collapse; }
@@ -19,18 +22,27 @@
         .right { text-align: right; }
         .bold { font-weight: bold; }
         .underline { text-decoration: underline; }
+        .title-box {
+            border: 2.5px solid #000;
+            text-align: center;
+            font-weight: bold;
+            padding: 6px 12px;
+            margin: 2px auto 10px;
+            width: 82%;
+        }
+        .box { border: 1.5px solid #000; }
         .box td, .box th {
             border: 1px solid #000;
             padding: 7px 8px;
             vertical-align: middle;
         }
         .box th {
-            background: #f4f4f4;
+            background: #f2f2f2;
             font-weight: bold;
         }
-        .tight td, .tight th { padding: 6px 8px; }
-        .signature { margin-top: 18px; page-break-inside: avoid; }
-        .signature th { border: 1px solid #000; background: #f4f4f4; padding: 7px; }
+        .tight td, .tight th { padding: 5px 8px; }
+        .signature { margin-top: 6px; border: 1.5px solid #000; page-break-inside: avoid; }
+        .signature th { border: 1px solid #000; background: #f2f2f2; padding: 5.5px 7px; font-weight: bold; }
         .signature td { border: 1px solid #000; text-align: center; }
     </style>
     @include('documents.partials.bc_typography')
@@ -53,25 +65,25 @@
         $refNum = trim(preg_replace('/^[-_\s]+|[-_\s]+$/', '', (string)$refNum));
     @endphp
 
-    <div style="border: 2px solid #000; text-align: center; font-weight: bold; padding: 8px; margin: 15px auto 18px; width: 75%;">
-        <div style="font-size: 14px; text-transform: uppercase; margin-bottom: 4px;">PROCÈS-VERBAL DE LA RÉCEPTION {{ mb_strtoupper($doc['type_reception'] ?? 'DÉFINITIVE', 'UTF-8') }}</div>
+    <div class="title-box">
+        <div style="font-size: 15px; text-transform: uppercase; margin-bottom: 4px;">PROCÈS-VERBAL DE LA RÉCEPTION {{ mb_strtoupper($doc['type_reception'] ?? 'DÉFINITIVE', 'UTF-8') }}</div>
         @if(in_array(strtolower($doc['type_reception'] ?? ''), ['partielle', 'provisoire']) && (!empty($doc['periode_du']) || !empty($doc['periode_au'])))
-            <div style="font-size: 12px; margin-top: 4px;">
+            <div style="font-size: 12.5px; margin-top: 4px;">
                 Période : du <span style="font-weight: bold;">{{ $doc['periode_du'] ?? '.....' }}</span> au <span style="font-weight: bold;">{{ $doc['periode_au'] ?? '.....' }}</span>
             </div>
         @else
-            <div style="font-size: 12px;">{{ $labelEngagement }} N° : {{ $refNum }}</div>
+            <div style="font-size: 12.5px;">{{ $labelEngagement }} N° : {{ $refNum }}</div>
             @if(!empty($doc['date_reception_definitive']))
-                <div style="font-size: 12px; margin-top: 3px;">Date de réception définitive : <span style="font-weight: bold;">{{ $doc['date_reception_definitive'] }}</span></div>
+                <div style="font-size: 12.5px; margin-top: 3px;">Date de réception définitive : <span style="font-weight: bold;">{{ $doc['date_reception_definitive'] }}</span></div>
             @endif
         @endif
     </div>
 
-    <p style="text-align: justify; margin-bottom: 12px; line-height: 1.4;">
+    <p style="text-align: justify; margin-bottom: 8px; line-height: 1.36;">
         En date du <span class="bold">{{ $doc['date_reunion'] }}</span> à <span class="bold">{{ $doc['heure_reunion'] }}</span>, la commission de réception instituée par la décision Numéro : <span class="bold">{{ $doc['numero_decision'] }}</span> en date du <span class="bold">{{ $doc['date_decision'] }}</span> pour la réception des prestations objet {{ $labelEngagementLower }} N° : <span class="bold">{{ $refNum }}</span> est composée de :
     </p>
 
-    <table class="box tight" style="margin-bottom: 12px;">
+    <table class="box tight" style="margin-bottom: 8px;">
         <thead>
             <tr>
                 <th style="width: 35%;">Nom et Prénom</th>
@@ -90,13 +102,13 @@
         </tbody>
     </table>
 
-    <p style="margin-bottom: 6px;">S’est réunie au siège de la DRCA-RSK en vue de procéder à la réception des prestations relatives à :</p>
+    <p style="margin-bottom: 4px;">S’est réunie au siège de la DRCA-RSK en vue de procéder à la réception des prestations relatives à :</p>
 
-    <p class="bold center" style="margin-bottom: 12px; font-size: 12px;">
+    <p class="bold center" style="margin-bottom: 8px; font-size: 12px;">
         {{ $doc['objet'] }}
     </p>
 
-    <table style="width: 100%; margin-bottom: 10px;">
+    <table style="width: 100%; margin-bottom: 6px;">
         <tr>
             <td style="width: 22%;">{{ $labelEngagement }} N° :</td>
             <td style="width: 38%; font-weight: bold;">{{ $refNum }}</td>
@@ -105,9 +117,9 @@
         </tr>
     </table>
 
-    <p style="margin-bottom: 6px;">Exécutées par l'attributaire :</p>
+    <p style="margin-bottom: 4px;">Exécutées par l'attributaire :</p>
 
-    <table class="box tight" style="margin-bottom: 14px;">
+    <table class="box tight" style="margin-bottom: 8px;">
         <thead>
             <tr>
                 <th style="width: 35%;">La société</th>
@@ -146,20 +158,17 @@
         $LePresTxt = $isPresFem ? 'La présidente' : 'Le président';
     @endphp
 
-    <p style="text-align: justify; margin-bottom: 10px; line-height: 1.4;">
+    <p style="text-align: justify; margin-bottom: 7px; line-height: 1.36;">
         À l’ouverture de la séance, {{ $lePresTxt }} rappelle aux membres de la commission l’objet de la réunion et fait une lecture du contenu {{ $isConvention ? 'de la Convention susmentionnée' : 'du Bon de Commande susmentionné' }}, notamment les désignations précisant les prestations demandées. Ensuite, {{ $lePresTxt }} demande aux membres de la commission de formuler leurs observations sur la conformité et la qualité des prestations livrées.
     </p>
 
-    <p style="text-align: justify; margin-bottom: 12px; line-height: 1.4;">
-        La commission atteste que les prestations objet {{ $isConvention ? 'de la convention' : 'du bon de commande' }} N° : <span class="bold">{{ $refNum }}</span> sont conformes aux dispositions prévues et certifie qu’elles sont {{ (isset($doc['type_reception']) && in_array(strtolower($doc['type_reception']), ['partielle', 'provisoire'])) ? (strtolower($doc['type_reception']) === 'provisoire' ? 'provisoirement' : 'partiellement') : 'définitivement' }} réceptionnées
-        @if(!in_array(strtolower($doc['type_reception'] ?? ''), ['partielle', 'provisoire']) && !empty($doc['date_reception_definitive']))
-            en date du <span class="bold">{{ $doc['date_reception_definitive'] }}</span>
-        @endif.
+    <p style="text-align: justify; margin-bottom: 8px; line-height: 1.36;">
+        La commission atteste que les prestations objet {{ $isConvention ? 'de la convention' : 'du bon de commande' }} N° : <span class="bold">{{ $refNum }}</span> sont conformes aux dispositions prévues et certifie qu’elles sont {{ (isset($doc['type_reception']) && in_array(strtolower($doc['type_reception']), ['partielle', 'provisoire'])) ? (strtolower($doc['type_reception']) === 'provisoire' ? 'provisoirement' : 'partiellement') : 'définitivement' }} réceptionnées{!! (!in_array(strtolower($doc['type_reception'] ?? ''), ['partielle', 'provisoire']) && !empty($doc['date_reception_definitive'])) ? '&nbsp;en date du&nbsp;<span class="bold">' . e($doc['date_reception_definitive']) . '</span>' : '' !!}.
     </p>
 
     @if(in_array(strtolower($doc['type_reception'] ?? ''), ['partielle', 'provisoire']))
-    <p class="bold" style="margin-bottom: 6px;">Selon le détail suivant :</p>
-    <table class="box tight" style="margin-bottom: 14px;">
+    <p class="bold" style="margin-bottom: 4px;">Selon le détail suivant :</p>
+    <table class="box tight" style="margin-bottom: 8px;">
         <thead>
             <tr>
                 <th style="width: 22%;">N° de prix</th>
@@ -194,14 +203,12 @@
     </table>
     @endif
 
-    <table style="width: 100%; margin-bottom: 14px;">
+    <table style="width: 100%; margin-bottom: 8px;">
         <tr>
             <td style="width: 55%;">La séance est levée le même jour à <span class="bold">{{ $doc['heure_fin'] }}</span></td>
             <td style="width: 45%; text-align: right;">Fait à Kénitra, le : <span class="bold">{{ $doc['date_document'] }}</span></td>
         </tr>
     </table>
-
-    <div class="center bold underline" style="margin-bottom: 8px;">Les membres de la commission : Signataires</div>
 
     @php
         $rawMembers = data_get($doc, 'commission', []);
@@ -232,39 +239,43 @@
         $colWidth = floor(100 / max(1, $memberCount));
     @endphp
 
-    <table class="signature" style="width: 100%;">
-        <thead>
-            <tr>
-                @foreach($commissionMembers as $index => $m)
-                    @php
-                        $qualite = data_get($m, 'qualite', '');
-                        if ($index === 0) {
-                            $headerTitle = !empty($qualite) ? $qualite : ($isPresFem ? 'Présidente' : 'Président');
-                        } else {
-                            $headerTitle = 'Membre ' . $index;
-                        }
-                    @endphp
-                    <th style="width: {{ $colWidth }}%;">
-                        {{ $headerTitle }}
-                    </th>
-                @endforeach
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
-                @foreach($commissionMembers as $m)
-                    <td class="center bold" style="padding: 5px; background: #fff;">
-                        {{ data_get($m, 'nom', data_get($m, 'nom_prenom', '')) }}
-                    </td>
-                @endforeach
-            </tr>
-            <tr>
-                @foreach($commissionMembers as $m)
-                    <td style="height: 75px;"></td>
-                @endforeach
-            </tr>
-        </tbody>
-    </table>
+    <div style="page-break-inside: avoid;">
+        <div class="center bold underline" style="margin-bottom: 6px;">Les membres de la commission : Signataires</div>
+
+        <table class="signature" style="width: 100%;">
+            <thead>
+                <tr>
+                    @foreach($commissionMembers as $index => $m)
+                        @php
+                            $qualite = data_get($m, 'qualite', '');
+                            if ($index === 0) {
+                                $headerTitle = !empty($qualite) ? $qualite : ($isPresFem ? 'Présidente' : 'Président');
+                            } else {
+                                $headerTitle = 'Membre ' . $index;
+                            }
+                        @endphp
+                        <th style="width: {{ $colWidth }}%;">
+                            {{ $headerTitle }}
+                        </th>
+                    @endforeach
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    @foreach($commissionMembers as $m)
+                        <td class="center bold" style="padding: 4px 5px; background: #fff;">
+                            {{ data_get($m, 'nom', data_get($m, 'nom_prenom', '')) }}
+                        </td>
+                    @endforeach
+                </tr>
+                <tr>
+                    @foreach($commissionMembers as $m)
+                        <td style="height: 58px;"></td>
+                    @endforeach
+                </tr>
+            </tbody>
+        </table>
+    </div>
 </div>
 </body>
 </html>

@@ -4,37 +4,44 @@
     <meta charset="UTF-8">
     <title>Bulletin de Décompte</title>
     <style>
-        @page { margin: 8mm 10mm 8mm 10mm; size: A4 portrait; }
+        @page { margin: 18px 34px 96px 34px; size: A4 portrait; }
         * { box-sizing: border-box; }
-        body { font-family: "Times New Roman", Times, serif; font-size: 11px; line-height: 1.35; margin: 0; padding: 0; color: #000; }
+        body { font-family: "Times New Roman", Times, serif; font-size: 12px; line-height: 1.42; margin: 0; padding: 0; color: #000; }
         td, th { font-family: "Times New Roman", Times, serif; }
 
-        .hdr { width: 100%; border-collapse: collapse; margin-bottom: 3px; }
-        .hdr td { vertical-align: middle; padding: 0; }
-        .hdr-center { text-align: center; font-size: 11px; font-weight: bold; line-height: 1.4; }
-        .hdr-divider { border-bottom: 1.5px solid #000; margin: 4px 0 8px 0; }
+        .hdr { width: 100%; border-collapse: collapse; margin-bottom: 4px; }
+        .hdr td { vertical-align: middle; padding: 0; border: none; }
+        .hdr-center { text-align: center; font-size: 13.5px; font-weight: bold; line-height: 1.35; padding: 0 8px; }
+        .hdr-divider { border-bottom: 2px solid #000080; margin: 4px 0 14px 0; }
 
-        .main-title {
-            text-align: center; font-size: 15px; font-weight: bold;
-            letter-spacing: 0.5px; margin: 6px 0 12px 0;
-            text-transform: uppercase; text-decoration: underline;
+        .title-banner {
+            background-color: #e5e0d8;
+            border: 2px solid #000;
+            text-align: center;
+            font-size: 16px;
+            font-weight: bold;
+            letter-spacing: 0.6px;
+            padding: 8px 14px;
+            margin: 4px auto 18px auto;
+            width: 72%;
+            text-transform: uppercase;
         }
 
-        .data-table { width: 100%; border-collapse: collapse; margin-bottom: 10px; border: 1.5px solid #000; }
-        .data-table th { background: #d9d9d9; font-weight: bold; text-align: center; padding: 5px 6px; border: 1px solid #000; font-size: 10.5px; letter-spacing: 0.3px; }
-        .data-table td { border: 1px solid #000; padding: 5px 7px; font-size: 10px; vertical-align: top; }
-        .label { font-weight: bold; width: 36%; background: #f5f5f5; }
+        .data-table { width: 100%; border-collapse: collapse; margin-bottom: 16px; border: 1.5px solid #000; }
+        .data-table th { background: #e5e0d8; font-weight: bold; text-align: center; padding: 7px 8px; border: 1px solid #000; font-size: 12px; letter-spacing: 0.4px; text-transform: uppercase; }
+        .data-table td { border: 1px solid #000; padding: 9.5px 10px; font-size: 11.5px; vertical-align: middle; }
+        .label { font-weight: bold; width: 35%; background: #f5f5f5; }
         .value { }
 
-        .totals-table { width: 55%; border-collapse: collapse; margin: 0 0 12px auto; border: 1.5px solid #000; }
-        .totals-table td { border: 1px solid #000; padding: 5px 9px; font-size: 10.5px; }
-        .totals-table .tlabel { font-weight: bold; width: 65%; }
-        .totals-table .tvalue { text-align: right; font-weight: bold; font-size: 11px; }
-        .totals-table .net-row td { background: #d9d9d9; font-size: 12px; font-weight: bold; }
+        .totals-table { width: 64%; border-collapse: collapse; margin: 0 0 18px auto; border: 2px solid #000; }
+        .totals-table td { border: 1px solid #000; padding: 8px 10px; font-size: 11.5px; }
+        .totals-table .tlabel { font-weight: bold; width: 60%; background: #f5f5f5; }
+        .totals-table .tvalue { text-align: right; font-weight: bold; font-size: 12px; }
+        .totals-table .net-row td { background: #e5e0d8; font-size: 12.5px; font-weight: bold; }
 
-        .sig-table { width: 100%; border-collapse: collapse; margin-top: 5px; border: 1.5px solid #000; }
-        .sig-table th { background: #d9d9d9; font-weight: bold; text-align: center; padding: 5px; border: 1px solid #000; font-size: 10.5px; }
-        .sig-table td { height: 70px; border: 1px solid #000; vertical-align: top; }
+        .sig-table { width: 100%; border-collapse: collapse; margin-top: 6px; border: 1.5px solid #000; page-break-inside: avoid; }
+        .sig-table th { background: #e5e0d8; font-weight: bold; text-align: center; padding: 7px; border: 1px solid #000; font-size: 11.5px; }
+        .sig-table td { height: 145px; border: 1px solid #000; vertical-align: top; }
     </style>
     @include('documents.partials.bc_typography')
 </head>
@@ -78,29 +85,30 @@
     $lig          = data_get($documentData, 'lig') ?: ($consultation->budget->lig ?? '');
 @endphp
 
+@include('documents.partials.bc_footer')
+
 <!-- HEADER -->
 <table class="hdr">
     <tr>
-        <td style="width:22%; text-align:left;">
-            @if($logoOncaSrc)<img src="{{ $logoOncaSrc }}" style="height:55px; width:auto;">@endif
+        <td style="width:24%; text-align:left;">
+            @if($logoOncaSrc)<img src="{{ $logoOncaSrc }}" style="height:68px; width:auto;">@endif
         </td>
-        <td style="width:56%;" class="hdr-center">
-            Direction régionale du Conseil agricole<br>
-            <span style="font-size:12px;">Rabat-Salé-Kénitra</span>
+        <td style="width:52%;" class="hdr-center">
+            Direction Régionale du Conseil Agricole Rabat-Salé-Kénitra
         </td>
-        <td style="width:22%; text-align:right;">
-            @if($sceauMarocSrc)<img src="{{ $sceauMarocSrc }}" style="height:55px; width:auto;">@endif
+        <td style="width:24%; text-align:right;">
+            @if($sceauMarocSrc)<img src="{{ $sceauMarocSrc }}" style="height:68px; width:auto;">@endif
         </td>
     </tr>
 </table>
 <div class="hdr-divider"></div>
 
 <!-- TITRE -->
-<div class="main-title">BULLETIN DE DÉCOMPTE</div>
+<div class="title-banner">BULLETIN DE DÉCOMPTE</div>
 
 <!-- INFORMATIONS GÉNÉRALES -->
 <table class="data-table">
-    <tr><th colspan="2" style="font-size:11px; padding:6px;">RENSEIGNEMENTS GÉNÉRAUX</th></tr>
+    <tr><th colspan="2">RENSEIGNEMENTS GÉNÉRAUX</th></tr>
     <tr>
         <td class="label">{{ $labelEngagement }}</td>
         <td class="value" style="font-weight:bold;">{{ $numeroBc }}</td>
@@ -149,7 +157,7 @@
     </tr>
     <tr>
         <td class="tlabel" style="background:#fff;">En lettres :</td>
-        <td class="tvalue" style="background:#fff; font-style:italic; font-weight:normal; text-align:left; font-size:9px;">{{ $netLettres }}</td>
+        <td class="tvalue" style="background:#fff; font-style:italic; font-weight:normal; text-align:left; font-size:10.5px;">{{ $netLettres }}</td>
     </tr>
 </table>
 
@@ -160,12 +168,10 @@
         <th style="width:50%;">LE BÉNÉFICIAIRE</th>
     </tr>
     <tr>
-        <td style="height:80px;"></td>
-        <td style="height:80px;"></td>
+        <td style="height:145px;"></td>
+        <td style="height:145px;"></td>
     </tr>
 </table>
-
-@include('documents.partials.bc_footer')
 
 </body>
 </html>
