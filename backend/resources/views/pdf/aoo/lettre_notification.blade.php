@@ -5,7 +5,7 @@
     <title>{{ $lettre['objet_lettre'] }} - {{ $lettre['societe'] }}</title>
     <style>
         @page {
-            margin: 14mm 12mm;
+            margin: 14mm 12mm 26mm 12mm;
             size: A4 portrait;
         }
 
@@ -127,6 +127,8 @@
     </style>
 </head>
 <body>
+
+@include('partials.pdf_footer', ['pdfEngine' => 'dompdf', 'footerBottom' => '-84px'])
 
 @include('pdf.aoo.partials.lettre_notification_body', ['lettre' => $lettre, 'aoo' => $aoo])
 

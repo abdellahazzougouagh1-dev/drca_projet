@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <title>Dossier d'Estimation - {{ $consultation->numero_consultation }}</title>
     <style>
+        @page {
+            size: A4 portrait;
+            margin: 14mm 14mm 26mm 14mm;
+        }
         body {
             font-family: Arial, sans-serif;
             font-size: 12px;
@@ -71,6 +75,8 @@
     </style>
 </head>
 <body>
+
+    @include('partials.pdf_footer', ['pdfEngine' => 'dompdf', 'footerBottom' => '-84px'])
 
     <!-- ENTÊTE COMMUNE -->
     <div class="header">

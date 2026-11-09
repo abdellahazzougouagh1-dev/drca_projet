@@ -4,6 +4,12 @@
     <meta charset="UTF-8">
     <title>Résultat d'Appel d'Offres Ouvert</title>
     <style>
+        @page {
+            @if(($pdfEngine ?? 'mpdf') === 'dompdf')
+            size: A4 portrait;
+            @endif
+            margin: 10mm 12mm 27mm 12mm;
+        }
         body {
             font-family: Arial, Helvetica, sans-serif;
             font-size: 13px;
@@ -97,6 +103,9 @@
     </style>
 </head>
 <body>
+    @if(($pdfEngine ?? 'mpdf') === 'dompdf')
+        @include('partials.pdf_footer', ['pdfEngine' => 'dompdf', 'footerBottom' => '-84px'])
+    @endif
 
     <div class="page-wrapper">
         <div class="header-table">

@@ -38,45 +38,6 @@
             margin-bottom: 18px;
         }
 
-        footer {
-            position: fixed;
-            bottom: -90px;
-            left: 0;
-            right: 0;
-            border-top: 1px solid #999;
-            padding-top: 8px;
-            font-size: 8px;
-            color: #333;
-        }
-        .footer-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        .footer-table td {
-            vertical-align: top;
-            border: none;
-        }
-        .footer-left {
-            width: 22%;
-            font-weight: bold;
-            font-size: 9px;
-            line-height: 1.3;
-        }
-        .footer-center {
-            width: 56%;
-            text-align: center;
-            font-size: 8px;
-            line-height: 1.35;
-        }
-        .footer-right {
-            width: 22%;
-            text-align: right;
-        }
-        .footer-logo {
-            height: 48px;
-            width: auto;
-        }
-
         .ref-table {
             width: 100%;
             margin-bottom: 15px;
@@ -158,8 +119,9 @@
 @php
     $logoOnca = \App\Support\AooDocumentHelper::embedImage('images/logo-onca.png');
     $sceauMaroc = \App\Support\AooDocumentHelper::embedImage('images/sceau-maroc.png');
-    $logoGreen = \App\Support\AooDocumentHelper::embedImage('images/generation-green.png');
 @endphp
+
+    @include('partials.pdf_footer', ['pdfEngine' => 'dompdf', 'footerBottom' => '-88px'])
 
     <table class="header-table">
         <tr>
@@ -255,28 +217,6 @@
         </ul>
     </div>
 
-    <footer>
-        <table class="footer-table">
-            <tr>
-                <td class="footer-left">
-                    @if($logoGreen)
-                        <img src="{{ $logoGreen }}" alt="Génération Green" class="footer-logo"><br>
-                    @endif
-                    <strong>Génération Green<br>2020-2030</strong>
-                </td>
-                <td class="footer-center">
-                    Direction Régionale du Conseil Agricole de la Région de Rabat Salé Kénitra,<br>
-                    Angle Rue Sebta - Bd Mohamed V (à côté de Bank Al-Maghrib) - Kénitra<br>
-                    Tél. : +212 (0) 537 32 55 99 - Fax : +212 (0) 537 36 13 20 - Site web : www.onca.gov.ma
-                </td>
-                <td class="footer-right">
-                    @if($sceauMaroc)
-                        <img src="{{ $sceauMaroc }}" alt="Ministère" class="footer-logo">
-                    @endif
-                </td>
-            </tr>
-        </table>
-    </footer>
 
 </body>
 </html>

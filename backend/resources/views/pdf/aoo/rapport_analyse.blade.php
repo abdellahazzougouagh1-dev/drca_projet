@@ -4,12 +4,16 @@
     <meta charset="UTF-8">
     <title>Rapport d'Analyse des Offres</title>
     <style>
+        @page {
+            size: A4 portrait;
+            margin: 12mm 12mm 26mm 12mm;
+        }
         body {
             font-family: Arial, sans-serif;
             line-height: 1.6;
             color: #333;
             margin: 0;
-            padding: 20px;
+            padding: 0;
         }
         .header {
             text-align: center;
@@ -76,6 +80,7 @@
     </style>
 </head>
 <body>
+    @include('partials.pdf_footer', ['pdfEngine' => 'dompdf', 'footerBottom' => '-84px'])
     <div class="header">
         <div class="title">RAPPORT D'ANALYSE DES OFFRES</div>
         <div>Appel d'Offres: {{ $aoo->num_aoo }}</div>

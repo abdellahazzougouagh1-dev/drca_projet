@@ -5,7 +5,7 @@
     <title>Fiche de Suivi AOO - {{ $aoo->num_aoo }}</title>
     <style>
         @page {
-            margin: 12mm 10mm;
+            margin: 10mm 10mm 26mm 10mm;
             size: A4 portrait;
         }
 
@@ -132,6 +132,8 @@
     </style>
 </head>
 <body>
+
+@include('partials.pdf_footer', ['pdfEngine' => 'dompdf', 'footerBottom' => '-84px'])
 
 @php
     $logoOnca = \App\Support\AooDocumentHelper::embedImage('images/logo-onca.png')

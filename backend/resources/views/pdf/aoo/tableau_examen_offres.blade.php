@@ -156,7 +156,7 @@
     @php
         $logoOncaPath = public_path('images/logo-onca.png');
         $logoOncaSrc = file_exists($logoOncaPath) ? 'data:' . mime_content_type($logoOncaPath) . ';base64,' . base64_encode(file_get_contents($logoOncaPath)) : '';
-        $logoRoyaumePath = public_path('images/royaume-maroc.png');
+        $logoRoyaumePath = public_path('images/sceau-maroc.png');
         $logoRoyaumeSrc = file_exists($logoRoyaumePath) ? 'data:' . mime_content_type($logoRoyaumePath) . ';base64,' . base64_encode(file_get_contents($logoRoyaumePath)) : '';
     @endphp
 

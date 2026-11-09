@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <title>Lettres d'Écartement et d'Attribution</title>
     <style>
+        @page {
+            size: A4 portrait;
+            margin: 14mm 14mm 26mm 14mm;
+        }
         body {
             font-family: Arial, Helvetica, sans-serif;
             font-size: 12px;
@@ -101,35 +105,14 @@
             font-size: 13px;
         }
 
-        /* --- Footer Officiel --- */
-        .footer {
-            position: fixed;
-            bottom: 0px;
-            left: 0px;
-            right: 0px;
-            border-top: 1px solid #000;
-            padding-top: 10px;
-            font-size: 10px;
-            text-align: center;
-        }
-        .footer-table {
-            width: 100%;
-        }
-        .footer-logo {
-            width: 80px;
-            height: auto;
-        }
-        .footer-text {
-            color: #666;
-            line-height: 1.3;
-        }
-
         .page-break {
             page-break-after: always;
         }
     </style>
 </head>
 <body>
+
+    @include('partials.pdf_footer', ['pdfEngine' => 'dompdf', 'footerBottom' => '-84px'])
 
     @foreach($concurrents as $index => $concurrent)
         
@@ -213,24 +196,6 @@
             <div class="politesse">
                 Veuillez agréer, Messieurs, mes salutations.
             </div>
-        </div>
-
-        <div class="footer">
-            <table class="footer-table">
-                <tr>
-                    <td style="width: 20%;">
-                        <!-- Optional footer left logo like Generation Green if needed -->
-                    </td>
-                    <td style="width: 60%;" class="footer-text">
-                        Direction Régionale du Conseil Agricole de la Région de Rabat Salé Kénitra, Angle Rue Sebta - Bd Mohamed V (à côté de Bank Al-Maghreb) - Kénitra<br>
-                        Tél. : +212 (0) 537 32 55 99 - Fax : +212 (0) 537 36 13 20 - Site web : www.onca.gov.ma<br>
-                        <strong>Génération Green 2020-2030</strong>
-                    </td>
-                    <td style="width: 20%; text-align: right;">
-                        <!-- Optional footer right logo -->
-                    </td>
-                </tr>
-            </table>
         </div>
 
         @if(!$loop->last)

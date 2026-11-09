@@ -9,6 +9,8 @@
 </head>
 <body>
 
+    @include('partials.pdf_footer', ['pdfEngine' => 'dompdf', 'footerBottom' => '-84px'])
+
     <table class="header-table">
         <tr>
             <td class="logo-left">

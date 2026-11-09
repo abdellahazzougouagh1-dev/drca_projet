@@ -6,10 +6,9 @@
     <style>
         @page {
             margin-top: 8mm;
-            margin-bottom: 22mm;
+            margin-bottom: 27mm;
             margin-left: 15mm;
             margin-right: 15mm;
-            footer: html_pageFooter;
         }
         body {
             font-family: 'Times New Roman', Times, serif;
@@ -223,16 +222,6 @@
     <div class="article-content">
         Le président de la commission est chargé de l’exécution de la présente décision.
     </div>
-
-    <!-- Footer officiel DRCA-RSK / ONCA -->
-    <htmlpagefooter name="pageFooter">
-        <div style="text-align: center; border-top: 1px solid #999; padding-top: 3px;">
-            @if(file_exists(public_path('images/info_DRCA.png')))
-                <img src="{{ public_path('images/info_DRCA.png') }}" style="width: 100%; height: auto;" alt="Footer ONCA">
-            @endif
-        </div>
-    </htmlpagefooter>
-    <sethtmlpagefooter name="pageFooter" value="on" />
 
 </body>
 </html>

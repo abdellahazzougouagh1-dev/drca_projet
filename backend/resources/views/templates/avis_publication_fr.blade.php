@@ -5,7 +5,7 @@
     <title>Avis d'Appel d'Offres</title>
     <style>
         @page {
-            margin: 90px 60px 70px 60px;
+            margin: 90px 60px 96px 60px;
         }
 
         body {
@@ -104,6 +104,8 @@
     </style>
 </head>
 <body>
+
+    @include('partials.pdf_footer', ['pdfEngine' => 'dompdf', 'footerBottom' => '-84px'])
 
     {{-- ===== EN-TETE AVEC LOGOS ===== --}}
     <table class="header-table">

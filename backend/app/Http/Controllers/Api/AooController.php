@@ -13,6 +13,7 @@ use App\Services\FicheSuiviBuilder;
 use App\Services\LettreNotificationBuilder;
 use App\Services\LotEstimationBuilder;
 use App\Support\AooDocumentHelper;
+use App\Support\PdfFooterHelper;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -549,8 +550,12 @@ class AooController extends Controller
                 'margin_left' => 10,
                 'margin_right' => 10,
                 'margin_top' => 10,
-                'margin_bottom' => 10,
+                'margin_bottom' => 27,
+                'margin_footer' => 4,
+                'autoScriptToLang' => true,
+                'autoLangToFont' => true,
             ]);
+            $mpdf->SetHTMLFooter(PdfFooterHelper::mpdfHtml());
             $mpdf->WriteHTML($html);
             $output = $mpdf->Output('', 'S');
             return response($output, 200, [
@@ -568,8 +573,12 @@ class AooController extends Controller
                 'margin_left' => 10,
                 'margin_right' => 10,
                 'margin_top' => 10,
-                'margin_bottom' => 10,
+                'margin_bottom' => 27,
+                'margin_footer' => 4,
+                'autoScriptToLang' => true,
+                'autoLangToFont' => true,
             ]);
+            $mpdf->SetHTMLFooter(PdfFooterHelper::mpdfHtml());
             $mpdf->WriteHTML($html);
             $output = $mpdf->Output('', 'S');
             return response($output, 200, [
@@ -634,8 +643,12 @@ class AooController extends Controller
                 'margin_left' => 15,
                 'margin_right' => 15,
                 'margin_top' => 15,
-                'margin_bottom' => 15,
+                'margin_bottom' => 27,
+                'margin_footer' => 4,
+                'autoScriptToLang' => true,
+                'autoLangToFont' => true,
             ]);
+            $mpdf->SetHTMLFooter(PdfFooterHelper::mpdfHtml());
             $mpdf->WriteHTML($html);
             $output = $mpdf->Output('', 'S');
             
@@ -657,10 +670,12 @@ class AooController extends Controller
                 'margin_left' => 15,
                 'margin_right' => 15,
                 'margin_top' => 15,
-                'margin_bottom' => 15,
+                'margin_bottom' => 27,
+                'margin_footer' => 4,
                 'autoScriptToLang' => true,
                 'autoLangToFont' => true,
             ]);
+            $mpdf->SetHTMLFooter(PdfFooterHelper::mpdfHtml());
             $mpdf->WriteHTML($html);
             $output = $mpdf->Output('', 'S');
             
@@ -682,6 +697,7 @@ class AooController extends Controller
         if ($documentType === 'pv-ouverture') {
             try {
                 $data = $this->buildPvOuvertureData($aoo);
+                $data['pdfEngine'] = 'mpdf';
                 $html = view('pdf.aoo.pv_ouverture', $data)->render();
                 $mpdf = new \Mpdf\Mpdf([
                     'mode' => 'utf-8',
@@ -689,10 +705,12 @@ class AooController extends Controller
                     'margin_left' => 15,
                     'margin_right' => 15,
                     'margin_top' => 12,
-                    'margin_bottom' => 20,
+                    'margin_bottom' => 27,
+                    'margin_footer' => 4,
                     'autoScriptToLang' => true,
                     'autoLangToFont' => true,
                 ]);
+                $mpdf->SetHTMLFooter(PdfFooterHelper::mpdfHtml());
                 $mpdf->WriteHTML($html);
                 $output = $mpdf->Output('', 'S');
                 if (ob_get_length()) {
@@ -718,10 +736,12 @@ class AooController extends Controller
                     'margin_left' => 15,
                     'margin_right' => 15,
                     'margin_top' => 12,
-                    'margin_bottom' => 12,
+                    'margin_bottom' => 27,
+                    'margin_footer' => 4,
                     'autoScriptToLang' => true,
                     'autoLangToFont' => true,
                 ]);
+                $mpdf->SetHTMLFooter(PdfFooterHelper::mpdfHtml());
                 $mpdf->WriteHTML($html);
                 $output = $mpdf->Output('', 'S');
 
@@ -750,18 +770,12 @@ class AooController extends Controller
                     'margin_left' => 10,
                     'margin_right' => 10,
                     'margin_top' => 10,
-                    'margin_bottom' => 12,
+                    'margin_bottom' => 27,
+                    'margin_footer' => 4,
                     'autoScriptToLang' => true,
                     'autoLangToFont' => true,
                 ]);
-                $footerHtml = '<table width="100%" style="border-top: 1px solid #cbd5e1; font-size: 7.5pt; color: #64748b; padding-top: 2px;">' .
-                    '<tr>' .
-                    '<td width="33%" style="text-align: left;">Consultation : ' . htmlspecialchars($aoo->num_aoo) . '</td>' .
-                    '<td width="34%" style="text-align: center;">Examen des offres — DRCA-RSK</td>' .
-                    '<td width="33%" style="text-align: right;">Page {PAGENO} / {nbpg}</td>' .
-                    '</tr>' .
-                    '</table>';
-                $mpdf->SetHTMLFooter($footerHtml);
+                $mpdf->SetHTMLFooter(PdfFooterHelper::mpdfHtml());
 
                 $mpdf->WriteHTML($html);
                 $output = $mpdf->Output('', 'S');
@@ -809,10 +823,12 @@ class AooController extends Controller
                     'margin_left' => 15,
                     'margin_right' => 15,
                     'margin_top' => 12,
-                    'margin_bottom' => 15,
+                    'margin_bottom' => 27,
+                    'margin_footer' => 4,
                     'autoScriptToLang' => true,
                     'autoLangToFont' => true,
                 ]);
+                $mpdf->SetHTMLFooter(PdfFooterHelper::mpdfHtml());
                 $mpdf->WriteHTML($html);
                 $output = $mpdf->Output('', 'S');
 
@@ -992,7 +1008,8 @@ class AooController extends Controller
         }
 
         $aoo->load('concurrents.fournisseur', 'lots.items');
-        $pdf = Pdf::loadView('pdf.aoo.pv_ouverture', ['aoo' => $aoo])->setPaper('A4', 'portrait');
+        $data = array_merge($this->buildPvOuvertureData($aoo), ['pdfEngine' => 'dompdf']);
+        $pdf = Pdf::loadView('pdf.aoo.pv_ouverture', $data)->setPaper('A4', 'portrait');
 
         return $pdf->download('PV_Ouverture_Plis_' . str_replace('/', '_', $aoo->num_aoo) . '.pdf');
     }
@@ -1501,17 +1518,19 @@ class AooController extends Controller
         }
 
         try {
-            $html = view('exports.aoo.resultat', compact('aoo'))->render();
+            $html = view('exports.aoo.resultat', ['aoo' => $aoo, 'pdfEngine' => 'mpdf'])->render();
             $mpdf = new \Mpdf\Mpdf([
                 'mode' => 'utf-8',
                 'format' => 'A4',
                 'margin_left' => 12,
                 'margin_right' => 12,
                 'margin_top' => 10,
-                'margin_bottom' => 10,
+                'margin_bottom' => 27,
+                'margin_footer' => 4,
                 'autoScriptToLang' => true,
                 'autoLangToFont' => true,
             ]);
+            $mpdf->SetHTMLFooter(PdfFooterHelper::mpdfHtml());
             $mpdf->WriteHTML($html);
             $output = $mpdf->Output('', 'S');
 
@@ -1524,7 +1543,7 @@ class AooController extends Controller
                 'Content-Disposition' => 'attachment; filename="resultat_aoo_' . str_replace('/', '_', $aoo->num_aoo) . '.pdf"',
             ]);
         } catch (\Exception $e) {
-            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('exports.aoo.resultat', compact('aoo'))
+            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('exports.aoo.resultat', ['aoo' => $aoo, 'pdfEngine' => 'dompdf'])
                 ->setPaper('a4', 'portrait');
             return $pdf->download('resultat_aoo_' . str_replace('/', '_', $aoo->num_aoo) . '.pdf');
         }
@@ -1581,10 +1600,12 @@ class AooController extends Controller
             'margin_left' => 15,
             'margin_right' => 15,
             'margin_top' => 14,
-            'margin_bottom' => 10,
+            'margin_bottom' => 27,
+            'margin_footer' => 4,
             'autoScriptToLang' => true,
             'autoLangToFont' => true,
         ]);
+        $mpdf->SetHTMLFooter(PdfFooterHelper::mpdfHtml());
         $mpdf->WriteHTML($html);
 
         return response()->json([
@@ -2566,10 +2587,12 @@ class AooController extends Controller
             'margin_left' => 15,
             'margin_right' => 15,
             'margin_top' => 12,
-            'margin_bottom' => 12,
+            'margin_bottom' => 27,
+            'margin_footer' => 4,
             'autoScriptToLang' => true,
             'autoLangToFont' => true,
         ]);
+        $mpdf->SetHTMLFooter(PdfFooterHelper::mpdfHtml());
         $mpdf->WriteHTML($html);
         $output = $mpdf->Output('', 'S');
         $num_marche = $marche ? str_replace('/', '_', $marche->num_marche) : 'DRAFT';

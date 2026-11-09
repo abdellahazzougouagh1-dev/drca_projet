@@ -5,11 +5,13 @@
     <title>Extrait du Procès-Verbal - {{ $num_aoo }}</title>
     <style>
         @page {
+            @if(($pdfEngine ?? 'mpdf') === 'dompdf')
+            size: A4 portrait;
+            @endif
             margin-top: 12mm;
-            margin-bottom: 22mm;
+            margin-bottom: 27mm;
             margin-left: 15mm;
             margin-right: 15mm;
-            footer: html_pageFooter;
         }
         body {
             font-family: 'Times New Roman', Times, serif;
@@ -133,14 +135,15 @@
     </style>
 </head>
 <body>
+    @if(($pdfEngine ?? 'mpdf') === 'dompdf')
+        @include('partials.pdf_footer', ['pdfEngine' => 'dompdf', 'footerBottom' => '-84px'])
+    @endif
 
     @php
         $logoOncaPath = public_path('images/logo-onca.png');
         $logoOncaSrc = file_exists($logoOncaPath) ? 'data:' . mime_content_type($logoOncaPath) . ';base64,' . base64_encode(file_get_contents($logoOncaPath)) : '';
         $logoRoyaumePath = public_path('images/sceau-maroc.png');
         $logoRoyaumeSrc = file_exists($logoRoyaumePath) ? 'data:' . mime_content_type($logoRoyaumePath) . ';base64,' . base64_encode(file_get_contents($logoRoyaumePath)) : '';
-        $footerImgPath = public_path('images/info_DRCA.png');
-        $footerImgSrc = file_exists($footerImgPath) ? 'data:' . mime_content_type($footerImgPath) . ';base64,' . base64_encode(file_get_contents($footerImgPath)) : '';
     @endphp
 
     <!-- HEADER LOGOS -->
@@ -345,16 +348,6 @@
             MAITRE D’OUVRAGE
         </div>
     </div>
-
-    <!-- FOOTER OFFICIEL SUR TOUTES LES PAGES -->
-    <htmlpagefooter name="pageFooter">
-        <div style="text-align: center; border-top: 1px solid #999; padding-top: 3px;">
-            @if($footerImgSrc)
-                <img src="{{ $footerImgSrc }}" style="width: 100%; height: auto;" alt="Footer ONCA">
-            @endif
-        </div>
-    </htmlpagefooter>
-    <sethtmlpagefooter name="pageFooter" value="on" />
 
 </body>
 </html>

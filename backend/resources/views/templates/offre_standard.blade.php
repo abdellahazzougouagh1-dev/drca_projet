@@ -6,7 +6,7 @@
     <title>Offre Standard - Bordereau des Prix</title>
     <style>
         @page {
-            margin: 60px 50px 80px 50px;
+            margin: 60px 50px 96px 50px;
         }
         body {
             font-family: Arial, Helvetica, sans-serif;
@@ -90,6 +90,8 @@
     </style>
 </head>
 <body>
+
+    @include('partials.pdf_footer', ['pdfEngine' => 'dompdf', 'footerBottom' => '-84px'])
 
     <div class="header-title">
         APPEL D'OFFRES OUVERT NATIONAL SUR OFFRES DE PRIX NO {{ $numero_aoo ?? 'AO-02/2026/DRCA-RSK' }}

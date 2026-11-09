@@ -5,7 +5,7 @@
     <title>Lettre d'écartement - {{ $entreprise_nom }}</title>
     <style>
         @page {
-            margin: 12mm 15mm 15mm 15mm;
+            margin: 12mm 15mm 27mm 15mm;
         }
         body {
             font-family: Arial, sans-serif;
@@ -132,16 +132,6 @@
             padding-left: 14px;
             text-indent: -14px;
         }
-        .footer-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 40px;
-            border-top: 1px solid #cbd5e1;
-            padding-top: 8px;
-            font-size: 7.5pt;
-            color: #475569;
-            text-align: center;
-        }
     </style>
 </head>
 <body>
@@ -233,16 +223,6 @@
             <li>* Un certificat d'immatriculation au registre de commerce.</li>
         </ul>
     </div>
-
-    <!-- Footer Coordonnées -->
-    <table class="footer-table">
-        <tr>
-            <td>
-                Direction Régionale du Conseil Agricole de la Région de Rabat Salé Kénitra, Angle Rue Sebta - Bd Mohamed V (à côté de Bank Al-Maghreb) - Kénitra<br>
-                Tél. : +212 (0) 537 32 55 99 - Fax : +212 (0) 537 36 13 20 - Site web : www.onca.gov.ma
-            </td>
-        </tr>
-    </table>
 
 </body>
 </html>

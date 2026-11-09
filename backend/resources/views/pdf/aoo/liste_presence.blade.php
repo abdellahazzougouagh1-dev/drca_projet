@@ -4,12 +4,16 @@
     <meta charset="UTF-8">
     <title>Liste de Présence - AOO N° {{ $aoo->num_aoo }}</title>
     <style>
+        @page {
+            size: A4 portrait;
+            margin: 12mm 12mm 26mm 12mm;
+        }
         body {
             font-family: Arial, sans-serif;
             font-size: 11px;
             color: #000;
             margin: 0;
-            padding: 20px;
+            padding: 0;
         }
 
         table {
@@ -58,6 +62,8 @@
     </style>
 </head>
 <body>
+
+    @include('partials.pdf_footer', ['pdfEngine' => 'dompdf', 'footerBottom' => '-84px'])
 
     <!-- TABLEAU DE L'EN-TÊTE -->
     <table>
