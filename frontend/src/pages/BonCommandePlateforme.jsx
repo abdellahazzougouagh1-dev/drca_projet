@@ -1295,6 +1295,17 @@ const BonCommandePlateforme = () => {
     }
   };
 
+  const deleteMembreDefinitivement = async (membreId, nomPrenom) => {
+    if (!window.confirm(`Supprimer définitivement « ${nomPrenom} » de la base de données ? Cette action est irréversible.`)) return;
+    try {
+      await api.delete(`/commission-membres/${membreId}`);
+      await fetchMembresCatalog();
+      setNouveauMembreForm((prev) => ({ ...prev, membre_id: prev.membre_id === String(membreId) ? '' : prev.membre_id }));
+    } catch (err) {
+      alert(err.response?.data?.message || 'Erreur lors de la suppression du membre.');
+    }
+  };
+
   // Sync activePhase with URL query param on mount / URL change
 
   useEffect(() => {
@@ -6122,6 +6133,19 @@ useEffect(() => {
                                     >
                                       <Plus size={16} /> Nouveau
                                     </button>
+                                    {nouveauMembreForm.membre_id && (() => {
+                                      const selectedM = membresCatalog.find((m) => String(m.id) === String(nouveauMembreForm.membre_id));
+                                      return selectedM ? (
+                                        <button
+                                          type="button"
+                                          onClick={() => deleteMembreDefinitivement(selectedM.id, selectedM.nom_prenom)}
+                                          className="px-3 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold shrink-0 inline-flex items-center gap-1 shadow-sm transition-all"
+                                          title="Supprimer définitivement ce membre de la base de données"
+                                        >
+                                          <Trash2 size={15} />
+                                        </button>
+                                      ) : null;
+                                    })()}
                                   </div>
 
                                   <div className="sm:col-span-4">
