@@ -6133,19 +6133,18 @@ useEffect(() => {
                                     >
                                       <Plus size={16} /> Nouveau
                                     </button>
-                                    {nouveauMembreForm.membre_id && (() => {
-                                      const selectedM = membresCatalog.find((m) => String(m.id) === String(nouveauMembreForm.membre_id));
-                                      return selectedM ? (
-                                        <button
-                                          type="button"
-                                          onClick={() => deleteMembreDefinitivement(selectedM.id, selectedM.nom_prenom)}
-                                          className="px-3 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold shrink-0 inline-flex items-center gap-1 shadow-sm transition-all"
-                                          title="Supprimer définitivement ce membre de la base de données"
-                                        >
-                                          <Trash2 size={15} />
-                                        </button>
-                                      ) : null;
-                                    })()}
+                                    <button
+                                      type="button"
+                                      disabled={!nouveauMembreForm.membre_id}
+                                      onClick={() => {
+                                        const selectedM = membresCatalog.find((m) => String(m.id) === String(nouveauMembreForm.membre_id));
+                                        if (selectedM) deleteMembreDefinitivement(selectedM.id, selectedM.nom_prenom);
+                                      }}
+                                      className="px-3 py-2.5 bg-red-600 hover:bg-red-700 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-xl text-xs font-bold shrink-0 inline-flex items-center gap-1 shadow-sm transition-all"
+                                      title="Supprimer définitivement ce membre de la base de données"
+                                    >
+                                      <Trash2 size={15} />
+                                    </button>
                                   </div>
 
                                   <div className="sm:col-span-4">
