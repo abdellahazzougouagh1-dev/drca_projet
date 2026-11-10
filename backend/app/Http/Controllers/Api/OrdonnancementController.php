@@ -7,9 +7,11 @@ use App\Models\Consultation;
 use App\Models\Liquidation;
 use App\Models\LiquidationFinanciere;
 use App\Models\Marche;
+use App\Models\NotificationLigne;
 use App\Models\Ordonnancement;
 use App\Models\OrdonnancementHistorique;
 use App\Models\OrdonnancementOrdre;
+use App\Services\BudgetHierarchyService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -84,6 +86,7 @@ class OrdonnancementController extends Controller
         $liquidationsMarches = Liquidation::with([
             'marche.fournisseur',
             'marche.notificationLigne',
+            'marche.registreEngagement',
             'marche.aoo',
             'marche.lot',
             'lignes',
@@ -95,26 +98,38 @@ class OrdonnancementController extends Controller
         $disponibles = [];
 
         foreach ($liquidationsMarches as $liq) {
+            if (!BudgetHierarchyService::isMarcheLiquidationValidated($liq->statut)) {
+                continue;
+            }
+
             $marche = $liq->marche;
             $fournisseur = $marche?->fournisseur ?? null;
             $notifLigne = $marche?->notificationLigne ?? null;
 
             $montantLiquidation = (float) ($liq->montant_brut_ttc ?: $liq->montant_ttc ?: $liq->net_a_payer ?: 0);
+            if ($marche) {
+                $engaged = BudgetHierarchyService::resolveMarcheEngagedAmount($marche);
+                if ($engaged <= BudgetHierarchyService::EPSILON) {
+                    continue;
+                }
+                $montantLiquidation = min($montantLiquidation, $engaged);
+            }
             $montantHt = (float) ($liq->montant_brut_ht ?: $liq->montant_ht ?: 0);
             $montantTva = (float) ($liq->montant_tva ?: ($montantLiquidation - $montantHt));
 
-            // Calculate amount already ordonnanced across all existing ordonnancements for this liquidation
-            $dejaOrdonnance = 0;
-            if ($liq->ordonnancements) {
-                foreach ($liq->ordonnancements as $ord) {
-                    $dejaOrdonnance += (float) ($ord->ordres?->whereNotIn('statut', ['Rejeté', 'Annulé'])->sum('montant') ?: 0);
-                }
+            // Calculate amount already ordonnanced across all existing active ordonnancements for this liquidation
+            $dejaOrdonnance = BudgetHierarchyService::getActiveOrdonnancedForLiquidation($liq->id);
+            if ($marche) {
+                $marcheAlreadyOrd = BudgetHierarchyService::getActiveOrdonnancedForMarche($marche->id);
+                $engagedRemaining = max(0.0, BudgetHierarchyService::resolveMarcheEngagedAmount($marche) - $marcheAlreadyOrd);
+                $resteLiquidation = max(0.0, $montantLiquidation - $dejaOrdonnance);
+                $resteDisponible = round(min($resteLiquidation, $engagedRemaining), 2);
+            } else {
+                $resteDisponible = round(max(0, $montantLiquidation - $dejaOrdonnance), 2);
             }
 
-            $resteDisponible = round(max(0, $montantLiquidation - $dejaOrdonnance), 2);
-
             // If totally ordonnanced (reste <= 0.01), DO NOT include in available liquidations
-            if ($resteDisponible <= 0.01 && $montantLiquidation > 0) {
+            if ($resteDisponible <= 0.01) {
                 continue;
             }
 
@@ -192,46 +207,32 @@ class OrdonnancementController extends Controller
             ->get();
 
         foreach ($consultationsBc as $consultation) {
+            $montantEngagement = BudgetHierarchyService::resolveConsultationEngagedAmount($consultation);
+            if ($montantEngagement <= BudgetHierarchyService::EPSILON) {
+                continue;
+            }
+
             $liq = $consultation->liquidation;
-            $montantLiquidation = 0;
+            $montantLiquidation = 0.0;
 
             if ($liq && (float) ($liq->montant_a_payer ?? 0) > 0) {
-                $montantLiquidation = (float) $liq->montant_a_payer;
+                $montantLiquidation = round(min((float) $liq->montant_a_payer, $montantEngagement), 2);
             } else {
-                $totalPrestationsTTC = 0;
-                if ($consultation->prestations && $consultation->prestations->count() > 0) {
-                    $totalPrestationsTTC = (float) $consultation->prestations->reduce(function ($sum, $p) {
-                        $ht = (float) ($p->montant_ht ?: (($p->quantite ?: 1) * ($p->prix_unitaire_ht ?: 0)));
-                        $tvaRate = (float) ($p->tva ?: 20);
-                        return $sum + ($ht * (1 + ($tvaRate / 100)));
-                    }, 0);
-                }
-
-                $montantEngagement = (float) (
-                    $consultation->montant_engager_neuf ?:
-                    ($consultation->montant_depense_neuf ?:
-                    ($consultation->engagement?->montant_engagement ?:
-                    ($consultation->registreEngagement?->montant_engager_neuf ?:
-                    ($consultation->registreEngagement?->montant_engage ?: $totalPrestationsTTC))))
-                );
-
                 $isEligible = $consultation->receptionCommission
                     || $consultation->receptions->count() > 0
                     || in_array(strtoupper((string) $consultation->statut_dossier), ['LIQUIDÉ', 'LIQUIDE', 'PAYÉ', 'PAYE', 'RÉCEPTIONNÉ', 'RECEPTIONNE', 'CLÔTURÉ', 'CLOTURE', 'LIQUIDATION', 'ORDONNANCEMENT'])
                     || $montantEngagement > 0;
 
-                if ($isEligible && ($montantEngagement > 0 || $totalPrestationsTTC > 0)) {
-                    $montantLiquidation = round($montantEngagement > 0 ? $montantEngagement : $totalPrestationsTTC, 2);
+                if ($isEligible) {
+                    $montantLiquidation = $montantEngagement;
                 }
             }
 
-            if ($montantLiquidation <= 0) {
+            if ($montantLiquidation <= BudgetHierarchyService::EPSILON) {
                 continue;
             }
 
-            $dejaOrdonnance = (float) $consultation->ordonnancements->sum(function ($ord) {
-                return (float) ($ord->ordres->whereNotIn('statut', ['Rejeté', 'Annulé'])->sum('montant') ?: 0);
-            });
+            $dejaOrdonnance = BudgetHierarchyService::getActiveOrdonnancedForConsultation($consultation->id);
             $resteDisponible = round(max(0, $montantLiquidation - $dejaOrdonnance), 2);
             if ($resteDisponible <= 0.01) {
                 continue;
@@ -366,74 +367,135 @@ class OrdonnancementController extends Controller
             'ordres.*.observations' => 'nullable|string',
         ]);
 
-        return DB::transaction(function () use ($validated, $request) {
+        return DB::transaction(function () use ($validated) {
             $year = $validated['exercice'] ?? Carbon::parse($validated['date_ordonnancement'])->format('Y');
 
-            // 1. Check liquidation remaining balance
             $liq = null;
+            $marche = null;
+            $consultation = null;
             $montantLiquidation = (float) $validated['montant_brut'];
-            $totalOrdres = collect($validated['ordres'])->sum(function ($o) {
-                return (float) ($o['montant'] ?? 0);
-            });
+            $dejaOrdonnance = 0.0;
+            $dossierEngaged = null;
+            $dossierAlreadyOrd = 0.0;
+            $dossierLabel = $validated['reference'] ?? 'ce dossier';
+
+            $dossierCancelled = BudgetHierarchyService::isOrdonnancementCancelledOrRejected($validated['statut'] ?? null);
+            $totalOrdres = round((float) collect($validated['ordres'])
+                ->filter(fn ($o) => BudgetHierarchyService::isOrdreActive($o['statut'] ?? 'À payer'))
+                ->sum(fn ($o) => (float) ($o['montant'] ?? 0)), 2);
+            $effectiveOrdProposed = $dossierCancelled ? 0.0 : $totalOrdres;
 
             if (!empty($validated['liquidation_id'])) {
-                $liq = Liquidation::with('ordonnancements.ordres')->find($validated['liquidation_id']);
+                $liq = Liquidation::with(['marche.registreEngagement', 'marche.notificationLigne.notification', 'ordonnancements.ordres'])
+                    ->lockForUpdate()
+                    ->find($validated['liquidation_id']);
                 if ($liq) {
-                    $montantLiquidation = (float) ($liq->montant_brut_ttc ?: $liq->montant_ttc ?: $validated['montant_brut']);
-                    $dejaOrdonnance = 0;
-                    foreach ($liq->ordonnancements as $ord) {
-                        $dejaOrdonnance += (float) ($ord->ordres->whereNotIn('statut', ['Rejeté', 'Annulé'])->sum('montant') ?: 0);
+                    if (!BudgetHierarchyService::isMarcheLiquidationValidated($liq->statut)) {
+                        throw ValidationException::withMessages([
+                            'liquidation_id' => ["La liquidation sélectionnée doit être validée avant d'émettre un ordonnancement."],
+                        ]);
                     }
+
+                    $marche = $liq->marche;
+                    if ($marche && empty($validated['marche_id'])) {
+                        $validated['marche_id'] = $marche->id;
+                    }
+
+                    $montantLiquidation = (float) ($liq->montant_brut_ttc ?: $liq->montant_ttc ?: $validated['montant_brut']);
+                    $dejaOrdonnance = BudgetHierarchyService::getActiveOrdonnancedForLiquidation($liq->id);
                     $resteDisponible = round(max(0, $montantLiquidation - $dejaOrdonnance), 2);
 
-                    if ($totalOrdres > ($resteDisponible + 0.05)) {
+                    if ($effectiveOrdProposed > ($resteDisponible + 0.05)) {
                         throw ValidationException::withMessages([
-                            'ordres' => ["Le montant total des ordres (" . number_format($totalOrdres, 2, ',', ' ') . " DH) dépasse le montant disponible de la liquidation (" . number_format($resteDisponible, 2, ',', ' ') . " DH)."]
+                            'ordres' => ["Le montant total des ordres (" . number_format($effectiveOrdProposed, 2, ',', ' ') . " DH) dépasse le montant disponible de la liquidation (" . number_format($resteDisponible, 2, ',', ' ') . " DH)."]
                         ]);
+                    }
+
+                    if ($marche) {
+                        $dossierEngaged = BudgetHierarchyService::resolveMarcheEngagedAmount($marche);
+                        $dossierAlreadyOrd = BudgetHierarchyService::getActiveOrdonnancedForMarche($marche->id);
+                        $dossierLabel = "le marché {$marche->num_marche}";
                     }
                 }
             } elseif (!empty($validated['consultation_id'])) {
-                $consultation = Consultation::with(['prestations', 'engagement', 'registreEngagement', 'liquidation'])->find($validated['consultation_id']);
+                $consultation = Consultation::with(['budget', 'notificationLigne.notification', 'engagement', 'registreEngagement', 'liquidation'])
+                    ->lockForUpdate()
+                    ->find($validated['consultation_id']);
                 if ($consultation) {
+                    $engaged = BudgetHierarchyService::resolveConsultationEngagedAmount($consultation);
+                    if ($engaged <= BudgetHierarchyService::EPSILON && $effectiveOrdProposed > 0) {
+                        throw ValidationException::withMessages([
+                            'ordres' => [
+                                "Règle budgétaire (Ordonnancement <= Engagement) : impossible d'ordonnancer la consultation {$consultation->numero_consultation} sans engagement actif (> 0 DH).",
+                            ],
+                        ]);
+                    }
+
                     $liqBc = $consultation->liquidation;
                     if (!$liqBc) {
-                        $totalPrestationsTTC = 0;
-                        if ($consultation->prestations && $consultation->prestations->count() > 0) {
-                            $totalPrestationsTTC = (float) $consultation->prestations->reduce(function ($sum, $p) {
-                                $ht = (float) ($p->montant_ht ?: (($p->quantite ?: 1) * ($p->prix_unitaire_ht ?: 0)));
-                                $tvaRate = (float) ($p->tva ?: 20);
-                                return $sum + ($ht * (1 + ($tvaRate / 100)));
-                            }, 0);
-                        }
-                        $montantEngagement = (float) (
-                            $consultation->montant_engager_neuf ?:
-                            ($consultation->montant_depense_neuf ?:
-                            ($consultation->engagement?->montant_engagement ?:
-                            ($consultation->registreEngagement?->montant_engager_neuf ?:
-                            ($consultation->registreEngagement?->montant_engage ?: $totalPrestationsTTC))))
-                        );
-                        $montantLiq = $montantEngagement > 0 ? $montantEngagement : ($totalPrestationsTTC > 0 ? $totalPrestationsTTC : (float) $validated['montant_brut']);
                         $liqBc = LiquidationFinanciere::create([
                             'consultation_id' => $consultation->id,
-                            'montant_a_payer' => $montantLiq,
+                            'montant_a_payer' => $engaged,
                             'reference_facture' => $consultation->numero_bc ?? $consultation->numero_consultation,
                             'date_facture' => $consultation->date_consultation ?? now()->format('Y-m-d'),
                         ]);
                     }
 
-                    $montantLiquidation = (float) $liqBc->montant_a_payer;
-                    $dejaOrdonnance = (float) Ordonnancement::with('ordres')
-                        ->where('consultation_id', $validated['consultation_id'])
-                        ->get()
-                        ->sum(fn ($ord) => (float) $ord->ordres->whereNotIn('statut', ['Rejeté', 'Annulé'])->sum('montant'));
+                    $montantLiquidation = round(min((float) $liqBc->montant_a_payer, $engaged), 2);
+                    $dejaOrdonnance = BudgetHierarchyService::getActiveOrdonnancedForConsultation($consultation->id);
                     $resteDisponible = round(max(0, $montantLiquidation - $dejaOrdonnance), 2);
 
-                    if ($totalOrdres > ($resteDisponible + 0.05)) {
+                    if ($effectiveOrdProposed > ($resteDisponible + 0.05)) {
                         throw ValidationException::withMessages([
                             'ordres' => ["Le montant total des ordres dépasse le montant disponible de la liquidation du bon de commande (" . number_format($resteDisponible, 2, ',', ' ') . " DH)."]
                         ]);
                     }
+
+                    $dossierEngaged = $engaged;
+                    $dossierAlreadyOrd = $dejaOrdonnance;
+                    $dossierLabel = "la consultation {$consultation->numero_consultation}";
                 }
+            } elseif (!empty($validated['marche_id'])) {
+                $marche = Marche::with(['registreEngagement', 'notificationLigne.notification'])
+                    ->lockForUpdate()
+                    ->find($validated['marche_id']);
+                if ($marche) {
+                    $dossierEngaged = BudgetHierarchyService::resolveMarcheEngagedAmount($marche);
+                    $dossierAlreadyOrd = BudgetHierarchyService::getActiveOrdonnancedForMarche($marche->id);
+                    $dossierLabel = "le marché {$marche->num_marche}";
+                }
+            }
+
+            $resolvedLigne = BudgetHierarchyService::resolveNotificationLigneForDossier(
+                $validated['notification_ligne_id'] ?? $marche?->notification_ligne_id ?? $consultation?->notification_ligne_id,
+                $validated['article'] ?? $marche?->article_budget ?? $consultation?->budget?->art,
+                $validated['paragraphe'] ?? $marche?->paragraphe_budget ?? $consultation?->budget?->par,
+                $validated['ligne'] ?? $marche?->ligne_budget ?? $consultation?->budget?->lig,
+                $validated['budget_type'] ?? $marche?->type_budget ?? $consultation?->type_budget ?? 'Investissement',
+                $year
+            );
+
+            if ($resolvedLigne) {
+                $validated['notification_ligne_id'] = $resolvedLigne->id;
+                $validated['article'] = $validated['article'] ?: $resolvedLigne->article;
+                $validated['paragraphe'] = $validated['paragraphe'] ?: $resolvedLigne->paragraphe;
+                $validated['ligne'] = $validated['ligne'] ?: $resolvedLigne->ligne_budgetaire;
+            }
+
+            if ($effectiveOrdProposed > 0 || ($dossierEngaged !== null && $effectiveOrdProposed > 0)) {
+                BudgetHierarchyService::assertOrdonnancementWithinEngagement([
+                    'exercice' => $year,
+                    'domaine' => $validated['budget_type'] ?? 'Investissement',
+                    'art' => $validated['article'] ?? null,
+                    'par' => $validated['paragraphe'] ?? null,
+                    'lig' => $validated['ligne'] ?? null,
+                    'notification_ligne_id' => $validated['notification_ligne_id'] ?? null,
+                    'dossier_engaged' => $dossierEngaged,
+                    'dossier_already_ordonnanced' => $dossierAlreadyOrd,
+                    'dossier_label' => $dossierLabel,
+                    'proposed_ordonnance' => $effectiveOrdProposed,
+                    'error_field' => 'ordres',
+                ]);
             }
 
             // 2. Generate unique ORD number & OP number
@@ -461,9 +523,9 @@ class OrdonnancementController extends Controller
 
             // 3. Compute Ordonnancement status
             $statutOrdonnance = 'Totalement ordonnancée';
-            if ($totalOrdres <= 0) {
+            if ($effectiveOrdProposed <= 0) {
                 $statutOrdonnance = 'Non ordonnancée';
-            } elseif ($totalOrdres < ($montantLiquidation - 0.05)) {
+            } elseif ($effectiveOrdProposed < ($montantLiquidation - 0.05)) {
                 $statutOrdonnance = 'Partiellement ordonnancée';
             }
 
@@ -471,7 +533,7 @@ class OrdonnancementController extends Controller
             $validated['num_op'] = "OP-" . str_pad((string) $nextOrdSeq, 3, '0', STR_PAD_LEFT);
             $validated['exercice'] = $year;
             $validated['statut'] = $validated['statut'] ?? $statutOrdonnance;
-            $validated['montant_brut'] = $totalOrdres; // The total of orders in this dossier
+            $validated['montant_brut'] = $effectiveOrdProposed; // The total of active orders in this dossier
             $validated['ras_total'] = ($validated['retenue_tva'] ?? 0) + ($validated['retenue_ias'] ?? 0) + ($validated['autres_retenues'] ?? 0);
             $validated['rap_total'] = $validated['net_a_payer'];
 
@@ -489,9 +551,19 @@ class OrdonnancementController extends Controller
                 $ordonnancement->ordres()->create($ordreData);
             }
 
+            $ordonnancement->load(['ordres', 'consultation', 'marche', 'notificationLigne']);
+            $amounts = BudgetHierarchyService::computeOrdonnancementAmounts($ordonnancement);
+            BudgetHierarchyService::assertPaiementWithinOrdonnancement([
+                'ordonnancement' => $ordonnancement,
+                'proposed_paid' => $amounts['total_paiements'],
+                'proposed_active_ordonnanced' => $amounts['total_ordonnance'],
+                'dossier_statut' => $ordonnancement->statut,
+                'error_field' => 'ordres',
+            ]);
+
             // 5. Update liquidation status if linked
             if ($liq) {
-                $newDejaOrdonnance = $dejaOrdonnance + $totalOrdres;
+                $newDejaOrdonnance = $dejaOrdonnance + $effectiveOrdProposed;
                 if ($newDejaOrdonnance >= ($montantLiquidation - 0.05)) {
                     $liq->statut = 'TOTALEMENT ORDONNANCÉE';
                 } else {
@@ -501,17 +573,11 @@ class OrdonnancementController extends Controller
             }
 
             // 6. Update Marche or Consultation status if linked
-            if (!empty($validated['marche_id'])) {
-                $marche = Marche::find($validated['marche_id']);
-                if ($marche) {
-                    $marche->statut = 'ordonnancement_validee';
-                    $marche->save();
-                }
-            } elseif (!empty($validated['consultation_id'])) {
-                $consultation = Consultation::find($validated['consultation_id']);
-                if ($consultation) {
-                    $consultation->update(['statut_dossier' => 'ORDONNANCÉ']);
-                }
+            if ($marche) {
+                $marche->statut = 'ordonnancement_validee';
+                $marche->save();
+            } elseif ($consultation) {
+                $consultation->update(['statut_dossier' => 'ORDONNANCÉ']);
             }
 
             // 7. Create Historique records
@@ -522,9 +588,11 @@ class OrdonnancementController extends Controller
                 'auteur' => $currentUser,
                 'statut_precedent' => null,
                 'statut_nouveau' => $ordonnancement->statut,
-                'details' => "Création de l'ordonnancement {$ordonnancement->num_ordonnancement} pour un montant de " . number_format($totalOrdres, 2, ',', ' ') . " DH (" . count($ordres) . " ordre(s)).",
+                'details' => "Création de l'ordonnancement {$ordonnancement->num_ordonnancement} pour un montant de " . number_format($effectiveOrdProposed, 2, ',', ' ') . " DH (" . count($ordres) . " ordre(s)).",
                 'created_at' => now(),
             ]);
+
+            NotificationLigne::clearBudgetCache();
 
             return response()->json([
                 'message' => 'Ordonnancement créé avec succès',
@@ -563,8 +631,6 @@ class OrdonnancementController extends Controller
      */
     public function update(Request $request, $id)
     {
-        $ordonnancement = Ordonnancement::findOrFail($id);
-
         $validated = $request->validate([
             'reference' => 'nullable|string',
             'beneficiaire_nom' => 'nullable|string',
@@ -583,12 +649,49 @@ class OrdonnancementController extends Controller
             'observations' => 'nullable|string',
         ]);
 
-        $ordonnancement->update($validated);
+        return DB::transaction(function () use ($id, $validated) {
+            $ordonnancement = Ordonnancement::with(['ordres', 'consultation', 'marche', 'liquidation', 'notificationLigne'])
+                ->lockForUpdate()
+                ->findOrFail($id);
 
-        return response()->json([
-            'message' => 'Ordonnancement mis à jour avec succès',
-            'data' => $ordonnancement->fresh(['ordres', 'historiques', 'fournisseur'])
-        ]);
+            $hasFinancialEdit = array_key_exists('montant_brut', $validated) || array_key_exists('net_a_payer', $validated);
+            if ($hasFinancialEdit && BudgetHierarchyService::isOrdonnancementCancelledOrRejected($ordonnancement->statut)) {
+                throw ValidationException::withMessages([
+                    'montant_brut' => ["Impossible de modifier les montants d'un ordonnancement rejeté ou annulé."],
+                ]);
+            }
+
+            if ($ordonnancement->ordres->isNotEmpty() && array_key_exists('montant_brut', $validated)) {
+                $activeOrdresSum = round((float) $ordonnancement->ordres
+                    ->filter(fn ($o) => BudgetHierarchyService::isOrdreActive($o->statut))
+                    ->sum('montant'), 2);
+                if (abs((float) $validated['montant_brut'] - $activeOrdresSum) > 0.05) {
+                    throw ValidationException::withMessages([
+                        'montant_brut' => ["Le montant brut doit correspondre au total des ordres actifs (" . BudgetHierarchyService::fmt($activeOrdresSum) . " DH). Modifiez les ordres directement."],
+                    ]);
+                }
+            }
+
+            $ordonnancement->update($validated);
+            $ordonnancement->load(['ordres', 'consultation', 'marche', 'liquidation', 'notificationLigne']);
+
+            $amounts = BudgetHierarchyService::computeOrdonnancementAmounts($ordonnancement);
+            $this->validateDossierOrdonnancementCapacity($ordonnancement, $amounts['total_ordonnance'], 'montant_brut');
+            BudgetHierarchyService::assertPaiementWithinOrdonnancement([
+                'ordonnancement' => $ordonnancement,
+                'proposed_paid' => $amounts['total_paiements'],
+                'proposed_active_ordonnanced' => $amounts['total_ordonnance'],
+                'dossier_statut' => $ordonnancement->statut,
+                'error_field' => 'montant_brut',
+            ]);
+
+            NotificationLigne::clearBudgetCache();
+
+            return response()->json([
+                'message' => 'Ordonnancement mis à jour avec succès',
+                'data' => $ordonnancement->fresh(['ordres', 'historiques', 'fournisseur'])
+            ]);
+        });
     }
 
     /**
@@ -596,8 +699,6 @@ class OrdonnancementController extends Controller
      */
     public function addOrdre(Request $request, $id)
     {
-        $ordonnancement = Ordonnancement::with(['ordres', 'liquidation.ordonnancements.ordres'])->findOrFail($id);
-
         $validated = $request->validate([
             'num_ordre' => 'nullable|string',
             'type_mouvement' => 'required|string',
@@ -607,67 +708,83 @@ class OrdonnancementController extends Controller
             'banque_agence' => 'nullable|string',
             'creance' => 'required|string',
             'montant' => 'required|numeric|min:0.01',
+            'statut' => 'nullable|string|in:Brouillon,À payer,À vérifier,Transmis au trésorier,Payé,Rejeté,Annulé',
             'observations' => 'nullable|string',
         ]);
 
-        $montantNouveau = (float) $validated['montant'];
+        return DB::transaction(function () use ($id, $validated) {
+            $ordonnancement = Ordonnancement::with(['ordres', 'liquidation.ordonnancements.ordres', 'consultation', 'marche', 'notificationLigne'])
+                ->lockForUpdate()
+                ->findOrFail($id);
 
-        // Liquidation remaining balance validation
-        if ($ordonnancement->liquidation) {
-            $liq = $ordonnancement->liquidation;
-            $montantLiquidation = (float) ($liq->montant_brut_ttc ?: $liq->montant_ttc ?: 0);
-            
-            // Total ordonnanced so far across all ordonnancements for this liquidation
-            $dejaOrdonnance = 0;
-            foreach ($liq->ordonnancements as $ord) {
-                $dejaOrdonnance += (float) $ord->ordres->whereNotIn('statut', ['Rejeté', 'Annulé'])->sum('montant');
-            }
-            $resteDisponible = round(max(0, $montantLiquidation - $dejaOrdonnance), 2);
-
-            if ($montantNouveau > ($resteDisponible + 0.05)) {
+            if (BudgetHierarchyService::isOrdonnancementCancelledOrRejected($ordonnancement->statut)) {
                 throw ValidationException::withMessages([
-                    'montant' => ["Le montant total des ordres dépasse le montant disponible de la liquidation (" . number_format($resteDisponible, 2, ',', ' ') . " DH)."]
+                    'montant' => ["Impossible d'ajouter un ordre à un ordonnancement rejeté ou annulé."],
                 ]);
             }
-        } elseif ($ordonnancement->consultation_id) {
-            $this->validateBonCommandeOrderCapacity($ordonnancement, $montantNouveau);
-        }
 
-        // Auto generate sequential order number OP-001, OP-002...
-        $orderCount = $ordonnancement->ordres()->count() + 1;
-        $orderSeq = str_pad($orderCount, 3, '0', STR_PAD_LEFT);
-        $validated['num_ordre'] = !empty($validated['num_ordre']) ? $validated['num_ordre'] : "OP-{$orderSeq}";
-        $validated['statut'] = $validated['statut'] ?? 'À payer';
+            $montantNouveau = (float) $validated['montant'];
+            $newOrdreStatut = $validated['statut'] ?? 'À payer';
 
-        $ordre = $ordonnancement->ordres()->create($validated);
+            $existingActiveTotal = (float) $ordonnancement->ordres
+                ->filter(fn ($o) => BudgetHierarchyService::isOrdreActive($o->statut))
+                ->sum('montant');
+            $proposedThisDossierTotal = round(
+                $existingActiveTotal + (BudgetHierarchyService::isOrdreActive($newOrdreStatut) ? $montantNouveau : 0.0),
+                2
+            );
 
-        // Recalculate ordonnancement total & status
-        $totalOrdres = (float) $ordonnancement->ordres()->actifs()->sum('montant');
-        $ordonnancement->montant_brut = $totalOrdres;
-        $ordonnancement->net_a_payer = (float) $ordonnancement->ordres()->where('type_mouvement', 'Paiement fournisseur')->sum('montant');
-        
-        if ($ordonnancement->liquidation) {
-            $montantLiq = (float) ($ordonnancement->liquidation->montant_brut_ttc ?: $ordonnancement->liquidation->montant_ttc ?: $totalOrdres);
-            $ordonnancement->statut = ($totalOrdres >= ($montantLiq - 0.05)) ? 'Totalement ordonnancée' : 'Partiellement ordonnancée';
-        } elseif ($montantLiqBc = $this->bonCommandeLiquidationAmount($ordonnancement)) {
-            $ordonnancement->statut = ($totalOrdres >= ($montantLiqBc - 0.05)) ? 'Totalement ordonnancée' : 'Partiellement ordonnancée';
-        }
-        $ordonnancement->save();
+            $this->validateDossierOrdonnancementCapacity($ordonnancement, $proposedThisDossierTotal, 'montant');
 
-        $currentUser = auth()->user()->name ?? 'admin';
-        OrdonnancementHistorique::create([
-            'ordonnancement_id' => $ordonnancement->id,
-            'action' => "Ordre {$ordre->num_ordre} ajouté",
-            'auteur' => $currentUser,
-            'details' => "Ajout de l'ordre {$ordre->num_ordre} ({$ordre->type_mouvement}) au profit de {$ordre->beneficiaire} pour " . number_format($ordre->montant, 2, ',', ' ') . " DH.",
-            'created_at' => now(),
-        ]);
+            // Auto generate sequential order number OP-001, OP-002...
+            $orderCount = $ordonnancement->ordres()->count() + 1;
+            $orderSeq = str_pad($orderCount, 3, '0', STR_PAD_LEFT);
+            $validated['num_ordre'] = !empty($validated['num_ordre']) ? $validated['num_ordre'] : "OP-{$orderSeq}";
+            $validated['statut'] = $newOrdreStatut;
 
-        return response()->json([
-            'message' => 'Ordre de paiement ajouté avec succès',
-            'data' => $ordre,
-            'ordonnancement' => $ordonnancement->fresh(['ordres', 'historiques'])
-        ], 201);
+            $ordre = $ordonnancement->ordres()->create($validated);
+
+            // Recalculate ordonnancement total & status
+            $totalOrdres = (float) $ordonnancement->ordres()->actifs()->sum('montant');
+            $netFournisseur = (float) $ordonnancement->ordres()->actifs()->where('type_mouvement', 'Paiement fournisseur')->sum('montant');
+            $ordonnancement->montant_brut = $totalOrdres;
+            $ordonnancement->net_a_payer = $netFournisseur > 0 ? $netFournisseur : max(0.0, $totalOrdres - (float) ($ordonnancement->ras_total ?? 0));
+
+            if ($ordonnancement->liquidation) {
+                $montantLiq = (float) ($ordonnancement->liquidation->montant_brut_ttc ?: $ordonnancement->liquidation->montant_ttc ?: $totalOrdres);
+                $ordonnancement->statut = ($totalOrdres >= ($montantLiq - 0.05)) ? 'Totalement ordonnancée' : 'Partiellement ordonnancée';
+            } elseif ($montantLiqBc = $this->bonCommandeLiquidationAmount($ordonnancement)) {
+                $ordonnancement->statut = ($totalOrdres >= ($montantLiqBc - 0.05)) ? 'Totalement ordonnancée' : 'Partiellement ordonnancée';
+            }
+            $ordonnancement->save();
+
+            $ordonnancement->load(['ordres', 'consultation', 'marche', 'notificationLigne']);
+            $amounts = BudgetHierarchyService::computeOrdonnancementAmounts($ordonnancement);
+            BudgetHierarchyService::assertPaiementWithinOrdonnancement([
+                'ordonnancement' => $ordonnancement,
+                'proposed_paid' => $amounts['total_paiements'],
+                'proposed_active_ordonnanced' => $amounts['total_ordonnance'],
+                'dossier_statut' => $ordonnancement->statut,
+                'error_field' => 'montant',
+            ]);
+
+            $currentUser = auth()->user()->name ?? 'admin';
+            OrdonnancementHistorique::create([
+                'ordonnancement_id' => $ordonnancement->id,
+                'action' => "Ordre {$ordre->num_ordre} ajouté",
+                'auteur' => $currentUser,
+                'details' => "Ajout de l'ordre {$ordre->num_ordre} ({$ordre->type_mouvement}) au profit de {$ordre->beneficiaire} pour " . number_format($ordre->montant, 2, ',', ' ') . " DH.",
+                'created_at' => now(),
+            ]);
+
+            NotificationLigne::clearBudgetCache();
+
+            return response()->json([
+                'message' => 'Ordre de paiement ajouté avec succès',
+                'data' => $ordre,
+                'ordonnancement' => $ordonnancement->fresh(['ordres', 'historiques'])
+            ], 201);
+        });
     }
 
     /**
@@ -675,9 +792,6 @@ class OrdonnancementController extends Controller
      */
     public function updateOrdre(Request $request, $id, $ordreId)
     {
-        $ordonnancement = Ordonnancement::with(['ordres', 'liquidation.ordonnancements.ordres'])->findOrFail($id);
-        $ordre = $ordonnancement->ordres()->findOrFail($ordreId);
-
         $validated = $request->validate([
             'num_ordre' => 'nullable|string',
             'type_mouvement' => 'required|string',
@@ -687,54 +801,76 @@ class OrdonnancementController extends Controller
             'banque_agence' => 'nullable|string',
             'creance' => 'required|string',
             'montant' => 'required|numeric|min:0.01',
-            'statut' => 'nullable|string',
+            'statut' => 'nullable|string|in:Brouillon,À payer,À vérifier,Transmis au trésorier,Payé,Rejeté,Annulé',
             'observations' => 'nullable|string',
         ]);
 
-        $montantNouveau = (float) $validated['montant'];
-        $ancienMontant = (float) $ordre->montant;
+        return DB::transaction(function () use ($id, $ordreId, $validated) {
+            $ordonnancement = Ordonnancement::with(['ordres', 'liquidation.ordonnancements.ordres', 'consultation', 'marche', 'notificationLigne'])
+                ->lockForUpdate()
+                ->findOrFail($id);
+            $ordre = $ordonnancement->ordres()->lockForUpdate()->findOrFail($ordreId);
 
-        // Liquidation remaining balance validation
-        if ($ordonnancement->liquidation) {
-            $liq = $ordonnancement->liquidation;
-            $montantLiquidation = (float) ($liq->montant_brut_ttc ?: $liq->montant_ttc ?: 0);
-            
-            $dejaOrdonnance = 0;
-            foreach ($liq->ordonnancements as $ord) {
-                $dejaOrdonnance += (float) $ord->ordres->whereNotIn('statut', ['Rejeté', 'Annulé'])->sum('montant');
-            }
-            // Add back current order's old amount to compute actual capacity
-            $resteDisponible = round(max(0, $montantLiquidation - ($dejaOrdonnance - $ancienMontant)), 2);
-
-            if ($montantNouveau > ($resteDisponible + 0.05)) {
+            if (BudgetHierarchyService::isOrdonnancementCancelledOrRejected($ordonnancement->statut)) {
                 throw ValidationException::withMessages([
-                    'montant' => ["Le montant total des ordres dépasse le montant disponible de la liquidation (" . number_format($resteDisponible, 2, ',', ' ') . " DH)."]
+                    'montant' => ["Impossible de modifier un ordre d'un ordonnancement rejeté ou annulé."],
                 ]);
             }
-        } elseif ($ordonnancement->consultation_id) {
-            $this->validateBonCommandeOrderCapacity($ordonnancement, $montantNouveau, $ancienMontant);
-        }
 
-        $ordre->update($validated);
+            $montantNouveau = (float) $validated['montant'];
+            $ancienMontant = (float) $ordre->montant;
+            if (BudgetHierarchyService::isOrdrePaid($ordre->statut) && abs($montantNouveau - $ancienMontant) > 0.01) {
+                throw ValidationException::withMessages([
+                    'montant' => ["Règle budgétaire (Paiement <= Ordonnancement) : impossible de modifier le montant d'un ordre déjà payé."],
+                ]);
+            }
 
-        // Recalculate ordonnancement total & status
-        $totalOrdres = (float) $ordonnancement->ordres()->actifs()->sum('montant');
-        $ordonnancement->montant_brut = $totalOrdres;
-        $ordonnancement->net_a_payer = (float) $ordonnancement->ordres()->where('type_mouvement', 'Paiement fournisseur')->sum('montant');
-        
-        if ($ordonnancement->liquidation) {
-            $montantLiq = (float) ($ordonnancement->liquidation->montant_brut_ttc ?: $ordonnancement->liquidation->montant_ttc ?: $totalOrdres);
-            $ordonnancement->statut = ($totalOrdres >= ($montantLiq - 0.05)) ? 'Totalement ordonnancée' : 'Partiellement ordonnancée';
-        } elseif ($montantLiqBc = $this->bonCommandeLiquidationAmount($ordonnancement)) {
-            $ordonnancement->statut = ($totalOrdres >= ($montantLiqBc - 0.05)) ? 'Totalement ordonnancée' : 'Partiellement ordonnancée';
-        }
-        $ordonnancement->save();
+            $newStatut = $validated['statut'] ?? $ordre->statut;
+            $otherActiveTotal = (float) $ordonnancement->ordres
+                ->where('id', '!=', $ordre->id)
+                ->filter(fn ($o) => BudgetHierarchyService::isOrdreActive($o->statut))
+                ->sum('montant');
+            $proposedThisDossierTotal = round(
+                $otherActiveTotal + (BudgetHierarchyService::isOrdreActive($newStatut) ? $montantNouveau : 0.0),
+                2
+            );
 
-        return response()->json([
-            'message' => 'Ordre mis à jour avec succès',
-            'data' => $ordre,
-            'ordonnancement' => $ordonnancement->fresh(['ordres', 'historiques'])
-        ]);
+            $this->validateDossierOrdonnancementCapacity($ordonnancement, $proposedThisDossierTotal, 'montant');
+
+            $ordre->update($validated);
+
+            // Recalculate ordonnancement total & status
+            $totalOrdres = (float) $ordonnancement->ordres()->actifs()->sum('montant');
+            $netFournisseur = (float) $ordonnancement->ordres()->actifs()->where('type_mouvement', 'Paiement fournisseur')->sum('montant');
+            $ordonnancement->montant_brut = $totalOrdres;
+            $ordonnancement->net_a_payer = $netFournisseur > 0 ? $netFournisseur : max(0.0, $totalOrdres - (float) ($ordonnancement->ras_total ?? 0));
+
+            if ($ordonnancement->liquidation) {
+                $montantLiq = (float) ($ordonnancement->liquidation->montant_brut_ttc ?: $ordonnancement->liquidation->montant_ttc ?: $totalOrdres);
+                $ordonnancement->statut = ($totalOrdres >= ($montantLiq - 0.05)) ? 'Totalement ordonnancée' : 'Partiellement ordonnancée';
+            } elseif ($montantLiqBc = $this->bonCommandeLiquidationAmount($ordonnancement)) {
+                $ordonnancement->statut = ($totalOrdres >= ($montantLiqBc - 0.05)) ? 'Totalement ordonnancée' : 'Partiellement ordonnancée';
+            }
+            $ordonnancement->save();
+
+            $ordonnancement->load(['ordres', 'consultation', 'marche', 'notificationLigne']);
+            $amounts = BudgetHierarchyService::computeOrdonnancementAmounts($ordonnancement);
+            BudgetHierarchyService::assertPaiementWithinOrdonnancement([
+                'ordonnancement' => $ordonnancement,
+                'proposed_paid' => $amounts['total_paiements'],
+                'proposed_active_ordonnanced' => $amounts['total_ordonnance'],
+                'dossier_statut' => $ordonnancement->statut,
+                'error_field' => 'montant',
+            ]);
+
+            NotificationLigne::clearBudgetCache();
+
+            return response()->json([
+                'message' => 'Ordre mis à jour avec succès',
+                'data' => $ordre,
+                'ordonnancement' => $ordonnancement->fresh(['ordres', 'historiques'])
+            ]);
+        });
     }
 
     /**
@@ -742,38 +878,62 @@ class OrdonnancementController extends Controller
      */
     public function deleteOrdre($id, $ordreId)
     {
-        $ordonnancement = Ordonnancement::with(['ordres', 'liquidation'])->findOrFail($id);
-        $ordre = $ordonnancement->ordres()->findOrFail($ordreId);
-        
-        $desc = "{$ordre->num_ordre} ({$ordre->type_mouvement}) - {$ordre->beneficiaire} (" . number_format($ordre->montant, 2, ',', ' ') . " DH)";
-        $ordre->delete();
+        return DB::transaction(function () use ($id, $ordreId) {
+            $ordonnancement = Ordonnancement::with(['ordres', 'liquidation', 'consultation', 'marche', 'notificationLigne'])
+                ->lockForUpdate()
+                ->findOrFail($id);
+            $ordre = $ordonnancement->ordres()->lockForUpdate()->findOrFail($ordreId);
 
-        // Recalculate ordonnancement total & status
-        $totalOrdres = (float) $ordonnancement->ordres()->actifs()->sum('montant');
-        $ordonnancement->montant_brut = $totalOrdres;
-        $ordonnancement->net_a_payer = (float) $ordonnancement->ordres()->where('type_mouvement', 'Paiement fournisseur')->sum('montant');
-        
-        if ($ordonnancement->liquidation) {
-            $montantLiq = (float) ($ordonnancement->liquidation->montant_brut_ttc ?: $ordonnancement->liquidation->montant_ttc ?: $totalOrdres);
-            $ordonnancement->statut = ($totalOrdres >= ($montantLiq - 0.05)) ? 'Totalement ordonnancée' : ($totalOrdres > 0 ? 'Partiellement ordonnancée' : 'Non ordonnancée');
-        } elseif ($montantLiqBc = $this->bonCommandeLiquidationAmount($ordonnancement)) {
-            $ordonnancement->statut = ($totalOrdres >= ($montantLiqBc - 0.05)) ? 'Totalement ordonnancée' : ($totalOrdres > 0 ? 'Partiellement ordonnancée' : 'Non ordonnancée');
-        }
-        $ordonnancement->save();
+            if (BudgetHierarchyService::isOrdrePaid($ordre->statut)) {
+                throw ValidationException::withMessages([
+                    'ordre' => ["Règle budgétaire (Paiement <= Ordonnancement) : impossible de supprimer un ordre déjà payé."],
+                ]);
+            }
 
-        $currentUser = auth()->user()->name ?? 'admin';
-        OrdonnancementHistorique::create([
-            'ordonnancement_id' => $ordonnancement->id,
-            'action' => 'Ordre supprimé',
-            'auteur' => $currentUser,
-            'details' => "Suppression de l'ordre : {$desc}",
-            'created_at' => now(),
-        ]);
+            $desc = "{$ordre->num_ordre} ({$ordre->type_mouvement}) - {$ordre->beneficiaire} (" . number_format($ordre->montant, 2, ',', ' ') . " DH)";
+            $ordre->delete();
 
-        return response()->json([
-            'message' => 'Ordre supprimé avec succès',
-            'ordonnancement' => $ordonnancement->fresh(['ordres', 'historiques'])
-        ]);
+            // Recalculate ordonnancement total & status
+            $totalOrdres = (float) $ordonnancement->ordres()->actifs()->sum('montant');
+            $netFournisseur = (float) $ordonnancement->ordres()->actifs()->where('type_mouvement', 'Paiement fournisseur')->sum('montant');
+            $ordonnancement->montant_brut = $totalOrdres;
+            $ordonnancement->net_a_payer = $netFournisseur > 0 ? $netFournisseur : max(0.0, $totalOrdres - (float) ($ordonnancement->ras_total ?? 0));
+
+            if ($ordonnancement->liquidation) {
+                $montantLiq = (float) ($ordonnancement->liquidation->montant_brut_ttc ?: $ordonnancement->liquidation->montant_ttc ?: $totalOrdres);
+                $ordonnancement->statut = ($totalOrdres >= ($montantLiq - 0.05)) ? 'Totalement ordonnancée' : ($totalOrdres > 0 ? 'Partiellement ordonnancée' : 'Non ordonnancée');
+            } elseif ($montantLiqBc = $this->bonCommandeLiquidationAmount($ordonnancement)) {
+                $ordonnancement->statut = ($totalOrdres >= ($montantLiqBc - 0.05)) ? 'Totalement ordonnancée' : ($totalOrdres > 0 ? 'Partiellement ordonnancée' : 'Non ordonnancée');
+            }
+            $ordonnancement->save();
+
+            $ordonnancement->load(['ordres', 'consultation', 'marche', 'notificationLigne']);
+            $amounts = BudgetHierarchyService::computeOrdonnancementAmounts($ordonnancement);
+            $this->validateDossierOrdonnancementCapacity($ordonnancement, $amounts['total_ordonnance'], 'ordre');
+            BudgetHierarchyService::assertPaiementWithinOrdonnancement([
+                'ordonnancement' => $ordonnancement,
+                'proposed_paid' => $amounts['total_paiements'],
+                'proposed_active_ordonnanced' => $amounts['total_ordonnance'],
+                'dossier_statut' => $ordonnancement->statut,
+                'error_field' => 'ordre',
+            ]);
+
+            $currentUser = auth()->user()->name ?? 'admin';
+            OrdonnancementHistorique::create([
+                'ordonnancement_id' => $ordonnancement->id,
+                'action' => 'Ordre supprimé',
+                'auteur' => $currentUser,
+                'details' => "Suppression de l'ordre : {$desc}",
+                'created_at' => now(),
+            ]);
+
+            NotificationLigne::clearBudgetCache();
+
+            return response()->json([
+                'message' => 'Ordre supprimé avec succès',
+                'ordonnancement' => $ordonnancement->fresh(['ordres', 'historiques'])
+            ]);
+        });
     }
 
     /**
@@ -782,7 +942,7 @@ class OrdonnancementController extends Controller
     public function updateStatut(Request $request, $id)
     {
         $request->validate([
-            'statut' => 'required|string|in:Brouillon,À payer,À vérifier,Ordonnancé,Transmis au trésorier,Payé,Rejeté,Annulé',
+            'statut' => 'required|string|in:Brouillon,À payer,À vérifier,Ordonnancé,Transmis au trésorier,Payé,Clôturé,Rejeté,Annulé',
             'motif_rejet' => 'nullable|string',
             'ordre_id' => 'nullable|integer|exists:ordonnancement_ordres,id',
             'date_transmission_tresorier' => 'nullable|date',
@@ -790,11 +950,31 @@ class OrdonnancementController extends Controller
         ]);
 
         return DB::transaction(function () use ($request, $id) {
-            $ordonnancement = Ordonnancement::with('ordres')->lockForUpdate()->findOrFail($id);
+            $ordonnancement = Ordonnancement::with(['ordres', 'consultation', 'marche', 'liquidation', 'notificationLigne'])
+                ->lockForUpdate()
+                ->findOrFail($id);
             $oldStatut = $ordonnancement->statut;
             $newStatut = $request->statut;
             $currentUser = auth()->user()?->name ?? 'admin';
             $replacement = null;
+
+            $amountsBefore = BudgetHierarchyService::computeOrdonnancementAmounts($ordonnancement);
+
+            if ($newStatut === 'Annulé' && $amountsBefore['total_paiements'] > BudgetHierarchyService::EPSILON) {
+                throw ValidationException::withMessages([
+                    'statut' => [
+                        "Règle budgétaire (Paiement <= Ordonnancement) : impossible d'annuler un ordonnancement qui comporte déjà des paiements (" . BudgetHierarchyService::fmt($amountsBefore['total_paiements']) . " DH).",
+                    ],
+                ]);
+            }
+
+            if (BudgetHierarchyService::isOrdonnancementPaid($newStatut) && BudgetHierarchyService::isOrdonnancementCancelledOrRejected($oldStatut)) {
+                throw ValidationException::withMessages([
+                    'statut' => [
+                        "Règle budgétaire (Paiement <= Ordonnancement) : un ordonnancement rejeté ou annulé ne peut pas être marqué comme payé.",
+                    ],
+                ]);
+            }
 
             if ($newStatut === 'Rejeté') {
                 $ordre = $request->filled('ordre_id')
@@ -838,16 +1018,29 @@ class OrdonnancementController extends Controller
                 $ordonnancement->statut = $newStatut;
                 if ($newStatut === 'Transmis au trésorier') {
                     $ordonnancement->date_transmission_tresorier = $request->date_transmission_tresorier ?: now()->format('Y-m-d');
-                } elseif ($newStatut === 'Payé') {
+                } elseif (BudgetHierarchyService::isOrdonnancementPaid($newStatut)) {
                     $ordonnancement->date_paiement = $request->date_paiement ?: now()->format('Y-m-d');
-                    $ordonnancement->ordres()->where('statut', '!=', 'Rejeté')->update(['statut' => 'Payé']);
+                    $ordonnancement->ordres()->whereNotIn('statut', ['Rejeté', 'Annulé'])->update(['statut' => 'Payé']);
                 }
             }
             $ordonnancement->save();
+            $ordonnancement->load('ordres');
+
+            $amountsAfter = BudgetHierarchyService::computeOrdonnancementAmounts($ordonnancement);
+            if ($amountsAfter['total_ordonnance'] > BudgetHierarchyService::EPSILON) {
+                $this->validateDossierOrdonnancementCapacity($ordonnancement, $amountsAfter['total_ordonnance'], 'statut');
+            }
+            BudgetHierarchyService::assertPaiementWithinOrdonnancement([
+                'ordonnancement' => $ordonnancement,
+                'proposed_paid' => $amountsAfter['total_paiements'],
+                'proposed_active_ordonnanced' => $amountsAfter['total_ordonnance'],
+                'dossier_statut' => $ordonnancement->statut,
+                'error_field' => 'statut',
+            ]);
 
             $actionTitle = match ($newStatut) {
                 'Transmis au trésorier' => 'Dossier transmis au trésorier',
-                'Payé' => 'Paiement effectué',
+                'Payé', 'Clôturé' => 'Paiement effectué',
                 'Rejeté' => "Ordre {$replacement?->num_ordre} généré après rejet",
                 'Annulé' => 'Dossier annulé',
                 default => "Statut changé en {$newStatut}",
@@ -864,6 +1057,8 @@ class OrdonnancementController extends Controller
                 'created_at' => now(),
             ]);
 
+            NotificationLigne::clearBudgetCache();
+
             return response()->json([
                 'message' => $newStatut === 'Rejeté'
                     ? "Ordre rejeté. Le nouvel ordre {$replacement->num_ordre} est à payer."
@@ -878,40 +1073,109 @@ class OrdonnancementController extends Controller
      */
     public function destroy($id)
     {
-        $ordonnancement = Ordonnancement::findOrFail($id);
-        
-        // Revert liquidation status if applicable
+        return DB::transaction(function () use ($id) {
+            $ordonnancement = Ordonnancement::with(['ordres', 'liquidation'])->lockForUpdate()->findOrFail($id);
+            $amounts = BudgetHierarchyService::computeOrdonnancementAmounts($ordonnancement);
+
+            if ($amounts['total_paiements'] > BudgetHierarchyService::EPSILON) {
+                throw ValidationException::withMessages([
+                    'ordonnancement' => [
+                        "Suppression impossible : cet ordonnancement comporte des paiements effectués (" . BudgetHierarchyService::fmt($amounts['total_paiements']) . " DH).",
+                    ],
+                ]);
+            }
+
+            $liqId = $ordonnancement->liquidation_id;
+            $ordonnancement->delete();
+
+            if ($liqId) {
+                $liq = Liquidation::lockForUpdate()->find($liqId);
+                if ($liq) {
+                    $remainingOrd = BudgetHierarchyService::getActiveOrdonnancedForLiquidation($liq->id);
+                    $montantLiq = (float) ($liq->montant_brut_ttc ?: $liq->montant_ttc ?: 0);
+                    if ($remainingOrd <= BudgetHierarchyService::EPSILON) {
+                        $liq->statut = 'TRANSMISE À L\'ORDONNANCEMENT';
+                    } elseif ($remainingOrd < ($montantLiq - 0.05)) {
+                        $liq->statut = 'PARTIELLEMENT ORDONNANCÉE';
+                    }
+                    $liq->save();
+                }
+            }
+
+            NotificationLigne::clearBudgetCache();
+
+            return response()->json([
+                'message' => 'Ordonnancement supprimé avec succès'
+            ]);
+        });
+    }
+
+    private function validateDossierOrdonnancementCapacity(Ordonnancement $ordonnancement, float $proposedThisDossierTotal, string $errorField = 'montant'): void
+    {
+        $engaged = null;
+        $dossierAlreadyOthers = 0.0;
+        $dossierLabel = $ordonnancement->reference ?: ($ordonnancement->num_ordonnancement ?: 'ce dossier');
+
         if ($ordonnancement->liquidation_id) {
-            $liq = Liquidation::find($ordonnancement->liquidation_id);
-            if ($liq && $liq->statut === 'ORDONNANCÉE') {
-                $liq->statut = 'TRANSMISE À L\'ORDONNANCEMENT';
-                $liq->save();
+            $liq = Liquidation::with('marche.registreEngagement')->lockForUpdate()->find($ordonnancement->liquidation_id);
+            if ($liq) {
+                $montantLiquidation = (float) ($liq->montant_brut_ttc ?: $liq->montant_ttc ?: 0);
+                $dejaOthersLiq = BudgetHierarchyService::getActiveOrdonnancedForLiquidation($liq->id, $ordonnancement->id);
+                $resteLiquidation = round(max(0.0, $montantLiquidation - $dejaOthersLiq), 2);
+
+                if ($proposedThisDossierTotal > ($resteLiquidation + 0.05)) {
+                    throw ValidationException::withMessages([
+                        $errorField => ["Le montant total des ordres dépasse le montant disponible de la liquidation (" . number_format($resteLiquidation, 2, ',', ' ') . " DH)."],
+                    ]);
+                }
+
+                if ($liq->marche) {
+                    $engaged = BudgetHierarchyService::resolveMarcheEngagedAmount($liq->marche);
+                    $dossierAlreadyOthers = BudgetHierarchyService::getActiveOrdonnancedForMarche($liq->marche->id, $ordonnancement->id);
+                    $dossierLabel = "le marché {$liq->marche->num_marche}";
+                }
+            }
+        } elseif ($ordonnancement->consultation_id) {
+            $consultation = Consultation::with(['engagement', 'registreEngagement', 'liquidation'])
+                ->lockForUpdate()
+                ->find($ordonnancement->consultation_id);
+            if ($consultation) {
+                $engaged = BudgetHierarchyService::resolveConsultationEngagedAmount($consultation);
+                $dossierAlreadyOthers = BudgetHierarchyService::getActiveOrdonnancedForConsultation($consultation->id, $ordonnancement->id);
+                $dossierLabel = "la consultation {$consultation->numero_consultation}";
+
+                if ($consultation->liquidation && (float) $consultation->liquidation->montant_a_payer > 0) {
+                    $resteLiqBc = round(max(0.0, min((float) $consultation->liquidation->montant_a_payer, $engaged) - $dossierAlreadyOthers), 2);
+                    if ($proposedThisDossierTotal > ($resteLiqBc + 0.05)) {
+                        throw ValidationException::withMessages([
+                            $errorField => ["Le montant total des ordres dépasse le montant disponible de la liquidation du bon de commande (" . number_format($resteLiqBc, 2, ',', ' ') . " DH)."],
+                        ]);
+                    }
+                }
+            }
+        } elseif ($ordonnancement->marche_id) {
+            $marche = Marche::with('registreEngagement')->lockForUpdate()->find($ordonnancement->marche_id);
+            if ($marche) {
+                $engaged = BudgetHierarchyService::resolveMarcheEngagedAmount($marche);
+                $dossierAlreadyOthers = BudgetHierarchyService::getActiveOrdonnancedForMarche($marche->id, $ordonnancement->id);
+                $dossierLabel = "le marché {$marche->num_marche}";
             }
         }
 
-        $ordonnancement->delete();
-
-        return response()->json([
-            'message' => 'Ordonnancement supprimé avec succès'
-        ]);
-    }
-
-    private function validateBonCommandeOrderCapacity(Ordonnancement $ordonnancement, float $montant, float $montantDejaInclus = 0): void
-    {
-        $liq = LiquidationFinanciere::where('consultation_id', $ordonnancement->consultation_id)->first();
-        if (!$liq) {
-            return;
-        }
-
-        $dejaOrdonnance = Ordonnancement::with('ordres')
-            ->where('consultation_id', $ordonnancement->consultation_id)
-            ->get()
-            ->sum(fn ($ord) => (float) $ord->ordres->whereNotIn('statut', ['Rejeté', 'Annulé'])->sum('montant'));
-        $resteDisponible = round(max(0, (float) $liq->montant_a_payer - ($dejaOrdonnance - $montantDejaInclus)), 2);
-
-        if ($montant > ($resteDisponible + 0.05)) {
-            throw ValidationException::withMessages([
-                'montant' => ["Le montant total des ordres dépasse le montant disponible de la liquidation du bon de commande (" . number_format($resteDisponible, 2, ',', ' ') . " DH)."]
+        if ($proposedThisDossierTotal > BudgetHierarchyService::EPSILON) {
+            BudgetHierarchyService::assertOrdonnancementWithinEngagement([
+                'exercice' => $ordonnancement->exercice ?: date('Y'),
+                'domaine' => $ordonnancement->budget_type ?: 'Investissement',
+                'art' => $ordonnancement->article,
+                'par' => $ordonnancement->paragraphe,
+                'lig' => $ordonnancement->ligne,
+                'notification_ligne_id' => $ordonnancement->notification_ligne_id,
+                'dossier_engaged' => $engaged,
+                'dossier_already_ordonnanced' => $dossierAlreadyOthers,
+                'dossier_label' => $dossierLabel,
+                'proposed_ordonnance' => $proposedThisDossierTotal,
+                'exclude_ordonnancement_id' => $ordonnancement->id,
+                'error_field' => $errorField,
             ]);
         }
     }

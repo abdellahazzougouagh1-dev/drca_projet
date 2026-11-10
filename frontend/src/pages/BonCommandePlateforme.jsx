@@ -3665,7 +3665,10 @@ const BonCommandePlateforme = () => {
           }));
         }
       }
-      setError(err.response?.data?.message || "Erreur lors de l'enregistrement en base de données.");
+      const firstBackendErr = backendErrors && typeof backendErrors === 'object'
+        ? Object.values(backendErrors).flat().find(Boolean)
+        : null;
+      setError(firstBackendErr || err.response?.data?.message || err.response?.data?.error || "Erreur lors de l'enregistrement en base de données.");
       setMessage('');
       return false;
     }

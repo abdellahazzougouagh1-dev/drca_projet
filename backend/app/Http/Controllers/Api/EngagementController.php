@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Services\BudgetHierarchyService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class EngagementController extends Controller
@@ -71,6 +73,7 @@ class EngagementController extends Controller
             ]);
         }
 
+        $hasExisting = $consultation->engagement()->exists() || $consultation->registreEngagement()->exists();
         if ($consultation->engagement()->exists()) {
             throw ValidationException::withMessages([
                 'consultation' => ['Cette consultation possède déjà un engagement.'],
@@ -78,24 +81,41 @@ class EngagementController extends Controller
         }
 
         try {
-            \Illuminate\Support\Facades\DB::beginTransaction();
+            DB::beginTransaction();
 
-            $ligneBudgetaire = $consultation->notificationLigne;
-            
-            if ($ligneBudgetaire) {
-                // Verrouiller la ligne pour éviter les race conditions si possible, 
-                // ou simplement recalculer avec lockForUpdate() si applicable.
-                $ligne = \App\Models\NotificationLigne::lockForUpdate()->find($ligneBudgetaire->id);
-                
-                $disponible = $ligne->credits_disponibles;
-                
-                if ($validated['montant_engagement'] > $disponible) {
-                    \Illuminate\Support\Facades\DB::rollBack();
-                    return response()->json([
-                        'message' => "Crédit budgétaire insuffisant.\nCrédit disponible : " . number_format($disponible, 2, ',', ' ') . " MAD\nMontant de l'engagement : " . number_format($validated['montant_engagement'], 2, ',', ' ') . " MAD\nDépassement : " . number_format($validated['montant_engagement'] - $disponible, 2, ',', ' ') . " MAD"
-                    ], 422);
-                }
+            $consultation->load(['budget', 'notificationLigne.notification', 'registreEngagement']);
+            $exercice = $consultation->budget?->exercice_budgetaire
+                ?: ($consultation->annee ?: ($consultation->notificationLigne?->notification?->exercice ?: date('Y')));
+            $domaine = $consultation->type_budget ?: 'Investissement';
+
+            $resolvedLigne = BudgetHierarchyService::resolveNotificationLigneForDossier(
+                $consultation->notification_ligne_id,
+                $consultation->budget?->art,
+                $consultation->budget?->par,
+                $consultation->budget?->lig,
+                $domaine,
+                $exercice
+            );
+
+            if ($resolvedLigne && (int) $consultation->notification_ligne_id !== (int) $resolvedLigne->id) {
+                $consultation->notification_ligne_id = $resolvedLigne->id;
+                $consultation->save();
             }
+
+            BudgetHierarchyService::assertEngagementWithinNotification([
+                'exercice' => $exercice,
+                'domaine' => $domaine,
+                'art' => $consultation->budget?->art,
+                'par' => $consultation->budget?->par,
+                'lig' => $consultation->budget?->lig,
+                'notification_ligne_id' => $consultation->notification_ligne_id,
+                'proposed_engage_neuf' => (float) $validated['montant_engagement'],
+                'credit_ouvert_cp' => $consultation->credit_ouvert_cp,
+                'depenses_anterieures_cp' => $consultation->depenses_anterieures_cp,
+                'existing_active_ordonnanced' => BudgetHierarchyService::getActiveOrdonnancedForConsultation($consultation->id),
+                'exclude' => ['exclude_consultation_id' => $consultation->id],
+                'error_field' => 'montant_engagement',
+            ]);
 
             $numero_engagement = 'ENG-' . date('Y') . '-' . $consultation->id;
 
@@ -106,18 +126,22 @@ class EngagementController extends Controller
             ]));
 
             $consultation->update([
-                'statut_dossier' => 'ENGAGÉ'
+                'statut_dossier' => 'ENGAGÉ',
+                'montant_engager_neuf' => $validated['montant_engagement'],
             ]);
 
-            \Illuminate\Support\Facades\DB::commit();
+            DB::commit();
 
             return response()->json([
                 'message' => 'Engagement enregistré avec succès.',
                 'engagement' => $engagement
             ]);
             
+        } catch (ValidationException $e) {
+            DB::rollBack();
+            throw $e;
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\DB::rollBack();
+            DB::rollBack();
             return response()->json([
                 'message' => 'Une erreur est survenue lors de la création de l\'engagement.',
                 'error' => $e->getMessage()

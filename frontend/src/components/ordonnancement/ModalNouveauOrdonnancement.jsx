@@ -492,7 +492,8 @@ export default function ModalNouveauOrdonnancement({ isOpen, onClose, onSuccess,
       onClose();
     } catch (err) {
       console.error('Erreur ordonnancement:', err);
-      setErrorMsg(err.response?.data?.message || 'Erreur lors du traitement de la décision.');
+      const firstErr = Object.values(err.response?.data?.errors || {}).flat().find(Boolean);
+      setErrorMsg(firstErr || err.response?.data?.message || err.response?.data?.error || 'Erreur lors du traitement de la décision.');
     } finally {
       setSubmitting(false);
     }
@@ -525,7 +526,8 @@ export default function ModalNouveauOrdonnancement({ isOpen, onClose, onSuccess,
       setStep(2);
     } catch (err) {
       console.error('Erreur création du premier ordre:', err);
-      setErrorMsg(err.response?.data?.message || 'Erreur lors de la création du premier ordre de paiement.');
+      const firstErr = Object.values(err.response?.data?.errors || {}).flat().find(Boolean);
+      setErrorMsg(firstErr || err.response?.data?.message || err.response?.data?.error || 'Erreur lors de la création du premier ordre de paiement.');
     } finally {
       setSubmitting(false);
     }

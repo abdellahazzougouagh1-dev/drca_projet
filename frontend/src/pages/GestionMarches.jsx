@@ -927,7 +927,8 @@ const GestionMarches = () => {
       setSuccessMessage(`Phase ${phaseName} ${validee ? 'validée' : 'mise à jour'} avec succès.`);
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (err) {
-      setErrorMessage(err.response?.data?.message || `Erreur lors de la mise à jour de la phase ${phaseName}.`);
+      const firstErr = Object.values(err.response?.data?.errors || {}).flat().find(Boolean);
+      setErrorMessage(firstErr || err.response?.data?.message || err.response?.data?.error || `Erreur lors de la mise à jour de la phase ${phaseName}.`);
       console.error(err);
     } finally {
       setSaving(false);
@@ -941,6 +942,8 @@ const GestionMarches = () => {
       setSuccessMessage('Marché mis à jour avec succès');
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (err) {
+      const firstErr = Object.values(err.response?.data?.errors || {}).flat().find(Boolean);
+      setErrorMessage(firstErr || err.response?.data?.message || err.response?.data?.error || 'Erreur lors de la mise à jour du marché.');
       console.error(err);
     }
   };

@@ -28,6 +28,12 @@ class Notification extends Model
         'montant' => 'decimal:2',
     ];
 
+    protected static function booted(): void
+    {
+        static::saved(fn () => NotificationLigne::clearBudgetCache());
+        static::deleted(fn () => NotificationLigne::clearBudgetCache());
+    }
+
     public function lignes(): HasMany
     {
         return $this->hasMany(NotificationLigne::class);

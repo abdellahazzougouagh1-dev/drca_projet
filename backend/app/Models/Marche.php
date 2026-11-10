@@ -17,6 +17,7 @@ class Marche extends Model
         'aoo_id',
         'lot_id',
         'fournisseur_id',
+        'notification_ligne_id',
         'lot',
         'titulaire',
         'objet_marche',
@@ -106,6 +107,12 @@ class Marche extends Model
     ];
 
     protected $appends = ['workflow', 'montant_ht', 'montant_tva', 'interet_moratoire', 'montant_total_engagement'];
+
+    protected static function booted(): void
+    {
+        static::saved(fn () => NotificationLigne::clearBudgetCache());
+        static::deleted(fn () => NotificationLigne::clearBudgetCache());
+    }
 
     public function getInteretMoratoireAttribute(): float
     {

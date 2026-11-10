@@ -3,7 +3,10 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Services\BudgetHierarchyService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class LiquidationFinanciereController extends Controller
 {
@@ -28,26 +31,56 @@ class LiquidationFinanciereController extends Controller
             'ordre_virement' => 'nullable|string',
         ]);
 
-        $engagement = $consultation->engagement;
-        if (!$engagement) {
-            return response()->json(['message' => 'Aucun engagement trouvé pour cette consultation.'], 400);
-        }
+        return DB::transaction(function () use ($consultationId, $validated) {
+            $consultation = \App\Models\Consultation::with(['engagement', 'registreEngagement', 'liquidation'])
+                ->lockForUpdate()
+                ->findOrFail($consultationId);
 
-        if ($validated['montant_a_payer'] > $engagement->montant_engagement) {
-            return response()->json(['message' => 'Le montant à payer ('.$validated['montant_a_payer'].') ne peut pas être supérieur au montant engagé ('.$engagement->montant_engagement.').'], 400);
-        }
+            $engaged = BudgetHierarchyService::resolveConsultationEngagedAmount($consultation);
+            if ($engaged <= BudgetHierarchyService::EPSILON) {
+                throw ValidationException::withMessages([
+                    'consultation_id' => [
+                        "Règle budgétaire (Ordonnancement <= Engagement) : aucun engagement actif (> 0 DH) trouvé pour cette consultation.",
+                    ],
+                ]);
+            }
 
-        $liquidation = $consultation->liquidation()->updateOrCreate(
-            ['consultation_id' => $consultationId],
-            $validated
-        );
+            $montantAPayer = round((float) $validated['montant_a_payer'], 2);
+            if ($montantAPayer > ($engaged + BudgetHierarchyService::EPSILON)) {
+                throw ValidationException::withMessages([
+                    'montant_a_payer' => [
+                        "Règle budgétaire (Ordonnancement <= Engagement) : le montant liquidé ("
+                        . BudgetHierarchyService::fmt($montantAPayer) . " DH) ne peut pas dépasser le montant engagé ("
+                        . BudgetHierarchyService::fmt($engaged) . " DH).",
+                    ],
+                ]);
+            }
 
-        $consultation->update(['statut_dossier' => 'PAYÉ']);
+            $activeOrd = BudgetHierarchyService::getActiveOrdonnancedForConsultation($consultation->id);
+            if ($montantAPayer + BudgetHierarchyService::EPSILON < $activeOrd) {
+                throw ValidationException::withMessages([
+                    'montant_a_payer' => [
+                        "Règle budgétaire (Ordonnancement <= Engagement) : le montant liquidé ("
+                        . BudgetHierarchyService::fmt($montantAPayer) . " DH) ne peut pas être inférieur aux ordonnancements déjà émis ("
+                        . BudgetHierarchyService::fmt($activeOrd) . " DH).",
+                    ],
+                ]);
+            }
 
-        return response()->json([
-            'message' => 'Liquidation financière validée avec succès.',
-            'liquidation' => $liquidation,
-            'statut_dossier' => $consultation->statut_dossier
-        ]);
+            $liquidation = $consultation->liquidation()->updateOrCreate(
+                ['consultation_id' => $consultationId],
+                $validated
+            );
+
+            if (!in_array(strtoupper((string) $consultation->statut_dossier), ['ORDONNANCÉ', 'ORDONNANCE', 'PAYÉ', 'PAYE', 'CLÔTURÉ', 'CLOTURE'], true)) {
+                $consultation->update(['statut_dossier' => 'LIQUIDÉ']);
+            }
+
+            return response()->json([
+                'message' => 'Liquidation financière validée avec succès.',
+                'liquidation' => $liquidation,
+                'statut_dossier' => $consultation->statut_dossier,
+            ]);
+        });
     }
 }

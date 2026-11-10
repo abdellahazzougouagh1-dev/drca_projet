@@ -1057,7 +1057,8 @@ const GestionAoo = () => {
       setSuccessMessage('Préparation validée avec succès.');
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err) {
-      setErrorMessage(err.response?.data?.message || 'Erreur lors de la validation.');
+      const firstErr = Object.values(err.response?.data?.errors || {}).flat().find(Boolean);
+      setErrorMessage(firstErr || err.response?.data?.message || err.response?.data?.error || 'Erreur lors de la validation.');
     } finally {
       setSaving(false);
     }
@@ -1071,7 +1072,8 @@ const GestionAoo = () => {
       setFormData(prev => ({ ...prev, statut: 'Brouillon' }));
       setSuccessMessage('Préparation déverrouillée. Vous pouvez la modifier.');
     } catch (err) {
-      setErrorMessage('Erreur lors du déverrouillage.');
+      const firstErr = Object.values(err.response?.data?.errors || {}).flat().find(Boolean);
+      setErrorMessage(firstErr || err.response?.data?.message || err.response?.data?.error || 'Erreur lors du déverrouillage.');
     } finally {
       setSaving(false);
     }
@@ -1090,7 +1092,8 @@ const GestionAoo = () => {
       }
       setSuccessMessage('Informations de publication enregistrées avec succès.');
     } catch (err) {
-      setErrorMessage(err.response?.data?.message || 'Erreur lors de l\'enregistrement des publications.');
+      const firstErr = Object.values(err.response?.data?.errors || {}).flat().find(Boolean);
+      setErrorMessage(firstErr || err.response?.data?.message || err.response?.data?.error || 'Erreur lors de l\'enregistrement des publications.');
     } finally {
       setSaving(false);
     }
@@ -1306,7 +1309,8 @@ const GestionAoo = () => {
         fetchDossier();
       }
     } catch (err) {
-      setErrorMessage('Erreur lors de l\'enregistrement. Veuillez vérifier les champs.');
+      const firstErr = Object.values(err.response?.data?.errors || {}).flat().find(Boolean);
+      setErrorMessage(firstErr || err.response?.data?.message || err.response?.data?.error || 'Erreur lors de l\'enregistrement. Veuillez vérifier les champs.');
     } finally {
       setSaving(false);
       setTimeout(() => setSuccessMessage(''), 3000);
@@ -1676,7 +1680,8 @@ const GestionAoo = () => {
         navigate('/engagements');
       }, 1500);
     } catch (err) {
-      setErrorMessage(err.response?.data?.error || "Erreur lors de la clôture de l'AOO.");
+      const firstErr = Object.values(err.response?.data?.errors || {}).flat().find(Boolean);
+      setErrorMessage(firstErr || err.response?.data?.error || err.response?.data?.message || "Erreur lors de la clôture de l'AOO.");
     } finally {
       setSaving(false);
     }

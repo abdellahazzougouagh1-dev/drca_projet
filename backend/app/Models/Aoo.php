@@ -103,6 +103,12 @@ class Aoo extends Model
 
     protected $appends = ['objet_aoo'];
 
+    protected static function booted(): void
+    {
+        static::saved(fn () => NotificationLigne::clearBudgetCache());
+        static::deleted(fn () => NotificationLigne::clearBudgetCache());
+    }
+
     public function getObjetAooAttribute(): ?string
     {
         return $this->objet;

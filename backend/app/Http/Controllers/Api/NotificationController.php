@@ -7,6 +7,7 @@ use App\Models\Notification;
 use App\Models\NotificationLigne;
 use App\Models\NotificationMouvement;
 use App\Models\Ordonnancement;
+use App\Services\BudgetHierarchyService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -395,6 +396,8 @@ class NotificationController extends Controller
     public function getRecapitulatifExercice(Request $request)
     {
         $exercice = $request->query('exercice', date('Y'));
+        NotificationLigne::clearBudgetCache();
+        $snapshot = BudgetHierarchyService::computeExerciceSnapshot($exercice);
 
         $lignes = NotificationLigne::whereHas('notification', function ($q) use ($exercice) {
             $q->where('exercice', $exercice);
@@ -405,8 +408,8 @@ class NotificationController extends Controller
         $recap = [];
 
         foreach ($lignes as $ligne) {
-            $ligneDomaine = strtoupper($ligne->domaine ?: ($ligne->notification ? $ligne->notification->domaine : '') ?: 'INVESTISSEMENT');
-            $imputationKey = $ligneDomaine . '_' . $ligne->article . '/' . $ligne->paragraphe . '/' . $ligne->ligne_budgetaire;
+            $ligneDomaine = BudgetHierarchyService::normalizeDomaine($ligne->domaine ?: ($ligne->notification ? $ligne->notification->domaine : ''));
+            $imputationKey = BudgetHierarchyService::imputationKey($ligneDomaine, $ligne->article, $ligne->paragraphe, $ligne->ligne_budgetaire);
 
             if (!isset($recap[$imputationKey])) {
                 $recap[$imputationKey] = [
@@ -423,6 +426,7 @@ class NotificationController extends Controller
                     'credits_engagements' => 0,
                     'diminution_credit_engagement' => 0,
                     'total_credits' => 0,
+                    'total_net' => 0,
                     'credits_engages' => 0,
                     'credits_disponibles' => 0,
                     'notifications_count' => 0,
@@ -437,7 +441,6 @@ class NotificationController extends Controller
             $recap[$imputationKey]['diminution_credit_neuf'] += floatval($ligne->diminution_credit_neuf);
             $recap[$imputationKey]['credits_engagements'] += floatval($ligne->credits_engagements);
             $recap[$imputationKey]['diminution_credit_engagement'] += floatval($ligne->diminution_credit_engagement);
-            $recap[$imputationKey]['credits_engages'] += floatval($ligne->credits_engages);
             $recap[$imputationKey]['notifications_count']++;
 
             if ($ligne->notification) {
@@ -459,13 +462,18 @@ class NotificationController extends Controller
         }
 
         foreach ($recap as $key => &$row) {
+            $group = $snapshot['groups'][$key] ?? null;
             $row['total_credits'] = round($row['reports'] + $row['credits_neufs'] + $row['credits_engagements'], 2);
-            $netReports = $row['reports'] - $row['diminution_report'];
-            $netCreditsNeufs = $row['credits_neufs'] - $row['diminution_credit_neuf'];
-            $netEngagement = $row['credits_engagements'] - $row['diminution_credit_engagement'];
-            $totalNet = $netReports + $netCreditsNeufs + $netEngagement;
-            $row['credits_disponibles'] = round($totalNet - $row['credits_engages'], 2);
+            $netReports = max(0, $row['reports'] - $row['diminution_report']);
+            $netCreditsNeufs = max(0, $row['credits_neufs'] - $row['diminution_credit_neuf']);
+            $netEngagement = max(0, $row['credits_engagements'] - $row['diminution_credit_engagement']);
+            $totalNet = round($netReports + $netCreditsNeufs + $netEngagement, 2);
+
+            $row['total_net'] = $group ? $group['total_net'] : $totalNet;
+            $row['credits_engages'] = $group ? $group['total_engaged'] : round((float) $row['credits_engages'], 2);
+            $row['credits_disponibles'] = $group ? $group['available_total'] : round(max(0, $totalNet - $row['credits_engages']), 2);
         }
+        unset($row);
 
         return response()->json([
             'exercice' => intval($exercice),
@@ -478,8 +486,9 @@ class NotificationController extends Controller
                 'total_credits_engagements' => array_sum(array_column($recap, 'credits_engagements')),
                 'total_diminution_credit_engagement' => array_sum(array_column($recap, 'diminution_credit_engagement')),
                 'total_credits' => array_sum(array_column($recap, 'total_credits')),
-                'total_engages' => array_sum(array_column($recap, 'credits_engages')),
-                'total_disponibles' => array_sum(array_column($recap, 'credits_disponibles')),
+                'total_net' => $snapshot['total_net'],
+                'total_engages' => $snapshot['total_engaged'],
+                'total_disponibles' => $snapshot['available_total'],
             ],
         ]);
     }
@@ -488,7 +497,6 @@ class NotificationController extends Controller
     {
         $this->authorizeDirector($request);
 
-        $ligne = NotificationLigne::findOrFail($id);
         $validated = $request->validate([
             'article' => ['sometimes', 'nullable', 'string', 'max:255'],
             'paragraphe' => ['sometimes', 'nullable', 'string', 'max:255'],
@@ -503,16 +511,26 @@ class NotificationController extends Controller
             'credits_engagements' => ['sometimes', 'numeric', 'min:0'],
             'diminution_credit_engagement' => ['sometimes', 'numeric', 'min:0'],
         ]);
-        $ligne->update($validated);
-        return response()->json($ligne->load('mouvements'));
+
+        $ligne = DB::transaction(function () use ($id, $validated) {
+            $ligne = NotificationLigne::with('notification')->lockForUpdate()->findOrFail($id);
+            BudgetHierarchyService::assertNotificationLigneUpdateValid($ligne, $validated);
+            $ligne->update($validated);
+            return $ligne;
+        });
+
+        NotificationLigne::clearBudgetCache();
+        return response()->json($ligne->fresh('mouvements'));
     }
 
     public function destroy(Request $request, $id)
     {
         $this->authorizeDirector($request);
 
-        $notification = Notification::findOrFail($id);
-        DB::transaction(function () use ($notification) {
+        DB::transaction(function () use ($id) {
+            $notification = Notification::with('lignes')->lockForUpdate()->findOrFail($id);
+            BudgetHierarchyService::assertNotificationDeletableAndRelink($notification);
+
             foreach ($notification->lignes as $ligne) {
                 $ligne->mouvements()->delete();
                 $ligne->delete();
@@ -520,6 +538,8 @@ class NotificationController extends Controller
             $notification->mouvements()->delete();
             $notification->delete();
         });
+
+        NotificationLigne::clearBudgetCache();
         return response()->json(['message' => 'Notification supprimée avec succès']);
     }
 
@@ -594,115 +614,78 @@ class NotificationController extends Controller
     public function getDashboardStats(Request $request)
     {
         $exercice = $request->query('exercice', date('Y'));
+        NotificationLigne::clearBudgetCache();
+        $snapshot = BudgetHierarchyService::computeExerciceSnapshot($exercice);
         $recap = $this->getRecapitulatifExercice($request)->getData(true);
 
-        $totaux = $recap['totaux'] ?? [
-            'total_credits' => 0,
-            'total_engages' => 0,
-            'total_disponibles' => 0,
-        ];
-
         $lignes = $recap['lignes'] ?? [];
-        $lignesParId = NotificationLigne::whereHas('notification', function ($q) use ($exercice) {
-            $q->where('exercice', $exercice);
-        })->with('notification')->get()->mapWithKeys(function ($ligne) {
-            $domaine = strtoupper($ligne->domaine ?: ($ligne->notification?->domaine ?: 'INVESTISSEMENT'));
-            return [$ligne->id => $domaine . '_' . $ligne->article . '/' . $ligne->paragraphe . '/' . $ligne->ligne_budgetaire];
-        });
 
         foreach ($lignes as &$ligne) {
+            $gKey = BudgetHierarchyService::imputationKey($ligne['domaine'] ?? '', $ligne['article'] ?? '', $ligne['paragraphe'] ?? '', $ligne['ligne_budgetaire'] ?? '');
+            if (isset($snapshot['groups'][$gKey])) {
+                $group = $snapshot['groups'][$gKey];
+                $ligne['total_credits'] = $group['total_net'];
+                $ligne['total_brut'] = $group['total_credits'];
+                $ligne['credits_engages'] = $group['total_engaged'];
+                $ligne['credits_disponibles'] = $group['available_total'];
+            }
             foreach (['ordonnance_reports', 'ordonnance_credits_consolides', 'ordonnance_credits_neufs', 'ordonnance_ras', 'ordonnance_rap', 'total_ordonnance', 'paiement_reports', 'paiement_credits_consolides', 'paiement_credits_neufs', 'paiement_ras', 'paiement_rap', 'total_paiements'] as $champ) {
-                $ligne[$champ] = 0;
+                $ligne[$champ] = 0.0;
             }
         }
         unset($ligne);
 
         $indexParImputation = [];
         foreach ($lignes as $index => $ligne) {
-            $indexParImputation[$ligne['domaine'] . '_' . $ligne['imputation']] = $index;
+            $gKey = BudgetHierarchyService::imputationKey($ligne['domaine'] ?? '', $ligne['article'] ?? '', $ligne['paragraphe'] ?? '', $ligne['ligne_budgetaire'] ?? '');
+            $indexParImputation[$gKey] = $index;
         }
 
-        $classerMouvement = function ($ordre): string {
-            $texte = mb_strtolower(($ordre->creance ?? '') . ' ' . ($ordre->type_mouvement ?? ''));
-            if (str_contains($texte, 'report')) return 'reports';
-            if (str_contains($texte, 'consolid')) return 'credits_consolides';
-            if (str_contains($texte, 'neuf')) return 'credits_neufs';
-            if (str_contains($texte, 'retenue') || str_contains($texte, 'tva') || str_contains($texte, 'ias') || str_contains($texte, 'ras')) return 'ras';
-            return 'rap';
-        };
-
-        $ordonnancements = Ordonnancement::with(['ordres', 'consultation', 'marche', 'liquidation', 'notificationLigne'])
-            ->where('exercice', $exercice)
+        $ordonnancements = Ordonnancement::with(['ordres', 'consultation.budget', 'consultation.notificationLigne', 'marche.notificationLigne', 'liquidation', 'notificationLigne'])
+            ->where('exercice', (string) $exercice)
             ->get();
 
         foreach ($ordonnancements as $ordonnancement) {
-            // Identifier la clé de ligne budgétaire
-            $ligneId = $ordonnancement->notification_ligne_id 
-                ?: $ordonnancement->notificationLigne?->id 
-                ?: $ordonnancement->consultation?->notification_ligne_id 
+            $amounts = BudgetHierarchyService::computeOrdonnancementAmounts($ordonnancement);
+            if ($amounts['total_ordonnance'] <= 0 && $amounts['total_paiements'] <= 0) {
+                continue;
+            }
+
+            $ligneId = $ordonnancement->notification_ligne_id
+                ?: $ordonnancement->notificationLigne?->id
+                ?: $ordonnancement->consultation?->notification_ligne_id
                 ?: $ordonnancement->marche?->notification_ligne_id;
 
-            $cle = $ligneId ? ($lignesParId[$ligneId] ?? null) : null;
+            $gKey = ($ligneId && isset($snapshot['ligne_id_to_group'][$ligneId])) ? $snapshot['ligne_id_to_group'][$ligneId] : null;
 
-            if (!$cle) {
-                $dom = strtoupper($ordonnancement->budget_type ?: ($ordonnancement->domaine ?: 'INVESTISSEMENT'));
-                if (str_contains($dom, 'FONCT')) $dom = 'FONCTIONNEMENT';
-                else $dom = 'INVESTISSEMENT';
-                $art = $ordonnancement->article ?: $ordonnancement->art;
-                $par = $ordonnancement->paragraphe ?: $ordonnancement->par;
-                $lig = $ordonnancement->ligne ?: $ordonnancement->ligne_budgetaire ?: $ordonnancement->lig;
+            if ($gKey === null) {
+                $dom = $ordonnancement->budget_type ?: ($ordonnancement->domaine ?: ($ordonnancement->consultation?->type_budget ?: $ordonnancement->marche?->type_budget));
+                $art = $ordonnancement->article ?: ($ordonnancement->art ?: ($ordonnancement->consultation?->budget?->art ?: $ordonnancement->marche?->article_budget));
+                $par = $ordonnancement->paragraphe ?: ($ordonnancement->par ?: ($ordonnancement->consultation?->budget?->par ?: $ordonnancement->marche?->paragraphe_budget));
+                $lig = $ordonnancement->ligne ?: ($ordonnancement->ligne_budgetaire ?: ($ordonnancement->lig ?: ($ordonnancement->consultation?->budget?->lig ?: $ordonnancement->marche?->ligne_budget)));
                 if ($art && $par && $lig) {
-                    $cle = $dom . '_' . $art . '/' . $par . '/' . $lig;
-                }
-            }
-
-            $index = $cle !== null ? ($indexParImputation[$cle] ?? null) : null;
-            if ($index === null && count($lignes) > 0) {
-                // Si une seule ligne existe ou première ligne du domaine
-                $dom = strtoupper($ordonnancement->budget_type ?: 'INVESTISSEMENT');
-                $targetDom = str_contains($dom, 'FONCT') ? 'FONCTIONNEMENT' : 'INVESTISSEMENT';
-                foreach ($lignes as $idx => $l) {
-                    if ($l['domaine'] === $targetDom) {
-                        $index = $idx;
-                        break;
+                    $candidate = BudgetHierarchyService::imputationKey($dom, $art, $par, $lig);
+                    if (isset($indexParImputation[$candidate])) {
+                        $gKey = $candidate;
                     }
                 }
-                if ($index === null) $index = 0;
             }
-            if ($index === null) continue;
 
-            if ($ordonnancement->ordres && $ordonnancement->ordres->isNotEmpty()) {
-                foreach ($ordonnancement->ordres as $ordre) {
-                    $type = $classerMouvement($ordre);
-                    $montant = (float) $ordre->montant;
-                    $lignes[$index]['ordonnance_' . $type] += $montant;
-                    $lignes[$index]['total_ordonnance'] += $montant;
-                    $lignes[$index]['paiement_' . $type] += $montant;
-                    $lignes[$index]['total_paiements'] += $montant;
-                }
-            } else {
-                $mReports = (float) ($ordonnancement->paiement_reports ?: (str_contains(mb_strtolower($ordonnancement->creance ?? ''), 'report') ? $ordonnancement->montant_brut : 0));
-                $mConsolid = (float) ($ordonnancement->credit_consolide ?: (str_contains(mb_strtolower($ordonnancement->creance ?? ''), 'consolid') ? $ordonnancement->montant_brut : 0));
-                $mNeufs = (float) ($ordonnancement->credit_neuf ?: (str_contains(mb_strtolower($ordonnancement->creance ?? ''), 'neuf') ? $ordonnancement->montant_brut : 0));
-                $mRas = (float) ($ordonnancement->ras_total ?: ($ordonnancement->retenue_tva + $ordonnancement->retenue_ias + $ordonnancement->autres_retenues));
-                $mRap = (float) ($ordonnancement->rap_total ?: (str_contains(mb_strtolower($ordonnancement->creance ?? ''), 'reste') ? $ordonnancement->net_a_payer : 0));
-                
-                $mBrut = (float) ($ordonnancement->montant_brut ?: ($mReports + $mConsolid + $mNeufs + $mRas + $mRap) ?: $ordonnancement->net_a_payer);
-
-                $lignes[$index]['ordonnance_reports'] += $mReports;
-                $lignes[$index]['ordonnance_credits_consolides'] += $mConsolid;
-                $lignes[$index]['ordonnance_credits_neufs'] += $mNeufs;
-                $lignes[$index]['ordonnance_ras'] += $mRas;
-                $lignes[$index]['ordonnance_rap'] += $mRap;
-                $lignes[$index]['total_ordonnance'] += $mBrut;
-
-                $lignes[$index]['paiement_reports'] += $mReports;
-                $lignes[$index]['paiement_credits_consolides'] += $mConsolid;
-                $lignes[$index]['paiement_credits_neufs'] += $mNeufs;
-                $lignes[$index]['paiement_ras'] += $mRas;
-                $lignes[$index]['paiement_rap'] += $mRap;
-                $lignes[$index]['total_paiements'] += $mBrut;
+            $index = $gKey !== null ? ($indexParImputation[$gKey] ?? null) : null;
+            if ($index === null) {
+                continue;
             }
+
+            foreach (['reports', 'credits_consolides', 'credits_neufs', 'ras', 'rap'] as $bucket) {
+                $lignes[$index]['ordonnance_' . $bucket] = round($lignes[$index]['ordonnance_' . $bucket] + $amounts['ordonnance'][$bucket], 2);
+                $lignes[$index]['paiement_' . $bucket] = round($lignes[$index]['paiement_' . $bucket] + $amounts['paiement'][$bucket], 2);
+            }
+
+            $lignes[$index]['total_ordonnance'] = round($lignes[$index]['total_ordonnance'] + $amounts['total_ordonnance'], 2);
+            $lignes[$index]['total_paiements'] = round(
+                min($lignes[$index]['total_paiements'] + $amounts['total_paiements'], $lignes[$index]['total_ordonnance']),
+                2
+            );
         }
 
         $calcPct = function ($part, $total) {
@@ -726,11 +709,11 @@ class NotificationController extends Controller
         }
         unset($ligne);
 
-        $totalNotifie = array_sum(array_column($lignes, 'total_credits'));
-        $totalEngage = array_sum(array_column($lignes, 'credits_engages'));
-        $totalDisponible = array_sum(array_column($lignes, 'credits_disponibles'));
-        $totalOrdonnance = array_sum(array_column($lignes, 'total_ordonnance'));
-        $totalPaiement = array_sum(array_column($lignes, 'total_paiements'));
+        $totalNotifie = $snapshot['total_net'];
+        $totalEngage = $snapshot['total_engaged'];
+        $totalDisponible = $snapshot['available_total'];
+        $totalOrdonnance = $snapshot['total_ordonnanced'];
+        $totalPaiement = min($snapshot['total_paid'], $totalOrdonnance);
         $tauxConsommation = $calcPct($totalEngage, $totalNotifie);
 
         return response()->json([

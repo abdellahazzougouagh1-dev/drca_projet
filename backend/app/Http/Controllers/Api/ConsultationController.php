@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Consultation;
 use App\Models\Budget;
+use App\Models\NotificationLigne;
+use App\Services\BudgetHierarchyService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
@@ -193,6 +195,7 @@ class ConsultationController extends Controller
             'budget_previsionnel' => ['nullable', 'numeric', 'min:0'],
             'notes_programmation' => ['nullable', 'string'],
             'fournisseur_id' => $withDatabaseRules ? ['nullable', 'integer', 'exists:fournisseurs,id'] : ['nullable', 'integer'],
+            'notification_ligne_id' => $withDatabaseRules ? ['nullable', 'integer', 'exists:notification_lignes,id'] : ['nullable', 'integer'],
             'reference_2' => ['nullable', 'string', 'max:255'],
             's_lig' => ['nullable', 'string', 'max:255'],
             'art' => $isAo ? ['nullable', 'string', 'max:255'] : self::sometimesRequiredStringRule(255),
@@ -533,11 +536,22 @@ class ConsultationController extends Controller
 
     public function destroy(Consultation $consultation)
     {
+        $activeOrd = BudgetHierarchyService::getActiveOrdonnancedForConsultation($consultation->id);
+        if ($activeOrd > BudgetHierarchyService::EPSILON) {
+            throw ValidationException::withMessages([
+                'consultation' => [
+                    "Suppression impossible : cette consultation est couverte par des ordonnancements actifs ("
+                    . BudgetHierarchyService::fmt($activeOrd) . " DH).",
+                ],
+            ]);
+        }
+
         try {
             DB::transaction(function () use ($consultation) {
                 $consultation->budget()?->delete();
                 $consultation->prestations()?->delete();
                 $consultation->offres()?->delete();
+                $consultation->registreEngagement()?->delete();
                 $consultation->engagement()?->delete();
                 $consultation->suiviExecution()?->delete();
                 $consultation->receptions()?->delete();
@@ -562,100 +576,200 @@ class ConsultationController extends Controller
     {
         $validated = $request->validate(self::updateRules($request->all(), $consultation, true));
 
-        $consultation->update($validated);
+        $updatedConsultation = DB::transaction(function () use ($request, $consultation, $validated) {
+            $lockedConsultation = Consultation::with(['budget', 'fournisseur', 'engagement', 'registreEngagement', 'notificationLigne'])
+                ->lockForUpdate()
+                ->findOrFail($consultation->id);
 
-        if ($request->hasAny(['art', 'par', 'lig', 'code_imputation', 'exercice_budgetaire'])) {
-            $budgetData = array_filter([
-                'art' => $validated['art'] ?? $request->art,
-                'par' => $validated['par'] ?? $request->par,
-                'lig' => $validated['lig'] ?? $request->lig,
-                'code_imputation' => $validated['code_imputation'] ?? $request->code_imputation,
-                'exercice_budgetaire' => $validated['exercice_budgetaire'] ?? $request->exercice_budgetaire,
-            ], fn ($v) => $v !== null);
+            $lockedConsultation->update($validated);
 
-            if (!isset($budgetData['code_imputation']) && (isset($budgetData['art']) || isset($budgetData['par']) || isset($budgetData['lig']))) {
-                $art = $budgetData['art'] ?? ($consultation->budget?->art ?? '');
-                $par = $budgetData['par'] ?? ($consultation->budget?->par ?? '');
-                $lig = $budgetData['lig'] ?? ($consultation->budget?->lig ?? '');
-                $budgetData['code_imputation'] = "{$art}{$par}{$lig}";
+            if ($request->hasAny(['art', 'par', 'lig', 'code_imputation', 'exercice_budgetaire'])) {
+                $budgetData = array_filter([
+                    'art' => $validated['art'] ?? $request->art,
+                    'par' => $validated['par'] ?? $request->par,
+                    'lig' => $validated['lig'] ?? $request->lig,
+                    'code_imputation' => $validated['code_imputation'] ?? $request->code_imputation,
+                    'exercice_budgetaire' => $validated['exercice_budgetaire'] ?? $request->exercice_budgetaire,
+                ], fn ($v) => $v !== null);
+
+                if (!isset($budgetData['code_imputation']) && (isset($budgetData['art']) || isset($budgetData['par']) || isset($budgetData['lig']))) {
+                    $art = $budgetData['art'] ?? ($lockedConsultation->budget?->art ?? '');
+                    $par = $budgetData['par'] ?? ($lockedConsultation->budget?->par ?? '');
+                    $lig = $budgetData['lig'] ?? ($lockedConsultation->budget?->lig ?? '');
+                    $budgetData['code_imputation'] = "{$art}{$par}{$lig}";
+                }
+
+                if ($lockedConsultation->budget) {
+                    $lockedConsultation->budget->update($budgetData);
+                } else {
+                    $lockedConsultation->budget()->create(array_merge([
+                        'art' => $budgetData['art'] ?? '',
+                        'par' => $budgetData['par'] ?? '',
+                        'lig' => $budgetData['lig'] ?? '',
+                        'code_imputation' => $budgetData['code_imputation'] ?? '',
+                        'exercice_budgetaire' => $budgetData['exercice_budgetaire'] ?? ($lockedConsultation->annee ?: date('Y')),
+                        'montant_estimatif_ht' => 0,
+                        'tva' => 20,
+                    ], $budgetData));
+                }
             }
 
-            if ($consultation->budget) {
-                $consultation->budget->update($budgetData);
-            } else {
-                $consultation->budget()->create(array_merge([
-                    'art' => $budgetData['art'] ?? '',
-                    'par' => $budgetData['par'] ?? '',
-                    'lig' => $budgetData['lig'] ?? '',
-                    'code_imputation' => $budgetData['code_imputation'] ?? '',
-                    'exercice_budgetaire' => $budgetData['exercice_budgetaire'] ?? ($consultation->annee ?: date('Y')),
-                    'montant_estimatif_ht' => 0,
-                    'tva' => 20,
-                ], $budgetData));
-            }
-        }
+            $lockedConsultation->load(['budget', 'fournisseur', 'engagement', 'registreEngagement', 'notificationLigne.notification']);
 
-        if (!empty($validated['numero_engagement'])) {
-            $consultation->load(['budget', 'fournisseur', 'engagement', 'notificationLigne']);
-            $registre = $consultation->registreEngagement;
-            $notificationLigne = $consultation->notificationLigne;
-            $creditConsolide = $notificationLigne
-                ? (float) ($notificationLigne->reports ?? 0) + (float) ($notificationLigne->credits_neufs ?? 0)
-                : null;
+            $typeBudget = $validated['type_budget'] ?? $request->type_budget ?: ($lockedConsultation->type_budget ?: 'Investissement');
+            $exercice = $lockedConsultation->budget?->exercice_budgetaire
+                ?: ($lockedConsultation->annee ?: ($lockedConsultation->notificationLigne?->notification?->exercice ?: date('Y')));
+            $artVal = $lockedConsultation->budget?->art ?? $request->art ?? null;
+            $parVal = $lockedConsultation->budget?->par ?? $request->par ?? null;
+            $ligVal = $lockedConsultation->budget?->lig ?? $request->lig ?? null;
 
-            $isConvention = in_array($consultation->mode_engagement, ['Convention', 'Contrat'])
-                || str_starts_with(strtoupper($consultation->numero_consultation ?? ''), 'CONV');
-            $typeBudget = $request->type_budget ?: ($consultation->type_budget ?: 'Investissement');
-            $isContrat = $isConvention && strtolower((string) $typeBudget) === 'fonctionnement';
-
-            $beneficiaire = $consultation->fournisseur?->raison_sociale
-                ?: ($request->beneficiaire
-                ?: ($request->societe
-                ?: ($request->titulaire_nom
-                ?: ($consultation->engagement?->fournisseur?->raison_sociale ?? ''))));
-
-            $ref = $consultation->numero_bc ?: $consultation->numero_consultation;
-            if ($isConvention && $ref) {
-                $ref = trim(preg_replace('/\bCONV\s*[-_]?\s*/i', '', (string) $ref));
-                $ref = trim(preg_replace('/^[-_\s]+|[-_\s]+$/', '', $ref));
-            }
-
-            $consultation->registreEngagement()->updateOrCreate(
-                ['consultation_id' => $consultation->id],
-                [
-                    'numero_ordre' => $registre?->numero_ordre
-                        ?? ((int) \App\Models\RegistreEngagement::max('numero_ordre') + 1),
-                    'engagement_id' => $consultation->engagement?->id,
-                    'date_engagement' => $request->date_consultation,
-                    'numero_rubrique' => $consultation->numero_engagement,
-                    'mode_engagement' => $isConvention ? ($isContrat ? 'Contrat' : 'Convention') : ($consultation->mode_engagement ?: 'Bon de commande'),
-                    'reference' => $ref,
-                    'reference_2' => $consultation->reference_2,
-                    'budget' => $typeBudget,
-                    'code' => $consultation->budget?->code_imputation,
-                    'art' => $consultation->budget?->art,
-                    'par' => $consultation->budget?->par,
-                    'lig' => $consultation->budget?->lig,
-                    's_lig' => $consultation->s_lig,
-                    'intitule' => $consultation->intitule,
-                    'credit_ouvert_cp' => $consultation->credit_ouvert_cp,
-                    'credit_ouvert_ce' => $isContrat ? null : $consultation->credit_ouvert_ce,
-                    'credit_consolide' => $creditConsolide,
-                    'depenses_anterieures_ce' => $isContrat ? null : $consultation->depenses_anterieures_ce,
-                    'depenses_anterieures_cp' => $consultation->depenses_anterieures_cp,
-                    'depenses_credits_engagement' => $isContrat ? null : $consultation->depenses_credits_engagement,
-                    'depenses_credits_consolides' => $consultation->depenses_credits_consolides,
-                    'depenses_rap' => $consultation->depenses_rap,
-                    'montant_depense_neuf' => $consultation->montant_depense_neuf,
-                    'interets_moratoires' => $consultation->interets_moratoires,
-                    'montant_engager_neuf' => $consultation->montant_engager_neuf,
-                    'objet' => $consultation->objet_consultation,
-                    'beneficiaire' => $beneficiaire,
-                ]
+            $resolvedLigne = BudgetHierarchyService::resolveNotificationLigneForDossier(
+                $lockedConsultation->notification_ligne_id,
+                $artVal,
+                $parVal,
+                $ligVal,
+                $typeBudget,
+                $exercice
             );
-        }
 
-        return response()->json($consultation->load(['fournisseur', 'budget', 'notificationLigne', 'prestations', 'engagement', 'registreEngagement', 'offres', 'receptionCommission']));
+            if ($resolvedLigne) {
+                if ((int) $lockedConsultation->notification_ligne_id !== (int) $resolvedLigne->id) {
+                    $lockedConsultation->notification_ligne_id = $resolvedLigne->id;
+                    $lockedConsultation->save();
+                }
+
+                if ($lockedConsultation->budget && (empty($lockedConsultation->budget->art) || empty($lockedConsultation->budget->par) || empty($lockedConsultation->budget->lig))) {
+                    $lockedConsultation->budget->update([
+                        'art' => $resolvedLigne->article,
+                        'par' => $resolvedLigne->paragraphe,
+                        'lig' => $resolvedLigne->ligne_budgetaire,
+                        'code_imputation' => $lockedConsultation->budget->code_imputation ?: "{$resolvedLigne->article}/{$resolvedLigne->paragraphe}/{$resolvedLigne->ligne_budgetaire}",
+                        'exercice_budgetaire' => $lockedConsultation->budget->exercice_budgetaire ?: ($resolvedLigne->notification?->exercice ?? $exercice),
+                    ]);
+                }
+
+                $lockedConsultation->load(['budget', 'notificationLigne']);
+            }
+
+            $activeOrd = BudgetHierarchyService::getActiveOrdonnancedForConsultation($lockedConsultation->id);
+            $isCancelledOrRejected = BudgetHierarchyService::isOrdonnancementCancelledOrRejected($lockedConsultation->statut_dossier);
+
+            if ($isCancelledOrRejected) {
+                if ($activeOrd > BudgetHierarchyService::EPSILON) {
+                    throw ValidationException::withMessages([
+                        'statut_dossier' => [
+                            "Règle budgétaire (Ordonnancement <= Engagement) : impossible d'annuler ou rejeter une consultation ayant déjà des ordonnancements actifs ("
+                            . BudgetHierarchyService::fmt($activeOrd) . " DH).",
+                        ],
+                    ]);
+                }
+            } else {
+                $hasRegistreOrEng = $lockedConsultation->registreEngagement !== null || $lockedConsultation->engagement !== null;
+                $isEngaging = !empty($lockedConsultation->numero_engagement)
+                    || $hasRegistreOrEng
+                    || $request->hasAny(['numero_engagement', 'montant_engager_neuf', 'montant_depense_neuf']);
+
+                if ($isEngaging) {
+                    if (array_key_exists('montant_engager_neuf', $validated) && $validated['montant_engager_neuf'] !== null && (float) $validated['montant_engager_neuf'] > 0) {
+                        $effectiveEngaged = (float) $validated['montant_engager_neuf'];
+                    } elseif ($lockedConsultation->montant_engager_neuf !== null && (float) $lockedConsultation->montant_engager_neuf > 0) {
+                        $effectiveEngaged = (float) $lockedConsultation->montant_engager_neuf;
+                    } elseif ($lockedConsultation->montant_depense_neuf !== null && (float) $lockedConsultation->montant_depense_neuf > 0) {
+                        $effectiveEngaged = (float) $lockedConsultation->montant_depense_neuf;
+                    } elseif ($lockedConsultation->registreEngagement) {
+                        $effectiveEngaged = (float) ($lockedConsultation->registreEngagement->montant_engager_neuf ?? $lockedConsultation->registreEngagement->montant_depense_neuf ?? 0);
+                    } elseif ($lockedConsultation->engagement) {
+                        $effectiveEngaged = (float) ($lockedConsultation->engagement->montant_global ?? 0);
+                    } else {
+                        $effectiveEngaged = 0.0;
+                    }
+                    $effectiveEngaged = round(max(0.0, $effectiveEngaged), 2);
+
+                    BudgetHierarchyService::assertEngagementWithinNotification([
+                        'exercice' => $exercice,
+                        'domaine' => $typeBudget,
+                        'art' => $lockedConsultation->budget?->art ?? $artVal,
+                        'par' => $lockedConsultation->budget?->par ?? $parVal,
+                        'lig' => $lockedConsultation->budget?->lig ?? $ligVal,
+                        'notification_ligne_id' => $lockedConsultation->notification_ligne_id,
+                        'proposed_engage_neuf' => $effectiveEngaged,
+                        'credit_ouvert_cp' => $lockedConsultation->credit_ouvert_cp,
+                        'depenses_anterieures_cp' => $lockedConsultation->depenses_anterieures_cp,
+                        'existing_active_ordonnanced' => $activeOrd,
+                        'exclude' => ['exclude_consultation_id' => $lockedConsultation->id],
+                        'error_field' => 'montant_engager_neuf',
+                    ]);
+
+                    if (!empty($lockedConsultation->numero_engagement) || $lockedConsultation->registreEngagement !== null) {
+                        $registre = $lockedConsultation->registreEngagement;
+                        $notificationLigne = $lockedConsultation->notificationLigne;
+                        $creditConsolide = $notificationLigne
+                            ? (float) ($notificationLigne->reports ?? 0) + (float) ($notificationLigne->credits_neufs ?? 0)
+                            : null;
+
+                        $isConvention = in_array($lockedConsultation->mode_engagement, ['Convention', 'Contrat'])
+                            || str_starts_with(strtoupper($lockedConsultation->numero_consultation ?? ''), 'CONV');
+                        $isContrat = $isConvention && strtolower((string) $typeBudget) === 'fonctionnement';
+
+                        $beneficiaire = $lockedConsultation->fournisseur?->raison_sociale
+                            ?: ($request->beneficiaire
+                            ?: ($request->societe
+                            ?: ($request->titulaire_nom
+                            ?: ($lockedConsultation->engagement?->fournisseur?->raison_sociale ?? ''))));
+
+                        $ref = $lockedConsultation->numero_bc ?: $lockedConsultation->numero_consultation;
+                        if ($isConvention && $ref) {
+                            $ref = trim(preg_replace('/\bCONV\s*[-_]?\s*/i', '', (string) $ref));
+                            $ref = trim(preg_replace('/^[-_\s]+|[-_\s]+$/', '', $ref));
+                        }
+
+                        $montantEngagerNeufReg = $effectiveEngaged > 0
+                            ? $effectiveEngaged
+                            : $lockedConsultation->montant_engager_neuf;
+
+                        $lockedConsultation->registreEngagement()->updateOrCreate(
+                            ['consultation_id' => $lockedConsultation->id],
+                            [
+                                'numero_ordre' => $registre?->numero_ordre
+                                    ?? ((int) \App\Models\RegistreEngagement::max('numero_ordre') + 1),
+                                'engagement_id' => $lockedConsultation->engagement?->id,
+                                'date_engagement' => $request->date_consultation ?? $registre?->date_engagement ?? now()->format('Y-m-d'),
+                                'numero_rubrique' => $lockedConsultation->numero_engagement ?: ($registre?->numero_rubrique ?? ''),
+                                'mode_engagement' => $isConvention ? ($isContrat ? 'Contrat' : 'Convention') : ($lockedConsultation->mode_engagement ?: 'Bon de commande'),
+                                'reference' => $ref,
+                                'reference_2' => $lockedConsultation->reference_2,
+                                'budget' => $typeBudget,
+                                'code' => $lockedConsultation->budget?->code_imputation,
+                                'art' => $lockedConsultation->budget?->art,
+                                'par' => $lockedConsultation->budget?->par,
+                                'lig' => $lockedConsultation->budget?->lig,
+                                's_lig' => $lockedConsultation->s_lig,
+                                'intitule' => $lockedConsultation->intitule,
+                                'credit_ouvert_cp' => $lockedConsultation->credit_ouvert_cp,
+                                'credit_ouvert_ce' => $isContrat ? null : $lockedConsultation->credit_ouvert_ce,
+                                'credit_consolide' => $creditConsolide,
+                                'depenses_anterieures_ce' => $isContrat ? null : $lockedConsultation->depenses_anterieures_ce,
+                                'depenses_anterieures_cp' => $lockedConsultation->depenses_anterieures_cp,
+                                'depenses_credits_engagement' => $isContrat ? null : $lockedConsultation->depenses_credits_engagement,
+                                'depenses_credits_consolides' => $lockedConsultation->depenses_credits_consolides,
+                                'depenses_rap' => $lockedConsultation->depenses_rap,
+                                'montant_depense_neuf' => $lockedConsultation->montant_depense_neuf,
+                                'interets_moratoires' => $lockedConsultation->interets_moratoires,
+                                'montant_engager_neuf' => $montantEngagerNeufReg,
+                                'objet' => $lockedConsultation->objet_consultation,
+                                'beneficiaire' => $beneficiaire,
+                            ]
+                        );
+                    }
+                }
+            }
+
+            NotificationLigne::clearBudgetCache();
+
+            return $lockedConsultation->fresh(['fournisseur', 'budget', 'notificationLigne', 'prestations', 'engagement', 'registreEngagement', 'offres', 'receptionCommission']);
+        });
+
+        return response()->json($updatedConsultation);
     }
 
     public function syncPrestations(Request $request, Consultation $consultation)
@@ -903,27 +1017,23 @@ class ConsultationController extends Controller
             $commissionData
         );
 
-        // Auto-synchronize / create LiquidationFinanciere for this Bon de Commande
+        // Auto-synchronize / create LiquidationFinanciere for this Bon de Commande (only if engaged)
         $consultation->load(['prestations', 'engagement', 'registreEngagement', 'liquidation']);
-        $totalPrestationsTTC = 0;
-        if ($consultation->prestations && $consultation->prestations->count() > 0) {
-            $totalPrestationsTTC = (float) $consultation->prestations->reduce(function ($sum, $p) {
-                $ht = (float) ($p->montant_ht ?: (($p->quantite ?: 1) * ($p->prix_unitaire_ht ?: 0)));
-                $tvaRate = (float) ($p->tva ?: 20);
-                return $sum + ($ht * (1 + ($tvaRate / 100)));
-            }, 0);
-        }
+        $engagedAmount = BudgetHierarchyService::resolveConsultationEngagedAmount($consultation);
+        $activeOrd = BudgetHierarchyService::getActiveOrdonnancedForConsultation($consultation->id);
 
-        $montantEngagement = (float) (
-            $consultation->montant_engager_neuf ?:
-            ($consultation->montant_depense_neuf ?:
-            ($consultation->engagement?->montant_engagement ?:
-            ($consultation->registreEngagement?->montant_engager_neuf ?:
-            ($consultation->registreEngagement?->montant_engage ?: $totalPrestationsTTC))))
-        );
+        if ($engagedAmount > BudgetHierarchyService::EPSILON) {
+            $montantLiq = round(max($activeOrd, $engagedAmount), 2);
+            if ($montantLiq > $engagedAmount + BudgetHierarchyService::EPSILON) {
+                throw ValidationException::withMessages([
+                    'numero_bc' => [
+                        "Règle budgétaire (Ordonnancement <= Engagement) : les ordonnancements existants ("
+                        . BudgetHierarchyService::fmt($activeOrd) . " DH) dépassent le montant engagé ("
+                        . BudgetHierarchyService::fmt($engagedAmount) . " DH).",
+                    ],
+                ]);
+            }
 
-        $montantLiq = $montantEngagement > 0 ? $montantEngagement : $totalPrestationsTTC;
-        if ($montantLiq > 0) {
             $consultation->liquidation()->updateOrCreate(
                 ['consultation_id' => $consultation->id],
                 [
@@ -932,10 +1042,10 @@ class ConsultationController extends Controller
                     'date_facture' => $validated['date_reception_definitive'] ?? ($validated['date_decision'] ?? now()->format('Y-m-d')),
                 ]
             );
-        }
 
-        if (!in_array(strtoupper((string) $consultation->statut_dossier), ['PAYÉ', 'PAYE', 'CLÔTURÉ', 'CLOTURE'])) {
-            $consultation->update(['statut_dossier' => 'LIQUIDÉ']);
+            if (!in_array(strtoupper((string) $consultation->statut_dossier), ['ORDONNANCÉ', 'ORDONNANCE', 'PAYÉ', 'PAYE', 'CLÔTURÉ', 'CLOTURE'])) {
+                $consultation->update(['statut_dossier' => 'LIQUIDÉ']);
+            }
         }
 
         return response()->json([

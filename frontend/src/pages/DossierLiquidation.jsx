@@ -336,11 +336,8 @@ const DossierLiquidation = () => {
       setActiveTab('historique');
       fetchDossier();
     } catch (err) {
-      if (err.response?.data?.errors?.montant_ttc) {
-        alert(err.response.data.errors.montant_ttc[0]);
-      } else {
-        alert('Erreur lors de l\'enregistrement.');
-      }
+      const firstErr = Object.values(err.response?.data?.errors || {}).flat().find(Boolean);
+      alert(firstErr || err.response?.data?.message || err.response?.data?.error || 'Erreur lors de l\'enregistrement.');
       console.error(err);
     }
   };
@@ -360,7 +357,8 @@ const DossierLiquidation = () => {
       await api.patch(`/liquidations/marches/${id}/${liquidationId}/statut`, { statut: newStatus });
       fetchDossier();
     } catch (err) {
-      alert(err.response?.data?.error || 'Erreur lors du changement de statut.');
+      const firstErr = Object.values(err.response?.data?.errors || {}).flat().find(Boolean);
+      alert(firstErr || err.response?.data?.message || err.response?.data?.error || 'Erreur lors du changement de statut.');
       console.error(err);
     }
   };

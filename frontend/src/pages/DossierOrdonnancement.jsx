@@ -129,7 +129,8 @@ export default function DossierOrdonnancement() {
       fetchDossier();
     } catch (err) {
       console.error('Erreur mise à jour statut:', err);
-      alert('Erreur lors du changement de statut');
+      const firstErr = Object.values(err.response?.data?.errors || {}).flat().find(Boolean);
+      alert(firstErr || err.response?.data?.message || err.response?.data?.error || 'Erreur lors du changement de statut');
     } finally {
       setStatusLoading(false);
     }
@@ -199,7 +200,8 @@ export default function DossierOrdonnancement() {
       fetchDossier();
     } catch (err) {
       console.error('Erreur sauvegarde ordre:', err);
-      const msg = err.response?.data?.errors?.montant?.[0] || err.response?.data?.message || 'Erreur lors de l\'enregistrement de l\'ordre.';
+      const firstErr = Object.values(err.response?.data?.errors || {}).flat().find(Boolean);
+      const msg = firstErr || err.response?.data?.message || err.response?.data?.error || 'Erreur lors de l\'enregistrement de l\'ordre.';
       setOrdreModalError(msg);
     }
   };
@@ -211,7 +213,8 @@ export default function DossierOrdonnancement() {
       fetchDossier();
     } catch (err) {
       console.error('Erreur suppression ordre:', err);
-      alert('Erreur lors de la suppression.');
+      const firstErr = Object.values(err.response?.data?.errors || {}).flat().find(Boolean);
+      alert(firstErr || err.response?.data?.message || err.response?.data?.error || 'Erreur lors de la suppression.');
     }
   };
 

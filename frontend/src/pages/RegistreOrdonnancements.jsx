@@ -86,7 +86,8 @@ export default function RegistreOrdonnancements() {
       fetchRegistre();
     } catch (err) {
       console.error('Erreur suppression:', err);
-      alert('Erreur lors de la suppression de l\'ordonnancement.');
+      const firstErr = Object.values(err.response?.data?.errors || {}).flat().find(Boolean);
+      alert(firstErr || err.response?.data?.message || err.response?.data?.error || 'Erreur lors de la suppression de l\'ordonnancement.');
     }
   };
 

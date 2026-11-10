@@ -359,17 +359,19 @@ export default function DashboardDirecteur() {
 
   const realRows = useMemo(() => {
     const map = new Map();
-    const getLineKey = (dom, imp) => `${String(dom || 'INVESTISSEMENT').trim().toUpperCase()}_${String(imp || '').replace(/\s+/g, '')}`;
+    const normDom = (dom) => (String(dom || 'INVESTISSEMENT').trim().toUpperCase().includes('FONCT') ? 'FONCTIONNEMENT' : 'INVESTISSEMENT');
+    const getLineKey = (dom, imp) => `${normDom(dom)}_${String(imp || '').replace(/\s+/g, '')}`;
+    const hasBudgetLines = Array.isArray(store.budget?.lignes) && store.budget.lignes.length > 0;
 
-    if (store.budget?.lignes && Array.isArray(store.budget.lignes)) {
+    if (hasBudgetLines) {
       store.budget.lignes.forEach((line) => {
-        const lineDom = String(line.domaine || 'INVESTISSEMENT').toUpperCase();
+        const lineDom = normDom(line.domaine);
         const imp = line.imputation || `${line.article || ''} / ${line.paragraphe || ''} / ${line.ligne_budgetaire || ''}`;
         const key = getLineKey(lineDom, imp);
-        const notif = Number(line.total_credits || line.montant || 0);
-        const eng = Number(line.credits_engages || 0);
-        const ord = Number(line.total_ordonnance || 0);
-        const pai = Number(line.total_paiements || line.total_paiement || 0);
+        const notif = Number(line.total_credits ?? line.montant ?? 0);
+        const eng = Number(line.credits_engages ?? 0);
+        const ord = Number(line.total_ordonnance ?? 0);
+        const pai = Number(line.total_paiements ?? line.total_paiement ?? 0);
         map.set(key, {
           domaine: lineDom,
           imputation: imp,
@@ -378,47 +380,14 @@ export default function DashboardDirecteur() {
           credits_engages: eng,
           credits_disponibles: Number(line.credits_disponibles ?? (notif - eng)),
           total_ordonnance: ord,
-          total_paiements: pai,
+          total_paiements: Math.min(pai, ord),
         });
-      });
-    }
-
-    if (store.ordonnancements && Array.isArray(store.ordonnancements) && store.ordonnancements.length > 0) {
-      store.ordonnancements.forEach((ord) => {
-        const dom = String(ord.budget_type || ord.domaine || 'INVESTISSEMENT').toUpperCase().includes('FONCT') ? 'FONCTIONNEMENT' : 'INVESTISSEMENT';
-        const art = ord.article || ord.art || '';
-        const par = ord.paragraphe || ord.par || '';
-        const lig = ord.ligne || ord.ligne_budgetaire || ord.lig || '';
-        const imp = (art && par && lig) ? `${art} / ${par} / ${lig}` : null;
-
-        let sumOrd = 0;
-        if (ord.ordres && Array.isArray(ord.ordres) && ord.ordres.length > 0) {
-          sumOrd = ord.ordres.reduce((s, o) => s + Number(o.montant || 0), 0);
-        } else {
-          const mRep = Number(ord.paiement_reports || (String(ord.creance || '').includes('Report') ? ord.montant_brut : 0));
-          const mCons = Number(ord.credit_consolide || (String(ord.creance || '').includes('Consolid') ? ord.montant_brut : 0));
-          const mNeuf = Number(ord.credit_neuf || (String(ord.creance || '').includes('Neuf') ? ord.montant_brut : 0));
-          const mRas = Number(ord.ras_total || (Number(ord.retenue_tva || 0) + Number(ord.retenue_ias || 0) + Number(ord.autres_retenues || 0)));
-          const mRap = Number(ord.rap_total || (String(ord.creance || '').includes('Reste') ? ord.net_a_payer : 0));
-          sumOrd = (mRep + mCons + mNeuf + mRas + mRap) || Number(ord.montant_brut || ord.net_a_payer || 0);
-        }
-
-        if (imp) {
-          const key = getLineKey(dom, imp);
-          if (map.has(key)) {
-            const row = map.get(key);
-            if (row.total_ordonnance === 0 && sumOrd > 0) {
-              row.total_ordonnance = sumOrd;
-              row.total_paiements = sumOrd;
-            }
-          }
-        }
       });
     }
 
     if (store.lines && Array.isArray(store.lines)) {
       store.lines.forEach((line) => {
-        const lineDom = String(line.domaine || line.notification?.domaine || 'INVESTISSEMENT').toUpperCase();
+        const lineDom = normDom(line.domaine || line.notification?.domaine);
         const imp = line.imputation || `${line.article || ''} / ${line.paragraphe || ''} / ${line.ligne_budgetaire || ''}`;
         const key = getLineKey(lineDom, imp);
         const reports = Number(line.reports || 0);
@@ -430,11 +399,11 @@ export default function DashboardDirecteur() {
         const netReports = Math.max(0, reports - dimReports);
         const netNeufs = Math.max(0, neufs - dimNeufs);
         const netEngs = Math.max(0, engs - dimEngs);
-        const netCredits = Number(line.total_credits) || (netReports + netNeufs + netEngs);
+        const netCredits = Number(line.total_credits ?? (netReports + netNeufs + netEngs));
         const actualEngageNeuf = Number(line.engage_neuf || 0);
         const eng = Number(line.credits_engages ?? (lineDom === 'FONCTIONNEMENT' ? reports - dimReports + actualEngageNeuf : reports + engs + actualEngageNeuf));
-        const ord = Number(line.total_ordonnance || 0);
-        const pai = Number(line.total_paiements || line.total_paiement || ord || 0);
+        const ord = Number(line.total_ordonnance ?? 0);
+        const pai = Number(line.total_paiements ?? line.total_paiement ?? 0);
 
         if (!map.has(key)) {
           map.set(key, {
@@ -445,7 +414,7 @@ export default function DashboardDirecteur() {
             credits_engages: eng,
             credits_disponibles: Math.max(0, netCredits - eng),
             total_ordonnance: ord,
-            total_paiements: pai,
+            total_paiements: Math.min(pai, ord),
           });
         }
       });
@@ -456,7 +425,7 @@ export default function DashboardDirecteur() {
         const notifDom = getNotifDomaine(notif);
         if (notif.lignes && notif.lignes.length > 0) {
           notif.lignes.forEach((line) => {
-            const lineDom = String(line.domaine || notifDom || 'INVESTISSEMENT').toUpperCase();
+            const lineDom = normDom(line.domaine || notifDom);
             const imp = `${line.article || ''} / ${line.paragraphe || ''} / ${line.ligne_budgetaire || ''}`;
             const key = getLineKey(lineDom, imp);
             if (!map.has(key)) {
@@ -469,7 +438,7 @@ export default function DashboardDirecteur() {
               const netReports = Math.max(0, reports - dimReports);
               const netNeufs = Math.max(0, neufs - dimNeufs);
               const netEngs = Math.max(0, engs - dimEngs);
-              const lineCredits = Number(line.total_credits) || (netReports + netNeufs + netEngs);
+              const lineCredits = Number(line.total_credits ?? (netReports + netNeufs + netEngs));
               const lineEngages = Number(line.credits_engages ?? (lineDom === 'FONCTIONNEMENT' ? reports - dimReports : reports + engs));
               map.set(key, {
                 domaine: lineDom,
@@ -483,6 +452,51 @@ export default function DashboardDirecteur() {
               });
             }
           });
+        }
+      });
+    }
+
+    // Fallback ordonnancements uniquement si /dashboard/budget n'a renvoyé aucune ligne agrégée
+    if (!hasBudgetLines && store.ordonnancements && Array.isArray(store.ordonnancements) && store.ordonnancements.length > 0) {
+      const isCancelled = (s) => ['rejeté', 'rejete', 'annulé', 'annule'].includes(String(s || '').toLowerCase().trim());
+      const isPaidStatus = (s) => ['payé', 'paye', 'clôturé', 'cloture'].includes(String(s || '').toLowerCase().trim());
+
+      store.ordonnancements.forEach((ord) => {
+        if (isCancelled(ord.statut)) return;
+
+        const dom = normDom(ord.budget_type || ord.domaine);
+        const art = ord.article || ord.art || '';
+        const par = ord.paragraphe || ord.par || '';
+        const lig = ord.ligne || ord.ligne_budgetaire || ord.lig || '';
+        const imp = (art && par && lig) ? `${art} / ${par} / ${lig}` : null;
+
+        let sumOrd = 0;
+        let sumPai = 0;
+        const dossierPaye = isPaidStatus(ord.statut);
+
+        if (ord.ordres && Array.isArray(ord.ordres) && ord.ordres.length > 0) {
+          const activeOrdres = ord.ordres.filter((o) => !isCancelled(o.statut));
+          sumOrd = activeOrdres.reduce((s, o) => s + Number(o.montant || 0), 0);
+          sumPai = activeOrdres
+            .filter((o) => dossierPaye || isPaidStatus(o.statut))
+            .reduce((s, o) => s + Number(o.montant || 0), 0);
+        } else {
+          const mRep = Number(ord.paiement_reports || (String(ord.creance || '').includes('Report') ? ord.montant_brut : 0));
+          const mCons = Number(ord.credit_consolide || (String(ord.creance || '').includes('Consolid') ? ord.montant_brut : 0));
+          const mNeuf = Number(ord.credit_neuf || (String(ord.creance || '').includes('Neuf') ? ord.montant_brut : 0));
+          const mRas = Number(ord.ras_total || (Number(ord.retenue_tva || 0) + Number(ord.retenue_ias || 0) + Number(ord.autres_retenues || 0)));
+          const mRap = Number(ord.rap_total || (String(ord.creance || '').includes('Reste') ? ord.net_a_payer : 0));
+          sumOrd = (mRep + mCons + mNeuf + mRas + mRap) || Number(ord.montant_brut || ord.net_a_payer || 0);
+          sumPai = dossierPaye ? sumOrd : 0;
+        }
+
+        if (imp) {
+          const key = getLineKey(dom, imp);
+          if (map.has(key)) {
+            const row = map.get(key);
+            row.total_ordonnance += sumOrd;
+            row.total_paiements = Math.min(row.total_paiements + sumPai, row.total_ordonnance);
+          }
         }
       });
     }
@@ -520,7 +534,7 @@ export default function DashboardDirecteur() {
       taux_paiement_engagement: pct(row.total_paiements, row.credits_engages),
       taux_paiement_notifie: pct(row.total_paiements, row.total_credits),
     }));
-  }, [store.budget, store.lines, store.notifications]);
+  }, [store.budget, store.lines, store.notifications, store.ordonnancements]);
 
   const budgetColumns = ['DOMAINE', 'LIGNE BUDGÉTAIRE', 'NOTIFIÉ', 'TOTAL ENGAGEMENTS', 'TAUX ENG.', 'DISPONIBLE', 'TOTAL ORDONNANCEMENT', 'TAUX ORD./ENG.', 'TAUX ORD./NOT.', 'TOTAL PAIEMENTS', 'TAUX PAI./ORD.', 'TAUX PAI./ENG.', 'TAUX PAI./NOT.'];
 

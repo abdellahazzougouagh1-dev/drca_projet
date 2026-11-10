@@ -28,6 +28,12 @@ class Engagement extends Model
         'date_commencement' => 'date',
     ];
 
+    protected static function booted(): void
+    {
+        static::saved(fn () => NotificationLigne::clearBudgetCache());
+        static::deleted(fn () => NotificationLigne::clearBudgetCache());
+    }
+
     public function getMontantEngagementAttribute()
     {
         return $this->attributes['montant_global'] ?? null;

@@ -56,6 +56,12 @@ class RegistreEngagement extends Model
         'montant_engager_neuf' => 'decimal:2',
     ];
 
+    protected static function booted(): void
+    {
+        static::saved(fn () => NotificationLigne::clearBudgetCache());
+        static::deleted(fn () => NotificationLigne::clearBudgetCache());
+    }
+
     public function consultation()
     {
         return $this->belongsTo(Consultation::class);

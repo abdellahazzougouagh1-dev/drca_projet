@@ -12,8 +12,11 @@ use App\Services\MarcheDocumentBuilder;
 use App\Services\RapportPresentationBuilder;
 use App\Services\MarcheArchiveBuilder;
 use App\Services\MarcheWorkflowService;
+use App\Services\BudgetHierarchyService;
+use App\Models\NotificationLigne;
 use Illuminate\Http\Request;
-use Illuminate\Validation\ValidationException; 
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Barryvdh\DomPDF\Facade\Pdf;
 
 class MarcheController extends Controller
@@ -205,46 +208,150 @@ class MarcheController extends Controller
             $data['montant'] = $decision?->montant_propose ?? 0;
         }
 
-        if (!empty($data['id'])) {
-            $marche = Marche::findOrFail($data['id']);
-            $marche->update($data);
-        } else {
-            $marche = Marche::create($data);
-        }
+        return DB::transaction(function () use ($request, $data, $bordereauItems) {
+            $existingMarche = !empty($data['id'])
+                ? Marche::with(['registreEngagement', 'notificationLigne.notification', 'aoo', 'lot'])->lockForUpdate()->findOrFail($data['id'])
+                : null;
 
-        if ($marche->fournisseur_id && $request->filled('fournisseur_data')) {
-            $fournisseur = Fournisseur::find($marche->fournisseur_id);
-            if ($fournisseur) {
-                $fData = $request->input('fournisseur_data', []);
-                $allowed = [
-                    'raison_sociale', 'ice', 'if', 'rc', 'forme_juridique', 'capital',
-                    'patente', 'cnss', 'adresse', 'ville', 'telephone', 'fax',
-                    'email', 'representant', 'banque', 'agence_bancaire', 'rib'
-                ];
-                $updateData = [];
-                foreach ($allowed as $fKey) {
-                    if (array_key_exists($fKey, $fData)) {
-                        $updateData[$fKey] = $fData[$fKey];
-                    }
+            $aooRef = !empty($data['aoo_id']) ? \App\Models\Aoo::with('notificationLigne.notification')->find($data['aoo_id']) : null;
+            $lotRef = !empty($data['lot_id']) ? \App\Models\Lot::with('notificationLigne.notification')->find($data['lot_id']) : null;
+
+            $domaine = $data['type_budget'] ?: ($existingMarche?->type_budget ?: ($aooRef?->type_budget ?: 'Investissement'));
+            $artVal = $data['article_budget'] ?? $existingMarche?->article_budget ?? $lotRef?->art ?? $aooRef?->art;
+            $parVal = $data['paragraphe_budget'] ?? $existingMarche?->paragraphe_budget ?? $lotRef?->par ?? $aooRef?->par;
+            $ligVal = $data['ligne_budget'] ?? $existingMarche?->ligne_budget ?? $lotRef?->lig ?? $aooRef?->lig;
+            $notifLigneIdInput = $data['notification_ligne_id']
+                ?? $existingMarche?->notification_ligne_id
+                ?? $lotRef?->notification_ligne_id
+                ?? $aooRef?->notification_ligne_id;
+            $exercice = $data['exercice']
+                ?: ($existingMarche?->exercice
+                ?: ($aooRef?->notificationLigne?->notification?->exercice
+                ?: ($lotRef?->notificationLigne?->notification?->exercice ?: date('Y'))));
+
+            $resolvedLigne = BudgetHierarchyService::resolveNotificationLigneForDossier(
+                $notifLigneIdInput ? (int) $notifLigneIdInput : null,
+                $artVal,
+                $parVal,
+                $ligVal,
+                $domaine,
+                $exercice
+            );
+
+            if ($resolvedLigne) {
+                $data['notification_ligne_id'] = $resolvedLigne->id;
+                $data['article_budget'] = $data['article_budget'] ?: $resolvedLigne->article;
+                $data['paragraphe_budget'] = $data['paragraphe_budget'] ?: $resolvedLigne->paragraphe;
+                $data['ligne_budget'] = $data['ligne_budget'] ?: $resolvedLigne->ligne_budgetaire;
+            }
+
+            $effectiveStatut = $data['statut'] ?? $existingMarche?->statut ?? '';
+            $activeOrd = $existingMarche ? BudgetHierarchyService::getActiveOrdonnancedForMarche($existingMarche->id) : 0.0;
+            $isCancelledOrRejected = BudgetHierarchyService::isOrdonnancementCancelledOrRejected($effectiveStatut);
+
+            if ($isCancelledOrRejected) {
+                if ($activeOrd > BudgetHierarchyService::EPSILON) {
+                    throw ValidationException::withMessages([
+                        'statut' => [
+                            "Règle budgétaire (Ordonnancement <= Engagement) : impossible d'annuler ou rejeter un marché ayant des ordonnancements actifs ("
+                            . BudgetHierarchyService::fmt($activeOrd) . " DH).",
+                        ],
+                    ]);
                 }
-                if (!empty($updateData)) {
-                    $fournisseur->update($updateData);
+            } else {
+                $engagedStatuses = [
+                    'engagement_validee',
+                    'liquidation_en_cours',
+                    'liquidation_validee',
+                    'ordonnancement_en_cours',
+                    'ordonnancement_validee',
+                    'cloture',
+                    'cloture_en_cours',
+                    'cloture_validee',
+                ];
+
+                $hasExistingEngagement = $existingMarche && (!empty($existingMarche->num_engagement) || $existingMarche->registreEngagement !== null);
+                $isEngaging = !empty($data['num_engagement'])
+                    || $hasExistingEngagement
+                    || $request->filled('engagement_propose_cp')
+                    || in_array($effectiveStatut, $engagedStatuses, true);
+
+                if ($isEngaging) {
+                    $submittedEngagementCp = (float) ($data['engagement_propose_cp'] ?? 0);
+                    $existingRegAmount = (float) ($existingMarche?->registreEngagement?->montant_engager_neuf ?? $existingMarche?->registreEngagement?->montant_depense_neuf ?? 0);
+                    $existingCp = (float) ($existingMarche?->engagement_propose_cp ?? 0);
+                    $montantUnchanged = $existingMarche && abs((float) $data['montant'] - (float) $existingMarche->montant) <= 0.01;
+
+                    if ($submittedEngagementCp > 0) {
+                        $proposedEngage = round($submittedEngagementCp, 2);
+                    } elseif ($existingCp > 0) {
+                        $proposedEngage = round($existingCp, 2);
+                    } elseif ($existingRegAmount > 0 && $montantUnchanged) {
+                        $proposedEngage = round($existingRegAmount, 2);
+                    } else {
+                        $proposedEngage = round((float) $data['montant'] * 1.01, 2);
+                    }
+
+                    BudgetHierarchyService::assertEngagementWithinNotification([
+                        'exercice' => $exercice,
+                        'domaine' => $domaine,
+                        'art' => $data['article_budget'] ?? $artVal,
+                        'par' => $data['paragraphe_budget'] ?? $parVal,
+                        'lig' => $data['ligne_budget'] ?? $ligVal,
+                        'notification_ligne_id' => $data['notification_ligne_id'] ?? $notifLigneIdInput,
+                        'proposed_engage_neuf' => $proposedEngage,
+                        'credit_ouvert_cp' => $data['credit_budget_cp'] ?? $existingMarche?->credit_budget_cp,
+                        'depenses_anterieures_cp' => $data['depenses_engagees_cp'] ?? $existingMarche?->depenses_engagees_cp,
+                        'existing_active_ordonnanced' => $activeOrd,
+                        'exclude' => $existingMarche ? ['exclude_marche_id' => $existingMarche->id] : [],
+                        'error_field' => 'engagement_propose_cp',
+                    ]);
                 }
             }
-        }
 
-        if (!empty($data['lot_id']) && !empty($bordereauItems)) {
-            $this->syncBordereauItems($marche, $bordereauItems, (int) $data['lot_id']);
-        }
+            if ($existingMarche) {
+                $existingMarche->update($data);
+                $marche = $existingMarche;
+            } else {
+                $marche = Marche::create($data);
+            }
 
-        if (!empty($data['num_engagement'])) {
-            $this->syncRegistreEngagement($marche);
-        }
+            if ($marche->fournisseur_id && $request->filled('fournisseur_data')) {
+                $fournisseur = Fournisseur::find($marche->fournisseur_id);
+                if ($fournisseur) {
+                    $fData = $request->input('fournisseur_data', []);
+                    $allowed = [
+                        'raison_sociale', 'ice', 'if', 'rc', 'forme_juridique', 'capital',
+                        'patente', 'cnss', 'adresse', 'ville', 'telephone', 'fax',
+                        'email', 'representant', 'banque', 'agence_bancaire', 'rib'
+                    ];
+                    $updateData = [];
+                    foreach ($allowed as $fKey) {
+                        if (array_key_exists($fKey, $fData)) {
+                            $updateData[$fKey] = $fData[$fKey];
+                        }
+                    }
+                    if (!empty($updateData)) {
+                        $fournisseur->update($updateData);
+                    }
+                }
+            }
 
-        return response()->json([
-            'message' => 'Dossier Marche enregistre avec succes',
-            'data' => $marche->load(['aoo.notificationLigne', 'lot', 'fournisseur', 'bordereauItems.lotItem', 'notificationLigne']),
-        ], 200);
+            if (!empty($data['lot_id']) && !empty($bordereauItems)) {
+                $this->syncBordereauItems($marche, $bordereauItems, (int) $data['lot_id']);
+            }
+
+            if (!empty($data['num_engagement']) || !empty($marche->num_engagement) || $marche->registreEngagement()->exists()) {
+                $this->syncRegistreEngagement($marche, $request->filled('montant'), $request->filled('engagement_propose_cp'));
+            }
+
+            NotificationLigne::clearBudgetCache();
+
+            return response()->json([
+                'message' => 'Dossier Marche enregistre avec succes',
+                'data' => $marche->fresh(['aoo.notificationLigne', 'lot', 'fournisseur', 'bordereauItems.lotItem', 'notificationLigne']),
+            ], 200);
+        });
     }
 
     public function show($id)
@@ -270,11 +377,21 @@ class MarcheController extends Controller
             ->download('Rapport_Engagement_' . str_replace(['/', '\\'], '_', $marche->num_marche) . '.pdf');
     }
 
-    private function syncRegistreEngagement(Marche $marche): void
+    private function syncRegistreEngagement(Marche $marche, bool $montantChanged = true, bool $engagementCpProvided = false): void
     {
+        $marche->loadMissing(['notificationLigne', 'registreEngagement', 'aoo', 'fournisseur']);
         $creditConsolide = $marche->notificationLigne
             ? (float) ($marche->notificationLigne->reports ?? 0) + (float) ($marche->notificationLigne->credits_neufs ?? 0)
             : null;
+
+        $existingRegAmount = (float) ($marche->registreEngagement?->montant_engager_neuf ?? 0);
+        if ((float) ($marche->engagement_propose_cp ?? 0) > 0) {
+            $montantEngagerNeuf = (float) $marche->engagement_propose_cp;
+        } elseif (!$engagementCpProvided && !$montantChanged && $existingRegAmount > 0) {
+            $montantEngagerNeuf = $existingRegAmount;
+        } else {
+            $montantEngagerNeuf = (float) $marche->montant_total_engagement;
+        }
 
         $marche->registreEngagement()->updateOrCreate(
             ['marche_id' => $marche->id],
@@ -282,8 +399,8 @@ class MarcheController extends Controller
                 'consultation_id' => null,
                 'numero_ordre' => (int) ($marche->registreEngagement?->numero_ordre
                     ?? (\App\Models\RegistreEngagement::max('numero_ordre') + 1)),
-                'date_engagement' => $marche->date_engagement,
-                'numero_rubrique' => $marche->num_engagement,
+                'date_engagement' => $marche->date_engagement ?? $marche->registreEngagement?->date_engagement,
+                'numero_rubrique' => $marche->num_engagement ?: ($marche->registreEngagement?->numero_rubrique ?? ''),
                 'mode_engagement' => $marche->forme_engagement ?: 'Marché',
                 'reference' => $marche->num_marche,
                 'reference_2' => $marche->aoo?->num_aoo,
@@ -300,7 +417,7 @@ class MarcheController extends Controller
                 'depenses_anterieures_ce' => $marche->depenses_engagees_ce,
                 'montant_depense_neuf' => $marche->montant,
                 'interets_moratoires' => $marche->interet_moratoire,
-                'montant_engager_neuf' => $marche->engagement_propose_cp ?: $marche->montant_total_engagement,
+                'montant_engager_neuf' => $montantEngagerNeuf,
                 'objet' => $marche->objet_marche,
                 'beneficiaire' => $marche->fournisseur?->raison_sociale ?: $marche->titulaire,
             ]
@@ -315,7 +432,23 @@ class MarcheController extends Controller
 
     public function destroy($id)
     {
-        Marche::findOrFail($id)->delete();
+        $marche = Marche::findOrFail($id);
+        $activeOrd = BudgetHierarchyService::getActiveOrdonnancedForMarche($marche->id);
+        if ($activeOrd > BudgetHierarchyService::EPSILON) {
+            throw ValidationException::withMessages([
+                'marche' => [
+                    "Suppression impossible : ce marché est couvert par des ordonnancements actifs ("
+                    . BudgetHierarchyService::fmt($activeOrd) . " DH).",
+                ],
+            ]);
+        }
+
+        DB::transaction(function () use ($marche) {
+            $marche->registreEngagement()?->delete();
+            $marche->delete();
+            NotificationLigne::clearBudgetCache();
+        });
+
         return response()->json(['message' => 'Marche supprime'], 200);
     }
 
@@ -334,7 +467,7 @@ class MarcheController extends Controller
 
     public function transitionPhase(Request $request, $id)
     {
-        $marche = Marche::findOrFail($id);
+        $marche = Marche::with(['registreEngagement', 'notificationLigne.notification'])->findOrFail($id);
         $phase = $request->input('phase');
         $validated = (bool) $request->input('validated', false);
 
@@ -343,8 +476,55 @@ class MarcheController extends Controller
             return response()->json(['error' => 'Phase non valide'], 422);
         }
 
-        $marche->statut = MarcheWorkflowService::resolveStatus($phase, $validated);
-        $marche->save();
+        $newStatus = MarcheWorkflowService::resolveStatus($phase, $validated);
+
+        DB::transaction(function () use ($marche, $phase, $validated, $newStatus) {
+            $lockedMarche = Marche::with(['registreEngagement', 'notificationLigne.notification'])
+                ->lockForUpdate()
+                ->findOrFail($marche->id);
+
+            $activeOrd = BudgetHierarchyService::getActiveOrdonnancedForMarche($lockedMarche->id);
+
+            if ($phase === 'consultation' && $activeOrd > BudgetHierarchyService::EPSILON) {
+                throw ValidationException::withMessages([
+                    'statut' => [
+                        "Règle budgétaire (Ordonnancement <= Engagement) : impossible de rétrograder ce marché en phase de consultation alors qu'il possède des ordonnancements actifs ("
+                        . BudgetHierarchyService::fmt($activeOrd) . " DH).",
+                    ],
+                ]);
+            }
+
+            if (($phase === 'engagement' && $validated) || in_array($phase, ['liquidation', 'ordonnancement'], true)) {
+                $proposed = (float) ($lockedMarche->registreEngagement?->montant_engager_neuf
+                    ?? (((float) ($lockedMarche->engagement_propose_cp ?? 0) > 0)
+                        ? (float) $lockedMarche->engagement_propose_cp
+                        : (float) $lockedMarche->montant_total_engagement));
+
+                $exercice = $lockedMarche->exercice
+                    ?: ($lockedMarche->notificationLigne?->notification?->exercice ?: date('Y'));
+
+                BudgetHierarchyService::assertEngagementWithinNotification([
+                    'exercice' => $exercice,
+                    'domaine' => $lockedMarche->type_budget ?: 'Investissement',
+                    'art' => $lockedMarche->article_budget,
+                    'par' => $lockedMarche->paragraphe_budget,
+                    'lig' => $lockedMarche->ligne_budget,
+                    'notification_ligne_id' => $lockedMarche->notification_ligne_id,
+                    'proposed_engage_neuf' => round($proposed, 2),
+                    'credit_ouvert_cp' => $lockedMarche->credit_budget_cp,
+                    'depenses_anterieures_cp' => $lockedMarche->depenses_engagees_cp,
+                    'existing_active_ordonnanced' => $activeOrd,
+                    'exclude' => ['exclude_marche_id' => $lockedMarche->id],
+                    'error_field' => 'statut',
+                ]);
+            }
+
+            $lockedMarche->statut = $newStatus;
+            $lockedMarche->save();
+            NotificationLigne::clearBudgetCache();
+        });
+
+        $marche->refresh();
 
         return response()->json([
             'message' => 'Phase mise à jour',

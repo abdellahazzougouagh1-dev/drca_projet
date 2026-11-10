@@ -12,6 +12,7 @@ use App\Models\RegistreEngagement;
 use App\Services\FicheSuiviBuilder;
 use App\Services\LettreNotificationBuilder;
 use App\Services\LotEstimationBuilder;
+use App\Services\BudgetHierarchyService;
 use App\Support\AooDocumentHelper;
 use App\Support\PdfFooterHelper;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -242,13 +243,60 @@ class AooController extends Controller
                 ]);
             }
 
+            $aoo->load(['notificationLigne.notification', 'registreEngagement']);
+            $exerciceAoo = $aoo->notificationLigne?->notification?->exercice
+                ?: ($aoo->date_preparation?->format('Y') ?: date('Y'));
+            $domaineAoo = $aoo->type_budget ?: 'Investissement';
+
+            $resolvedAooLigne = BudgetHierarchyService::resolveNotificationLigneForDossier(
+                $aoo->notification_ligne_id,
+                $aoo->art,
+                $aoo->par,
+                $aoo->lig,
+                $domaineAoo,
+                $exerciceAoo
+            );
+            if ($resolvedAooLigne && (int) $aoo->notification_ligne_id !== (int) $resolvedAooLigne->id) {
+                $aoo->notification_ligne_id = $resolvedAooLigne->id;
+                $aoo->art = $aoo->art ?: $resolvedAooLigne->article;
+                $aoo->par = $aoo->par ?: $resolvedAooLigne->paragraphe;
+                $aoo->lig = $aoo->lig ?: $resolvedAooLigne->ligne_budgetaire;
+                $aoo->save();
+                $aoo->load(['notificationLigne.notification']);
+                $exerciceAoo = $aoo->notificationLigne?->notification?->exercice ?: $exerciceAoo;
+            }
+
             $aoo->refreshCreditsOuvertsDepuisNotifications();
+
+            $isCancelledOrRejected = BudgetHierarchyService::isOrdonnancementCancelledOrRejected($aoo->statut);
+            $hasAooEngagement = !empty($aoo->numero_engagement)
+                || $aoo->registreEngagement !== null
+                || (float) ($aoo->montant_engager_neuf ?? 0) > 0;
+
+            if (!$isCancelledOrRejected && $hasAooEngagement) {
+                $proposedAoo = (float) ($aoo->montant_engager_neuf ?? $aoo->montant_depense_neuf ?? 0);
+                BudgetHierarchyService::assertEngagementWithinNotification([
+                    'exercice' => $exerciceAoo,
+                    'domaine' => $domaineAoo,
+                    'art' => $aoo->art,
+                    'par' => $aoo->par,
+                    'lig' => $aoo->lig,
+                    'notification_ligne_id' => $aoo->notification_ligne_id,
+                    'proposed_engage_neuf' => round(max(0.0, $proposedAoo), 2),
+                    'credit_ouvert_cp' => $aoo->credit_ouvert_cp,
+                    'depenses_anterieures_cp' => $aoo->depenses_anterieures_cp,
+                    'exclude' => ['exclude_aoo_id' => $aoo->id],
+                    'error_field' => 'montant_engager_neuf',
+                ]);
+            }
 
             // La fiche est saisie au niveau de l'AOO : elle doit donc alimenter
             // le registre sans attendre la création d'un marché.
-            if ($aoo->numero_engagement) {
+            if ($aoo->numero_engagement || $aoo->registreEngagement()->exists()) {
                 $this->syncRegistreEngagement($aoo);
             }
+
+            \App\Models\NotificationLigne::clearBudgetCache();
 
             return $aoo->load(['registreEngagement', 'concurrents.fournisseur', 'lots.items', 'lots.notificationLigne']);
         });
@@ -326,7 +374,19 @@ class AooController extends Controller
 
     public function destroy($id)
     {
-        $aoo = Aoo::findOrFail($id);
+        $aoo = Aoo::with('marches')->findOrFail($id);
+        foreach ($aoo->marches as $m) {
+            $activeOrd = BudgetHierarchyService::getActiveOrdonnancedForMarche($m->id);
+            if ($activeOrd > BudgetHierarchyService::EPSILON) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'aoo' => [
+                        "Suppression impossible : le marché {$m->num_marche} de cet AOO possède des ordonnancements actifs ("
+                        . BudgetHierarchyService::fmt($activeOrd) . " DH).",
+                    ],
+                ]);
+            }
+        }
+
         DB::transaction(function () use ($aoo) {
             $aoo->lots()->each(function ($lot) {
                 $lot->items()->delete();
@@ -338,6 +398,7 @@ class AooController extends Controller
             $aoo->registreEngagement()->delete();
             $aoo->marches()->delete();
             $aoo->delete();
+            \App\Models\NotificationLigne::clearBudgetCache();
         });
         return response()->json(['message' => 'Dossier supprime avec succes'], 200);
     }

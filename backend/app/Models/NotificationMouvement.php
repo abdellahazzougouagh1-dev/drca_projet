@@ -28,6 +28,12 @@ class NotificationMouvement extends Model
         'montant' => 'decimal:2',
     ];
 
+    protected static function booted(): void
+    {
+        static::saved(fn () => NotificationLigne::clearBudgetCache());
+        static::deleted(fn () => NotificationLigne::clearBudgetCache());
+    }
+
     public function notification(): BelongsTo
     {
         return $this->belongsTo(Notification::class);
