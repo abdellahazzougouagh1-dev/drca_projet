@@ -1,15 +1,21 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   Users, CheckCircle2, XCircle, Loader2, X, RefreshCw,
-  Search, ShieldAlert, ShieldCheck, UserCheck, UserX, UserCheck2,
-  Calendar, Mail, User
+  Search, ShieldAlert, ShieldCheck, UserCheck, UserX,
+  Calendar, Mail, User, Trash2, Lock, AlertTriangle
 } from 'lucide-react';
 import api from '../api/axios';
+import { useAuth } from '../context/AuthContext';
 
 export default function GestionUtilisateursModal({ isOpen, onClose }) {
+  const { currentUser } = useAuth();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState(null);
+  const [deletingId, setDeletingId] = useState(null);
+  const [confirmDeleteUser, setConfirmDeleteUser] = useState(null);
+  const [deleteError, setDeleteError] = useState('');
+  const [feedbackMessage, setFeedbackMessage] = useState('');
   const [error, setError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL'); // 'ALL' | 'ACTIVE' | 'INACTIVE'
@@ -20,7 +26,7 @@ export default function GestionUtilisateursModal({ isOpen, onClose }) {
     try {
       const res = await api.get('/users');
       setUsers(Array.isArray(res.data) ? res.data : []);
-    } catch (err) {
+    } catch {
       setError('Impossible de récupérer la liste des utilisateurs.');
     } finally {
       setLoading(false);
@@ -28,27 +34,95 @@ export default function GestionUtilisateursModal({ isOpen, onClose }) {
   };
 
   useEffect(() => {
-    if (isOpen) {
-      fetchUsers();
-    }
+    if (!isOpen) return;
+    let cancelled = false;
+    api
+      .get('/users')
+      .then((res) => {
+        if (!cancelled) {
+          setUsers(Array.isArray(res.data) ? res.data : []);
+          setError('');
+          setConfirmDeleteUser(null);
+          setDeleteError('');
+          setFeedbackMessage('');
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setError('Impossible de récupérer la liste des utilisateurs.');
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [isOpen]);
+
+  const handleCloseModal = () => {
+    setConfirmDeleteUser(null);
+    setDeleteError('');
+    setFeedbackMessage('');
+    setError('');
+    onClose?.();
+  };
 
   const handleToggle = async (id) => {
     setUpdatingId(id);
+    setError('');
+    setFeedbackMessage('');
     try {
       const res = await api.patch(`/users/${id}/toggle-status`);
       setUsers((prev) =>
         prev.map((u) => (u.id === id ? { ...u, is_active: res.data.user.is_active } : u))
       );
     } catch (err) {
-      alert("Erreur lors de la modification de l'état du compte.");
+      setError(err?.response?.data?.message || "Erreur lors de la modification de l'état du compte.");
     } finally {
       setUpdatingId(null);
     }
   };
 
+  const handleConfirmDelete = async () => {
+    if (!confirmDeleteUser) return;
+
+    const targetRole = (confirmDeleteUser.role || '').trim().toLowerCase();
+    const isTargetCurrent = currentUser?.id != null && Number(currentUser.id) === Number(confirmDeleteUser.id);
+    if (targetRole === 'directeur') {
+      setDeleteError('Impossible de supprimer un compte Directeur.');
+      return;
+    }
+    if (isTargetCurrent) {
+      setDeleteError('Vous ne pouvez pas supprimer votre propre compte.');
+      return;
+    }
+
+    setDeletingId(confirmDeleteUser.id);
+    setDeleteError('');
+    setError('');
+    setFeedbackMessage('');
+
+    try {
+      await api.delete(`/users/${confirmDeleteUser.id}`);
+      const deletedLabel = confirmDeleteUser.name || confirmDeleteUser.email;
+      setUsers((prev) => prev.filter((item) => item.id !== confirmDeleteUser.id));
+      setFeedbackMessage(`Le compte « ${deletedLabel} » a été supprimé avec succès.`);
+      setConfirmDeleteUser(null);
+    } catch (err) {
+      setDeleteError(
+        err?.response?.data?.message || 'Impossible de supprimer cet utilisateur.'
+      );
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
   const activeCount = useMemo(() => users.filter((u) => Boolean(u.is_active)).length, [users]);
-  const inactiveCount = useMemo(() => users.filter((u) => !Boolean(u.is_active)).length, [users]);
+  const inactiveCount = useMemo(() => users.filter((u) => !u.is_active).length, [users]);
 
   const filteredUsers = useMemo(() => {
     return users.filter((u) => {
@@ -60,7 +134,7 @@ export default function GestionUtilisateursModal({ isOpen, onClose }) {
       if (!matchesSearch) return false;
 
       if (statusFilter === 'ACTIVE') return Boolean(u.is_active);
-      if (statusFilter === 'INACTIVE') return !Boolean(u.is_active);
+      if (statusFilter === 'INACTIVE') return !u.is_active;
       return true;
     });
   }, [users, searchQuery, statusFilter]);
@@ -69,7 +143,7 @@ export default function GestionUtilisateursModal({ isOpen, onClose }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 md:p-6 bg-slate-950/70 backdrop-blur-xs animate-in fade-in duration-200">
-      <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full h-full max-w-[99vw] max-h-[96vh] overflow-hidden flex flex-col transition-all">
+      <div className="relative bg-white rounded-2xl shadow-2xl border border-slate-200 w-full h-full max-w-[99vw] max-h-[96vh] overflow-hidden flex flex-col transition-all">
         {/* Header */}
         <div className="px-6 py-4 border-b border-slate-200 flex flex-wrap items-center justify-between gap-4 bg-slate-50/80 shrink-0">
           <div className="flex items-center gap-3.5">
@@ -114,7 +188,7 @@ export default function GestionUtilisateursModal({ isOpen, onClose }) {
               <RefreshCw size={18} className={loading ? 'animate-spin text-blue-600' : ''} />
             </button>
             <button
-              onClick={onClose}
+              onClick={handleCloseModal}
               className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-200/70 rounded-xl transition-colors"
               title="Fermer"
             >
@@ -191,6 +265,23 @@ export default function GestionUtilisateursModal({ isOpen, onClose }) {
             </div>
           )}
 
+          {feedbackMessage && (
+            <div className="mb-4 p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-xs font-semibold flex items-center justify-between gap-2">
+              <span className="flex items-center gap-2">
+                <CheckCircle2 size={15} className="text-emerald-600 shrink-0" />
+                {feedbackMessage}
+              </span>
+              <button
+                type="button"
+                onClick={() => setFeedbackMessage('')}
+                className="text-emerald-700 hover:text-emerald-900 cursor-pointer"
+                aria-label="Fermer le message"
+              >
+                <X size={14} />
+              </button>
+            </div>
+          )}
+
           {loading ? (
             <div className="py-20 flex flex-col items-center justify-center text-slate-400 gap-3">
               <Loader2 size={32} className="animate-spin text-blue-600" />
@@ -210,7 +301,7 @@ export default function GestionUtilisateursModal({ isOpen, onClose }) {
             </div>
           ) : (
             <div className="overflow-x-auto border border-slate-200 rounded-2xl bg-white shadow-xs">
-              <table className="w-full min-w-[700px] text-left text-xs">
+              <table className="w-full min-w-[820px] text-left text-xs">
                 <thead className="bg-slate-50/90 border-b border-slate-200 text-slate-500 font-bold uppercase tracking-wider text-[11px]">
                   <tr>
                     <th className="px-6 py-3.5">Utilisateur</th>
@@ -224,6 +315,9 @@ export default function GestionUtilisateursModal({ isOpen, onClose }) {
                 <tbody className="divide-y divide-slate-100 font-medium">
                   {filteredUsers.map((u) => {
                     const isActive = Boolean(u.is_active);
+                    const isDirector = (u.role || '').trim().toLowerCase() === 'directeur';
+                    const isCurrentUser =
+                      currentUser?.id != null && Number(currentUser.id) === Number(u.id);
                     const initials = (u.name || 'U')
                       .split(' ')
                       .map((n) => n[0])
@@ -274,7 +368,7 @@ export default function GestionUtilisateursModal({ isOpen, onClose }) {
                         <td className="px-6 py-4">
                           <span
                             className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold capitalize ${
-                              u.role === 'directeur'
+                              isDirector
                                 ? 'bg-purple-100 text-purple-800 border border-purple-200'
                                 : 'bg-slate-100 text-slate-700 border border-slate-200'
                             }`}
@@ -322,30 +416,68 @@ export default function GestionUtilisateursModal({ isOpen, onClose }) {
                         </td>
 
                         <td className="px-6 py-4 text-right">
-                          <button
-                            type="button"
-                            disabled={updatingId === u.id}
-                            onClick={() => handleToggle(u.id)}
-                            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-xs inline-flex items-center gap-1.5 cursor-pointer ${
-                              isActive
-                                ? 'bg-red-50 text-red-700 border border-red-200 hover:bg-red-600 hover:text-white hover:shadow-md'
-                                : 'bg-emerald-600 text-white hover:bg-emerald-700 hover:shadow-md hover:shadow-emerald-600/20'
-                            }`}
-                          >
-                            {updatingId === u.id ? (
-                              <Loader2 size={14} className="animate-spin" />
-                            ) : isActive ? (
-                              <>
-                                <UserX size={14} />
-                                <span>Désactiver l'accès</span>
-                              </>
+                          <div className="inline-flex items-center justify-end gap-2">
+                            <button
+                              type="button"
+                              disabled={updatingId === u.id || deletingId === u.id}
+                              onClick={() => handleToggle(u.id)}
+                              className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-xs inline-flex items-center gap-1.5 cursor-pointer disabled:opacity-50 ${
+                                isActive
+                                  ? 'bg-red-50 text-red-700 border border-red-200 hover:bg-red-600 hover:text-white hover:shadow-md'
+                                  : 'bg-emerald-600 text-white hover:bg-emerald-700 hover:shadow-md hover:shadow-emerald-600/20'
+                              }`}
+                            >
+                              {updatingId === u.id ? (
+                                <Loader2 size={14} className="animate-spin" />
+                              ) : isActive ? (
+                                <>
+                                  <UserX size={14} />
+                                  <span>Désactiver l'accès</span>
+                                </>
+                              ) : (
+                                <>
+                                  <UserCheck size={14} />
+                                  <span>Accepter & Activer</span>
+                                </>
+                              )}
+                            </button>
+
+                            {!isDirector && !isCurrentUser ? (
+                              <button
+                                type="button"
+                                disabled={updatingId === u.id || deletingId === u.id}
+                                onClick={() => {
+                                  setDeleteError('');
+                                  setConfirmDeleteUser(u);
+                                }}
+                                title="Supprimer cet utilisateur"
+                                className="px-3 py-2 rounded-xl text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-600 hover:text-white hover:shadow-md transition-all shadow-xs inline-flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                              >
+                                {deletingId === u.id ? (
+                                  <Loader2 size={14} className="animate-spin" />
+                                ) : (
+                                  <Trash2 size={14} />
+                                )}
+                                <span>Supprimer</span>
+                              </button>
                             ) : (
-                              <>
-                                <UserCheck size={14} />
-                                <span>Accepter & Activer</span>
-                              </>
+                              <span
+                                title={
+                                  isDirector
+                                    ? 'Le compte Directeur ne peut pas être supprimé'
+                                    : 'Vous ne pouvez pas supprimer votre propre compte'
+                                }
+                                className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border select-none ${
+                                  isDirector
+                                    ? 'bg-purple-50 text-purple-700 border-purple-200'
+                                    : 'bg-slate-100 text-slate-500 border-slate-200'
+                                }`}
+                              >
+                                <Lock size={13} />
+                                <span>Protégé</span>
+                              </span>
                             )}
-                          </button>
+                          </div>
                         </td>
                       </tr>
                     );
@@ -363,12 +495,84 @@ export default function GestionUtilisateursModal({ isOpen, onClose }) {
           </div>
           <button
             type="button"
-            onClick={onClose}
+            onClick={handleCloseModal}
             className="px-5 py-2 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold text-xs transition shadow-xs"
           >
             Fermer
           </button>
         </div>
+
+        {/* Confirmation de suppression */}
+        {confirmDeleteUser && (
+          <div
+            onClick={(e) => {
+              if (e.target === e.currentTarget && deletingId === null) {
+                setConfirmDeleteUser(null);
+                setDeleteError('');
+              }
+            }}
+            className="absolute inset-0 z-20 flex items-center justify-center bg-slate-950/50 backdrop-blur-[2px] p-4"
+          >
+            <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl">
+              <div className="flex items-start gap-3.5">
+                <div className="shrink-0 rounded-xl bg-rose-100 p-2.5 text-rose-600">
+                  <AlertTriangle size={20} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-base font-extrabold text-slate-900">
+                    Supprimer cet utilisateur ?
+                  </h3>
+                  <p className="mt-1.5 text-xs text-slate-600 leading-relaxed">
+                    Vous êtes sur le point de supprimer définitivement le compte de{' '}
+                    <span className="font-bold text-slate-900">
+                      {confirmDeleteUser.name || 'cet utilisateur'}
+                    </span>{' '}
+                    (<span className="font-mono text-slate-700">{confirmDeleteUser.email}</span>).
+                    Cette action est irréversible.
+                  </p>
+                </div>
+              </div>
+
+              {deleteError && (
+                <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-2.5 text-xs font-semibold text-rose-700">
+                  {deleteError}
+                </div>
+              )}
+
+              <div className="mt-6 flex items-center justify-end gap-2.5">
+                <button
+                  type="button"
+                  disabled={deletingId !== null}
+                  onClick={() => {
+                    setConfirmDeleteUser(null);
+                    setDeleteError('');
+                  }}
+                  className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-100 disabled:opacity-50 cursor-pointer"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="button"
+                  disabled={deletingId !== null}
+                  onClick={handleConfirmDelete}
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-rose-600 px-4 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-rose-700 disabled:opacity-50 cursor-pointer"
+                >
+                  {deletingId !== null ? (
+                    <>
+                      <Loader2 size={14} className="animate-spin" />
+                      <span>Suppression...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 size={14} />
+                      <span>Confirmer la suppression</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

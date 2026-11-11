@@ -12,17 +12,28 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 class UserController extends Controller
 {
+    private function isDirector(?User $user): bool
+    {
+        return $user !== null && strtolower(trim((string) $user->role)) === 'directeur';
+    }
+
+    private function canManageUsers(?User $user): bool
+    {
+        return $user !== null && ($user->is_admin || $this->isDirector($user));
+    }
+
     public function update(Request $request, User $user)
     {
         $currentUser = $request->user();
 
-        if (! $currentUser || ! $currentUser->is_admin) {
+        if (! $this->canManageUsers($currentUser)) {
             abort(403, 'Accès interdit.');
         }
 
@@ -45,7 +56,7 @@ class UserController extends Controller
     {
         $currentUser = $request->user();
 
-        if (! $currentUser || ! $currentUser->is_admin) {
+        if (! $this->canManageUsers($currentUser)) {
             abort(403, 'Accès interdit.');
         }
 
@@ -55,10 +66,23 @@ class UserController extends Controller
             ], 422);
         }
 
-        $user->delete();
+        if ($this->isDirector($user)) {
+            return response()->json([
+                'message' => 'Impossible de supprimer un compte Directeur.',
+            ], 422);
+        }
+
+        DB::transaction(function () use ($user) {
+            $user->tokens()->delete();
+            if (Schema::hasTable('sessions')) {
+                DB::table('sessions')->where('user_id', $user->id)->delete();
+            }
+            $user->delete();
+        });
 
         return response()->json(null, 204);
     }
+
     public function index()
     {
         return response()->json(User::orderBy('created_at', 'desc')->get());
@@ -69,7 +93,7 @@ class UserController extends Controller
     {
         $currentUser = $request->user();
 
-        if (! $currentUser || ! $currentUser->is_admin) {
+        if (! $this->canManageUsers($currentUser)) {
             abort(403, 'Accès interdit.');
         }
 

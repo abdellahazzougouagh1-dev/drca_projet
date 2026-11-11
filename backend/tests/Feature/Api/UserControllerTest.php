@@ -5,6 +5,7 @@ namespace Tests\Feature\Api;
 use App\Models\User;
 use App\Notifications\PasswordResetCode;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
@@ -72,7 +73,7 @@ class UserControllerTest extends TestCase
     public function test_admin_can_delete_another_user(): void
     {
         $admin = User::factory()->create(['is_admin' => true]);
-        $user = User::factory()->create();
+        $user = User::factory()->create(['role' => 'gestionnaire']);
 
         Sanctum::actingAs($admin);
 
@@ -80,6 +81,32 @@ class UserControllerTest extends TestCase
 
         $response->assertNoContent();
         $this->assertDatabaseMissing('users', ['id' => $user->id]);
+    }
+
+    public function test_director_cannot_be_deleted_even_by_admin_or_another_director(): void
+    {
+        $actingDirector = User::factory()->create(['is_admin' => true, 'role' => 'directeur']);
+        $targetDirector = User::factory()->create(['is_admin' => false, 'role' => 'directeur']);
+
+        Sanctum::actingAs($actingDirector);
+
+        $response = $this->deleteJson('/api/users/' . $targetDirector->id);
+
+        $response->assertStatus(422)
+            ->assertJsonPath('message', 'Impossible de supprimer un compte Directeur.');
+        $this->assertDatabaseHas('users', ['id' => $targetDirector->id]);
+    }
+
+    public function test_director_without_is_admin_flag_can_delete_gestionnaire(): void
+    {
+        $director = User::factory()->create(['is_admin' => false, 'role' => 'directeur']);
+        $gestionnaire = User::factory()->create(['is_admin' => false, 'role' => 'gestionnaire']);
+
+        Sanctum::actingAs($director);
+
+        $this->deleteJson('/api/users/' . $gestionnaire->id)
+            ->assertNoContent();
+        $this->assertDatabaseMissing('users', ['id' => $gestionnaire->id]);
     }
 
     public function test_non_admin_cannot_toggle_user_status(): void
@@ -187,5 +214,74 @@ class UserControllerTest extends TestCase
         $this->assertIsArray($options);
         $this->assertArrayHasKey($attr, $options);
         $this->assertTrue($options[$attr]);
+    }
+
+    public function test_authenticated_user_can_update_their_own_profile_without_escalating_privileges(): void
+    {
+        $user = User::factory()->create([
+            'name' => 'Ancien Nom',
+            'email' => 'agent@example.com',
+            'role' => 'gestionnaire',
+            'is_admin' => false,
+            'is_active' => true,
+        ]);
+        $other = User::factory()->create(['email' => 'Autre@Example.com']);
+
+        Sanctum::actingAs($user);
+
+        // Case-insensitive duplicate email must be rejected
+        $this->postJson('/api/user/profile', [
+            'name' => 'Nouveau Nom',
+            'email' => 'autre@example.com',
+        ])->assertStatus(422);
+
+        // Valid update must persist profile fields while ignoring role/is_admin/is_active
+        $response = $this->postJson('/api/user/profile', [
+            'name' => 'Hamza Baadi',
+            'email' => 'hamza.new@example.com',
+            'telephone' => '0612345678',
+            'role' => 'directeur',
+            'is_admin' => true,
+            'is_active' => false,
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('user.name', 'Hamza Baadi')
+            ->assertJsonPath('user.email', 'hamza.new@example.com')
+            ->assertJsonPath('user.telephone', '0612345678');
+
+        $fresh = $user->fresh();
+        $this->assertSame('Hamza Baadi', $fresh->name);
+        $this->assertSame('hamza.new@example.com', $fresh->email);
+        $this->assertSame('0612345678', $fresh->telephone);
+        $this->assertSame('gestionnaire', $fresh->role);
+        $this->assertFalse((bool) $fresh->is_admin);
+        $this->assertTrue((bool) $fresh->is_active);
+    }
+
+    public function test_authenticated_user_can_upload_and_delete_profile_avatar(): void
+    {
+        $user = User::factory()->create();
+        Sanctum::actingAs($user);
+
+        // Non-image upload rejected
+        $fakeSvg = UploadedFile::fake()->createWithContent('avatar.svg', '<svg xmlns="http://www.w3.org/2000/svg"></svg>');
+        $this->post('/api/user/avatar', ['avatar' => $fakeSvg], ['Accept' => 'application/json'])
+            ->assertStatus(422);
+
+        // Valid PNG image accepted and stored as data URI
+        $pngBytes = base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==');
+        $validPng = UploadedFile::fake()->createWithContent('avatar.png', $pngBytes);
+
+        $uploadRes = $this->post('/api/user/avatar', ['avatar' => $validPng], ['Accept' => 'application/json']);
+        $uploadRes->assertOk();
+        $this->assertStringStartsWith('data:image/png;base64,', (string) $user->fresh()->avatar);
+
+        // Delete avatar
+        $this->deleteJson('/api/user/avatar')
+            ->assertOk()
+            ->assertJsonPath('user.avatar', null);
+
+        $this->assertNull($user->fresh()->avatar);
     }
 }

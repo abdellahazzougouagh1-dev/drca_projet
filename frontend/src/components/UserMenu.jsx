@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -20,7 +20,6 @@ import {
   User,
   Phone,
   Camera,
-  Trash2,
   Save,
 } from 'lucide-react';
 import api from '../api/axios';
@@ -139,9 +138,6 @@ export default function UserMenu({ className = '', profileContext = null }) {
   const [isPopupOpen, setIsPopupOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('profile');
 
-  // Notifications count
-  const [unreadCount] = useState(3);
-
   // Référence input fichier caché pour l'avatar
   const fileInputRef = useRef(null);
   const [avatarLoading, setAvatarLoading] = useState(false);
@@ -171,15 +167,6 @@ export default function UserMenu({ className = '', profileContext = null }) {
   const [passwordError, setPasswordError] = useState('');
   const [passwordSuccess, setPasswordSuccess] = useState('');
 
-  // Synchroniser les champs du formulaire lorsque currentUser change ou à l'ouverture
-  useEffect(() => {
-    setProfileForm({
-      name: currentUser?.name || '',
-      email: currentUser?.email || '',
-      telephone: currentUser?.telephone || '',
-    });
-  }, [currentUser?.id, currentUser?.name, currentUser?.email, currentUser?.telephone, isPopupOpen]);
-
   // Compteur de renvoi du code SMTP
   useEffect(() => {
     if (codeCooldown > 0) {
@@ -190,6 +177,11 @@ export default function UserMenu({ className = '', profileContext = null }) {
 
   const openPopup = (defaultTab = 'profile') => {
     setActiveTab(defaultTab);
+    setProfileForm({
+      name: currentUser?.name || '',
+      email: currentUser?.email || '',
+      telephone: currentUser?.telephone || '',
+    });
     setAvatarError('');
     setAvatarSuccess('');
     setProfileError('');
@@ -217,7 +209,19 @@ export default function UserMenu({ className = '', profileContext = null }) {
         if (isPopupOpen) {
           closePopup();
         } else {
-          openPopup('profile');
+          setActiveTab('profile');
+          setProfileForm({
+            name: currentUser?.name || '',
+            email: currentUser?.email || '',
+            telephone: currentUser?.telephone || '',
+          });
+          setAvatarError('');
+          setAvatarSuccess('');
+          setProfileError('');
+          setProfileSuccess('');
+          setPasswordError('');
+          setPasswordSuccess('');
+          setIsPopupOpen(true);
         }
       } else if (e.key === 'Escape' && isPopupOpen) {
         closePopup();
@@ -225,7 +229,7 @@ export default function UserMenu({ className = '', profileContext = null }) {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isPopupOpen]);
+  }, [isPopupOpen, currentUser]);
 
   // Bloquer le scroll du body quand la popup est ouverte
   useEffect(() => {
@@ -271,26 +275,6 @@ export default function UserMenu({ className = '', profileContext = null }) {
       setAvatarSuccess(res.data?.message || 'Photo de profil mise à jour avec succès !');
     } catch (err) {
       setAvatarError(extractApiError(err, 'Impossible de téléverser la photo de profil.'));
-    } finally {
-      setAvatarLoading(false);
-    }
-  };
-
-  // Suppression de la photo de profil
-  const handleDeleteAvatar = async () => {
-    setAvatarError('');
-    setAvatarSuccess('');
-    try {
-      setAvatarLoading(true);
-      const res = await api.delete('/user/avatar');
-      if (res.data?.user) {
-        setCurrentUser(res.data.user);
-      } else if (currentUser) {
-        setCurrentUser({ ...currentUser, avatar: null });
-      }
-      setAvatarSuccess(res.data?.message || 'Photo de profil supprimée.');
-    } catch (err) {
-      setAvatarError(extractApiError(err, 'Impossible de supprimer la photo de profil.'));
     } finally {
       setAvatarLoading(false);
     }
@@ -445,108 +429,84 @@ export default function UserMenu({ className = '', profileContext = null }) {
           {/* EN-TÊTE CLAIR DU PROFIL + PHOTO DE PROFIL                       */}
           {/* =============================================================== */}
           <div className="shrink-0 border-b border-slate-200 bg-gradient-to-r from-slate-50 via-white to-emerald-50/70 px-5 sm:px-7 py-5">
-            <div className="flex items-center justify-between gap-3 mb-4">
-              <div className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-[#087F5B]">
-                <ShieldCheck size={14} />
-                <span>Mon Espace Profil</span>
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-5 min-w-0 flex-1">
+                {/* Avatar interactif */}
+                <div className="relative shrink-0 self-start sm:self-auto">
+                  <button
+                    type="button"
+                    onClick={() => !avatarLoading && fileInputRef.current?.click()}
+                    title="Cliquer pour changer la photo de profil"
+                    className="group relative flex h-22 w-22 items-center justify-center overflow-hidden rounded-2xl border-2 border-white bg-slate-100 shadow-lg ring-1 ring-slate-200 transition hover:ring-[#087F5B] cursor-pointer"
+                  >
+                    {userAvatar ? (
+                      <img
+                        src={userAvatar}
+                        alt={userName}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <div
+                        className={`grid h-full w-full place-items-center bg-gradient-to-br ${avatarGradient} text-2xl font-black text-white`}
+                      >
+                        {userInitials}
+                      </div>
+                    )}
+
+                    <div className="absolute inset-0 flex items-center justify-center bg-slate-950/45 text-white opacity-0 transition-opacity group-hover:opacity-100">
+                      {avatarLoading ? <Loader2 size={22} className="animate-spin" /> : <Camera size={22} />}
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => !avatarLoading && fileInputRef.current?.click()}
+                    disabled={avatarLoading}
+                    aria-label="Choisir une photo de profil"
+                    className="absolute -bottom-1.5 -right-1.5 flex h-8 w-8 items-center justify-center rounded-xl border-2 border-white bg-[#087F5B] text-white shadow-md transition hover:bg-[#06694A] disabled:opacity-60 cursor-pointer"
+                  >
+                    {avatarLoading ? <Loader2 size={14} className="animate-spin" /> : <Camera size={14} />}
+                  </button>
+
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/gif"
+                    onChange={handleAvatarSelected}
+                    className="hidden"
+                  />
+                </div>
+
+                {/* Infos identité + actions photo */}
+                <div className="min-w-0 flex-1">
+                  <h2 id="profile-modal-title" className="text-xl font-extrabold text-slate-900 tracking-tight break-words">
+                    {userName}
+                  </h2>
+                  <p className="mt-0.5 text-sm font-semibold text-[#087F5B]">{roleBadgeLabel}</p>
+                  <p className="mt-0.5 text-xs font-medium text-slate-500 break-all">{userEmail}</p>
+
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      disabled={avatarLoading}
+                      onClick={() => fileInputRef.current?.click()}
+                      className="inline-flex items-center gap-1.5 rounded-xl bg-[#087F5B] px-3 py-1.5 text-xs font-bold text-white shadow-xs transition hover:bg-[#06694A] disabled:opacity-50 cursor-pointer"
+                    >
+                      <Camera size={13} />
+                      <span>{userAvatar ? 'Changer la photo' : 'Ajouter une photo'}</span>
+                    </button>
+                  </div>
+                </div>
               </div>
+
               <button
                 type="button"
                 onClick={closePopup}
                 aria-label="Fermer la fenêtre de profil"
-                className="rounded-xl border border-slate-200 bg-white p-2 text-slate-500 shadow-2xs transition hover:border-slate-300 hover:bg-slate-100 hover:text-slate-800 cursor-pointer"
+                className="shrink-0 rounded-xl border border-slate-200 bg-white p-2 text-slate-500 shadow-2xs transition hover:border-slate-300 hover:bg-slate-100 hover:text-slate-800 cursor-pointer"
               >
                 <X size={18} />
               </button>
-            </div>
-
-            <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-5">
-              {/* Avatar interactif */}
-              <div className="relative shrink-0 self-start sm:self-auto">
-                <button
-                  type="button"
-                  onClick={() => !avatarLoading && fileInputRef.current?.click()}
-                  title="Cliquer pour changer la photo de profil"
-                  className="group relative flex h-22 w-22 items-center justify-center overflow-hidden rounded-2xl border-2 border-white bg-slate-100 shadow-lg ring-1 ring-slate-200 transition hover:ring-[#087F5B] cursor-pointer"
-                >
-                  {userAvatar ? (
-                    <img
-                      src={userAvatar}
-                      alt={userName}
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    <div
-                      className={`grid h-full w-full place-items-center bg-gradient-to-br ${avatarGradient} text-2xl font-black text-white`}
-                    >
-                      {userInitials}
-                    </div>
-                  )}
-
-                  <div className="absolute inset-0 flex items-center justify-center bg-slate-950/45 text-white opacity-0 transition-opacity group-hover:opacity-100">
-                    {avatarLoading ? <Loader2 size={22} className="animate-spin" /> : <Camera size={22} />}
-                  </div>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => !avatarLoading && fileInputRef.current?.click()}
-                  disabled={avatarLoading}
-                  aria-label="Choisir une photo de profil"
-                  className="absolute -bottom-1.5 -right-1.5 flex h-8 w-8 items-center justify-center rounded-xl border-2 border-white bg-[#087F5B] text-white shadow-md transition hover:bg-[#06694A] disabled:opacity-60 cursor-pointer"
-                >
-                  {avatarLoading ? <Loader2 size={14} className="animate-spin" /> : <Camera size={14} />}
-                </button>
-
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp,image/gif"
-                  onChange={handleAvatarSelected}
-                  className="hidden"
-                />
-              </div>
-
-              {/* Infos identité + actions photo */}
-              <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <h2 id="profile-modal-title" className="text-xl font-extrabold text-slate-900 tracking-tight break-words">
-                    {userName}
-                  </h2>
-                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-bold text-emerald-800 border border-emerald-200">
-                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                    Actif
-                  </span>
-                </div>
-                <p className="mt-0.5 text-sm font-semibold text-[#087F5B]">{roleBadgeLabel}</p>
-                <p className="mt-0.5 text-xs font-medium text-slate-500 break-all">{userEmail}</p>
-
-                <div className="mt-3 flex flex-wrap items-center gap-2">
-                  <button
-                    type="button"
-                    disabled={avatarLoading}
-                    onClick={() => fileInputRef.current?.click()}
-                    className="inline-flex items-center gap-1.5 rounded-xl bg-[#087F5B] px-3 py-1.5 text-xs font-bold text-white shadow-xs transition hover:bg-[#06694A] disabled:opacity-50 cursor-pointer"
-                  >
-                    <Camera size={13} />
-                    <span>{userAvatar ? 'Changer la photo' : 'Ajouter une photo'}</span>
-                  </button>
-
-                  {userAvatar && (
-                    <button
-                      type="button"
-                      disabled={avatarLoading}
-                      onClick={handleDeleteAvatar}
-                      className="inline-flex items-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-bold text-rose-700 transition hover:bg-rose-100 disabled:opacity-50 cursor-pointer"
-                    >
-                      <Trash2 size={13} />
-                      <span>Supprimer</span>
-                    </button>
-                  )}
-
-                  <span className="text-[11px] text-slate-400">JPG, PNG, WEBP · max 5 Mo</span>
-                </div>
-              </div>
             </div>
 
             {(avatarError || avatarSuccess) && (
@@ -684,19 +644,6 @@ export default function UserMenu({ className = '', profileContext = null }) {
                       className="w-full rounded-xl border border-slate-300 bg-slate-50/70 py-2.5 pl-10 pr-3.5 text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:border-[#087F5B] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#087F5B]/20"
                     />
                   </div>
-                </div>
-
-                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3.5 flex flex-wrap items-center justify-between gap-2">
-                  <div>
-                    <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                      Affectation & Rôle système
-                    </p>
-                    <p className="text-xs font-bold text-slate-800 mt-0.5">{userRole}</p>
-                  </div>
-                  <span className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700">
-                    <ShieldCheck size={14} className="text-[#087F5B]" />
-                    {roleBadgeLabel}
-                  </span>
                 </div>
 
                 <div className="flex items-center justify-end pt-2">
@@ -1019,17 +966,8 @@ export default function UserMenu({ className = '', profileContext = null }) {
             </div>
           </div>
 
-          {/* Badge de notifications + Chevron interactif */}
-          <div className="flex items-center gap-1.5 shrink-0">
-            {unreadCount > 0 && (
-              <span
-                title={`${unreadCount} notifications en attente`}
-                className="relative flex h-5 w-5 items-center justify-center rounded-full bg-rose-600 text-[10px] font-black text-white shadow-sm"
-              >
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-rose-400 opacity-60" />
-                {unreadCount}
-              </span>
-            )}
+          {/* Chevron interactif */}
+          <div className="flex items-center shrink-0">
             <div
               className={`text-slate-400 transition-transform duration-300 group-hover:text-white ${
                 isPopupOpen ? 'rotate-180 text-emerald-400' : ''
