@@ -8,7 +8,7 @@ export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const { setCurrentUser } = useAuth();
+  const { setCurrentUser, setToken } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
@@ -38,6 +38,7 @@ export default function Login() {
 
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(user));
+      setToken(token);
       setCurrentUser(user);
       api.defaults.headers.common.Authorization = `Bearer ${token}`;
 

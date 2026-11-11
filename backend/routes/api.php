@@ -21,6 +21,11 @@ Route::middleware('auth:sanctum')->group(function () {
         return $request->user();
     });
 
+    // Gestion du profil & photo de profil de l'utilisateur connecté
+    Route::match(['put', 'post'], '/user/profile', [UserController::class, 'updateProfile']);
+    Route::post('/user/avatar', [UserController::class, 'updateAvatar']);
+    Route::delete('/user/avatar', [UserController::class, 'deleteAvatar']);
+
     // Modification de mot de passe & code par email (SMTP)
     Route::post('/user/send-password-code', [UserController::class, 'sendPasswordCode'])->middleware('throttle:3,1');
     Route::post('/user/change-password', [UserController::class, 'changePassword'])->middleware('throttle:10,1');
@@ -77,6 +82,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::match(['get', 'post'], 'dashboard/budget/export-excel', [\App\Http\Controllers\Api\DashboardController::class, 'exportBudgetExcel']);
     Route::match(['get', 'post'], 'registres/engagement/export-excel', [\App\Http\Controllers\Api\RegistreExportController::class, 'exportEngagementExcel']);
     Route::match(['get', 'post'], 'registres/ordonnancement/export-excel', [\App\Http\Controllers\Api\RegistreExportController::class, 'exportOrdonnancementExcel']);
+    Route::match(['get', 'post'], 'registres/consultations/export-excel', [\App\Http\Controllers\Api\RegistreExportController::class, 'exportConsultationsExcel']);
     Route::get('notification-lignes', [\App\Http\Controllers\Api\NotificationController::class, 'getLignes']);
     Route::put('notification-lignes/{id}', [\App\Http\Controllers\Api\NotificationController::class, 'updateLigne']);
 

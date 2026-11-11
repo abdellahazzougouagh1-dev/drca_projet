@@ -40,7 +40,11 @@ class AuthController extends Controller
             'password' => ['required', 'string'],
         ]);
 
-        $user = User::where('email', $credentials['email'])->first();
+        $emailInput = trim($credentials['email']);
+        $user = User::where('email', $emailInput)->first();
+        if (! $user) {
+            $user = User::whereRaw('LOWER(email) = ?', [strtolower($emailInput)])->first();
+        }
 
         if (! $user || ! Hash::check($credentials['password'], $user->password)) {
             throw ValidationException::withMessages([
@@ -63,6 +67,8 @@ class AuthController extends Controller
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
+                'telephone' => $user->telephone,
+                'avatar' => $user->avatar,
                 'role' => $user->role ?? 'gestionnaire',
                 'is_active' => (bool) $user->is_active,
             ],

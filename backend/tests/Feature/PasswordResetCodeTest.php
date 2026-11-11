@@ -54,4 +54,26 @@ class PasswordResetCodeTest extends TestCase
         Notification::assertCount(1);
         $this->postJson('/api/forgot-password', ['email' => $user->email])->assertStatus(429);
     }
+
+    public function test_reset_works_with_case_insensitive_email_within_ten_minutes(): void
+    {
+        Notification::fake();
+        $user = User::factory()->create(['email' => 'HamzaTest428@example.com']);
+
+        $this->postJson('/api/forgot-password', ['email' => 'hamzatest428@example.com'])->assertOk();
+        $code = Notification::sent($user, PasswordResetCode::class)->first()->code;
+
+        DB::table('password_reset_tokens')
+            ->where('email', $user->email)
+            ->update(['created_at' => now()->subMinutes(8)]);
+
+        $this->postJson('/api/reset-password', [
+            'email' => 'hamzatest428@example.com',
+            'code' => $code,
+            'password' => 'new-password-123',
+            'password_confirmation' => 'new-password-123',
+        ])->assertOk();
+
+        $this->assertTrue(Hash::check('new-password-123', $user->fresh()->password));
+    }
 }

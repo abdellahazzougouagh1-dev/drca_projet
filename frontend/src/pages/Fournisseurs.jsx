@@ -175,7 +175,7 @@ const Fournisseurs = () => {
       {/* Sidebar */}
       <aside className="w-64 bg-[#1e3a8a] text-white flex flex-col h-screen sticky top-0 shadow-xl">
         <div className="px-6 py-6 border-b border-blue-800">
-          <Link to="/" className="flex items-center gap-3">
+          <Link to="/dashboard" className="flex items-center gap-3">
             <div className="w-10 h-10 bg-white/10 rounded-lg flex items-center justify-center">ON</div>
             <div>
               <p className="text-sm font-semibold">ERP ONCA</p>
@@ -187,7 +187,7 @@ const Fournisseurs = () => {
         <nav className="flex-1 mt-4 overflow-y-auto">
           <ul className="space-y-1">
             <li>
-              <Link to="/" className={`flex items-center space-x-3 px-6 py-4 text-slate-100 font-medium transition-all duration-200 rounded-xl mx-2 my-1 ${location.pathname === '/' ? 'bg-blue-900/80 text-white border-l-4 border-cyan-400 font-bold' : 'hover:bg-blue-800/50'
+              <Link to="/dashboard" className={`flex items-center space-x-3 px-6 py-4 text-slate-100 font-medium transition-all duration-200 rounded-xl mx-2 my-1 ${location.pathname === '/dashboard' ? 'bg-blue-900/80 text-white border-l-4 border-cyan-400 font-bold' : 'hover:bg-blue-800/50'
                 }`}>
                 <Home size={18} />
                 <span>Tableau de Bord</span>

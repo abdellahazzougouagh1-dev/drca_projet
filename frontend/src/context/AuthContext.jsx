@@ -36,13 +36,39 @@ export function AuthProvider({ children }) {
   // Sync user state changes with localStorage
   const updateCurrentUser = (userData) => {
     if (userData) {
-      localStorage.setItem('user', JSON.stringify(userData));
+      try {
+        localStorage.setItem('user', JSON.stringify(userData));
+      } catch {
+        // Ignore storage quota errors cleanly
+      }
       setCurrentUser(userData);
     } else {
       localStorage.removeItem('user');
       setCurrentUser(null);
     }
   };
+
+  // Synchroniser automatiquement le profil utilisateur depuis /api/user
+  useEffect(() => {
+    if (!token) return;
+    if (typeof window !== 'undefined' && window.location.pathname === '/login') return;
+
+    let cancelled = false;
+    api
+      .get('/user')
+      .then((res) => {
+        if (!cancelled && res?.data?.id) {
+          updateCurrentUser(res.data);
+        }
+      })
+      .catch(() => {
+        // Les erreurs 401 sont traitées par l'intercepteur Axios
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [token]);
 
   const login = async (email, password, requiredRole = null) => {
     const response = await api.post('/login', { email, password });
@@ -94,6 +120,7 @@ export function AuthProvider({ children }) {
         currentUser,
         setCurrentUser: updateCurrentUser,
         token,
+        setToken,
         login,
         logout,
         loginModalConfig,

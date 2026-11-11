@@ -240,15 +240,23 @@ export default function GestionUtilisateursModal({ isOpen, onClose }) {
                       >
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
-                            <div
-                              className={`h-9 w-9 rounded-xl flex items-center justify-center text-xs font-bold shadow-xs ${
-                                isActive
-                                  ? 'bg-blue-100 text-blue-700'
-                                  : 'bg-amber-100 text-amber-800'
-                              }`}
-                            >
-                              {initials}
-                            </div>
+                            {u.avatar ? (
+                              <img
+                                src={u.avatar}
+                                alt={u.name || 'Utilisateur'}
+                                className="h-9 w-9 rounded-xl object-cover border border-slate-200 shadow-xs shrink-0"
+                              />
+                            ) : (
+                              <div
+                                className={`h-9 w-9 rounded-xl flex items-center justify-center text-xs font-bold shadow-xs shrink-0 ${
+                                  isActive
+                                    ? 'bg-blue-100 text-blue-700'
+                                    : 'bg-amber-100 text-amber-800'
+                                }`}
+                              >
+                                {initials}
+                              </div>
+                            )}
                             <div>
                               <p className="font-bold text-slate-900 text-sm">{u.name || 'Utilisateur'}</p>
                               <p className="text-[11px] text-slate-400">ID #{u.id}</p>

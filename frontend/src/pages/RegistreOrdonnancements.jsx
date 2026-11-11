@@ -62,7 +62,6 @@ export default function RegistreOrdonnancements() {
       if (exercice && exercice !== 'TOUS') params.exercice = exercice;
       if (statutFilter && statutFilter !== 'TOUS') params.statut = statutFilter;
       if (procedureFilter && procedureFilter !== 'TOUS') params.type_procedure = procedureFilter;
-      if (searchTerm) params.search = searchTerm;
 
       const res = await api.get('/ordonnancements', { params });
       setOrdonnancements(res.data.data || []);
@@ -267,16 +266,25 @@ export default function RegistreOrdonnancements() {
   // Client-side search filtering
   const filteredRows = rows.filter(r => {
     if (statutFilter !== 'TOUS' && r.statut !== statutFilter) return false;
-    if (!searchTerm) return true;
-    const term = searchTerm.toLowerCase();
+    const trimmedSearch = searchTerm.trim();
+    if (!trimmedSearch) return true;
+    const term = trimmedSearch.toLowerCase();
+    const imputation = `${r.art || ''}/${r.par || ''}/${r.lig || ''}`.toLowerCase();
     return (
-      r.num_op?.toLowerCase().includes(term) ||
-      r.beneficiaire?.toLowerCase().includes(term) ||
-      r.reference?.toLowerCase().includes(term) ||
-      r.intitule?.toLowerCase().includes(term) ||
-      r.creance?.toLowerCase().includes(term) ||
-      r.code?.toLowerCase().includes(term) ||
-      r.statut?.toLowerCase().includes(term)
+      String(r.num_op || '').toLowerCase().includes(term) ||
+      String(r.date_op || '').toLowerCase().includes(term) ||
+      String(r.beneficiaire || '').toLowerCase().includes(term) ||
+      String(r.reference || '').toLowerCase().includes(term) ||
+      String(r.budget || '').toLowerCase().includes(term) ||
+      String(r.creance || '').toLowerCase().includes(term) ||
+      String(r.code || '').toLowerCase().includes(term) ||
+      String(r.art || '').toLowerCase().includes(term) ||
+      String(r.par || '').toLowerCase().includes(term) ||
+      String(r.lig || '').toLowerCase().includes(term) ||
+      String(r.slig || '').toLowerCase().includes(term) ||
+      imputation.includes(term) ||
+      String(r.intitule || '').toLowerCase().includes(term) ||
+      String(r.statut || '').toLowerCase().includes(term)
     );
   });
 
@@ -292,13 +300,12 @@ export default function RegistreOrdonnancements() {
   const handleExportExcel = async () => {
     try {
       setIsExportingExcel(true);
-      const exportRows = filteredRows.map(r => ({
+      const exportRows = filteredRows.map((r) => ({
         index: r.index,
         num_op: r.num_op,
         date_op: r.date_op,
         beneficiaire: r.beneficiaire,
         reference: r.reference,
-        type_procedure: r.type_procedure || procedureFilter,
         budget: r.budget,
         creance: r.creance,
         code: r.code,
@@ -312,13 +319,14 @@ export default function RegistreOrdonnancements() {
         paiement_c_neufs: r.montant_c_neufs,
         paiement_retenue_source: r.montant_ras,
         paiement_rap: r.montant_rap,
-        montant_total: r.montant_total,
         statut: r.statut,
       }));
 
       await exportRegistreOrdonnancementExcel({
         procedure: procedureFilter,
         exercice: String(exercice),
+        statut: statutFilter,
+        search: searchTerm.trim(),
         rows: exportRows,
       });
     } catch (err) {

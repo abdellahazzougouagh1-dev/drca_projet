@@ -32,15 +32,6 @@ import { AuthProvider } from './context/AuthContext';
 import LoginModal from './components/LoginModal';
 
 function App() {
-  const isAuthenticated = !!localStorage.getItem('token');
-  let storedUser = null;
-  try {
-    storedUser = JSON.parse(localStorage.getItem('user') || 'null');
-  } catch {
-    storedUser = null;
-  }
-  const homePath = storedUser?.role === 'directeur' ? '/directeur' : '/dashboard';
-
   return (
     <AuthProvider>
       <Router>
@@ -275,8 +266,8 @@ function App() {
             }
           />
 
-          <Route path="/" element={<Navigate to={isAuthenticated ? homePath : '/login'} replace />} />
-          <Route path="*" element={<Navigate to={isAuthenticated ? homePath : '/login'} replace />} />
+          <Route path="/" element={<Navigate to="/login" replace />} />
+          <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </Router>
     </AuthProvider>

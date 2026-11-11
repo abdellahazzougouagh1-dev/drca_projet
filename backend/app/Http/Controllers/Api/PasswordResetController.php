@@ -24,7 +24,7 @@ class PasswordResetController extends Controller
             return response()->json(['message' => 'Patientez une minute avant de demander un nouveau code.'], 429);
         }
         RateLimiter::hit($key, 60);
-        $user = User::where('email', $email)->first();
+        $user = User::whereRaw('LOWER(email) = ?', [strtolower($email)])->first();
         if ($user) {
             $code = (string) random_int(100000, 999999);
             DB::table('password_reset_tokens')->updateOrInsert(
@@ -43,16 +43,17 @@ class PasswordResetController extends Controller
             'code' => ['required', 'string', 'regex:/^[0-9]{6}$/'],
             'password' => ['required', 'string', 'min:8', 'max:255', 'confirmed'],
         ]);
-        $key = 'reset-check:'.hash('sha256', strtolower(trim($data['email'])));
+        $email = trim($data['email']);
+        $key = 'reset-check:'.hash('sha256', strtolower($email));
         if (RateLimiter::tooManyAttempts($key, 5)) {
             return response()->json(['message' => 'Trop de tentatives. Réessayez dans 10 minutes.'], 429);
         }
         RateLimiter::hit($key, 600);
-        DB::transaction(function () use ($data) {
-            $user = User::where('email', trim($data['email']))->first();
-            $token = DB::table('password_reset_tokens')->where('email', $user?->email ?? trim($data['email']))->lockForUpdate()->first();
+        DB::transaction(function () use ($data, $email) {
+            $user = User::whereRaw('LOWER(email) = ?', [strtolower($email)])->first();
+            $token = DB::table('password_reset_tokens')->where('email', $user?->email ?? $email)->lockForUpdate()->first();
             if (! $user || ! $token || ! $token->created_at
-                || Carbon::parse($token->created_at)->addMinutes(6)->isPast()
+                || Carbon::parse($token->created_at)->addMinutes(10)->isPast()
                 || ! Hash::check($data['code'], $token->token)) {
                 throw ValidationException::withMessages(['code' => 'Code incorrect ou expiré.']);
             }
@@ -61,6 +62,7 @@ class PasswordResetController extends Controller
             DB::table('sessions')->where('user_id', $user->id)->delete();
             DB::table('password_reset_tokens')->where('email', $user->email)->delete();
         });
+        RateLimiter::clear($key);
         return response()->json(['message' => 'Mot de passe modifié. Vous pouvez vous connecter.']);
     }
 }

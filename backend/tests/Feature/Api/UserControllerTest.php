@@ -3,7 +3,11 @@
 namespace Tests\Feature\Api;
 
 use App\Models\User;
+use App\Notifications\PasswordResetCode;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Notification;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
@@ -125,5 +129,63 @@ class UserControllerTest extends TestCase
             'email' => 'new-user@example.com',
             'is_admin' => false,
         ]);
+    }
+
+    public function test_authenticated_user_can_change_password_with_current_password(): void
+    {
+        $user = User::factory()->create(['password' => Hash::make('old-password-123')]);
+        Sanctum::actingAs($user);
+
+        $this->postJson('/api/user/change-password', [
+            'current_password' => 'wrong-password',
+            'new_password' => 'new-password-456',
+        ])->assertStatus(422);
+
+        $this->postJson('/api/user/change-password', [
+            'current_password' => 'old-password-123',
+            'new_password' => 'new-password-456',
+        ])->assertOk();
+
+        $this->assertTrue(Hash::check('new-password-456', $user->fresh()->password));
+    }
+
+    public function test_authenticated_user_can_change_password_with_email_code_valid_for_ten_minutes(): void
+    {
+        Notification::fake();
+        $user = User::factory()->create(['email' => 'HamzaUser@example.com']);
+        Sanctum::actingAs($user);
+
+        $this->postJson('/api/user/send-password-code')->assertOk();
+        $code = Notification::sent($user, PasswordResetCode::class)->first()->code;
+
+        DB::table('password_reset_tokens')
+            ->where('email', $user->email)
+            ->update(['created_at' => now()->subMinutes(8)]);
+
+        $this->postJson('/api/user/change-password', [
+            'code' => $code,
+            'new_password' => 'new-secure-pass-789',
+        ])->assertOk();
+
+        $this->assertTrue(Hash::check('new-secure-pass-789', $user->fresh()->password));
+        $this->assertDatabaseMissing('password_reset_tokens', ['email' => $user->email]);
+
+        // Code is single-use
+        $this->postJson('/api/user/change-password', [
+            'code' => $code,
+            'new_password' => 'another-pass-999',
+        ])->assertStatus(422);
+    }
+
+    public function test_pgsql_connection_disables_server_prepared_statements_for_pooler(): void
+    {
+        $options = config('database.connections.pgsql.options');
+        $attr = PHP_VERSION_ID >= 80500
+            ? \Pdo\Pgsql::ATTR_DISABLE_PREPARES
+            : \PDO::PGSQL_ATTR_DISABLE_PREPARES;
+
+        $this->assertIsArray($options);
+        $this->assertArrayHasKey($attr, $options);
+        $this->assertTrue($options[$attr]);
     }
 }
